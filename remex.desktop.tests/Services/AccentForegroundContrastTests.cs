@@ -1043,4 +1043,219 @@ public class AccentForegroundContrastTests
         }
     }
 
+    // ── The Routines page (R-UX-49, RemEx-pp0rt.14) ──────────────────────────────────────────
+    //
+    // THE SURFACES ARE READ FROM THE VIEW, THE COLOURS FROM THE GENERATOR. RoutinesView.axaml paints
+    // its chips, banners, destructive tint and outcome glyphs with DynamicResource keys, and
+    // ThemeService.ApplyCustomization publishes those keys from the generated palette. A table here
+    // that said "the destructive chip is OnErrorContainer on ErrorContainer" would stay green after
+    // someone re-pointed the style at SystemErrorBrush, so the pairs are asserted against the view
+    // first (RoutinesViewPairsAreTheOnesMeasured) and only then measured.
+    //
+    // THE SWEEP IS WIDER THAN THE PRESETS SHIP. Every seeded preset, in BOTH modes (not only the
+    // mode it ships in), at every contrast step the spec names for R-UX-49 (-0.5, 0, 0.5, 1). The
+    // user can move the Theme and Contrast controls independently of the preset, so a pair that
+    // only clears AA at the preset's own settings is a pair that fails for someone.
+    //
+    // BELOW ZERO IS THE USER ASKING FOR LESS, AND THE GENERATOR GIVES IT APP-WIDE. The PC contrast
+    // control runs -1.0 ("softer") to 1.0, and MCU's contrast curves deliberately put every
+    // on-container pair under 4.5:1 below zero: measured at -0.5, every chip pair sits at 3.8:1 on
+    // every seed, the same as every other container in the app. Asserting 4.5 there would be a test
+    // about the generator, not this page, that no Routines change could make pass. So AA text is
+    // asserted at 0, 0.5 and 1 (the Android RoutineStatusContrastTest range), and at -0.5 the page
+    // has to keep the 3:1 large-text floor, which is what "softer" still promises.
+
+    /// <summary>The contrast steps R-UX-49 names (spec §16).</summary>
+    private static readonly double[] RoutineContrastLevels = [-0.5, 0.0, 0.5, 1.0];
+
+    /// <summary>The steps where the generator targets AA or better, so 4.5:1 text is owed.</summary>
+    private static readonly double[] RoutineAaContrastLevels = [0.0, 0.5, 1.0];
+
+    /// <summary>The reduced-contrast steps, where only the 3:1 floor is owed.</summary>
+    private static readonly double[] RoutineReducedContrastLevels = [-0.5];
+
+    /// <summary>One generated palette per seeded preset × light/dark × contrast step.</summary>
+    private static IEnumerable<(string Label, DynamicColorGenerator.M3Palette Palette)> RoutinePalettes(double[] levels)
+    {
+        var seeds = PresetSeeds()
+            .GroupBy(p => p.Seed, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToArray();
+
+        // ANTI-VACUITY: the bead asks for at least two seeds, and a catalog that collapsed to one
+        // would make every "for all seeds" below a statement about a single colour.
+        Assert.True(seeds.Length >= 2, $"only {seeds.Length} distinct preset seeds to measure");
+
+        foreach (var preset in seeds)
+        {
+            Assert.True(Color.TryParse(preset.Seed, out var seed), $"{preset.Preset}: unparseable seed {preset.Seed}");
+            foreach (var isDark in new[] { false, true })
+            foreach (var contrast in levels)
+            {
+                var label = $"{preset.Preset} {(isDark ? "dark" : "light")} contrast {contrast:+0.0;-0.0;0}";
+                yield return (label, DynamicColorGenerator.Generate(seed, preset.Variant, isDark, contrast));
+            }
+        }
+    }
+
+    private static string Hex(uint argb) => Hex(Color.FromUInt32(argb));
+
+    /// <summary>
+    /// The card the Routines page draws on, opaque: <c>CardBackgroundBrush</c> is SurfaceContainer.
+    /// </summary>
+    private static string Card(DynamicColorGenerator.M3Palette p) => Hex(p.SurfaceContainer);
+
+    /// <summary>
+    /// <c>CardPlateNeutralBrush</c> (SurfaceContainerHigh at 217/255) over the card: the default chip
+    /// and the history rows.
+    /// </summary>
+    private static string Plate(DynamicColorGenerator.M3Palette p) =>
+        Composite(Hex(p.SurfaceContainerHigh), 217 / 255.0, Card(p));
+
+    /// <summary>A 15% semantic tint over the card: <c>SystemWarningBackgroundBrush</c>, <c>SystemErrorBackgroundBrush</c>.</summary>
+    private static string Tint(Color fill, DynamicColorGenerator.M3Palette p) => Composite(Hex(fill), 0.15, Card(p));
+
+    /// <summary>Text on the page's filled and tinted surfaces: 4.5:1 (WCAG 1.4.3).</summary>
+    private static IEnumerable<(string Surface, string Ink, string Background)> RoutineTextPairs(DynamicColorGenerator.M3Palette p)
+    {
+        yield return ("chip (plate)", Hex(p.OnSurface), Plate(p));
+        yield return ("chip.trigger", Hex(p.OnSecondaryContainer), Hex(p.SecondaryContainer));
+        yield return ("chip.active", Hex(p.OnPrimaryContainer), Hex(p.PrimaryContainer));
+        yield return ("chip.destructive", Hex(p.Roles.OnErrorContainer), Hex(p.Roles.ErrorContainer));
+        yield return ("banner (warning tint)", Hex(p.OnSurface), Tint(p.Warning, p));
+        yield return ("banner.error (error tint)", Hex(p.OnSurface), Tint(p.Error, p));
+        yield return ("history row text", Hex(p.OnSurface), Plate(p));
+        yield return ("history row secondary text", Hex(p.OnSurfaceVariant), Plate(p));
+        yield return ("note.problem (error text on the card)", Hex(p.Error), Card(p));
+    }
+
+    /// <summary>
+    /// Outcome glyphs and the status border colours: 3:1 (WCAG 1.4.11, non-text). Every outcome also
+    /// carries its text (R-UX-50), so colour is never the only signal; the glyph still has to be seen.
+    /// </summary>
+    private static IEnumerable<(string Surface, string Ink, string Background)> RoutineGlyphPairs(DynamicColorGenerator.M3Palette p)
+    {
+        foreach (var (name, background) in new[] { ("card", Card(p)), ("history row", Plate(p)) })
+        {
+            yield return ($"status.succeeded on {name}", Hex(p.Success), background);
+            yield return ($"status.failed on {name}", Hex(p.Error), background);
+            yield return ($"status.running on {name}", Hex(p.Primary), background);
+            yield return ($"status.skipped on {name}", Hex(p.Warning), background);
+        }
+
+        yield return ("paused banner icon on warning tint", Hex(p.Warning), Tint(p.Warning, p));
+
+        // NOT MEASURED: the destructive chip's PaletteErrorBrush border against its own container.
+        // It is decoration on a display-only chip whose fill and verb text already identify it, and
+        // MCU converges Error and ErrorContainer as contrast rises (2.3:1 at +0.5, 1.6:1 at +1), so a
+        // 3:1 rule there would fail by design without anyone being unable to read the chip.
+    }
+
+    private static string RoutinesViewSource() => File.ReadAllText(Path.Combine(
+        RepoRoot(), "remex.desktop", "Views", "RoutinesView.axaml"));
+
+    /// <summary>The Setter value for <paramref name="property"/> inside the style with exactly this selector.</summary>
+    private static string StyleSetter(string axaml, string selector, string property)
+    {
+        var style = Regex.Match(axaml, $"<Style Selector=\"{Regex.Escape(selector)}\">(.*?)</Style>", RegexOptions.Singleline);
+        Assert.True(style.Success, $"RoutinesView: the style {selector} moved or was renamed");
+
+        var setter = Regex.Match(style.Groups[1].Value,
+            $"<Setter Property=\"{Regex.Escape(property)}\" Value=\"\\{{DynamicResource (\\w+)\\}}\"");
+        Assert.True(setter.Success, $"RoutinesView: {selector} no longer sets {property} from a DynamicResource");
+        return setter.Groups[1].Value;
+    }
+
+    [Fact]
+    public void RoutinesViewPairsAreTheOnesMeasured()
+    {
+        // THE MEASUREMENT BELOW IS ONLY AS GOOD AS THIS MAPPING. Each line pins a surface the view
+        // paints to the resource key whose generated colour the sweep measures; ThemeService is where
+        // each key gets that colour (PaletteErrorContainerBrush <- Roles.ErrorContainer, and so on).
+        var view = RoutinesViewSource();
+
+        Assert.Equal("CardPlateNeutralBrush", StyleSetter(view, "Border.chip", "Background"));
+        Assert.Equal("TextPrimaryBrush", StyleSetter(view, "Border.chip > TextBlock", "Foreground"));
+        Assert.Equal("PaletteSecondaryContainerBrush", StyleSetter(view, "Border.chip.trigger", "Background"));
+        Assert.Equal("PaletteOnSecondaryContainerBrush", StyleSetter(view, "Border.chip.trigger > TextBlock", "Foreground"));
+        Assert.Equal("PaletteErrorContainerBrush", StyleSetter(view, "Border.chip.destructive", "Background"));
+        Assert.Equal("PaletteErrorBrush", StyleSetter(view, "Border.chip.destructive", "BorderBrush"));
+        Assert.Equal("PaletteOnErrorContainerBrush", StyleSetter(view, "Border.chip.destructive > TextBlock", "Foreground"));
+        Assert.Equal("PalettePrimaryContainerBrush", StyleSetter(view, "Border.chip.active", "Background"));
+        Assert.Equal("PaletteOnPrimaryContainerBrush", StyleSetter(view, "Border.chip.active > TextBlock", "Foreground"));
+        Assert.Equal("CardPlateNeutralBrush", StyleSetter(view, "Border.history-row", "Background"));
+        Assert.Equal("SystemWarningBackgroundBrush", StyleSetter(view, "Border.banner", "Background"));
+        Assert.Equal("SystemErrorBackgroundBrush", StyleSetter(view, "Border.banner.error", "Background"));
+        Assert.Equal("TextPrimaryBrush", StyleSetter(view, "Border.banner TextBlock", "Foreground"));
+        Assert.Equal("SystemSuccessBrush", StyleSetter(view, "mi|MaterialIcon.status.succeeded", "Foreground"));
+        Assert.Equal("SystemErrorBrush", StyleSetter(view, "mi|MaterialIcon.status.failed", "Foreground"));
+        Assert.Equal("AccentPrimaryBrush", StyleSetter(view, "mi|MaterialIcon.status.running", "Foreground"));
+        Assert.Equal("SystemWarningBrush", StyleSetter(view, "mi|MaterialIcon.status.skipped", "Foreground"));
+    }
+
+    [Fact]
+    public void RoutinesPageTextClearsAAOnEverySeedAndModeAtStandardAndHigherContrast()
+    {
+        var failures = new List<string>();
+        foreach (var (label, palette) in RoutinePalettes(RoutineAaContrastLevels))
+        foreach (var (surface, ink, background) in RoutineTextPairs(palette))
+        {
+            var ratio = Contrast(ink, background);
+            if (ratio < 4.5)
+            {
+                failures.Add($"{label}: {surface} {ink} on {background} is {ratio:F2}:1");
+            }
+        }
+
+        Assert.True(failures.Count == 0,
+            "Routines page text below WCAG AA 4.5:1:\n" + string.Join("\n", failures));
+    }
+
+    [Fact]
+    public void RoutinesPageTextKeepsTheLargeTextFloorAtReducedContrast()
+    {
+        var failures = new List<string>();
+        foreach (var (label, palette) in RoutinePalettes(RoutineReducedContrastLevels))
+        foreach (var (surface, ink, background) in RoutineTextPairs(palette))
+        {
+            var ratio = Contrast(ink, background);
+            if (ratio < 3.0)
+            {
+                failures.Add($"{label}: {surface} {ink} on {background} is {ratio:F2}:1");
+            }
+        }
+
+        Assert.True(failures.Count == 0,
+            "Routines page text below 3:1 at reduced contrast:\n" + string.Join("\n", failures));
+    }
+
+    [Fact]
+    public void ReducedContrastReallyIsBelowAAForTheChips_WhichIsWhyItHasItsOwnFloor()
+    {
+        // THE CONTROL FOR THE SPLIT ABOVE. If the generator ever keeps the chips at AA below zero,
+        // the -0.5 step should move into the 4.5:1 test rather than keep a weaker floor by inertia.
+        var belowAa = RoutinePalettes(RoutineReducedContrastLevels)
+            .Count(x => Contrast(Hex(x.Palette.Roles.OnErrorContainer), Hex(x.Palette.Roles.ErrorContainer)) < 4.5);
+
+        Assert.True(belowAa > 0,
+            "the destructive chip now clears AA at reduced contrast on every seed; measure -0.5 at 4.5:1");
+    }
+
+    [Fact]
+    public void RoutinesPageStatusGlyphsClearNonTextContrastOnEverySeedModeAndContrast()
+    {
+        var failures = new List<string>();
+        foreach (var (label, palette) in RoutinePalettes(RoutineContrastLevels))
+        foreach (var (surface, ink, background) in RoutineGlyphPairs(palette))
+        {
+            var ratio = Contrast(ink, background);
+            if (ratio < 3.0)
+            {
+                failures.Add($"{label}: {surface} {ink} on {background} is {ratio:F2}:1");
+            }
+        }
+
+        Assert.True(failures.Count == 0,
+            "Routines page status colours below WCAG 1.4.11 3:1:\n" + string.Join("\n", failures));
+    }
 }
