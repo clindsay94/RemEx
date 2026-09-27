@@ -102,6 +102,7 @@ private enum class TutorialIllustration {
     DISCOVERY,
     IP_ADDRESS,
     CONNECTION,
+    ROUTINE,
     READY
 }
 
@@ -143,6 +144,14 @@ private val tutorialPages = listOf(
         titleRes = R.string.tutorial_page5_title,
         bodyRes = R.string.tutorial_page5_body,
         illustration = TutorialIllustration.CONNECTION
+    ),
+    // Routines (spec 5.1, RemEx-pp0rt.11): before "You're All Set!", so the tour still ends there.
+    TutorialPage(
+        emoji = "🔁",
+        titleRes = R.string.tutorial_routines_title,
+        bodyRes = R.string.tutorial_routines_body,
+        bodyArgRes = R.string.screen_routines_title,
+        illustration = TutorialIllustration.ROUTINE
     ),
     TutorialPage(
         emoji = "🚀",
@@ -730,6 +739,30 @@ private fun DrawScope.drawIllustration(
                 center = rightNode,
                 style = Stroke(1.5f)
             )
+        }
+
+        TutorialIllustration.ROUTINE -> {
+            // A trigger node joined by a line to three step nodes, the steps lighting in turn.
+            val trigger = Offset(cx - w * 0.3f, cy)
+            val steps = List(3) { i -> Offset(cx - w * 0.05f + i * w * 0.17f, cy) }
+            drawLine(
+                color = primary.copy(alpha = 0.5f),
+                start = trigger,
+                end = steps.last(),
+                strokeWidth = 2f,
+                cap = StrokeCap.Round
+            )
+            drawCircle(color = primary, radius = w * 0.07f, center = trigger)
+            drawCircle(
+                color = primary.copy(alpha = 0.3f * (1f - pulse)),
+                radius = w * 0.07f + pulse * w * 0.06f,
+                center = trigger,
+                style = Stroke(1.5f)
+            )
+            val lit = (pulse * steps.size).toInt().coerceIn(0, steps.lastIndex)
+            steps.forEachIndexed { i, center ->
+                drawCircle(color = if (i <= lit) secondary else secondary.copy(alpha = 0.35f), radius = w * 0.045f, center = center)
+            }
         }
 
         TutorialIllustration.READY -> {

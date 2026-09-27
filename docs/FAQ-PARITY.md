@@ -20,19 +20,20 @@ Both platforms must answer all twenty-two. The pairing below is by MEANING, not 
 | 14 | How do I stop RemEx starting at sign-in? | Faq_Q14 | faq_q15 |
 | 15 | How do I change how RemEx looks? | Faq_Q15 | faq_q9 |
 | 16 | Can I watch the tutorial again? | Faq_Q16 | faq_q10 |
-| 17 | What are routines? | Faq_Q17 | faq_q17 (pending) |
-| 18 | Why didn't my routine run? | Faq_Q18 | faq_q18 (pending) |
-| 19 | Does RemEx track my location? | Faq_Q19 | faq_q19 (pending) |
-| 20 | Can a routine shut down my PC while I'm using it? | Faq_Q20 | faq_q20 (pending) |
-| 21 | Can I edit routines on my PC? | Faq_Q21 | faq_q21 (pending) |
-| 22 | How do NFC tags work with routines? | Faq_Q22 | faq_q22 (pending) |
+| 17 | What are routines? | Faq_Q17 | faq_q17 |
+| 18 | Why didn't my routine run? | Faq_Q18 | faq_q18 |
+| 19 | Does RemEx track my location? | Faq_Q19 | faq_q19 |
+| 20 | Can a routine shut down my PC while I'm using it? | Faq_Q20 | faq_q20 |
+| 21 | Can I edit routines on my PC? | Faq_Q21 | faq_q21 |
+| 22 | How do NFC tags work with routines? | Faq_Q22 | faq_q22 |
 
-**Pending (Routines, RemEx-pp0rt.11):** rows 17-22 ship on the PC first. The Android half
-(`faq_q17`..`faq_q22` in all 9 `values*/strings.xml`, six more `FaqItem`s in `FaqScreen.kt`) lands
-in the phone batch of the same bead, using the Android copy drafted in
-`docs/specs/2026-09-26-routines-design.md` §5.4. Until then these six rows are PC-only. Remove the
-`(pending)` markers when the Android keys exist; a parity check that parses this table should treat
-a `(pending)` cell as not yet required.
+**Routines (RemEx-pp0rt.11):** rows 17-22 shipped on the PC first and are now on Android too
+(`faq_q17`..`faq_q22` in all 9 `values*/strings.xml`, six more `FaqItem`s in `FaqScreen.kt`), using
+the Android copy drafted in `docs/specs/2026-09-26-routines-design.md` §5.4 with the same D1/D3/D8
+adjustments the PC copy made (the countdown still runs for a phone-started or NFC routine; lock and
+display-off never count down; the PC can block a phone's routines but not delete them). A future
+row that ships on one platform first can still be marked `(pending)`; the parity check treats such a
+cell as not yet required.
 
 The Routines entries follow the routine rules of spec §0.2, not the drafts where they differ: every
 routine-issued shutdown, restart, sign-out, sleep or hibernate counts down on the PC (D1), lock and

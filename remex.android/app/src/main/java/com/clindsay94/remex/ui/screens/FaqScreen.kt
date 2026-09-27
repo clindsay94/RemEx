@@ -76,7 +76,16 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q13, answerRes = R.string.faq_a13),
                 FaqItem(questionRes = R.string.faq_q14, answerRes = R.string.faq_a14),
                 FaqItem(questionRes = R.string.faq_q15, answerRes = R.string.faq_a15),
-                FaqItem(questionRes = R.string.faq_q16, answerRes = R.string.faq_a16)
+                FaqItem(questionRes = R.string.faq_q16, answerRes = R.string.faq_a16),
+                // Routines (routines spec 5.4, RemEx-pp0rt.11); PC twins are Faq_Q17..Faq_Q22.
+                FaqItem(questionRes = R.string.faq_q17, answerRes = R.string.faq_a17,
+                                answerArgRes = R.string.screen_routines_title),
+                FaqItem(questionRes = R.string.faq_q18, answerRes = R.string.faq_a18),
+                FaqItem(questionRes = R.string.faq_q19, answerRes = R.string.faq_a19),
+                FaqItem(questionRes = R.string.faq_q20, answerRes = R.string.faq_a20,
+                                answerArgRes = R.string.screen_routines_title),
+                FaqItem(questionRes = R.string.faq_q21, answerRes = R.string.faq_a21),
+                FaqItem(questionRes = R.string.faq_q22, answerRes = R.string.faq_a22)
         )
 
 @OptIn(ExperimentalMaterial3Api::class)

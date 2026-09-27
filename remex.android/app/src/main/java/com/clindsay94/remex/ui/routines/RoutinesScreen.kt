@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.Warning
@@ -360,6 +361,7 @@ private fun RoutinesListPane(
     val canEdit = status.health == RoutineStoreHealth.OK && !readOnly
 
     var menuOpen by remember { mutableStateOf(false) }
+    val exchange = rememberRoutineExchange(viewModel)
     var fabOpen by remember { mutableStateOf(false) }
     var coachStep by rememberSaveable { mutableIntStateOf(0) }
     var coachReplay by rememberSaveable { mutableStateOf(false) }
@@ -428,6 +430,27 @@ private fun RoutinesListPane(
                                     onClick = {
                                         menuOpen = false
                                         homeSheet = true
+                                    },
+                                )
+                            }
+                            // Spec 1.9: export what is here, import a .remexroutines file.
+                            if (items.any { !it.routine.isMalformed }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.routines_menu_export)) },
+                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        exchange.export()
+                                    },
+                                )
+                            }
+                            if (canEdit) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.routines_menu_import)) },
+                                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        exchange.import()
                                     },
                                 )
                             }

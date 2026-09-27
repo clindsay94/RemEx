@@ -10,6 +10,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.routines.RoutineExchange
 import com.clindsay94.remex.routines.RoutineHostSync
 import com.clindsay94.remex.routines.RoutineItem
 import com.clindsay94.remex.routines.RoutineNfcBinding
@@ -533,6 +534,53 @@ class RoutinesViewModel(application: Application) : AndroidViewModel(application
                 is RoutineSaveResult.Saved -> post(app.getString(R.string.routines_duplicated, result.routine.name.orEmpty()))
                 else -> post(saveFailureText(result))
             }
+        }
+    }
+
+    // ── Export / import (§1.9, §6.10; RemEx-pp0rt.11) ──
+
+    /** The `.remexroutines` text for every stored routine, whitelisted (T13). */
+    fun exportText(): String =
+        RoutineExchange.export(
+            routines.value.map { it.routine },
+            exportedAtUnixMs = System.currentTimeMillis(),
+            exportedBy = "RemEx Android ${com.clindsay94.remex.BuildConfig.VERSION_NAME}",
+        )
+
+    /** A read file waiting in the review sheet, or the reason it could not be read. */
+    private val _importFile = MutableStateFlow<RoutineExchange.ReadResult?>(null)
+    val importFile: StateFlow<RoutineExchange.ReadResult?> = _importFile
+
+    fun openImport(text: String?) {
+        _importFile.value = RoutineExchange.read(text)
+    }
+
+    fun closeImport() {
+        _importFile.value = null
+    }
+
+    /** The review of [routines] for the PC the user picked in the sheet. */
+    fun reviewImport(routines: List<Routine>, hostIdentity: String?): List<RoutineExchange.Review> =
+        RoutineExchange.review(
+            routines = routines,
+            hostIdentity = hostIdentity,
+            mac = macFor(hostIdentity),
+            homeId = home.value?.id,
+            existingNames = this.routines.value.mapNotNull { it.routine.name },
+            newId = { java.util.UUID.randomUUID().toString() },
+        )
+
+    /** Stores the chosen reviewed routines, switched off; a refusal is said, never swallowed. */
+    fun importRoutines(chosen: List<RoutineExchange.Review>) {
+        _importFile.value = null
+        viewModelScope.launch {
+            var failure: String? = null
+            for (review in chosen) {
+                val routine = review.prepared?.takeIf { review.importable } ?: continue
+                val result = repository.save(routine)
+                if (result !is RoutineSaveResult.Saved) failure = saveFailureText(result)
+            }
+            post(failure ?: app.getString(R.string.routines_import_done))
         }
     }
 
