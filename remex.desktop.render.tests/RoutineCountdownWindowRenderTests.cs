@@ -81,9 +81,10 @@ public sealed class RoutineCountdownWindowRenderTests
         cancels().Should().Be(1);
     }
 
-    /// <summary>Runs the dispatcher until <paramref name="task"/> completes. Never blocks on it:
-    /// ShowCountdownAsync posts to the UI thread this test is running on.</summary>
-    private static T Pump<T>(Task<T> task)
+    /// <summary>Runs the dispatcher until <paramref name="task"/> completes, then awaits it. Never
+    /// blocks on it: ShowCountdownAsync posts to the UI thread this test is running on, and by the
+    /// time of the await the task has already completed (RemEx-7cq0 bans blocking waits).</summary>
+    private static async Task<T> PumpAsync<T>(Task<T> task)
     {
         for (var i = 0; i < 100 && !task.IsCompleted; i++)
         {
@@ -91,7 +92,7 @@ public sealed class RoutineCountdownWindowRenderTests
         }
 
         task.IsCompletedSuccessfully.Should().BeTrue();
-        return task.Result;
+        return await task;
     }
 
     [AvaloniaFact]
@@ -107,14 +108,14 @@ public sealed class RoutineCountdownWindowRenderTests
     }
 
     [AvaloniaFact]
-    public void ThroughTheRoutineUiTheCoordinatorsCloseDoesNotCancelButAnyEarlierCloseDoes()
+    public async Task ThroughTheRoutineUiTheCoordinatorsCloseDoesNotCancelButAnyEarlierCloseDoes()
     {
         var ui = new AvaloniaRoutineUi();
         var cancels = 0;
         var prompt = new RoutineCountdownPrompt("run-ui", "Evening", "SHUTDOWN", "Pixel", "manual.app", 15, false, false);
 
         // The coordinator's own path: ShowCountdownAsync, then CloseCountdown when the 15 s end.
-        Pump(ui.ShowCountdownAsync(prompt, () => cancels++)).Should().BeTrue();
+        (await PumpAsync(ui.ShowCountdownAsync(prompt, () => cancels++))).Should().BeTrue();
         var first = ui.CurrentWindow!;
         ui.CloseCountdown("run-ui");
         Dispatcher.UIThread.RunJobs();
@@ -122,7 +123,7 @@ public sealed class RoutineCountdownWindowRenderTests
         first.IsVisible.Should().BeFalse();
 
         // The person's path: the window closes itself (the drawn X) while the countdown is live.
-        Pump(ui.ShowCountdownAsync(prompt with { RunId = "run-ui-2" }, () => cancels++));
+        await PumpAsync(ui.ShowCountdownAsync(prompt with { RunId = "run-ui-2" }, () => cancels++));
         var second = ui.CurrentWindow!;
         second.Close();
         Dispatcher.UIThread.RunJobs();
@@ -171,7 +172,7 @@ public sealed class RoutineCountdownWindowRenderTests
     }
 
     [AvaloniaFact]
-    public void TheCountdownRaisesATrayBalloonEvenWhileTheMainWindowIsVisible()
+    public async Task TheCountdownRaisesATrayBalloonEvenWhileTheMainWindowIsVisible()
     {
         var service = Remex.Desktop.Services.NotificationService.Instance;
         var (balloon, probe, toast) = (service.TrayBalloon, service.WindowVisibleProbe, service.InApp);
@@ -183,7 +184,7 @@ public sealed class RoutineCountdownWindowRenderTests
             service.InApp = null;
 
             var ui = new AvaloniaRoutineUi();
-            Pump(ui.ShowCountdownAsync(
+            await PumpAsync(ui.ShowCountdownAsync(
                 new RoutineCountdownPrompt("run-balloon", "Evening", "SHUTDOWN", "Pixel", "manual.app", 15, false, false),
                 () => { }));
             Dispatcher.UIThread.RunJobs();
