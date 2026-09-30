@@ -131,7 +131,7 @@ review-report.md
 # have to travel with the repo: the shared settings (which wire up the PostToolUse edit guard),
 # the hook scripts themselves, and the skills. Ignoring them wholesale meant they existed only on
 # the machine that wrote them - invisible to a fresh clone, to the CachyOS install, and to any
-# `git worktree` (which does not copy ignored files at all). CLAUDE.md already cites
+# `git worktree` (which does not copy ignored files at all). .claude/CLAUDE.md already cites
 # `.claude/skills/gitnexus/*/SKILL.md` by path, and those citations pointed at nothing for anyone
 # who had not generated them locally.
 #
@@ -139,6 +139,8 @@ review-report.md
 # ignored directory has no effect. Excluding the children with `/*` and then re-including the
 # specific subdirectories is what makes the negations work.
 /.claude/*
+# The project instructions (merged from AGENTS.md + the root CLAUDE.md, RemEx-wcvck).
+!/.claude/CLAUDE.md
 !/.claude/settings.json
 !/.claude/scripts/
 !/.claude/skills/

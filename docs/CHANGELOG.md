@@ -182,6 +182,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- Agent instructions are one file now. `AGENTS.md` and the root `CLAUDE.md` were merged into
+  `.claude/CLAUDE.md`, with the generated gitnexus, beads and auto-memory blocks dropped along with
+  the precedence table that existed only to overrule them, and a stale architecture map (it still
+  listed a deleted class) cut down to what a symbol lookup can't answer. The MCP routing moved from
+  the `mcp-routing` skill into the always-loaded global instructions. The beads SessionStart hook
+  now injects memory titles (about 5 KB) instead of `bd prime`'s full dump (about 80 KB). A new
+  `InstructionFileTests` fails if `npx gitnexus analyze` without `--skip-agents-md`, or
+  `bd setup claude`, puts either file back at the repo root. It replaces `GeneratedDocBlockTests`.
+  (RemEx-wcvck)
+
 - The phone app now asks the PC to stop sending live sensor readings while it is in the background,
   and to start again as soon as you come back, so a phone in your pocket no longer takes a 60-100 KB
   update every second. If a Hardware widget is on your home screen the readings keep flowing so it

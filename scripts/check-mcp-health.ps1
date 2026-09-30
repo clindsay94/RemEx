@@ -200,7 +200,7 @@ if ($gitnexusCmd -and ((Test-Path -LiteralPath $gitnexusCmd -ErrorAction Silentl
                 if (-not $Hook) { Write-Host "  OK    gitnexus index at $indexed (up to date)" -ForegroundColor Green }
             } else {
                 $behind = (& git -C $RepoRoot rev-list --count "$indexed..HEAD" 2>$null)
-                Add-Warning "gitnexus index is stale: indexed $indexed, HEAD $current$(if ($behind) { " ($behind commits behind)" }). It will answer from that snapshot without saying so. Run: gitnexus analyze"
+                Add-Warning "gitnexus index is stale: indexed $indexed, HEAD $current$(if ($behind) { " ($behind commits behind)" }). It will answer from that snapshot without saying so. Run: npx gitnexus analyze --skip-agents-md"
             }
         }
     } catch {

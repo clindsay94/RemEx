@@ -4,7 +4,8 @@
       {
         "hooks": [
           {
-            "command": "bd prime --hook-json",
+            "command": "pwsh -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/scripts/beads-context.ps1\"",
+            "timeout": 20,
             "type": "command"
           },
           {

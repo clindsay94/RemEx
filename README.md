@@ -241,9 +241,9 @@ ready` in the repo shows it.
 
 See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and
 [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md). This repo is developed
-with Claude Code; [AGENTS.md](AGENTS.md) has the project rules (architecture
-invariants, the verification gate, coding conventions) if you're pairing an
-agent with it.
+with Claude Code; [.claude/CLAUDE.md](.claude/CLAUDE.md) has the project rules
+(architecture invariants, the verification gate, coding conventions) if you're
+pairing an agent with it.
 
 > [!WARNING]
 > Read [docs/REGRESSION-GUARDS.md](docs/REGRESSION-GUARDS.md) before touching
@@ -280,7 +280,7 @@ Please don't open a public issue for a vulnerability. See
 | [docs/ASYNC_GUIDELINES.md](docs/ASYNC_GUIDELINES.md) | Async coding conventions |
 | [docs/NULL_SAFETY_GUIDELINES.md](docs/NULL_SAFETY_GUIDELINES.md) | Null-safety conventions |
 | [docs/VALIDATION_GUIDELINES.md](docs/VALIDATION_GUIDELINES.md) | Input validation conventions |
-| [AGENTS.md](AGENTS.md) | Project rules for coding agents |
+| [.claude/CLAUDE.md](.claude/CLAUDE.md) | Project rules for coding agents |
 
 Older plans, specs, audits and measurements are kept out of the repo on purpose
 (`docs/old-docs/`, `docs/plans/` and `docs/superpowers/` are gitignored).
