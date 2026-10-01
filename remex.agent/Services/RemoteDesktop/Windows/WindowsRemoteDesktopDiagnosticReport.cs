@@ -37,6 +37,24 @@ internal static class WindowsRemoteDesktopDiagnostics
     private const string DefaultDesktopName = "Default";
     private const string WinlogonDesktopName = "Winlogon";
 
+    /// <summary>
+    /// The "capture degraded" line, or null when there is nothing to report. DXGI is only degraded once
+    /// it has been probed and failed: init is deferred to the first capture (RemEx-hmj), so before that
+    /// "not available" just means "not tried yet". Reporting it then claimed degraded capture at every
+    /// launch on every machine (RemEx-61no2).
+    /// </summary>
+    internal static string? DescribeDxgiDegradation(bool probed, bool available, string? reason)
+    {
+        if (!probed || available)
+        {
+            return null;
+        }
+
+        return reason is { Length: > 0 }
+            ? $"DXGI desktop duplication is unavailable ({reason}). Remex will fall back to GDI capture, so GPU-accelerated or overlay windows may appear black."
+            : "DXGI desktop duplication is unavailable. Remex will fall back to GDI capture, so GPU-accelerated or overlay windows may appear black.";
+    }
+
     public static WindowsRemoteDesktopDiagnosticReport Evaluate(
         WindowsScreenCaptureService? captureService = null,
         WindowsInputSimulationService? inputService = null)
@@ -79,12 +97,11 @@ internal static class WindowsRemoteDesktopDiagnostics
             }
         }
 
-        string? captureBackendDegradedReason = null;
-        if (captureService is not null && !captureService.IsDxgiAvailable)
+        var captureBackendDegradedReason = captureService is null
+            ? null
+            : DescribeDxgiDegradation(captureService.HasDxgiProbed, captureService.IsDxgiAvailable, captureService.DxgiUnavailableReason);
+        if (captureBackendDegradedReason is not null)
         {
-            captureBackendDegradedReason = captureService.DxgiUnavailableReason is { Length: > 0 } dxgiReason
-                ? $"DXGI desktop duplication is unavailable ({dxgiReason}). Remex will fall back to GDI capture, so GPU-accelerated or overlay windows may appear black."
-                : "DXGI desktop duplication is unavailable. Remex will fall back to GDI capture, so GPU-accelerated or overlay windows may appear black.";
             issues.Add(captureBackendDegradedReason);
         }
 

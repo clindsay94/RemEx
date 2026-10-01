@@ -99,6 +99,51 @@ Type: filesandordirs; Name: "{commonappdata}\RemEx"
 [Code]
 
 // ------------------------------------------------------------------
+// Keep "Launch RemEx when you sign in" OFF on an update if the user turned
+// it off (RemEx-q0j7). The Settings toggle turns it off by deleting the
+// "RemEx" logon task, so an existing install with no task means the user
+// opted out. Setup used to tick the box and re-register the task on every
+// update, quietly undoing that choice.
+// ------------------------------------------------------------------
+var
+  AutostartTurnedOff: Boolean;  // existing install, logon task missing
+  TasksPageSeen:      Boolean;  // the user saw (and could change) the box
+
+function IsUpgrade(): Boolean;
+begin
+  Result := RegKeyExists(HKA,
+    ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1'));
+end;
+
+function LogonTaskMissing(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  // schtasks exits 0 when the task exists. If schtasks can't run at all, report "not missing"
+  // so Setup keeps registering the task rather than guessing that the user opted out.
+  Result := Exec(ExpandConstant('{sys}\schtasks.exe'), '/Query /TN "RemEx"', '',
+                 SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode <> 0);
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  AutostartTurnedOff := IsUpgrade() and LogonTaskMissing();
+  Result := True;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  // Show the current choice the first time the page appears. Only once, so a user who ticks
+  // the box, goes Back and comes forward again keeps their tick.
+  if (CurPageID = wpSelectTasks) and not TasksPageSeen then
+  begin
+    TasksPageSeen := True;
+    if AutostartTurnedOff then
+      WizardSelectTasks('!launchatlogin');
+  end;
+end;
+
+// ------------------------------------------------------------------
 // After files are installed, register the elevated logon auto-start
 // task when the user opted into "Launch RemEx when you sign in".
 //
@@ -117,6 +162,10 @@ begin
 
   // Only set up auto-start if the user kept the "Launch at login" task checked.
   if not WizardIsTaskSelected('launchatlogin') then Exit;
+
+  // A silent update never shows the tasks page, so the box keeps its default (ticked).
+  // Respect an opt-out the user had no chance to restate here.
+  if AutostartTurnedOff and not TasksPageSeen then Exit;
 
   PSArgs :=
     '-ExecutionPolicy Bypass -NonInteractive' +

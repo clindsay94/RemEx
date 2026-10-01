@@ -81,6 +81,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public bool IsAvailable => _duplOutput != IntPtr.Zero && !_disposed;
     public string? UnavailableReason { get; private set; }
 
+    /// <summary>
+    /// True once the deferred first initialization has run. Init waits for the first capture
+    /// (RemEx-hmj), so until then <see cref="IsAvailable"/> is false without DXGI being broken, and
+    /// callers must not report it as unavailable (RemEx-61no2).
+    /// </summary>
+    public bool HasProbed => _initialized;
+
     // ── HRESULT constants ─────────────────────────────────────────────────────
     private const int S_OK                              = 0;
     private const int DXGI_ERROR_WAIT_TIMEOUT           = unchecked((int)0x887A0027);
@@ -361,7 +368,9 @@ internal sealed class DxgiDesktopCapture : IDisposable
         catch (Exception ex)
         {
             UnavailableReason = ex.Message;
-            _logger.LogInformation(
+            // A warning: since the startup check stopped guessing (RemEx-61no2), this is the one place a
+            // real DXGI failure is reported.
+            _logger.LogWarning(
                 "DXGI Desktop Duplication unavailable ({Msg}). GDI capture will be used.", ex.Message);
             ReleaseAll();
         }

@@ -339,6 +339,19 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The splash screens on the PC and the phone now really draw "RemEx" in Victor Mono Bold. The
+  bundled font file was a saved web page with a `.ttf` name, so both apps quietly fell back to their
+  default font. It is now the official Victor Mono Bold (SIL Open Font License, included as
+  `OFL-VictorMono.txt`), and a test checks that every bundled font file really is a font.
+  (RemEx-9ufs2)
+- The PC no longer warns "DXGI unavailable" and "remote desktop capture degraded" every time it
+  starts. Fast screen capture is only switched on when the first capture is needed, and the startup
+  check read "not switched on yet" as "broken", even on PCs where it works fine. RemEx now reports a
+  problem only after a real attempt fails, and that real failure is logged as a warning instead of
+  being hidden among the false ones. (RemEx-61no2)
+- Installing a RemEx update no longer turns "Launch RemEx when you sign in" back on after you turned
+  it off in Settings. Setup now notices it was off, leaves the box unticked, and on a silent update
+  keeps it off. A first install still turns it on by default. (RemEx-q0j7)
 - The phone app's on-device UI tests (`app/src/androidTest`) can run again. They targeted the
   minified release build, which strips the code they call and never declares the activity the
   Compose test rule opens, so none of them could launch. They now run against a new `instrumented`

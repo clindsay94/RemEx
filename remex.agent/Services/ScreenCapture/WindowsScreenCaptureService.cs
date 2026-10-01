@@ -101,6 +101,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 _dxgi.Width,
                 _dxgi.Height);
         }
+        else if (!_dxgi.HasProbed)
+        {
+            // Init is deferred to the first capture (RemEx-hmj), so "not available yet" is not a failure.
+            // This used to warn on every launch, even where DXGI works (RemEx-61no2). A real failure is
+            // logged as a warning by DxgiDesktopCapture when the probe runs.
+            _logger.LogInformation("DXGI Desktop Duplication deferred until the first capture.");
+        }
         else
         {
             _logger.LogWarning("DXGI Desktop Duplication unavailable — falling back to GDI CopyFromScreen. Windows Terminal focus bug may occur.");
@@ -236,6 +243,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
     public bool IsDxgiAvailable => _dxgi.IsAvailable;
+    public bool HasDxgiProbed => _dxgi.HasProbed;
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
 
