@@ -129,7 +129,6 @@ namespace Remex.Desktop.Localization {
         public static string Canvas_NewSensors => ResourceManager.GetString("Canvas_NewSensors", resourceCulture)!;
         public static string Canvas_AddCard => ResourceManager.GetString("Canvas_AddCard", resourceCulture)!;
         public static string Canvas_Save => ResourceManager.GetString("Canvas_Save", resourceCulture)!;
-        public static string Canvas_Sync => ResourceManager.GetString("Canvas_Sync", resourceCulture)!;
         public static string Canvas_Sensors => ResourceManager.GetString("Canvas_Sensors", resourceCulture)!;
         public static string Canvas_Ping => ResourceManager.GetString("Canvas_Ping", resourceCulture)!;
         public static string Canvas_CancelConnect => ResourceManager.GetString("Canvas_CancelConnect", resourceCulture)!;

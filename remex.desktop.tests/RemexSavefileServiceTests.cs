@@ -17,8 +17,7 @@ namespace Remex.Desktop.Tests;
 /// <see cref="DashboardLayoutService"/> and <see cref="FileTransferRootSettingsService"/> always
 /// resolve fixed, machine-wide storage paths (see <c>RemexDataPaths</c>) and have no
 /// test-friendly path override, unlike <see cref="LauncherStorageService"/> (which accepts a
-/// storage folder in its constructor) and <see cref="IDashboardProfileStorageService"/> (an
-/// interface, faked below). To avoid a unit test ever touching a developer's real
+/// storage folder in its constructor). To avoid a unit test ever touching a developer's real
 /// <c>dashboard_layout.json</c> / <c>file_transfer_roots.json</c> / <c>RemEx Transfers</c> folder,
 /// every test below either (a) leaves the DashboardLayout/FileTransferRoots sections absent from
 /// the savefile under test, so <see cref="RemexSavefileService.ImportAsync"/> never calls into
@@ -59,13 +58,12 @@ public sealed class RemexSavefileServiceTests : IDisposable
 
     /// <summary>
     /// Builds a real <see cref="RemexSavefileService"/> whose <see cref="ILauncherStorageService"/>
-    /// is redirected to a temp folder and whose <see cref="IDashboardProfileStorageService"/> is a
-    /// fake — the only two dependencies that support test isolation. The remaining two
+    /// is redirected to a temp folder — the only dependency that supports test isolation. The remaining two
     /// dependencies (<see cref="DashboardLayoutService"/>, <see cref="FileTransferRootSettingsService"/>)
     /// are real instances bound to the real machine-wide paths; safe to construct (no I/O happens
     /// in their constructors) as long as tests never populate the corresponding savefile sections.
     /// </summary>
-    private RemexSavefileService CreateService(string launcherDir, IDashboardProfileStorageService? hostStorage = null)
+    private RemexSavefileService CreateService(string launcherDir)
     {
         var layoutService = new DashboardLayoutService(new ThemeService());
         _layoutServices.Add(layoutService);
@@ -73,8 +71,7 @@ public sealed class RemexSavefileServiceTests : IDisposable
         return new RemexSavefileService(
             layoutService,
             new LauncherStorageService(launcherDir),
-            new FileTransferRootSettingsService(),
-            hostStorage ?? new FakeDashboardProfileStorageService());
+            new FileTransferRootSettingsService());
     }
 
     [Fact]
@@ -120,7 +117,6 @@ public sealed class RemexSavefileServiceTests : IDisposable
         Assert.Contains(nameof(RemexSavefileSections.Launchers), result.AppliedSections);
         Assert.Contains(nameof(RemexSavefileSections.DashboardLayout), result.SkippedSections);
         Assert.Contains(nameof(RemexSavefileSections.FileTransferRoots), result.SkippedSections);
-        Assert.Contains(nameof(RemexSavefileSections.HostDashboardLayout), result.SkippedSections);
         Assert.Empty(result.Warnings);
 
         var reloaded = await new LauncherStorageService(launcherDir).LoadEntriesAsync();
@@ -233,13 +229,13 @@ public sealed class RemexSavefileServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportAsync_IgnoresUnknownProperties_AndSkipsMissingLaunchers_WhileApplyingPresentSections()
+    public async Task ImportAsync_IgnoresUnknownAndRetiredSections_AndSkipsMissingOnes()
     {
         var launcherDir = CreateTempDir();
-        var hostStorage = new FakeDashboardProfileStorageService();
-
         // "launchers" is entirely absent from "sections" (missing, not just null), and the
         // top-level document carries an unrecognized property that must be silently ignored.
+        // "hostDashboardLayout" is the section older versions exported (retired in RemEx-sydzo): an
+        // old savefile must still import, with that section ignored rather than failing.
         var json = /*lang=json,strict*/
             """
             {
@@ -256,19 +252,15 @@ public sealed class RemexSavefileServiceTests : IDisposable
             """;
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
-        var service = CreateService(launcherDir, hostStorage);
+        var service = CreateService(launcherDir);
 
         var result = await service.ImportAsync(stream);
 
-        Assert.Contains(nameof(RemexSavefileSections.HostDashboardLayout), result.AppliedSections);
+        Assert.Empty(result.AppliedSections);
         Assert.Contains(nameof(RemexSavefileSections.Launchers), result.SkippedSections);
         Assert.Contains(nameof(RemexSavefileSections.FileTransferRoots), result.SkippedSections);
         Assert.Contains(nameof(RemexSavefileSections.DashboardLayout), result.SkippedSections);
         Assert.Empty(result.Warnings);
-
-        Assert.NotNull(hostStorage.SavedProfile);
-        Assert.Equal("Host Profile", hostStorage.SavedProfile!.ProfileName);
-        Assert.Equal("fr", hostStorage.SavedProfile!.Language);
     }
 
     [Fact]
@@ -315,25 +307,5 @@ public sealed class RemexSavefileServiceTests : IDisposable
         RemexSavefileService.PruneSnapshots(dir, keep: 5);
 
         Assert.Equal(2, Directory.GetFiles(dir, "autosave-*.remexsave").Length);
-    }
-
-    private sealed class FakeDashboardProfileStorageService : IDashboardProfileStorageService
-    {
-        private readonly DashboardProfile _profile;
-
-        public FakeDashboardProfileStorageService(DashboardProfile? profile = null)
-        {
-            _profile = profile ?? new DashboardProfile();
-        }
-
-        public DashboardProfile? SavedProfile { get; private set; }
-
-        public Task<DashboardProfile> LoadProfileAsync() => Task.FromResult(_profile);
-
-        public Task SaveProfileAsync(DashboardProfile profile)
-        {
-            SavedProfile = profile;
-            return Task.CompletedTask;
-        }
     }
 }

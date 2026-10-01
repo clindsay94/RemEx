@@ -277,8 +277,7 @@ public class PairedDeviceUnpairTests : IDisposable
         var savefile = new RemexSavefileService(
             _layoutService = new DashboardLayoutService(new ThemeService()),
             Mock.Of<ILauncherStorageService>(),
-            new FileTransferRootSettingsService(),
-            Mock.Of<IDashboardProfileStorageService>());
+            new FileTransferRootSettingsService());
 
         return new SettingsViewModel(
             null!, new ConnectionViewModel(), null!, null!, savefile,

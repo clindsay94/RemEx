@@ -43,7 +43,6 @@ public class ClipboardPushHandlerTests
             Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),
             Mock.Of<ILauncherStorageService>(),
             Mock.Of<IAppLauncherService>(),
-            Mock.Of<IDashboardProfileStorageService>(),
             Mock.Of<IProcessMonitorService>(),
             Mock.Of<Remex.Agent.Services.IHostCapabilitiesProvider>(),
             Mock.Of<IInputSimulationService>(),

@@ -341,9 +341,6 @@
   <data name="Canvas_Save" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="Canvas_Sync" xml:space="preserve">
-    <value>Sync</value>
-  </data>
   <data name="Canvas_Sensors" xml:space="preserve">
     <value>Sensors ({0})</value>
   </data>

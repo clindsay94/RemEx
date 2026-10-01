@@ -241,7 +241,7 @@ public static class RemexJson
         // Review round 1 LOW: Utf8JsonWriter's OWN JsonWriterOptions.Encoder decides escaping here,
         // NOT typeInfo.Options.Encoder - a caller passing RemexJsonSerializerContext.Relaxed for a
         // relaxed encoding would otherwise get Default's escaping anyway, silently. Threading it
-        // through is what makes the swap at DashboardProfileStorageService.cs actually do something.
+        // through is what makes passing a Relaxed typeInfo actually do something.
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = typeInfo.Options.Encoder });
         JsonSerializer.Serialize(writer, value, typeInfo);
         writer.Flush();

@@ -130,8 +130,7 @@ public sealed class HostStateRedirectionTests
         var service = new RemexSavefileService(
             layoutService,
             Mock.Of<ILauncherStorageService>(),
-            new FileTransferRootSettingsService(),
-            Mock.Of<IDashboardProfileStorageService>());
+            new FileTransferRootSettingsService());
 
         AssertRedirected(service.BackupsDirectory, "The savefile backups directory");
     }
@@ -160,7 +159,7 @@ public sealed class HostStateRedirectionTests
     }
 
     /// <summary>
-    /// The two stores with no path seam still collect their abandoned staging copies (RemEx-azh2u).
+    /// The store with no path seam still collects its abandoned staging copies (the host dashboard store was removed in RemEx-sydzo) (RemEx-azh2u).
     /// </summary>
     /// <remarks>
     /// RemEx-njzcx wired the sweep into all eight remaining stores and guarded six; these two take no
@@ -171,7 +170,6 @@ public sealed class HostStateRedirectionTests
     /// constructor finds it.
     /// </remarks>
     [Theory]
-    [InlineData("host_dashboard_layout.json")]
     [InlineData("file_transfer_roots.json")]
     public void TheSeamlessStoresCollectTheirAbandonedStagingCopies(string storeFileName)
     {
@@ -187,8 +185,7 @@ public sealed class HostStateRedirectionTests
         // is an in-flight write, and deleting one breaks that writer on Linux.
         File.SetLastWriteTimeUtc(orphan, DateTime.UtcNow.AddHours(-1));
 
-        if (storeFileName == "host_dashboard_layout.json") _ = new DashboardProfileStorageService();
-        else _ = new FileTransferRootSettingsService();
+        _ = new FileTransferRootSettingsService();
 
         Assert.False(File.Exists(orphan), $"{storeFileName}'s store walked past an abandoned copy of itself");
     }

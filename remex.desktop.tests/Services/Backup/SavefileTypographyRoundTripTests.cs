@@ -59,8 +59,7 @@ public sealed class SavefileTypographyRoundTripTests : IDisposable
     private RemexSavefileService CreateSavefileService(DashboardLayoutService layoutService) => new(
         layoutService,
         new LauncherStorageService(CreateTempDir()),
-        new FileTransferRootSettingsService(),
-        new FakeDashboardProfileStorageService());
+        new FileTransferRootSettingsService());
 
     [Fact]
     public async Task ExportThenImport_RoundTripsTypography_IntoAFreshDashboardProfile()
@@ -112,11 +111,5 @@ public sealed class SavefileTypographyRoundTripTests : IDisposable
 
         var back = JsonSerializer.Deserialize<RemexSavefile>(json, RemexSavefileService.JsonOptions);
         back!.Sections.DashboardLayout!.Customization.Typography.Should().Be(Tuned);
-    }
-
-    private sealed class FakeDashboardProfileStorageService : IDashboardProfileStorageService
-    {
-        public Task<DashboardProfile> LoadProfileAsync() => Task.FromResult(new DashboardProfile());
-        public Task SaveProfileAsync(DashboardProfile profile) => Task.CompletedTask;
     }
 }

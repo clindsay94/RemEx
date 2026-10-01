@@ -60,8 +60,8 @@ public sealed class RemexSavefileSections
     /// <summary>Configured File Transfer shared folder roots — same shape as <c>file_transfer_roots.json</c>.</summary>
     public List<FileTransferRootConfiguration>? FileTransferRoots { get; set; }
 
-    /// <summary>The host-side dashboard profile — same shape as <c>host_dashboard_layout.json</c>.</summary>
-    public DashboardProfile? HostDashboardLayout { get; set; }
+    // Older savefiles also carry "hostDashboardLayout", the host's mirror of the dashboard layout.
+    // The mirror was removed (RemEx-sydzo); import ignores that section like any unknown property.
 }
 
 /// <summary>

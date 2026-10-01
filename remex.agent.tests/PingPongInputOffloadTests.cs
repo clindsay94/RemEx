@@ -196,7 +196,6 @@ public class PingPongInputOffloadTests
         Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),
         Mock.Of<ILauncherStorageService>(),
         Mock.Of<IAppLauncherService>(),
-        Mock.Of<IDashboardProfileStorageService>(),
         Mock.Of<IProcessMonitorService>(),
         Mock.Of<IHostCapabilitiesProvider>(),
         input,

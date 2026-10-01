@@ -26,7 +26,7 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// <remarks>
 /// <see cref="DashboardLayoutService.RequestSave"/> assigns
 /// <see cref="DashboardLayoutService.CurrentProfile"/> SYNCHRONOUSLY (only the write to disk is
-/// debounced — see its own remarks and <c>CanvasDashboardViewModelLayoutSyncTests</c>), so the
+/// debounced — see its own remarks and <c>CanvasDashboardViewModelApplyProfileAlertSeedTests</c>), so the
 /// corruption this test guards against is observable on <c>CurrentProfile</c> immediately after
 /// <see cref="CanvasDashboardViewModel.InitializeAsync"/> returns, with no need to force a flush.
 /// </remarks>
@@ -43,7 +43,7 @@ public sealed class CanvasDashboardViewModelAlertLoadSaveTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // SYNCHRONOUS DISPATCH, same reason as CanvasDashboardViewModelLayoutSyncTests: this assembly
+        // SYNCHRONOUS DISPATCH, same reason as CanvasDashboardViewModelApplyProfileAlertSeedTests: this assembly
         // has no Avalonia.Headless reference, so nothing drains a real posted callback.
         _theme = new ThemeService { PostToUiThread = action => action() };
         _layoutService = new DashboardLayoutService(Path.Combine(_tempDir, "dashboard_layout.json"), _theme);

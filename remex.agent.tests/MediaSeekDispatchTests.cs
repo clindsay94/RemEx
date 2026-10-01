@@ -143,7 +143,7 @@ public class MediaSeekDispatchTests
     /// </summary>
     /// <remarks>
     /// COMPARED AGAINST A CONNECTION THAT SENT NO SEEK, not against zero: every connection is greeted
-    /// with host_info, launcher_sync and layout_sync before the receive loop starts, so "empty" is
+    /// with host_info and launcher_sync before the receive loop starts, so "empty" is
     /// the wrong bar and would have to be updated by anyone who adds a greeting. What is being pinned
     /// is that a seek adds nothing — an equal message list is the only form of that claim which
     /// survives the greeting changing.
@@ -185,7 +185,6 @@ public class MediaSeekDispatchTests
             Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),
             Mock.Of<ILauncherStorageService>(),
             Mock.Of<IAppLauncherService>(),
-            Mock.Of<IDashboardProfileStorageService>(),
             Mock.Of<IProcessMonitorService>(),
             Mock.Of<IHostCapabilitiesProvider>(),
             Mock.Of<IInputSimulationService>(),

@@ -85,12 +85,11 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
         return service;
     }
 
-    private RemexSavefileService CreateSavefileService(DashboardLayoutService layoutService, IDashboardProfileStorageService? hostStorage = null)
+    private RemexSavefileService CreateSavefileService(DashboardLayoutService layoutService)
         => new(
             layoutService,
             new LauncherStorageService(CreateTempDir()),
-            new FileTransferRootSettingsService(),
-            hostStorage ?? new FakeDashboardProfileStorageService());
+            new FileTransferRootSettingsService());
 
     private static SensorAlert AboveCritical(string sensorName) => new()
     {
@@ -232,25 +231,5 @@ public sealed class SavefileSensorAlertsRoundTripTests : IDisposable
             "ReloadFromPersistedLayout -> ApplyProfile path, without requiring an app restart");
         vm2.Cards.Should().Contain(c => c.CardType == "Connection" && c.CardId == "connection-card",
             "the non-sensor card must be restored again on the no-restart reload path too");
-    }
-
-    private sealed class FakeDashboardProfileStorageService : IDashboardProfileStorageService
-    {
-        private readonly DashboardProfile _profile;
-
-        public FakeDashboardProfileStorageService(DashboardProfile? profile = null)
-        {
-            _profile = profile ?? new DashboardProfile();
-        }
-
-        public DashboardProfile? SavedProfile { get; private set; }
-
-        public Task<DashboardProfile> LoadProfileAsync() => Task.FromResult(_profile);
-
-        public Task SaveProfileAsync(DashboardProfile profile)
-        {
-            SavedProfile = profile;
-            return Task.CompletedTask;
-        }
     }
 }

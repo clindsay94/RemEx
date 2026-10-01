@@ -493,8 +493,7 @@ public class DestructiveActionFailClosedTests : IDisposable
         var savefile = new RemexSavefileService(
             _layoutService = new DashboardLayoutService(new ThemeService()),
             new FakeLauncherStorage(),
-            new FileTransferRootSettingsService(),
-            Mock.Of<IDashboardProfileStorageService>());
+            new FileTransferRootSettingsService());
 
         var vm = new SettingsViewModel(
             null!, new ConnectionViewModel(), null!, null!, savefile,

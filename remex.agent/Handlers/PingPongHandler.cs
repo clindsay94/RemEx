@@ -27,7 +27,6 @@ public sealed class PingPongHandler(
     Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService,
     Remex.Core.Services.ILauncherStorageService launcherStorage,
     Remex.Core.Services.IAppLauncherService appLauncherService,
-    Remex.Core.Services.IDashboardProfileStorageService profileStorage,
     Remex.Core.Services.IProcessMonitorService processMonitorService,
     IHostCapabilitiesProvider hostCapabilitiesProvider,
     IInputSimulationService inputSimulation,
@@ -160,26 +159,6 @@ public sealed class PingPongHandler(
         catch (System.Text.Json.JsonException ex)
         {
             logger.LogWarning(ex, "Failed to sync launchers on connect (JSON error).");
-        }
-
-        // Sync layout on connect
-        try
-        {
-            var profile = await profileStorage.LoadProfileAsync();
-            var syncMsg = new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = profile };
-            await MessageSerializer.SendAsync(webSocket, syncMsg, ct);
-        }
-        catch (IOException ex)
-        {
-            logger.LogWarning(ex, "Failed to sync layout on connect (I/O error).");
-        }
-        catch (WebSocketException ex)
-        {
-            logger.LogWarning(ex, "Failed to sync layout on connect (WebSocket error).");
-        }
-        catch (System.Text.Json.JsonException ex)
-        {
-            logger.LogWarning(ex, "Failed to sync layout on connect (JSON error).");
         }
 
         // Start background telemetry stream — but NOT for the PC's own UI. That connection is this
@@ -514,7 +493,7 @@ public sealed class PingPongHandler(
                     // The read counterpart to the three mutating launcher types above, and the only
                     // launcher message Android sends (pull-to-refresh on the App Launcher screen).
                     // Deliberately not loopback-gated: re-reading a list the host already pushes on
-                    // connect grants nothing extra. Mirrors LayoutRequest → LayoutSync below.
+                    // connect grants nothing extra.
                     case MessageTypes.LauncherSyncRequest:
                         var reqEntries = await launcherStorage.LoadEntriesAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = reqEntries }, ct);
@@ -543,17 +522,6 @@ public sealed class PingPongHandler(
                             procs = procs.ConvertAll(static p => p.ToSlim());
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
                         break;
-                    case MessageTypes.LayoutUpdate when message.DashboardProfile is not null:
-                        await profileStorage.SaveProfileAsync(message.DashboardProfile);
-                        logger.LogInformation("Dashboard layout updated from client.");
-                        break;
-
-                    case MessageTypes.LayoutRequest:
-                        var reqProfile = await profileStorage.LoadProfileAsync();
-                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = reqProfile }, ct);
-                        logger.LogInformation("Dashboard layout sent to client on request.");
-                        break;
-
                     case MessageTypes.DesktopInput when message.InputEvent is not null:
                         if (!inputQueue.TryAdd(message.InputEvent))
                         {

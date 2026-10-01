@@ -199,7 +199,7 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
     }
 
     /// <summary>
-    /// The four stores this bead named write through the helper rather than over the live file.
+    /// The stores this bead named (minus the host dashboard store, removed in RemEx-sydzo) write through the helper rather than over the live file.
     /// </summary>
     /// <remarks>
     /// NAMED FILES, NOT A REPO-WIDE BAN ON File.WriteAllText (RemEx-fqzp). Plenty of writes are
@@ -208,7 +208,6 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
     /// (RemEx-dnn2q). This is a regression guard on four specific stores, which is what the bead is.
     /// </remarks>
     [Theory]
-    [InlineData("remex.core/Services/DashboardProfileStorageService.cs", "_filePath", "WriteAllTextAtomicAsync")]
     [InlineData("remex.desktop/Services/FileTransfer/FileTransferRootSettingsService.cs", "_configPath", "WriteAllTextAtomicAsync")]
     [InlineData("remex.agent/Services/FileTransfer/FileTransferService.cs", "_configPath", "WriteAllTextAtomic")]
     [InlineData("remex.agent/Services/Session/SessionGuardSettings.cs", "FlagPath", "WriteAllTextAtomic")]

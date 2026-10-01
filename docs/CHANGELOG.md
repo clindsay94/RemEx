@@ -182,6 +182,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **The dashboard's Sync button is gone, along with the host's extra copy of your layout.** The button pulled a
+  second copy of the dashboard layout that the PC kept in `host_dashboard_layout.json`, but only this PC ever
+  wrote that copy, so at best it matched your own layout and at worst it was an older one. Your layout still
+  loads from and saves to your own `dashboard_layout.json` exactly as before. The `layout_sync`,
+  `layout_request` and `layout_update` messages are removed, and exports no longer include a host layout
+  section; older savefiles that have one still import, with that section ignored. (RemEx-sydzo)
 - Agent instructions are one file now. `AGENTS.md` and the root `CLAUDE.md` were merged into
   `.claude/CLAUDE.md`, with the generated gitnexus, beads and auto-memory blocks dropped along with
   the precedence table that existed only to overrule them, and a stale architecture map (it still

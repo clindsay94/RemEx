@@ -57,7 +57,6 @@ public sealed class RemexSavefileService : IDisposable
     private readonly DashboardLayoutService _layoutService;
     private readonly ILauncherStorageService _launcherStorage;
     private readonly FileTransferRootSettingsService _fileTransferRootSettings;
-    private readonly IDashboardProfileStorageService _hostProfileStorage;
     private readonly object _timerGate = new();
     private Timer? _snapshotTimer;
     private bool _disposed;
@@ -68,13 +67,11 @@ public sealed class RemexSavefileService : IDisposable
     public RemexSavefileService(
         DashboardLayoutService layoutService,
         ILauncherStorageService launcherStorage,
-        FileTransferRootSettingsService fileTransferRootSettings,
-        IDashboardProfileStorageService hostProfileStorage)
+        FileTransferRootSettingsService fileTransferRootSettings)
     {
         _layoutService = Guard.NotNull(layoutService);
         _launcherStorage = Guard.NotNull(launcherStorage);
         _fileTransferRootSettings = Guard.NotNull(fileTransferRootSettings);
-        _hostProfileStorage = Guard.NotNull(hostProfileStorage);
 
         // THROUGH RemexDataPaths, NOT SpecialFolder DIRECTLY (RemEx-mz9f). This was the fifth
         // per-user store, missed by RemEx-ln0k's list of four, and the auto-snapshot path writes
@@ -85,7 +82,7 @@ public sealed class RemexSavefileService : IDisposable
         BackupsDirectory = Path.Combine(RemexDataPaths.PerUserDirectory, "backups");
     }
 
-    /// <summary>Reads all four sections from their live storage services and assembles a savefile envelope.</summary>
+    /// <summary>Reads all three sections from their live storage services and assembles a savefile envelope.</summary>
     public async Task<RemexSavefile> BuildSavefileAsync(string kind)
     {
         // LoadAsync, DELIBERATELY NOT ReloadAsync (RemEx-waqb4 review, HIGH). This is a read for a
@@ -97,7 +94,6 @@ public sealed class RemexSavefileService : IDisposable
         var dashboardLayout = await _layoutService.LoadAsync();
         var launchers = await _launcherStorage.LoadEntriesAsync();
         var fileTransferRoots = await _fileTransferRootSettings.LoadAsync();
-        var hostDashboardLayout = await _hostProfileStorage.LoadProfileAsync();
 
         return new RemexSavefile
         {
@@ -111,7 +107,6 @@ public sealed class RemexSavefileService : IDisposable
                 DashboardLayout = dashboardLayout,
                 Launchers = launchers,
                 FileTransferRoots = fileTransferRoots.ToList(),
-                HostDashboardLayout = hostDashboardLayout,
             },
         };
     }
@@ -148,7 +143,6 @@ public sealed class RemexSavefileService : IDisposable
 
         await ImportLaunchersAsync(sections.Launchers, applied, skipped, warnings);
         await ImportFileTransferRootsAsync(sections.FileTransferRoots, applied, skipped, warnings);
-        await ImportHostDashboardLayoutAsync(sections.HostDashboardLayout, applied, skipped, warnings);
 
         // Dashboard layout is applied LAST: loading it re-applies the live theme and language.
         await ImportDashboardLayoutAsync(sections.DashboardLayout, applied, skipped, warnings);
@@ -212,25 +206,6 @@ public sealed class RemexSavefileService : IDisposable
         catch (Exception ex)
         {
             warnings.Add($"Shared folders could not be imported: {ex.Message}");
-        }
-    }
-
-    private async Task ImportHostDashboardLayoutAsync(Core.Models.DashboardProfile? hostProfile, List<string> applied, List<string> skipped, List<string> warnings)
-    {
-        if (hostProfile is null)
-        {
-            skipped.Add(nameof(RemexSavefileSections.HostDashboardLayout));
-            return;
-        }
-
-        try
-        {
-            await _hostProfileStorage.SaveProfileAsync(hostProfile);
-            applied.Add(nameof(RemexSavefileSections.HostDashboardLayout));
-        }
-        catch (Exception ex)
-        {
-            warnings.Add($"Host dashboard layout could not be imported: {ex.Message}");
         }
     }
 

@@ -295,7 +295,7 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
 
         await MessageSerializer.SendAsync(ws, malformedRequest, CancellationToken.None);
 
-        // The server emits host_info / launcher_sync / layout_sync proactively on connect,
+        // The server emits host_info / launcher_sync proactively on connect,
         // before any handshake response, so drain until the PairingError (or PairingResponse,
         // which would mean the fix failed and DeriveSessionKeyAsync didn't throw).
         RemexMessage? response = null;
@@ -536,11 +536,11 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
             // Round-trip anything: once the host answers this, it has finished with the proof.
             await MessageSerializer.SendAsync(ws, new RemexMessage
             {
-                Type = MessageTypes.LayoutRequest,
+                Type = MessageTypes.ProcessListRequest,
                 ClientId = clientId,
                 CorrelationId = "reconnect-name-sync",
             }, CancellationToken.None);
-            Assert.NotNull(await ReceiveOfTypeAsync(ws, MessageTypes.LayoutSync));
+            Assert.NotNull(await ReceiveOfTypeAsync(ws, MessageTypes.ProcessListSync));
 
             // The ONLY session now is the reconnected one, and it never heard the name over the
             // wire — it can only have come from the store.
@@ -994,18 +994,18 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
 
         var wsClient = nonLoopbackFactory.Server.CreateWebSocketClient();
 
-        // 2. Step A: Connect as unpaired, send LayoutRequest, and verify rejection
+        // 2. Step A: Connect as unpaired, send ProcessListRequest, and verify rejection
         using (var wsUnpaired = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
         {
             var unpairedRequest = new RemexMessage
             {
-                Type = MessageTypes.LayoutRequest,
+                Type = MessageTypes.ProcessListRequest,
                 CorrelationId = "unpaired-req-id"
             };
             await MessageSerializer.SendAsync(wsUnpaired, unpairedRequest, CancellationToken.None);
 
             RemexMessage? response = null;
-            // Loop because host sends host_info, launcher_sync, layout_sync on connect
+            // Loop because host sends host_info, launcher_sync on connect
             for (int i = 0; i < 10; i++)
             {
                 var msg = await MessageSerializer.ReceiveAsync(wsUnpaired, CancellationToken.None);
@@ -1020,6 +1020,9 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
             Assert.False(response!.CommandSuccess);
             Assert.Contains("Pairing required", response.CommandMessage);
         }
+
+        // Step B's session key doubles as the reconnect secret Step C proves possession of.
+        byte[] reconnectSecret = [];
 
         // 3. Step B: Perform a full pairing handshake
         using (var wsPairing = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
@@ -1071,6 +1074,8 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
                 salt: certSpkiHash,
                 info: System.Text.Encoding.UTF8.GetBytes("remex-pair-v1"));
 
+            reconnectSecret = clientSessionKey;
+
             // Compute the ack HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
             var clientHmac = Convert.ToBase64String(
                 HMACSHA256.HashData(clientSessionKey, System.Text.Encoding.UTF8.GetBytes("ack:" + activePin)));
@@ -1103,42 +1108,67 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyn
             Assert.Equal("Pairing verified.", completeResponse.CommandMessage);
         }
 
-        // 4. Step C: Open a second socket with the same ClientId and verify that LayoutRequest succeeds
+        // 4. Step C: Open a second socket with the same ClientId and verify that ProcessListRequest succeeds
+        // (PAIR-1: a bare ClientId does not authenticate, so the socket answers the reconnect challenge
+        // first. The old version of this step "passed" on a layout greeting every connection got,
+        // whether or not its request was let through.)
         using (var wsSecond = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
         {
-            var layoutRequest = new RemexMessage
+            await MessageSerializer.SendAsync(
+                wsSecond, new RemexMessage { Type = MessageTypes.Ping, ClientId = "integration-test-client-1" }, CancellationToken.None);
+            var challenge = await ReceiveOfTypeAsync(wsSecond, MessageTypes.ReconnectChallenge);
+            Assert.NotNull(challenge?.ReconnectChallenge);
+            await MessageSerializer.SendAsync(wsSecond, new RemexMessage
             {
-                Type = MessageTypes.LayoutRequest,
+                Type = MessageTypes.ReconnectProof,
+                ClientId = "integration-test-client-1",
+                ReconnectProof = new ReconnectProof
+                {
+                    ClientId = "integration-test-client-1",
+                    ProofHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        reconnectSecret,
+                        Convert.FromBase64String(challenge!.ReconnectChallenge!.NonceBase64))),
+                },
+            }, CancellationToken.None);
+
+            var processListRequest = new RemexMessage
+            {
+                Type = MessageTypes.ProcessListRequest,
                 ClientId = "integration-test-client-1",
                 CorrelationId = "paired-req-id"
             };
-            await MessageSerializer.SendAsync(wsSecond, layoutRequest, CancellationToken.None);
+            await MessageSerializer.SendAsync(wsSecond, processListRequest, CancellationToken.None);
 
+            // A wider window than the other loops: this authenticated non-loopback socket gets
+            // telemetry pushes while the host enumerates processes.
             RemexMessage? response = null;
-            for (int i = 0; i < 10; i++)
+            var seen = new List<string?>();
+            for (int i = 0; i < 64; i++)
             {
                 var msg = await MessageSerializer.ReceiveAsync(wsSecond, CancellationToken.None);
-                if (msg?.Type == MessageTypes.LayoutSync)
+                seen.Add(msg?.Type);
+                if (msg is null) break;
+                if (msg.Type == MessageTypes.ProcessListSync)
                 {
                     response = msg;
                     break;
                 }
             }
 
-            Assert.NotNull(response);
-            Assert.NotNull(response!.DashboardProfile);
+            Assert.True(response is not null, "no process_list_sync; received: " + string.Join(", ", seen));
+            Assert.NotNull(response!.ProcessList);
         }
 
-        // 5. Step D: Open a third socket with a different ClientId and verify that LayoutRequest is rejected
+        // 5. Step D: Open a third socket with a different ClientId and verify that ProcessListRequest is rejected
         using (var wsThird = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
         {
-            var layoutRequest = new RemexMessage
+            var processListRequest = new RemexMessage
             {
-                Type = MessageTypes.LayoutRequest,
+                Type = MessageTypes.ProcessListRequest,
                 ClientId = "integration-test-client-2",
                 CorrelationId = "unregistered-req-id"
             };
-            await MessageSerializer.SendAsync(wsThird, layoutRequest, CancellationToken.None);
+            await MessageSerializer.SendAsync(wsThird, processListRequest, CancellationToken.None);
 
             RemexMessage? response = null;
             for (int i = 0; i < 10; i++)

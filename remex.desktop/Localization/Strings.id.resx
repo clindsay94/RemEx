@@ -323,9 +323,6 @@
   <data name="Canvas_Save" xml:space="preserve">
     <value>Simpan</value>
   </data>
-  <data name="Canvas_Sync" xml:space="preserve">
-    <value>Sinkronisasi</value>
-  </data>
   <data name="Canvas_Sensors" xml:space="preserve">
     <value>Sensor ({0})</value>
   </data>

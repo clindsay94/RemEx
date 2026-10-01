@@ -6,12 +6,10 @@ namespace Remex.Core.Models;
 /// </summary>
 /// <remarks>
 /// A <see cref="CardState.CardTheme"/> of <c>null</c> means "this source carries no colour
-/// information". On 2026-09-13 a theme-less profile reached the PC on <c>LayoutSync</c> and was
-/// written verbatim over the per-user file's presets; the writer that produced that theme-less copy
-/// in the host store has not been identified (the phone never sends a layout, and the PC's own
-/// <c>LayoutUpdate</c> carries themes), so every place a layout is written over one that may carry
-/// themes now merges instead: the host store on <c>LayoutUpdate</c>, and the PC's per-user file when
-/// a sync lands. A card is matched by <see cref="CardState.CardId"/> first and by
+/// information". On 2026-09-13 a theme-less profile reached the PC from the host's own layout copy
+/// and was written verbatim over the per-user file's presets. That copy and its sync were removed
+/// (RemEx-sydzo), but an older savefile can still carry theme-less cards, so the PC's per-user file
+/// merges whenever a layout is applied over one that may carry themes. A card is matched by <see cref="CardState.CardId"/> first and by
 /// <see cref="CardState.SensorId"/> as the fallback (a re-keyed card). No reflection, no JSON — safe
 /// for the NativeAOT core. <c>docs/REGRESSION-GUARDS.md</c> pins this.
 /// </remarks>

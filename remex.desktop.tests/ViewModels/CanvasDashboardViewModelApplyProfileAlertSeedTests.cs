@@ -19,16 +19,9 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// call site seeds, not just <c>FinishInitialize</c>'s local-load branch — see the two facts still
 /// named for that round below.
 ///
-/// Round 3 (HIGH) found the seed was still reading the wrong profile: <c>ApplyProfile</c> seeded from
-/// its <c>profile</c> parameter, but on two of its five call sites (<c>OnLayoutProfileReceivedAsync</c>
-/// and <c>FinishInitialize</c>'s pending-sync branch) that parameter is the CONNECTED HOST's own
-/// <c>DashboardProfile</c> — a different file from this device's per-user profile, and one that never
-/// carries alerts (RemEx-hmigd). <c>ApplyProfile</c>'s own trailing save layers only
-/// Cards/PinnedSensorIds/IsSnapToGridEnabled/GridSize onto the LOCAL profile and never carries
-/// SensorAlerts, so alerts are device-local by design — but the seed did not match that, so connecting
-/// to any host nulled every configured alert and the next card drag persisted the empty list to this
-/// device's own disk. The fix seeds from <c>_layoutService.CurrentProfile ?? profile</c> — the same
-/// source the trailing save resolves to — so a host sync can no longer touch this device's alerts.
+/// Round 3 (HIGH) covered the host layout sync, which handed <c>ApplyProfile</c> a host profile with no
+/// alerts. That sync was removed in RemEx-sydzo, and its two facts with it; the seed still reads
+/// <c>_layoutService.CurrentProfile ?? profile</c>, the same source the trailing save resolves to.
 /// </summary>
 public sealed class CanvasDashboardViewModelApplyProfileAlertSeedTests : IAsyncLifetime
 {
@@ -37,9 +30,6 @@ public sealed class CanvasDashboardViewModelApplyProfileAlertSeedTests : IAsyncL
 
     private static readonly MethodInfo ApplyProfileMethod =
         typeof(CanvasDashboardViewModel).GetMethod("ApplyProfile", BindingFlags.NonPublic | BindingFlags.Instance)!;
-
-    private static readonly FieldInfo PendingSyncProfileField =
-        typeof(CanvasDashboardViewModel).GetField("_pendingSyncProfile", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     private readonly string _tempDir = Directory.CreateTempSubdirectory("remex-8wpvr2-applyprofile-").FullName;
     private ThemeService _theme = null!;
@@ -100,61 +90,6 @@ public sealed class CanvasDashboardViewModelApplyProfileAlertSeedTests : IAsyncL
     {
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort cleanup */ }
         return Task.CompletedTask;
-    }
-
-    [Fact]
-    public async Task ApplyProfileFromAConnectedHostKeepsTheLocalAlertInsteadOfTheHostsEmptyOne()
-    {
-        // Finish local init the normal way, then materialize the sensor the local alert targets so
-        // HasAlert can actually be observed on a card, not just in the store.
-        var localProfile = await _layoutService.LoadAsync();
-        FinishInitializeMethod.Invoke(_vm, new object[] { localProfile });
-        _vm.ApplyTelemetry(Reading("CPU Package", 10));
-
-        var card = _vm.StagedCards.Single(c => c.Sensor?.Name == "CPU Package");
-        card.Sensor!.HasAlert.Should().BeTrue("the local profile's alert applies as soon as the sensor is seen");
-
-        // Simulate OnLayoutProfileReceivedAsync (CanvasDashboardViewModel.cs:508): the connected
-        // HOST's own DashboardProfile, whose host_dashboard_layout.json never carries alerts.
-        var hostProfile = _layoutService.CurrentProfile with { SensorAlerts = new List<SensorAlert>() };
-        ApplyProfileMethod.Invoke(_vm, new object[] { hostProfile });
-
-        // THE REGRESSION (round 3, HIGH): before the fix this ReplaceAll(empty) nulled every alert.
-        _alertStore.TryGet("CPU Package", out var seeded).Should().BeTrue(
-            "a host profile must never overwrite this device's own alerts — they are device-local by design");
-        seeded!.Threshold.Should().Be(90);
-        card.Sensor.HasAlert.Should().BeTrue("the card must keep reflecting the surviving local alert");
-
-        // A subsequent save (e.g. the next card drag) must still persist the local alert.
-        _vm.ApplySensorAlert("GPU Hotspot", new SensorAlert { SensorName = "GPU Hotspot", Threshold = 80, Direction = AlertDirection.Above });
-
-        _layoutService.CurrentProfile.SensorAlerts.Should().Contain(a => a.SensorName == "CPU Package",
-            "a save after a host sync must not have lost the device-local alert");
-    }
-
-    [Fact]
-    public async Task PendingHostSyncKeepsTheLocalAlertInsteadOfTheHostsEmptyOne()
-    {
-        // Simulate the race exactly the way OnLayoutProfileReceivedAsync/FinishInitialize handle it: a
-        // host profile lands in _pendingSyncProfile before _isInitialized flips true. The host profile
-        // carries no alerts, same as any real host_dashboard_layout.json.
-        var hostProfile = _layoutService.CurrentProfile with { SensorAlerts = new List<SensorAlert>() };
-        PendingSyncProfileField.SetValue(_vm, hostProfile);
-
-        var localProfile = await _layoutService.LoadAsync();
-        FinishInitializeMethod.Invoke(_vm, new object[] { localProfile });
-
-        // THE REGRESSION (round 3, HIGH): before the fix, the pending-sync branch's ApplyProfile call
-        // seeded from the pending HOST profile, nulling the local alert for the rest of the session.
-        _alertStore.TryGet("CPU Package", out var seeded).Should().BeTrue(
-            "FinishInitialize's pending-sync branch must keep the local alert, not the host's empty one");
-        seeded!.Threshold.Should().Be(90);
-
-        // A subsequent save (e.g. the next card drag) must not silently drop the local alert.
-        _vm.ApplySensorAlert("GPU Hotspot", new SensorAlert { SensorName = "GPU Hotspot", Threshold = 80, Direction = AlertDirection.Above });
-
-        _layoutService.CurrentProfile.SensorAlerts.Should().Contain(a => a.SensorName == "CPU Package",
-            "a save after a pending-sync init must not have lost the local alert");
     }
 
     [Fact]

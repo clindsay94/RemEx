@@ -33,7 +33,7 @@ public class ClipboardFetchHandlerTests
             Mock.Of<Remex.Core.Services.Command.ISystemCommandService>(),
             Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),
             Mock.Of<ILauncherStorageService>(), Mock.Of<IAppLauncherService>(),
-            Mock.Of<IDashboardProfileStorageService>(), Mock.Of<IProcessMonitorService>(),
+            Mock.Of<IProcessMonitorService>(),
             Mock.Of<Remex.Agent.Services.IHostCapabilitiesProvider>(),
             Mock.Of<IInputSimulationService>(),
             null!, null!, null!, null!, null!, null!,

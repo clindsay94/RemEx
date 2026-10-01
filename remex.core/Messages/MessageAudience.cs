@@ -30,10 +30,7 @@ namespace Remex.Core.Messages;
 /// **THIS RECORDS INTENT, AND IT WAS SEEDED FROM BEHAVIOUR, WHICH IS A REAL RISK.** The initial
 /// contents were derived by scanning who receives what today, so a receiver that is ALREADY missing
 /// would have been written down as though its absence were deliberate. Every entry was read against
-/// the feature it belongs to before it landed, and the one anomaly that surfaced — <c>layout_sync</c>
-/// reaching only the PC UI while every other sync type reaches both — was chased down rather than
-/// encoded: the phone keeps its own dashboard layout, never sends <c>layout_request</c>, and is
-/// genuinely not an audience for it. If a future reader finds an entry that contradicts a feature,
+/// the feature it belongs to before it landed. If a future reader finds an entry that contradicts a feature,
 /// the entry is the thing that is wrong.
 /// </para>
 /// <para>
@@ -108,7 +105,6 @@ public static class MessageAudience
         [MessageTypes.FileVolumesResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.HostInfo] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LauncherSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,
-        [MessageTypes.LayoutSync] = ClientSurface.PcUi,
         // The phone only, for the same reason as media_state below (RemEx-vtorl): the PC's UI shares
         // a process with the artwork store and would read the bytes by reference, and
         // PingPongHandler does not run this stream for a loopback connection at all. Declared here so

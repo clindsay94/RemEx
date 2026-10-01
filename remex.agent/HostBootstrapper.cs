@@ -241,7 +241,6 @@ public static class HostBootstrapper
             sp => sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
-        builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Agent.Services.AppLauncherService>();
         // IAppLauncherService backs both the remote "LaunchApp" WebSocket command and the desktop UI's
         // offline launch path (the UI resolves it in-process via EmbeddedHostServiceLocator). The old
@@ -663,7 +662,6 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),

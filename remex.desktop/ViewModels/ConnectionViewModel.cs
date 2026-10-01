@@ -671,7 +671,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
     public event Action<TelemetryPayload>? TelemetryReceived;
-    public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
     public event Action<System.Collections.Generic.List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
     public event Action<Remex.Core.Messages.RemexMessage>? FileTransferMessageReceived;
 
@@ -1306,31 +1305,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         }
     }
 
-    public async Task SendLayoutUpdateAsync(Remex.Core.Models.DashboardProfile profile)
-    {
-        if (_webSocket?.State != WebSocketState.Open) return;
-
-        try
-        {
-            var msg = new RemexMessage
-            {
-                Type = MessageTypes.LayoutUpdate,
-                DashboardProfile = profile,
-            };
-            await SendGuardedAsync(msg);
-        }
-        catch (WebSocketException ex)
-        {
-            _logger.LogWarning(ex, "Failed to send layout update to host");
-            Debug.WriteLine($"Failed to send layout update: {ex.Message}");
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Invalid operation sending layout update");
-            Debug.WriteLine($"Failed to send layout update: {ex.Message}");
-        }
-    }
-
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         try
@@ -1389,10 +1363,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
                     case MessageTypes.HostInfo when message.HostCapabilities is not null:
                         Dispatcher.UIThread.Post(() => HostCapabilities = message.HostCapabilities);
-                        break;
-
-                    case MessageTypes.LayoutSync when message.DashboardProfile is not null:
-                        Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));
                         break;
 
                     case MessageTypes.FileBrowseResponse:

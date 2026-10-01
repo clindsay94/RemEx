@@ -323,9 +323,6 @@
   <data name="Canvas_Save" xml:space="preserve">
     <value>Kaydet</value>
   </data>
-  <data name="Canvas_Sync" xml:space="preserve">
-    <value>Senkronize Et</value>
-  </data>
   <data name="Canvas_Sensors" xml:space="preserve">
     <value>Sensörler ({0})</value>
   </data>

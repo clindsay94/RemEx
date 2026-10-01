@@ -410,7 +410,6 @@ public class SamplingDemandTests
         Mock.Of<Remex.Core.Services.Network.IWakeOnLanService>(),
         Mock.Of<ILauncherStorageService>(),
         Mock.Of<IAppLauncherService>(),
-        Mock.Of<IDashboardProfileStorageService>(),
         Mock.Of<IProcessMonitorService>(),
         Mock.Of<IHostCapabilitiesProvider>(),
         Mock.Of<IInputSimulationService>(),

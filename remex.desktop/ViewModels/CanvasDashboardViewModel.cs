@@ -33,19 +33,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     private DashboardProfile _profile = new();
     private int _nextZIndex = 1;
     private bool _isInitialized;
-    private DashboardProfile? _pendingSyncProfile;
-
-    // True from the moment SyncLayoutAsync sends layout_request until the host's reply arrives
-    // (RemEx-jt6w5.8). Only a requested layout_sync may replace this device's layout; the host's
-    // unsolicited on-connect sync is a stale mirror of this UI's own file and is ignored.
-    private bool _layoutSyncRequested;
 
     // Set around the alert-store seed inside ApplyProfile (RemEx-8wpvr.2, HIGH review round 2): every
     // ApplyProfile call re-seeds _alertStore from the incoming profile via ReplaceAll, which raises
     // SensorAlertStore.Changed unconditionally. Once OnAlertStoreChanged is subscribed (after first
     // init - see the subscription's own remarks) that Changed would otherwise trigger a save on every
-    // profile application (pending host sync, LayoutProfileReceived, SyncLayoutAsync's offline
-    // reload, ReloadFromPersistedLayout) even though nothing the user did actually changed. The
+    // profile application (ReloadFromPersistedLayout after a savefile import) even though nothing the user did actually changed. The
     // re-apply-to-sensors half must still run - only the save half is suppressed.
     private bool _suppressAlertStoreSave;
     private bool _isRefreshingSensorActivation;
@@ -482,8 +475,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         Connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
 
-        Connection.LayoutProfileReceived += OnLayoutProfileReceived;
-
         Cards.CollectionChanged += OnCardsCollectionChanged;
 
         StagedCards.CollectionChanged += OnStagedCardsCollectionChanged;
@@ -505,47 +496,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         {
             CleanupSensorSubscriptions();
         }
-    }
-
-    private void OnLayoutProfileReceived(DashboardProfile profile)
-        => _ = OnLayoutProfileReceivedAsync(profile).ContinueWith(
-            t => Debug.WriteLine($"[Remex] OnLayoutProfileReceivedAsync failed: {t.Exception?.GetBaseException().Message}"),
-            TaskContinuationOptions.OnlyOnFaulted);
-
-    private async Task OnLayoutProfileReceivedAsync(DashboardProfile profile)
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => ReceiveLayoutSync(profile));
-    }
-
-    /// <summary>
-    /// The UI-thread half of <see cref="OnLayoutProfileReceivedAsync"/>, split out so tests can drive a
-    /// host <c>layout_sync</c> without a dispatcher (the same seam shape as <see cref="FinishInitialize"/>).
-    /// </summary>
-    /// <remarks>
-    /// The host sends <c>layout_sync</c> unprompted on every connect, carrying the machine-wide
-    /// <c>host_dashboard_layout.json</c>. Nothing but this UI writes that file (TriggerSave's
-    /// <c>layout_update</c> and a savefile import), so it is at best a copy of this device's own
-    /// <c>dashboard_layout.json</c> and is stale whenever that file changed without a connected save:
-    /// an edit while RemEx was stopped, or a save before the loopback came up. Applying it replaced the
-    /// user's cards and ApplyProfile's trailing save wrote the old layout over the file seconds after
-    /// launch (RemEx-jt6w5.8). Only a reply to an explicit Sync request (<see cref="SyncLayoutAsync"/>)
-    /// is applied; the per-user file wins over every other copy.
-    /// </remarks>
-    private void ReceiveLayoutSync(DashboardProfile profile)
-    {
-        if (!_layoutSyncRequested)
-        {
-            Debug.WriteLine("[Remex] Ignored an unrequested layout_sync; this device's own layout file wins.");
-            return;
-        }
-        _layoutSyncRequested = false;
-
-        if (!_isInitialized)
-        {
-            _pendingSyncProfile = profile;
-            return;
-        }
-        ApplyProfile(profile);
     }
 
     private void OnCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -593,7 +543,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     /// The synchronous, UI-thread half of <see cref="InitializeAsync"/>'s load path — split into its
     /// own method (RemEx-8wpvr.2) purely so tests can invoke it directly by reflection instead of
     /// through <see cref="Dispatcher"/>.<see cref="Dispatcher.UIThread"/>, the same seam shape
-    /// <c>ApplyProfile</c> already gets from <c>CanvasDashboardViewModelLayoutSyncTests</c>. This
+    /// <c>ApplyProfile</c> already gets from <c>CanvasDashboardViewModelApplyProfileAlertSeedTests</c>. This
     /// assembly has no Avalonia.Headless reference, so nothing ever drains a real
     /// <see cref="Dispatcher.UIThread"/> post; awaiting the real, dispatcher-wrapped
     /// <see cref="InitializeAsync"/> from a test hangs whenever "the" UI thread — bound to whichever
@@ -610,45 +560,35 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // Seed the first-visit coach mark from whatever profile is now loaded.
         InitCoachMark();
 
-        // If a REQUESTED host sync arrived before we finished local load, the user asked for it, so
-        // apply it. Unrequested syncs never get here (ReceiveLayoutSync drops them, RemEx-jt6w5.8).
-        if (_pendingSyncProfile != null)
+        // The per-user dashboard_layout.json is the only layout source (RemEx-sydzo).
+        _profile = localProfile;
+        IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
+        GridSize = _profile.GridSize;
+
+        // Restore sensor alerts from profile. _alertStore.Changed is NOT subscribed yet (see
+        // below) — ReplaceAll fires Changed unconditionally, and OnAlertStoreChanged saves,
+        // so if it were live here the debounced save would land before the non-sensor cards
+        // below are back on the canvas and silently drop them from the profile
+        // (RemEx-8wpvr.2, HIGH).
+        _alertStore.ReplaceAll(_profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
+
+        // Restore non-sensor cards from profile.
+        foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
         {
-            ApplyProfile(_pendingSyncProfile);
-            _pendingSyncProfile = null;
+            var card = CanvasCardViewModel.FromCardState(state);
+            card.CardTitle = state.CardType;
+            card.Connection = Connection;
+            card.RequestPinToggle = () => TogglePinToHome(card);
+            Cards.Add(card);
+            TrackZIndex(card.ZIndex);
         }
-        else
-        {
-            // Otherwise, use the local profile.
-            _profile = localProfile;
-            IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
-            GridSize = _profile.GridSize;
 
-            // Restore sensor alerts from profile. _alertStore.Changed is NOT subscribed yet (see
-            // below) — ReplaceAll fires Changed unconditionally, and OnAlertStoreChanged saves,
-            // so if it were live here the debounced save would land before the non-sensor cards
-            // below are back on the canvas and silently drop them from the profile
-            // (RemEx-8wpvr.2, HIGH).
-            _alertStore.ReplaceAll(_profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>());
+        // Create default cards if this is a fresh profile.
+        EnsureDefaultCards();
 
-            // Restore non-sensor cards from profile.
-            foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
-            {
-                var card = CanvasCardViewModel.FromCardState(state);
-                card.CardTitle = state.CardType;
-                card.Connection = Connection;
-                card.RequestPinToggle = () => TogglePinToHome(card);
-                Cards.Add(card);
-                TrackZIndex(card.ZIndex);
-            }
-
-            // Create default cards if this is a fresh profile.
-            EnsureDefaultCards();
-
-            // Re-apply the alerts just restored onto any sensors already materialized, without
-            // saving — saving is OnAlertStoreChanged's job once it is subscribed below.
-            ReapplyAlertsToSensors();
-        }
+        // Re-apply the alerts just restored onto any sensors already materialized, without
+        // saving — saving is OnAlertStoreChanged's job once it is subscribed below.
+        ReapplyAlertsToSensors();
 
         // Subscribed here, once, after the restore work above (whichever branch ran) has
         // finished — never in the constructor. See the remark on the (absent) ctor subscription.
@@ -1110,45 +1050,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             Dispatcher.UIThread.Post(() => LayoutStatus = string.Empty));
     }
 
-    /// <summary>
-    /// Requests the layout from the connected host. Falls back to local storage if offline.
-    /// </summary>
-    [RelayCommand]
-    private async Task SyncLayoutAsync()
-    {
-        if (Connection.IsConnected)
-        {
-            // Request the host to re-send its stored layout.
-            var msg = new RemexMessage
-            {
-                Type = MessageTypes.LayoutRequest,
-            };
-            // Set before sending so a fast reply cannot beat the flag (RemEx-jt6w5.8).
-            _layoutSyncRequested = true;
-            try
-            {
-                await Connection.SendAsync(msg);
-            }
-            catch
-            {
-                // No request went out, so no reply is owed; don't let the next on-connect sync through.
-                _layoutSyncRequested = false;
-                throw;
-            }
-            LayoutStatus = "Sync requested…";
-        }
-        else
-        {
-            // Offline — reload from local storage.
-            var profile = await _layoutService.LoadAsync();
-            await Dispatcher.UIThread.InvokeAsync(() => ApplyProfile(profile));
-            LayoutStatus = "Loaded from local storage";
-        }
-
-        _ = Task.Delay(3000).ContinueWith(_ =>
-            Dispatcher.UIThread.Post(() => LayoutStatus = string.Empty));
-    }
-
     // ═══════════════ Telemetry Processing ═══════════════
 
     /// <summary>
@@ -1503,8 +1404,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         sensor.ShowValueOverlay = state.ShowValueOverlay;
         // Spec B §4 (RemEx-4kv0g.3.2), corrected 2026-09-13 after it erased every preset on this
         // machine. null means the source carries NO colour information and MUST keep the live theme:
-        // a theme-less profile reached ApplyProfile on LayoutSync (its writer is still unidentified -
-        // see REGRESSION-GUARDS.md), so with "null resets to follow-theme" that sync reset all 44
+        // a theme-less profile reached ApplyProfile from the host's layout copy (that path was
+        // removed in RemEx-sydzo; see REGRESSION-GUARDS.md), so with "null resets to follow-theme" that sync reset all 44
         // cards and the writer then persisted the loss.
         // That "always assign" shape was introduced by a whole-branch review that misread the
         // pre-branch code; pre-branch was `if (state.CardTheme is not null) sensor.Theme = ...`,
@@ -1590,12 +1491,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         _profile = profile;
 
         _layoutService.RequestSave(profile);
-
-        if (Connection.IsConnected)
-        {
-            Connection.SendLayoutUpdateAsync(profile)
-                .FireAndForget("send dashboard layout update to the connected device");
-        }
     }
 
     private CanvasCardViewModel? GetPrimarySensorCard(string sensorName)
@@ -1794,22 +1689,19 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         GridSize = profile.GridSize;
 
         // Seed the alert store from every profile this canvas ever applies (RemEx-8wpvr.2, HIGH
-        // review round 2) - not just the local-load path in FinishInitialize's else branch. Before
-        // this, the _pendingSyncProfile != null branch of FinishInitialize called ApplyProfile without
-        // ever seeding the store, so a host sync that landed before the local LoadAsync completed left
+        // review round 2) - not just FinishInitialize's local-load path. Before this, a host sync
+        // (removed in RemEx-sydzo) reached ApplyProfile without ever seeding the store, leaving
         // _alertStore empty for the whole session - and every later save writes
         // `SensorAlerts = _alertStore.All.ToList()`, so the next card drag wiped every alert from disk.
         // Suppressed here (try/finally, exception-safe) because ReplaceAll raises Changed
-        // unconditionally, and once OnAlertStoreChanged is subscribed (every ApplyProfile call except
-        // the very first, pre-subscription one from FinishInitialize) that would fire an unwanted
-        // TriggerSave on every profile application.
+        // unconditionally, and once OnAlertStoreChanged is subscribed (after FinishInitialize) that
+        // would fire an unwanted TriggerSave on every profile application.
         //
         // Seed from the LOCAL profile, not `profile` (RemEx-8wpvr.2, HIGH review round 3). Alerts
         // are device-local by design - the trailing save below layers only Cards/PinnedSensorIds/
         // IsSnapToGridEnabled/GridSize from `profile` onto localBase and never carries SensorAlerts
-        // (RemEx-hmigd). On two of this method's five call sites (OnLayoutProfileReceivedAsync and
-        // FinishInitialize's pending-sync branch) `profile` is the CONNECTED HOST's own
-        // DashboardProfile, whose host_dashboard_layout.json never has alerts - so seeding from
+        // (RemEx-hmigd). Two former call sites (the host layout sync, removed in RemEx-sydzo) passed
+        // the CONNECTED HOST's own DashboardProfile, which never had alerts - so seeding from
         // `profile` reset _alertStore to empty on every host sync, and the next card drag then
         // persisted that empty list to THIS device's own disk. Use the same source the save below
         // resolves to (`_layoutService.CurrentProfile`), falling back to `profile` only when there is
@@ -1890,9 +1782,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // Also update local storage so the layout stays in sync even when offline next time - but
         // layer only the layout fields this method actually applied onto THIS device's own profile
         // (the same "base on CurrentProfile" shape TriggerSave/DismissCoachMark already use), not the
-        // received profile wholesale. `profile` here is the CONNECTED HOST's own DashboardProfile -
-        // a loopback self-connect's host_dashboard_layout.json is a separate, machine-wide file from
-        // this device's per-user one - and it carries its own Customization, Language, Wake-on-LAN,
+        // received profile wholesale. `profile` used to be the CONNECTED HOST's own DashboardProfile -
+        // a separate, machine-wide copy (removed in RemEx-sydzo) of
+        // this device's per-user one - and it carried its own Customization, Language, Wake-on-LAN,
         // etc. Saving it wholesale silently overwrote this device's own settings with the host's the
         // moment a sync arrived, which is how an explicit Light/seed theme reverted to whatever the
         // host's profile happened to carry (RemEx-hmigd).
@@ -1962,7 +1854,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         CleanupSensorSubscriptions();
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
-        Connection.LayoutProfileReceived -= OnLayoutProfileReceived;
         Cards.CollectionChanged -= OnCardsCollectionChanged;
         StagedCards.CollectionChanged -= OnStagedCardsCollectionChanged;
         SelectedCards.CollectionChanged -= OnSelectedCardsChanged;

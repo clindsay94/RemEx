@@ -85,19 +85,10 @@ public partial class App : Application
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<SensorAlertStore>();
         collection.AddSingleton<SensorAlertTracker>();
-        collection.AddSingleton<RemexSavefileService>(sp =>
-        {
-            // Host-side dashboard storage resolves the same ProgramData path regardless of
-            // whether it happens to be registered in this container.
-            var hostProfileStorage = sp.GetService<Remex.Core.Services.IDashboardProfileStorageService>()
-                ?? new Remex.Core.Services.DashboardProfileStorageService();
-
-            return new RemexSavefileService(
-                sp.GetRequiredService<DashboardLayoutService>(),
-                sp.GetRequiredService<ILauncherStorageService>(),
-                new FileTransferRootSettingsService(),
-                hostProfileStorage);
-        });
+        collection.AddSingleton<RemexSavefileService>(sp => new RemexSavefileService(
+            sp.GetRequiredService<DashboardLayoutService>(),
+            sp.GetRequiredService<ILauncherStorageService>(),
+            new FileTransferRootSettingsService()));
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton(_ => new WindowsAccentWatcher(SystemSeedSources.TryGetWindowsAccent, TimeProvider.System));
         collection.AddSingleton<ColorSourceCoordinator>();
