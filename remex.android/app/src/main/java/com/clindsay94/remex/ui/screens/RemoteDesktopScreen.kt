@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -76,6 +77,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.components.RemexTooltip
@@ -216,6 +218,30 @@ internal fun shouldOfferStartAction(
     supportsRemoteDesktop: Boolean,
     hasError: Boolean
 ): Boolean = !isStreaming && (supportsRemoteDesktop || hasError)
+
+/** The FPS pill's inset from the top edge when no control row shares that edge. */
+private val FpsPillEdgePadding = 12.dp
+
+/** Height assumed for the fullscreen control row before its first measure: one 48.dp button. */
+private val FullscreenControlsFallbackHeight = 48.dp
+
+/**
+ * Top padding for the FPS pill (RemEx-wqo7a.1).
+ *
+ * In fullscreen the control row anchors TopEnd and, with seven buttons, reaches across to the left
+ * edge on a phone in portrait, so a pill at TopStart sat underneath the Keyboard and PC-keys
+ * buttons. In fullscreen the pill therefore drops below the row: the row's own edge padding, its
+ * measured height, then the row's icon spacing as the gap. Outside fullscreen nothing shares the
+ * top edge and the pill keeps its usual inset. [fullscreenControlsHeight] is 0.dp until the row has
+ * been measured, so that first frame assumes one button's height rather than overlapping.
+ */
+internal fun fpsPillTopPadding(isFullscreen: Boolean, fullscreenControlsHeight: Dp): Dp {
+    if (!isFullscreen) return FpsPillEdgePadding
+    val controls =
+        if (fullscreenControlsHeight > 0.dp) fullscreenControlsHeight
+        else FullscreenControlsFallbackHeight
+    return FullscreenOverlayEdgePadding + controls + FullscreenOverlayIconSpacing
+}
 
 
 // Workaround: calling AnimatedVisibility inside a Box that lives inside a Column
@@ -902,10 +928,15 @@ fun RemoteDesktopScreenContent(
                                         title = {
                                                 // M3: TopAppBar already applies titleLarge weight;
                                                 // no override needed
+                                                // One line, ellipsised: the actions take most of
+                                                // the bar's width, and an unconstrained title wrapped
+                                                // one letter per line (RemEx-wqo7a.1).
                                                 Text(
                                                         stringResource(
                                                                 R.string.screen_remote_desktop_title
-                                                        )
+                                                        ),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
                                                 )
                                         },
                                         actions = {
@@ -2652,10 +2683,27 @@ fun RemoteDesktopScreenContent(
                                 // for FPS overlay
                                 // PlainAnimatedVisibility resolves ColumnScope.AnimatedVisibility
                                 // implicit receiver conflict
+                                // Measured height of the fullscreen control row below, for the pill.
+                                var fullscreenControlsHeightPx by remember { mutableIntStateOf(0) }
+                                // Below the fullscreen control row rather than under it: the row
+                                // is emitted later, so it painted over a pill at the same top
+                                // inset (RemEx-wqo7a.1). Layout only; the stream is untouched.
                                 PlainAnimatedVisibility(
                                         visible = uiState.isStreaming && showFpsOverlay,
                                         modifier =
-                                                Modifier.align(Alignment.TopStart).padding(12.dp),
+                                                Modifier.align(Alignment.TopStart)
+                                                        .padding(
+                                                                start = FpsPillEdgePadding,
+                                                                end = FpsPillEdgePadding,
+                                                                bottom = FpsPillEdgePadding,
+                                                                top =
+                                                                        fpsPillTopPadding(
+                                                                                uiState.isFullscreen,
+                                                                                with(LocalDensity.current) {
+                                                                                        fullscreenControlsHeightPx.toDp()
+                                                                                }
+                                                                        )
+                                                        ),
                                         enter =
                                                 fadeIn(
                                                         animationSpec =
@@ -2702,7 +2750,10 @@ fun RemoteDesktopScreenContent(
                                         Row(
                                                 modifier =
                                                         Modifier.align(Alignment.TopEnd)
-                                                                .padding(FullscreenOverlayEdgePadding),
+                                                                .padding(FullscreenOverlayEdgePadding)
+                                                                .onSizeChanged {
+                                                                        fullscreenControlsHeightPx = it.height
+                                                                },
                                                 horizontalArrangement =
                                                         Arrangement.spacedBy(
                                                                 FullscreenOverlayIconSpacing

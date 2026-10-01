@@ -126,12 +126,20 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
+import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+
+/**
+ * How far the + FAB menu reaches up from the nav bar: the 56.dp toggle button plus the menu's own
+ * 16.dp edge margin. The nav-bar inset is added by [floatingChromeBottomPadding] (RemEx-wqo7a.1).
+ */
+private val DashboardFabFootprint = 56.dp + 16.dp
 
 // Wrapper that isolates AnimatedVisibility from outer ColumnScope receiver.
 @Composable
@@ -695,7 +703,23 @@ fun DashboardScreenContent(
                                 ) {
                                         Box(
                                                 modifier =
-                                                        Modifier.width(canvasWidthDp.dp)
+                                                        // Scroll room below the canvas for the +
+                                                        // FAB menu, which floats at BottomEnd on
+                                                        // navigationBarsPadding(), so a card's
+                                                        // resize handle can always be scrolled out
+                                                        // from under it (RemEx-wqo7a.1). Bottom
+                                                        // only: the canvas origin and every card
+                                                        // coordinate stay where they were.
+                                                        Modifier.padding(
+                                                                        bottom =
+                                                                                floatingChromeBottomPadding(
+                                                                                        floatingFootprint =
+                                                                                                DashboardFabFootprint,
+                                                                                        navBarInset =
+                                                                                                navigationBarBottomInset()
+                                                                                )
+                                                                )
+                                                                .width(canvasWidthDp.dp)
                                                                 .height(canvasHeightDp.dp)
                                                                 .onGloballyPositioned {
                                                                         canvasTopLeftPx =

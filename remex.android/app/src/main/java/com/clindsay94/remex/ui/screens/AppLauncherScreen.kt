@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
+import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,6 +60,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -229,7 +233,18 @@ fun AppLauncherScreenContent(
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 100.dp),
                             modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentPadding = PaddingValues(16.dp),
+                            // Bottom clears the floating Refresh/Connect toolbar below, which
+                            // sits on navigationBarsPadding() + 24.dp, so the last row can
+                            // scroll fully into view (RemEx-wqo7a.1).
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = 16.dp,
+                                end = 16.dp,
+                                bottom = floatingChromeBottomPadding(
+                                    floatingFootprint = LauncherToolbarFootprint,
+                                    navBarInset = navigationBarBottomInset()
+                                )
+                            ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -374,15 +389,70 @@ fun AppGridItem(
             }
 
             // App name centered below icon — no executable path shown
-            Text(
-                text = app.name,
-                style = MaterialTheme.typography.labelMediumEmphasized,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            LauncherTileLabel(
+                name = app.name,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
+    }
+}
+
+/**
+ * How far the floating Refresh/Connect toolbar reaches up from the nav bar: its 24.dp lift plus
+ * the toolbar's 64.dp container. The nav-bar inset is added separately by
+ * [floatingChromeBottomPadding] (RemEx-wqo7a.1).
+ */
+private val LauncherToolbarFootprint = 24.dp + 64.dp
+
+private val LauncherLabelWhitespace = Regex("\\s+")
+
+/** How a launcher tile lays out its app name: see [launcherLabelLayout]. */
+internal data class LauncherLabelLayout(val maxLines: Int, val softWrap: Boolean)
+
+/**
+ * The launcher tile label's line-break policy (RemEx-wqo7a.1).
+ *
+ * Android's line breaker splits a word that is wider than the line at whatever character runs out
+ * of room, which is how "BCUninstaller" became "BCUninstall / er". So the label wraps (up to two
+ * lines) only when every word in it fits on a line by itself; then every break lands on a word
+ * boundary. If any single word is too wide, the whole name goes on one unwrapped line and ellipsises
+ * at the end instead of breaking mid-word.
+ *
+ * Pure so the policy is testable without a renderer: [fitsOnOneLine] measures one word.
+ */
+internal fun launcherLabelLayout(name: String, fitsOnOneLine: (String) -> Boolean): LauncherLabelLayout {
+    val words = name.split(LauncherLabelWhitespace).filter { it.isNotEmpty() }
+    return if (words.all(fitsOnOneLine)) {
+        LauncherLabelLayout(maxLines = 2, softWrap = true)
+    } else {
+        LauncherLabelLayout(maxLines = 1, softWrap = false)
+    }
+}
+
+/** The app name under a launcher tile's icon, laid out by [launcherLabelLayout]. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LauncherTileLabel(name: String, modifier: Modifier = Modifier) {
+    val style = MaterialTheme.typography.labelMediumEmphasized
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        val maxWidthPx = constraints.maxWidth
+        val bounded = constraints.hasBoundedWidth
+        val layout = remember(name, style, maxWidthPx, bounded) {
+            launcherLabelLayout(name) { word ->
+                !bounded ||
+                    measurer.measure(word, style = style, maxLines = 1, softWrap = false)
+                        .size.width <= maxWidthPx
+            }
+        }
+        Text(
+            text = name,
+            style = style,
+            textAlign = TextAlign.Center,
+            maxLines = layout.maxLines,
+            softWrap = layout.softWrap,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

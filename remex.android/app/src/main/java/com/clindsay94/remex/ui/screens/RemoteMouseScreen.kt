@@ -113,6 +113,14 @@ fun RemoteMouseScreenContent(
                 .collect { trimRemoteKeyboardBufferIfIdle(remoteKeyboardState) }
     }
 
+    // The theme's background Surface, the same container a Scaffold gives every other screen. This
+    // screen is the only one without a Scaffold, so before it had nothing painted behind it (the
+    // light window background showed through in dark theme) and no LocalContentColor, which left
+    // the scroll/keyboard icons at the Color.Black default (RemEx-wqo7a.1).
+    Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+    ) {
     Column(modifier = Modifier.fillMaxSize()) {
         RemexFlexibleTopBar(title = stringResource(R.string.screen_remote_mouse_title))
         Column(
@@ -296,6 +304,7 @@ fun RemoteMouseScreenContent(
             } // end inner Column
         }
     }
+    } // end background Surface
 }
 
 @Preview(showBackground = true)

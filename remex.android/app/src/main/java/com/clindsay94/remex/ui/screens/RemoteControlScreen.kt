@@ -46,6 +46,8 @@ import com.clindsay94.remex.ui.components.MediaNowPlayingSheet
 import com.clindsay94.remex.ui.components.MediaVirtualKeys
 import com.clindsay94.remex.ui.components.MiniPlayerHeight
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
+import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateDpAsState
@@ -160,7 +162,15 @@ private fun rememberFloatingToolbarOcclusion(miniPlayerShown: Boolean): Dp {
                     animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
                     label = "floatingToolbarOcclusion"
             )
-    return animated
+    // Plus the nav-bar inset: the toolbar and the mini-player both sit on navigationBarsPadding(),
+    // so they rise by that inset too. Without it the last tile and the Energy header stayed
+    // half-covered on three-button navigation (RemEx-wqo7a.1). ToolbarOnlyOcclusion already
+    // carries the breathing room, so no extra gap here.
+    return floatingChromeBottomPadding(
+            floatingFootprint = animated,
+            navBarInset = navigationBarBottomInset(),
+            gap = 0.dp
+    )
 }
 
 private val remoteCommandCards =
