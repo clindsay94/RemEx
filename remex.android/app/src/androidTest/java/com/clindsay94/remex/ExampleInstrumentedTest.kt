@@ -15,8 +15,9 @@ import org.junit.runner.RunWith
 class ExampleInstrumentedTest {
     @Test
     fun useAppContext() {
-        // Context of the app under test.
+        // Context of the app under test: the "instrumented" build type, which carries an
+        // application id suffix so it never replaces the real app (RemEx-3dvre).
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.clindsay94.remex", appContext.packageName)
+        assertEquals("com.clindsay94.remex.instrumented", appContext.packageName)
     }
 }

@@ -182,7 +182,8 @@ class BuildIdTest {
      */
     private fun repoRoot(): File {
         var dir: File? = File("").absoluteFile
-        while (dir != null && !File(dir, "AGENTS.md").exists()) dir = dir.parentFile
+        // Remex.sln, not an instruction file: AGENTS.md was the marker until RemEx-wcvck deleted it.
+        while (dir != null && !File(dir, "Remex.sln").exists()) dir = dir.parentFile
         return requireNotNull(dir) { "could not locate the repository root from ${File("").absolutePath}" }
     }
 }

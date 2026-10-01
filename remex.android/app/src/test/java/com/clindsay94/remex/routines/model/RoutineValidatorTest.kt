@@ -103,6 +103,25 @@ class RoutineValidatorTest {
     }
 
     @Test
+    fun aWholeNumberWrittenAsADecimalReadsAsThatInteger() {
+        // The one place the mirror accepts what C# refuses. Android's org.json writes the double
+        // 5.0 back out as "5", so rejecting it would turn a malformed routine valid across a save
+        // and reload (RemEx-3dvre). A fractional value stays malformed (readingIsStrictAboutJsonTypes).
+        fun read(stepJson: String) =
+            RoutineJson.readRoutine(
+                org.json.JSONObject(
+                    """{"id":"3f0c2a4e-7b1d-4c55-9a60-2d7e8f1b9c10","revision":2.0,"steps":[$stepJson]}""",
+                ),
+            )
+
+        val routine = read("""{"type":"delay","seconds":5.0}""")
+        assertFalse(routine.isMalformed)
+        assertEquals(5, routine.steps.orEmpty().single()?.seconds)
+        assertEquals(2L, routine.revision.toLong())
+        assertTrue(read("""{"type":"delay","seconds":1.0E20}""").isMalformed)
+    }
+
+    @Test
     fun aMalformedRoutineKeepsItsIdForTheRejection() {
         val r = RoutineJson.readRoutine(org.json.JSONObject("""{"id":"abc","enabled":"yes"}"""))
         assertTrue(r.isMalformed)

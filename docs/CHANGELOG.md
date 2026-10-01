@@ -339,6 +339,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The phone app's on-device UI tests (`app/src/androidTest`) can run again. They targeted the
+  minified release build, which strips the code they call and never declares the activity the
+  Compose test rule opens, so none of them could launch. They now run against a new `instrumented`
+  build: release settings without R8, a `.instrumented` app id so it installs next to the real app
+  and never replaces or uninstalls it, and no Firebase. Run them on the emulator with
+  `ANDROID_SERIAL=emulator-5554 ./gradlew connectedInstrumentedAndroidTest`. Unit tests still run
+  against release. (RemEx-3dvre)
+- A routine with a whole number written as a decimal (for example a Wake-on-LAN port of `9.0`)
+  showed as broken on the phone until the app saved and reloaded it, then quietly became valid. The
+  phone now reads it as `9` from the start, so a routine looks the same before and after a reload.
+  A real fraction such as `5.5` seconds is still rejected. (RemEx-3dvre)
 - The Refresh button on the System status card now really re-checks the firewall. The firewall
   result is remembered for up to an hour so the Home screen does not start a PowerShell check every
   time it opens, and Refresh used to get that remembered answer too. If you removed or broke the

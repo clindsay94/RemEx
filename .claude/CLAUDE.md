@@ -122,6 +122,11 @@ dotnet test Remex.sln
   `ANDROID_HOME` or `remex.android/local.properties`.
   - `./gradlew remexFreshAssembleRelease` builds without bumping the version. `remexPublishRelease`
     bumps it, so use it for real releases only.
+  - On-device UI tests (`app/src/androidTest`) run against the non-minified `instrumented` build type
+    (app id `….instrumented`), on the AVD only, with its screen awake:
+    `adb -s emulator-5554 shell svc power stayon true`, then
+    `ANDROID_SERIAL=emulator-5554 ./gradlew connectedInstrumentedAndroidTest`. The phone is a daily
+    driver, so never run them there. If the AVD's skin folder is missing, boot it with `-skin 1440x3120`.
   - Signing reads the `remex.signing.*` keys from `local.properties` and falls back to debug signing.
   - `libRemexCore.so` is resolved from `artifacts/bin/remex.core/<config>_net10.0-android_android-arm64/native/`.
 

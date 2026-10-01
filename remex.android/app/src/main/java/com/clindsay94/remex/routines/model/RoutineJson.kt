@@ -1,5 +1,6 @@
 package com.clindsay94.remex.routines.model
 
+import java.math.BigDecimal
 import java.math.BigInteger
 import org.json.JSONArray
 import org.json.JSONObject
@@ -586,11 +587,29 @@ object RoutineJson {
                 else -> bad()
             }
 
+        /**
+         * A whole number that arrived as a decimal (`9.0`, or `09`, which Android's parser reads as
+         * 9.0) is accepted as that integer. Android's org.json writes the double 9.0 back out as `9`,
+         * so rejecting it would make a routine malformed before a save and valid after the reload
+         * (RemEx-3dvre). A fractional value (`5.5`) is still malformed. Note the C# side is stricter
+         * here: System.Text.Json rejects `9.0` for an int.
+         */
+        private fun wholeNumber(v: Number): Long? =
+            try {
+                BigDecimal(v.toString()).longValueExact()
+            } catch (_: NumberFormatException) {
+                null
+            } catch (_: ArithmeticException) {
+                null
+            }
+
         fun intOrNull(key: String): Int? =
             when (val v = raw(key)) {
                 null -> null
                 is Int -> v
                 is Long -> if (v in Int.MIN_VALUE..Int.MAX_VALUE) v.toInt() else bad()
+                is Double, is BigDecimal ->
+                    wholeNumber(v as Number)?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }?.toInt() ?: bad()
                 else -> bad()
             }
 
@@ -600,6 +619,7 @@ object RoutineJson {
                 is Int -> v.toLong()
                 is Long -> v
                 is BigInteger -> if (v.bitLength() < 64) v.toLong() else bad()
+                is Double, is BigDecimal -> wholeNumber(v as Number) ?: bad()
                 else -> bad()
             }
 

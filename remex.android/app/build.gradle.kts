@@ -186,6 +186,19 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // The androidTest target (RemEx-3dvre). Release minus R8: a minified app strips or renames
+        // the composables the tests call, and ui-test-manifest (the ComponentActivity the Compose
+        // rule launches) must never ship in release. The ".instrumented" suffix installs it beside
+        // the real app, so connectedInstrumentedAndroidTest can't replace or uninstall it (and its
+        // pairings) on a daily-driver phone. Firebase is off for this build (see the
+        // processInstrumentedGoogleServices block below).
+        create("instrumented") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".instrumented"
+            matchingFallbacks += listOf("release")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -219,23 +232,21 @@ android {
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
-    // Unit tests run against the RELEASE variant, which is what actually ships and gets
-    // installed on device. Without this line AGP 9 generates a unit-test component for the
-    // default testBuildType ("debug") and for NO other variant, so `testReleaseUnitTest`
-    // simply does not exist - `scripts/verify.ps1 -Scope android` invoked it for weeks and
-    // failed every time with "task not found", which was swallowed and reported as "Android
-    // unit tests failed" (RemEx-thvf). Under AGP 8 both variants got one, which is why the
-    // task name looked reasonable when it was written.
+    // Instrumented tests (app/src/androidTest) run against the non-minified "instrumented" build
+    // type (RemEx-3dvre). Under release they could not launch: R8 had stripped what they call,
+    // and the ComponentActivity from ui-test-manifest was never declared.
+    // Run them on the emulator, never the daily-driver phone, with its screen awake (a sleeping
+    // screen fails every Compose test with "No compose hierarchies found"):
+    //   adb -s emulator-5554 shell svc power stayon true
+    //   adb -s emulator-5554 shell input keyevent KEYCODE_WAKEUP
+    //   ANDROID_SERIAL=emulator-5554 ./gradlew connectedInstrumentedAndroidTest
     //
-    // Consequences, so they are not a surprise later:
-    //  - `testDebugUnitTest` no longer exists. Android Studio's default run configurations
-    //    follow the Build Variants panel, so select "release" there to run tests from the IDE.
-    //  - testBuildType also steers INSTRUMENTED tests. app/src/androidTest holds 7 Compose UI
-    //    tests; they now target the minified release build and may need testProguardFiles
-    //    rules if they are ever wired into an automated path. Nothing runs them today.
-    //
-    // Verified at the time of the change: 530 unit tests, 0 failures, on both variants.
-    testBuildType = "release"
+    // Unit tests still run against RELEASE, which is what ships. AGP 9 only creates unit-test
+    // tasks for testBuildType by default, so gradle.properties sets
+    // android.onlyEnableUnitTestForTheTestedBuildType=false. Without it `testReleaseUnitTest`
+    // does not exist, and `scripts/verify.ps1 -Scope android` once failed on that for weeks
+    // with the error swallowed (RemEx-thvf).
+    testBuildType = "instrumented"
 
     testOptions {
         unitTests {
@@ -385,6 +396,11 @@ android {
             jniLibs.directories.add(layout.buildDirectory.dir("generated/remexJniLibs/debug").get().asFile.absolutePath)
         }
         getByName("release") {
+            jniLibs.directories.clear()
+            jniLibs.directories.add(layout.buildDirectory.dir("generated/remexJniLibs/release").get().asFile.absolutePath)
+        }
+        // Packages the RELEASE libRemexCore.so, the same native core that ships.
+        getByName("instrumented") {
             jniLibs.directories.clear()
             jniLibs.directories.add(layout.buildDirectory.dir("generated/remexJniLibs/release").get().asFile.absolutePath)
         }
@@ -1044,6 +1060,17 @@ tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
     dependsOn(syncRemexCoreReleaseSo)
 }
 
+tasks.matching { it.name == "mergeInstrumentedNativeLibs" || it.name == "mergeInstrumentedJniLibFolders" }.configureEach {
+    dependsOn(syncRemexCoreReleaseSo)
+}
+
+// google-services.json has no client for com.clindsay94.remex.instrumented, so this task would
+// fail the build. Skipping it leaves the test build without google_app_id: FirebaseApp never
+// initialises, so instrumented runs send no analytics or crash reports to the real project.
+tasks.matching { it.name == "processInstrumentedGoogleServices" }.configureEach {
+    enabled = false
+}
+
 dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
@@ -1106,7 +1133,9 @@ dependencies {
     // RELEASE manifest instead (src/release/AndroidManifest.xml, perf audit P3-29), which lets R8
     // drop the tooling classes from the shipped APK while static Preview keeps working.
     implementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    // Declares the ComponentActivity that createAndroidComposeRule launches. It has to be in the
+    // app under test, and only the instrumented build may carry it (RemEx-3dvre).
+    "instrumentedImplementation"(libs.androidx.compose.ui.test.manifest)
 }
 
 android.buildTypes.getByName("release").configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
