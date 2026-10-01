@@ -63,7 +63,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -404,28 +406,77 @@ fun AppGridItem(
  */
 private val LauncherToolbarFootprint = 24.dp + 64.dp
 
-private val LauncherLabelWhitespace = Regex("\\s+")
+/** Zero-width space: an invisible line-break opportunity. */
+private const val LauncherLabelBreak = '​'
 
-/** How a launcher tile lays out its app name: see [launcherLabelLayout]. */
-internal data class LauncherLabelLayout(val maxLines: Int, val softWrap: Boolean)
+/** What separates the label's unbreakable segments: whitespace and the inserted break points. */
+private val LauncherLabelSegmentSeparator = Regex("[\\s​]+")
 
 /**
- * The launcher tile label's line-break policy (RemEx-wqo7a.1).
- *
- * Android's line breaker splits a word that is wider than the line at whatever character runs out
- * of room, which is how "BCUninstaller" became "BCUninstall / er". So the label wraps (up to two
- * lines) only when every word in it fits on a line by itself; then every break lands on a word
- * boundary. If any single word is too wide, the whole name goes on one unwrapped line and ellipsises
- * at the end instead of breaking mid-word.
- *
- * Pure so the policy is testable without a renderer: [fitsOnOneLine] measures one word.
+ * The launcher label as DISPLAYED (RemEx-wqo7a.1): the stored app name with an invisible break
+ * opportunity after `_`, `-` and `.`, and between a lowercase letter and the uppercase letter that
+ * follows it. Executable-style names have no spaces ("BLEACH_Rebirth_of_Souls", "SparkingZERO"),
+ * so without these the line breaker had nowhere to wrap them and they ellipsised after a few
+ * letters. Only the displayed text changes; the stored name, launch request and search never see it.
  */
-internal fun launcherLabelLayout(name: String, fitsOnOneLine: (String) -> Boolean): LauncherLabelLayout {
-    val words = name.split(LauncherLabelWhitespace).filter { it.isNotEmpty() }
-    return if (words.all(fitsOnOneLine)) {
-        LauncherLabelLayout(maxLines = 2, softWrap = true)
+internal fun launcherLabelDisplayText(name: String): String = buildString(name.length + 4) {
+    name.forEachIndexed { index, c ->
+        append(c)
+        val next = name.getOrNull(index + 1) ?: return@forEachIndexed
+        if (next.isWhitespace() || next == LauncherLabelBreak) return@forEachIndexed
+        val afterSeparator = c == '_' || c == '-' || c == '.'
+        val camelBoundary = c.isLowerCase() && next.isUpperCase()
+        if (afterSeparator || camelBoundary) append(LauncherLabelBreak)
+    }
+}
+
+/**
+ * The font sizes the label tries, largest first: [startSp] down to [floorSp] in [stepSp] steps,
+ * always ending exactly on the floor. A style already at or below the floor is used as is.
+ */
+internal fun launcherLabelFontSizes(startSp: Float, floorSp: Float, stepSp: Float = 0.5f): List<Float> {
+    if (startSp <= floorSp || stepSp <= 0f) return listOf(startSp)
+    val steps = generateSequence(startSp) { it - stepSp }.takeWhile { it > floorSp + 0.001f }.toList()
+    return steps + floorSp
+}
+
+/** How a launcher tile lays out its app name: see [launcherLabelLayout]. */
+internal data class LauncherLabelLayout(val fontSizeSp: Float, val maxLines: Int, val softWrap: Boolean)
+
+/**
+ * The launcher tile label's fitting policy (RemEx-wqo7a.1).
+ *
+ * Android's line breaker splits a segment that is wider than the line at whatever character runs
+ * out of room, which is how "BCUninstaller" became "BCUninstall / er". So the label only wraps
+ * when every segment (see [launcherLabelDisplayText]) fits on a line by itself; then every break
+ * lands on a word or separator boundary.
+ *
+ * For each size in [fontSizesSp] (largest first), the first one at which every segment fits and the
+ * whole label takes at most two lines wins. If none does, the label uses the floor (the last size):
+ * two lines ellipsised at the end when every segment fits there, otherwise one unwrapped line
+ * ellipsised at the end, never a mid-word break.
+ *
+ * Pure so the policy is testable without a renderer: [segmentFits] measures one segment on one
+ * line, and [lineCount] measures how many lines the soft-wrapped text needs at a size.
+ */
+internal fun launcherLabelLayout(
+    displayText: String,
+    fontSizesSp: List<Float>,
+    segmentFits: (segment: String, fontSizeSp: Float) -> Boolean,
+    lineCount: (text: String, fontSizeSp: Float) -> Int,
+): LauncherLabelLayout {
+    require(fontSizesSp.isNotEmpty()) { "The launcher label needs at least one font size." }
+    val segments = displayText.split(LauncherLabelSegmentSeparator).filter { it.isNotEmpty() }
+    for (size in fontSizesSp) {
+        if (segments.all { segmentFits(it, size) } && lineCount(displayText, size) <= 2) {
+            return LauncherLabelLayout(fontSizeSp = size, maxLines = 2, softWrap = true)
+        }
+    }
+    val floor = fontSizesSp.last()
+    return if (segments.all { segmentFits(it, floor) }) {
+        LauncherLabelLayout(fontSizeSp = floor, maxLines = 2, softWrap = true)
     } else {
-        LauncherLabelLayout(maxLines = 1, softWrap = false)
+        LauncherLabelLayout(fontSizeSp = floor, maxLines = 1, softWrap = false)
     }
 }
 
@@ -434,20 +485,52 @@ internal fun launcherLabelLayout(name: String, fitsOnOneLine: (String) -> Boolea
 @Composable
 private fun LauncherTileLabel(name: String, modifier: Modifier = Modifier) {
     val style = MaterialTheme.typography.labelMediumEmphasized
+    // Never shrink below labelSmall: smaller than that stops being readable on a tile.
+    val floorSize = MaterialTheme.typography.labelSmall.fontSize
     val measurer = rememberTextMeasurer()
+    val displayText = remember(name) { launcherLabelDisplayText(name) }
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val maxWidthPx = constraints.maxWidth
         val bounded = constraints.hasBoundedWidth
-        val layout = remember(name, style, maxWidthPx, bounded) {
-            launcherLabelLayout(name) { word ->
-                !bounded ||
-                    measurer.measure(word, style = style, maxLines = 1, softWrap = false)
-                        .size.width <= maxWidthPx
-            }
+        // Only an sp size can step down; any other unit keeps the style's own size.
+        val canStep = style.fontSize.isSp && floorSize.isSp
+        fun styleAt(sizeSp: Float) = if (canStep) style.copy(fontSize = sizeSp.sp) else style
+        val layout = remember(displayText, style, floorSize, maxWidthPx, bounded) {
+            val sizes =
+                if (canStep) {
+                    launcherLabelFontSizes(style.fontSize.value, floorSize.value)
+                } else {
+                    listOf(style.fontSize.value)
+                }
+            launcherLabelLayout(
+                displayText = displayText,
+                fontSizesSp = sizes,
+                segmentFits = { segment, size ->
+                    !bounded ||
+                        measurer.measure(
+                            segment,
+                            style = styleAt(size),
+                            maxLines = 1,
+                            softWrap = false
+                        ).size.width <= maxWidthPx
+                },
+                lineCount = { text, size ->
+                    if (!bounded) {
+                        1
+                    } else {
+                        measurer.measure(
+                            text,
+                            style = styleAt(size),
+                            softWrap = true,
+                            constraints = Constraints(maxWidth = maxWidthPx)
+                        ).lineCount
+                    }
+                }
+            )
         }
         Text(
-            text = name,
-            style = style,
+            text = displayText,
+            style = styleAt(layout.fontSizeSp),
             textAlign = TextAlign.Center,
             maxLines = layout.maxLines,
             softWrap = layout.softWrap,

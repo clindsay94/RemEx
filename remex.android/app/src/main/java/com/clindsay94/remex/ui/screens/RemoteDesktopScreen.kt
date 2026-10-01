@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.RemexTooltip
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.view.WindowCompat
@@ -924,21 +925,17 @@ fun RemoteDesktopScreenContent(
         Scaffold(
                 topBar = {
                         if (!uiState.isFullscreen) {
-                                TopAppBar(
-                                        title = {
-                                                // M3: TopAppBar already applies titleLarge weight;
-                                                // no override needed
-                                                // One line, ellipsised: the actions take most of
-                                                // the bar's width, and an unconstrained title wrapped
-                                                // one letter per line (RemEx-wqo7a.1).
-                                                Text(
-                                                        stringResource(
-                                                                R.string.screen_remote_desktop_title
-                                                        ),
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                )
-                                        },
+                                // The same two-row header as Task Manager, Dashboard and
+                                // Connection: the seven actions sit on the top row and the
+                                // title gets its own full-width line below. On one row the
+                                // actions left the title a few letters ("De…") on a phone
+                                // (RemEx-wqo7a.1). No scroll behavior: nothing here scrolls,
+                                // so the bar stays expanded.
+                                RemexFlexibleTopBar(
+                                        title =
+                                                stringResource(
+                                                        R.string.screen_remote_desktop_title
+                                                ),
                                         actions = {
                                                 RemexTooltip(stringResource(R.string.cd_show_keyboard)) {
                                                         IconButton(

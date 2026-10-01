@@ -53,7 +53,6 @@ import com.clindsay94.remex.data.KnownPcEntry
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
-import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -465,12 +464,7 @@ fun ConnectionScreenContent(
                                                 // (RemEx-a9ci).
                                                 .imePadding()
                                                 .verticalScroll(rememberScrollState())
-                                                .padding(24.dp)
-                                                // Scrolled content clears the nav bar too, so the
-                                                // status / capability lines at the very end are
-                                                // fully readable when scrolled to the bottom
-                                                // (RemEx-wqo7a.1).
-                                                .padding(bottom = navigationBarBottomInset()),
+                                                .padding(24.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                                 // --- Error display ---

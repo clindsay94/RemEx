@@ -346,13 +346,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 ### Fixed
 
 - Six layout fixes in the Android app. Remote Mouse now follows the dark theme instead of showing a
-  light background with black icons. The Remote Desktop title stays on one line instead of wrapping
-  a letter at a time, and the FPS readout in fullscreen sits below the control buttons instead of
-  behind them. App Launcher names wrap only between words, and a name too long for its tile is
-  shortened with "…" instead of being split mid-word. The connection status at the bottom of the
-  Connection screen is no longer cut off by the navigation bar, and the last items on Remote
-  Control, App Launcher and the Dashboard can now scroll fully clear of the floating toolbar,
-  mini-player and + button. (RemEx-wqo7a.1)
+  light background with black icons. The Remote Desktop header now matches Task Manager and the
+  Dashboard: its buttons sit on the top row and "Remote Desktop" gets its own full-width line below,
+  instead of being squeezed to "De…". The FPS readout in fullscreen sits below the control buttons
+  instead of behind them. App Launcher names can now also wrap after `_`, `-` and `.` and between
+  a lowercase and an uppercase letter ("BLEACH_Rebirth_of_Souls", "SparkingZERO"), use up to two
+  lines, and step the text down slightly before anything is shortened with "…"; a name is never
+  split mid-word. The last items on Remote Control, App Launcher and the Dashboard can now scroll
+  fully clear of the floating toolbar, mini-player and + button. (RemEx-wqo7a.1)
 - "Match phone" in the PC's Personalize sheet no longer disappears after the PC restarts. The PC now
   saves the last theme your phone sent and loads it again at start-up, so the button is there before
   the phone reconnects. The phone still sends its current theme every time it reconnects, and that is

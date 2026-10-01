@@ -4,6 +4,8 @@ import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
 import com.clindsay94.remex.ui.screens.LauncherLabelLayout
 import com.clindsay94.remex.ui.screens.fpsPillTopPadding
+import com.clindsay94.remex.ui.screens.launcherLabelDisplayText
+import com.clindsay94.remex.ui.screens.launcherLabelFontSizes
 import com.clindsay94.remex.ui.screens.launcherLabelLayout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,42 +49,130 @@ class UiBugBatchLayoutTest {
 
     // ── App Launcher label line-break policy ──────────────────────────────────────
 
-    /** A stand-in measurer: a word fits when it is at most [maxChars] characters. */
-    private fun fits(maxChars: Int): (String) -> Boolean = { it.length <= maxChars }
+    // Stand-in renderer: every character is as wide as the font size, so a tile `chars * 12f`
+    // wide holds `chars` characters at 12sp and a few more at the smaller steps.
+    private val sizes = launcherLabelFontSizes(startSp = 12f, floorSp = 11f)
 
-    private val wrapAtWords = LauncherLabelLayout(maxLines = 2, softWrap = true)
-    private val oneLineEllipsis = LauncherLabelLayout(maxLines = 1, softWrap = false)
+    private fun segmentFits(tileWidth: Float): (String, Float) -> Boolean =
+        { segment, size -> segment.length * size <= tileWidth }
 
-    @Test
-    fun `single overlong token goes on one ellipsised line instead of breaking mid-word`() {
-        // The names from the screenshots.
-        assertEquals(oneLineEllipsis, launcherLabelLayout("BCUninstaller", fits(10)))
-        assertEquals(oneLineEllipsis, launcherLabelLayout("GTA5_Enhanced", fits(10)))
-        assertEquals(oneLineEllipsis, launcherLabelLayout("SparkingZERO", fits(10)))
+    /** Greedy wrap that breaks only at whitespace and at the inserted zero-width spaces. */
+    private fun greedyLines(tileWidth: Float): (String, Float) -> Int = { text, size ->
+        var lines = 1
+        var used = 0f
+        for (m in Regex("([^\\s​]+)([\\s​]*)").findAll(text)) {
+            val word = m.groupValues[1].length * size
+            val gap = m.groupValues[2].count { it.isWhitespace() } * size
+            if (used > 0f && used + word > tileWidth) {
+                lines++
+                used = 0f
+            }
+            used += word + gap
+        }
+        lines
+    }
+
+    private fun layoutFor(name: String, tileChars: Int): LauncherLabelLayout {
+        val width = tileChars * 12f
+        return launcherLabelLayout(
+            launcherLabelDisplayText(name),
+            sizes,
+            segmentFits(width),
+            greedyLines(width)
+        )
     }
 
     @Test
-    fun `multi-word name whose words all fit wraps at word boundaries over two lines`() {
-        assertEquals(wrapAtWords, launcherLabelLayout("Visual Studio Code", fits(10)))
-        assertEquals(wrapAtWords, launcherLabelLayout("Steam", fits(10)))
+    fun `font sizes step down to exactly the labelSmall floor`() {
+        assertEquals(listOf(12f, 11.5f, 11f), sizes)
+        assertEquals(listOf(11f), launcherLabelFontSizes(11f, 11f))
+        assertEquals(listOf(10f), launcherLabelFontSizes(10f, 11f))
     }
 
     @Test
-    fun `one overlong word in a multi-word name forces the single-line layout`() {
-        assertEquals(oneLineEllipsis, launcherLabelLayout("Grand TheftAutoFive", fits(10)))
+    fun `separators and camelCase humps become invisible break points`() {
+        assertEquals(
+            "BLEACH_​Rebirth_​of_​Souls",
+            launcherLabelDisplayText("BLEACH_Rebirth_of_Souls")
+        )
+        assertEquals("GTA5_​Enhanced", launcherLabelDisplayText("GTA5_Enhanced"))
+        assertEquals("Sparking​ZERO", launcherLabelDisplayText("SparkingZERO"))
+        assertEquals("v1.​2-​beta", launcherLabelDisplayText("v1.2-beta"))
+        // No lowercase-then-uppercase pair and no separator: nothing to add.
+        assertEquals("BCUninstaller", launcherLabelDisplayText("BCUninstaller"))
+        // A trailing separator or one already followed by a space gets no break point.
+        assertEquals("Setup_", launcherLabelDisplayText("Setup_"))
+        assertEquals("Naruto Ultimate Ninja Storm Connections",
+            launcherLabelDisplayText("Naruto Ultimate Ninja Storm Connections"))
     }
 
     @Test
-    fun `runs of whitespace and blank names do not count as words`() {
-        assertEquals(wrapAtWords, launcherLabelLayout("  Notepad   Plus  ", fits(7)))
-        assertEquals(wrapAtWords, launcherLabelLayout("", fits(1)))
+    fun `only the displayed text changes, never the name itself`() {
+        for (name in listOf("BLEACH_Rebirth_of_Souls", "GTA5_Enhanced", "SparkingZERO", "v1.2-beta")) {
+            assertEquals(name, launcherLabelDisplayText(name).replace("​", ""))
+        }
     }
 
     @Test
-    fun `the measurer only ever sees single words`() {
+    fun `the names from the screenshots fit a normal tile at full size`() {
+        val full = LauncherLabelLayout(fontSizeSp = 12f, maxLines = 2, softWrap = true)
+        // Used to ellipsise as "BLEACH_R…": now wraps after "Rebirth_" with no mid-word break.
+        assertEquals(full, layoutFor("BLEACH_Rebirth_of_Souls", tileChars = 15))
+        assertEquals(full, layoutFor("GTA5_Enhanced", tileChars = 15))
+        assertEquals(full, layoutFor("BCUninstaller", tileChars = 15))
+        assertEquals(full, layoutFor("SparkingZERO", tileChars = 15))
+    }
+
+    @Test
+    fun `a name too long for two lines even at the floor keeps two lines and ellipsises the second`() {
+        // Used to be one line: "Naruto Ultimate N…".
+        assertEquals(
+            LauncherLabelLayout(fontSizeSp = 11f, maxLines = 2, softWrap = true),
+            layoutFor("Naruto Ultimate Ninja Storm Connections", tileChars = 15)
+        )
+    }
+
+    @Test
+    fun `the inserted break points let joined names wrap on a narrow tile`() {
+        val full = LauncherLabelLayout(fontSizeSp = 12f, maxLines = 2, softWrap = true)
+        assertEquals(full, layoutFor("SparkingZERO", tileChars = 10))
+        assertEquals(full, layoutFor("GTA5_Enhanced", tileChars = 10))
+    }
+
+    @Test
+    fun `a segment slightly too wide steps the font down before anything ellipsises`() {
+        // 13 characters: 156 wide at 12sp, 149.5 at 11.5sp, 143 at the 11sp floor.
+        assertEquals(
+            LauncherLabelLayout(fontSizeSp = 11f, maxLines = 2, softWrap = true),
+            layoutFor("BCUninstaller", tileChars = 12)
+        )
+    }
+
+    @Test
+    fun `a segment too wide even at the floor goes on one ellipsised line, never broken mid-word`() {
+        assertEquals(
+            LauncherLabelLayout(fontSizeSp = 11f, maxLines = 1, softWrap = false),
+            layoutFor("BCUninstaller", tileChars = 10)
+        )
+    }
+
+    @Test
+    fun `blank names and runs of whitespace do not count as segments`() {
+        val full = LauncherLabelLayout(fontSizeSp = 12f, maxLines = 2, softWrap = true)
+        assertEquals(full, layoutFor("", tileChars = 1))
+        assertEquals(full, layoutFor("  Notepad   Plus  ", tileChars = 7))
+    }
+
+    @Test
+    fun `the segment measurer only ever sees single segments`() {
         val seen = mutableListOf<String>()
-        launcherLabelLayout("Remote Desktop Connection") { seen += it; true }
-        assertEquals(listOf("Remote", "Desktop", "Connection"), seen)
+        launcherLabelLayout(
+            launcherLabelDisplayText("Remote Desktop_Connection"),
+            listOf(12f),
+            { segment, _ -> seen += segment; true },
+            { _, _ -> 1 }
+        )
+        assertEquals(listOf("Remote", "Desktop_", "Connection"), seen)
     }
 
     // ── Remote Desktop FPS pill placement ─────────────────────────────────────────
