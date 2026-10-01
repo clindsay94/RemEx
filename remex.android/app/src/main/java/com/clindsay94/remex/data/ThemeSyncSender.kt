@@ -2,6 +2,7 @@ package com.clindsay94.remex.data
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -63,6 +64,25 @@ class ThemeSyncSender(
          */
         fun onConnected(snapshot: ThemeSnapshot) {
                 if (isAuthenticated()) deliver(snapshot)
+        }
+
+        /**
+         * Calls [onConnected] with the theme as it stands right now for EVERY non-null value
+         * [connections] emits: the first connect and every reconnect alike, including a reconnect to
+         * the same PC with an unchanged theme (RemEx-qean1). That resend is what lets a PC that just
+         * restarted show "Match phone" again without the user touching the phone's theme. A null
+         * (disconnected) value sends nothing, and [onConnected]'s authenticated check still applies.
+         *
+         * [connections] must emit a distinct value per connection (RemexClientManager's
+         * `authenticatedConnection` carries a per-connection epoch), or a StateFlow would swallow a
+         * same-host reconnect as "unchanged". Suspends for as long as [connections] runs, so launch
+         * it in the caller's scope.
+         */
+        suspend fun <T : Any> sendOnEveryConnection(
+                connections: Flow<T?>,
+                currentTheme: suspend () -> ThemeSnapshot
+        ) {
+                connections.filterNotNull().collect { onConnected(currentTheme()) }
         }
 
         /** Call on every SettingsManager theme-flow emission, connected or not (see class doc). */

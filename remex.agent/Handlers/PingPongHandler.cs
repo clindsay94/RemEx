@@ -1621,7 +1621,7 @@ public sealed class PingPongHandler(
     /// exists to prevent, just moved one call deeper.
     /// </para>
     /// </remarks>
-    private static bool IsValidThemeSync(PhoneThemeSnapshot sync) =>
+    internal static bool IsValidThemeSync(PhoneThemeSnapshot sync) =>
         sync.SeedHex is { } seed && HexColorPattern.IsMatch(seed)
         && sync.Contrast is >= -1.0 and <= 1.0
         && sync.Mode is "light" or "dark" or "system"

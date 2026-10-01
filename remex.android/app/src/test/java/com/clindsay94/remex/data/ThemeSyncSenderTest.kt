@@ -5,7 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -44,6 +47,72 @@ class ThemeSyncSenderTest {
 
         private fun styleOf(json: String): String =
                 JSONObject(json).getJSONObject("themeSync").getString("style")
+
+        /** Stand-in for RemexClientManager.EstablishedConnection: same host, distinct epoch per connection. */
+        private data class Conn(val host: String, val epoch: Long)
+
+        @Test
+        fun `every reconnect resends the current theme, even to the same PC with no theme change`() = runTest {
+                val sent = mutableListOf<String>()
+                val sender =
+                        ThemeSyncSender(
+                                scope = backgroundScope,
+                                isAuthenticated = { true },
+                                resolveSeed = { "#AABBCC" },
+                                send = { sent += it },
+                                clock = { 1_000L },
+                        )
+                val connections = MutableStateFlow<Conn?>(null)
+                var theme = snapshot("tonal_spot")
+                backgroundScope.launch { sender.sendOnEveryConnection(connections) { theme } }
+                runCurrent()
+                assertEquals("no connection yet, nothing sent", 0, sent.size)
+
+                connections.value = Conn("pc", epoch = 1)
+                runCurrent()
+                connections.value = null // PC restarts: socket drops
+                runCurrent()
+                assertEquals("a disconnect sends nothing", 1, sent.size)
+
+                connections.value = Conn("pc", epoch = 2) // same PC, unchanged theme
+                runCurrent()
+                assertEquals(2, sent.size)
+
+                theme = snapshot("vibrant")
+                connections.value = null
+                runCurrent()
+                connections.value = Conn("pc", epoch = 3)
+                runCurrent()
+                assertEquals(3, sent.size)
+                assertEquals("the theme is read at connect time", "vibrant", styleOf(sent[2]))
+        }
+
+        @Test
+        fun `the same connection reported twice sends once, and an unauthenticated one sends nothing`() = runTest {
+                val sent = mutableListOf<String>()
+                var authenticated = true
+                val sender =
+                        ThemeSyncSender(
+                                scope = backgroundScope,
+                                isAuthenticated = { authenticated },
+                                resolveSeed = { "#AABBCC" },
+                                send = { sent += it },
+                                clock = { 1_000L },
+                        )
+                val connections = MutableStateFlow<Conn?>(null)
+                backgroundScope.launch { sender.sendOnEveryConnection(connections) { snapshot() } }
+
+                connections.value = Conn("pc", epoch = 1)
+                runCurrent()
+                connections.value = Conn("pc", epoch = 1)
+                runCurrent()
+                assertEquals(1, sent.size)
+
+                authenticated = false
+                connections.value = Conn("pc", epoch = 2)
+                runCurrent()
+                assertEquals(1, sent.size)
+        }
 
         @Test
         fun `sends once, immediately, after authenticated`() = runTest {

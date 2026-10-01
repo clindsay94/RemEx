@@ -339,6 +339,15 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- "Match phone" in the PC's Personalize sheet no longer disappears after the PC restarts. The PC now
+  saves the last theme your phone sent and loads it again at start-up, so the button is there before
+  the phone reconnects. The phone still sends its current theme every time it reconnects, and that is
+  now covered by a test, so the PC never waits for you to change the phone's theme. A damaged saved
+  file is ignored rather than stopping RemEx. (RemEx-qean1)
+- Your dashboard layout on the PC no longer gets swapped for an older one a few seconds after RemEx
+  starts. On every start the PC app used to take an old backup copy of the layout and save it over the
+  layout you had, dropping cards. Your own saved layout now always wins, and the Sync button is the only
+  way to load the backup copy. (RemEx-jt6w5.8)
 - On the phone, a paired PC you haven't given a nickname now shows the PC's own name (for example
   "CONNOR-DESKTOP") instead of its IP address, in the Known PCs list, the unpair prompt and the
   startup splash. A nickname you chose still comes first, and the address is only used when the PC

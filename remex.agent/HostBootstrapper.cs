@@ -363,8 +363,12 @@ public static class HostBootstrapper
         // The phone's last-known palette, for "Match my phone" (RemEx-sudp8). Interface lives in
         // Remex.Core so the desktop can depend on it without referencing Remex.Agent, resolved there
         // via App.EmbeddedHostServices the same way SystemStatusViewModel reaches ISystemReadinessService.
-        builder.Services.AddSingleton<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore,
-            Remex.Agent.Services.Theme.PhoneThemeSnapshotStore>();
+        // Explicit factory so the PERSISTED constructor is chosen, never the memory-only one tests
+        // use: the snapshot must survive a host restart (RemEx-qean1).
+        builder.Services.AddSingleton<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>(
+            sp => new Remex.Agent.Services.Theme.PhoneThemeSnapshotStore(
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<
+                    Remex.Agent.Services.Theme.PhoneThemeSnapshotStore>>()));
 
         // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
         // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot

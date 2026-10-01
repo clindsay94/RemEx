@@ -35,6 +35,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     private bool _isInitialized;
     private DashboardProfile? _pendingSyncProfile;
 
+    // True from the moment SyncLayoutAsync sends layout_request until the host's reply arrives
+    // (RemEx-jt6w5.8). Only a requested layout_sync may replace this device's layout; the host's
+    // unsolicited on-connect sync is a stale mirror of this UI's own file and is ignored.
+    private bool _layoutSyncRequested;
+
     // Set around the alert-store seed inside ApplyProfile (RemEx-8wpvr.2, HIGH review round 2): every
     // ApplyProfile call re-seeds _alertStore from the incoming profile via ReplaceAll, which raises
     // SensorAlertStore.Changed unconditionally. Once OnAlertStoreChanged is subscribed (after first
@@ -509,15 +514,38 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
 
     private async Task OnLayoutProfileReceivedAsync(DashboardProfile profile)
     {
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(() => ReceiveLayoutSync(profile));
+    }
+
+    /// <summary>
+    /// The UI-thread half of <see cref="OnLayoutProfileReceivedAsync"/>, split out so tests can drive a
+    /// host <c>layout_sync</c> without a dispatcher (the same seam shape as <see cref="FinishInitialize"/>).
+    /// </summary>
+    /// <remarks>
+    /// The host sends <c>layout_sync</c> unprompted on every connect, carrying the machine-wide
+    /// <c>host_dashboard_layout.json</c>. Nothing but this UI writes that file (TriggerSave's
+    /// <c>layout_update</c> and a savefile import), so it is at best a copy of this device's own
+    /// <c>dashboard_layout.json</c> and is stale whenever that file changed without a connected save:
+    /// an edit while RemEx was stopped, or a save before the loopback came up. Applying it replaced the
+    /// user's cards and ApplyProfile's trailing save wrote the old layout over the file seconds after
+    /// launch (RemEx-jt6w5.8). Only a reply to an explicit Sync request (<see cref="SyncLayoutAsync"/>)
+    /// is applied; the per-user file wins over every other copy.
+    /// </remarks>
+    private void ReceiveLayoutSync(DashboardProfile profile)
+    {
+        if (!_layoutSyncRequested)
         {
-            if (!_isInitialized)
-            {
-                _pendingSyncProfile = profile;
-                return;
-            }
-            ApplyProfile(profile);
-        });
+            Debug.WriteLine("[Remex] Ignored an unrequested layout_sync; this device's own layout file wins.");
+            return;
+        }
+        _layoutSyncRequested = false;
+
+        if (!_isInitialized)
+        {
+            _pendingSyncProfile = profile;
+            return;
+        }
+        ApplyProfile(profile);
     }
 
     private void OnCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -582,7 +610,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
         // Seed the first-visit coach mark from whatever profile is now loaded.
         InitCoachMark();
 
-        // If a host sync arrived before we finished local load, prioritize the host.
+        // If a REQUESTED host sync arrived before we finished local load, the user asked for it, so
+        // apply it. Unrequested syncs never get here (ReceiveLayoutSync drops them, RemEx-jt6w5.8).
         if (_pendingSyncProfile != null)
         {
             ApplyProfile(_pendingSyncProfile);
@@ -1094,7 +1123,18 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             {
                 Type = MessageTypes.LayoutRequest,
             };
-            await Connection.SendAsync(msg);
+            // Set before sending so a fast reply cannot beat the flag (RemEx-jt6w5.8).
+            _layoutSyncRequested = true;
+            try
+            {
+                await Connection.SendAsync(msg);
+            }
+            catch
+            {
+                // No request went out, so no reply is owed; don't let the next on-connect sync through.
+                _layoutSyncRequested = false;
+                throw;
+            }
             LayoutStatus = "Sync requested…";
         }
         else

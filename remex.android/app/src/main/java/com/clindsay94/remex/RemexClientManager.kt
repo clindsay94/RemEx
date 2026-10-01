@@ -49,7 +49,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Job
@@ -431,8 +430,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // keyed on [connectedHost] arrived unpaired, was rejected, and the palette only ever reached
         // the PC on the next phone-side theme change. [authenticatedConnection] is the host's ack.
         managerScope.launch(Dispatchers.IO) {
-            authenticatedConnection.filterNotNull().collect {
-                sender.onConnected(settings.personalizationPreferencesFlow.first().toThemeSnapshot())
+            // Every reconnect, not just the first (RemEx-qean1): a restarted PC has no live palette
+            // until the phone resends it.
+            sender.sendOnEveryConnection(authenticatedConnection) {
+                settings.personalizationPreferencesFlow.first().toThemeSnapshot()
             }
         }
 
