@@ -1296,6 +1296,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             _hostInfoForConnection.value = _connectedHost.value?.let { connection -> HostInfoForConnection(connection, it) }
             _hostCapabilities.tryEmit(it)
             captureHostReportedMac(it)
+            captureHostMachineName(it)
         }
     }
 
@@ -1482,6 +1483,30 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 .orEmpty()
         if (mac.isBlank()) return
         managerScope.launch { runCatching { manager.saveHostReportedMacAddress(mac) } }
+    }
+
+    /**
+     * Remembers the machine name the host just reported against its known-PC identity, so a PC with
+     * no nickname is labelled by name instead of IP (RemEx-odqj5).
+     *
+     * Runs on every `host_info`, which is what reaches PCs paired before the field existed — they
+     * never send another pairing response. The identity comes from the pin for the host this
+     * `host_info` arrived on, the same derivation `recordHostAsLastConnected` uses; with no pin there
+     * is no known-PC row to label, so nothing is written. Quiet on failure for the same reason as
+     * [captureHostReportedMac]: an optional label must not take the connection down.
+     */
+    private fun captureHostMachineName(hostInfoJson: String) {
+        val manager = settingsManager ?: return
+        val host = _connectedHost.value?.host?.takeIf { it.isNotBlank() } ?: return
+        val machineName = com.clindsay94.remex.data.KnownHosts.parseMachineName(hostInfoJson)
+        if (machineName.isEmpty()) return
+        managerScope.launch(Dispatchers.IO) {
+            runCatching {
+                val pin = com.clindsay94.remex.security.PinnedHostStore.getPin(manager.context, host)
+                val identity = com.clindsay94.remex.security.HostIdentity.keyFor(pin) ?: return@runCatching
+                manager.recordKnownHostMachineName(identity, machineName)
+            }
+        }
     }
 
     override fun onDesktopError(errorText: String?) {

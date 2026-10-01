@@ -174,6 +174,9 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             // (RemEx-izuj). Empty when no adapter qualifies at all; wired is PREFERRED by the
             // ordering, not required by the filter.
             MacAddress = _macProbe(),
+            // Sent on every connect, not only at pairing, so a phone paired before this field
+            // existed still learns the name and stops labelling the PC by its IP (RemEx-odqj5).
+            MachineName = Environment.MachineName,
             SupportsProcessList = true,
             SupportsLauncherSync = true,
             SupportsRemoteDesktop = supportsRemoteDesktop,

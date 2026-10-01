@@ -20,11 +20,27 @@ data class KnownHost(
     /** The port that last worked, or the app default when this PC has never connected. */
     val port: Int,
     /** Epoch millis of the last successful connection, or 0 when there has never been one. */
-    val lastConnectedAtMillis: Long
+    val lastConnectedAtMillis: Long,
+    /**
+     * The PC's own machine name as it last reported it in `host_info` (RemEx-odqj5), or blank when
+     * it has never said — an older PC, or one this phone has not connected to since updating.
+     */
+    val machineName: String = ""
 ) {
     /** The address to dial. */
     val preferredAddress: String
         get() = addresses.first()
+
+    /**
+     * What to call this PC anywhere it is labelled: the user's nickname, else the machine name the
+     * PC reported, else the address (RemEx-odqj5).
+     *
+     * **THE ONE PLACE THIS FALLBACK CHAIN LIVES.** Every screen that names a known PC reads this
+     * rather than rebuilding the order itself, so the rows and the splash cannot disagree about what
+     * the same machine is called.
+     */
+    val displayName: String
+        get() = KnownHosts.displayName(nickname, machineName, preferredAddress)
 
     val hasEverConnected: Boolean
         get() = lastConnectedAtMillis > 0L
@@ -35,7 +51,9 @@ data class KnownHostRecord(
     val nickname: String = "",
     val lastAddress: String = "",
     val lastPort: Int = 0,
-    val lastConnectedAtMillis: Long = 0L
+    val lastConnectedAtMillis: Long = 0L,
+    /** Observed, not chosen: what the PC called itself in its last `host_info` (RemEx-odqj5). */
+    val machineName: String = ""
 )
 
 /**
@@ -66,6 +84,7 @@ object KnownHosts {
     const val LastAddressField = "lastAddress"
     const val LastPortField = "lastPort"
     const val LastConnectedField = "lastConnected"
+    const val MachineNameField = "machineName"
 
     fun nicknameKeyName(identity: String): String = "$KeyPrefix${identity}_$NicknameField"
 
@@ -74,6 +93,34 @@ object KnownHosts {
     fun lastPortKeyName(identity: String): String = "$KeyPrefix${identity}_$LastPortField"
 
     fun lastConnectedKeyName(identity: String): String = "$KeyPrefix${identity}_$LastConnectedField"
+
+    fun machineNameKeyName(identity: String): String = "$KeyPrefix${identity}_$MachineNameField"
+
+    /**
+     * The label for a known PC: nickname, else machine name, else address (RemEx-odqj5).
+     *
+     * A PC that is not nicknamed used to show its IP, which says nothing to someone with two PCs on
+     * the same subnet. The machine name is what Windows and Linux already call the PC, so it is the
+     * best default that exists without asking the user. Blank-or-whitespace counts as absent at
+     * every step, because both a cleared nickname and an older PC's missing name arrive as blank.
+     */
+    fun displayName(nickname: String, machineName: String, address: String): String =
+        nickname.trim().ifEmpty { machineName.trim() }.ifEmpty { address }
+
+    /**
+     * Reads the PC's machine name from a `host_info` capabilities payload (RemEx-odqj5).
+     *
+     * Blank when the key is absent (a PC older than the field), null, not a string, or the payload
+     * is not JSON at all. Never throws: this runs for every `host_info`, and an optional label must
+     * not be able to take a connection down.
+     */
+    fun parseMachineName(hostInfoJson: String?): String {
+        if (hostInfoJson.isNullOrBlank()) return ""
+        return runCatching {
+            val json = org.json.JSONObject(hostInfoJson)
+            if (json.isNull(MachineNameField)) "" else (json.opt(MachineNameField) as? String).orEmpty().trim()
+        }.getOrDefault("")
+    }
 
     /**
      * Reassembles the per-PC records from a flat preference snapshot.
@@ -105,6 +152,8 @@ object KnownHosts {
                     LastPortField -> (value as? Int)?.let { current.copy(lastPort = it) }
                     LastConnectedField ->
                         (value as? Long)?.let { current.copy(lastConnectedAtMillis = it) }
+                    MachineNameField ->
+                        (value as? String)?.let { current.copy(machineName = it.trim()) }
                     else -> null
                 }
                     ?: continue
@@ -136,7 +185,8 @@ object KnownHosts {
                     nickname = record.nickname,
                     addresses = preferLastUsed(addresses, record.lastAddress),
                     port = record.lastPort.takeIf { it in 1..65535 } ?: defaultPort,
-                    lastConnectedAtMillis = record.lastConnectedAtMillis
+                    lastConnectedAtMillis = record.lastConnectedAtMillis,
+                    machineName = record.machineName
                 )
             }
             .sortedByDescending { it.lastConnectedAtMillis }

@@ -96,6 +96,18 @@ public sealed record HostCapabilities
     public string? MacAddress { get; init; }
 
     /// <summary>
+    /// This PC's machine name (<c>Environment.MachineName</c>), so the phone can label a known PC that
+    /// has no nickname by its name instead of its IP address (RemEx-odqj5).
+    /// </summary>
+    /// <remarks>
+    /// ADDITIVE AND OPTIONAL, so it needs no protocolVersion bump: an older phone ignores the field,
+    /// and a newer phone treats null (an older PC) as "no name known" and falls back to the address.
+    /// It travels on every connect rather than only in <see cref="PairingResponse"/>, so PCs paired
+    /// before this existed learn their name too.
+    /// </remarks>
+    public string? MachineName { get; init; }
+
+    /// <summary>
     /// Whether this host implements Routines (routines spec §7.5, RemEx-pp0rt.3).
     /// </summary>
     /// <remarks>

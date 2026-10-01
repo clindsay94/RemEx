@@ -26,14 +26,16 @@ data class HandshakePeer(
         private val Ipv4Literal = Regex("""^\d{1,3}(\.\d{1,3}){3}$""")
 
         /**
-         * What the splash calls a PC. The nickname the user gave it first — the same name the
-         * Known PCs rows lead with ([com.clindsay94.remex.data.KnownPcEntry.displayName]). The
-         * host does not report a machine name, so with no nickname the best real name is a
-         * hostname the PC is paired at (`desk-rig.local`, a MagicDNS `desk-rig.tail1234.ts.net`),
-         * shown by its first label. A bare IP address is the last resort.
+         * What the splash calls a PC. The order — nickname, then the machine name the PC reported,
+         * then the address — is [com.clindsay94.remex.data.KnownHosts.displayName], the same one the
+         * Known PCs rows lead with (RemEx-odqj5); only the address step is splash-specific. There,
+         * the best address to show is a hostname the PC is paired at (`desk-rig.local`, a MagicDNS
+         * `desk-rig.tail1234.ts.net`), by its first label, and a bare IP is the last resort.
          */
-        fun displayNameFor(nickname: String, addresses: List<String>): String {
-            nickname.trim().takeIf { it.isNotEmpty() }?.let { return it }
+        fun displayNameFor(nickname: String, addresses: List<String>, machineName: String = ""): String =
+            com.clindsay94.remex.data.KnownHosts.displayName(nickname, machineName, addressLabel(addresses))
+
+        private fun addressLabel(addresses: List<String>): String {
             val hostname = addresses.map { it.trim() }.firstOrNull { a ->
                 a.isNotEmpty() && !Ipv4Literal.matches(a) && !a.contains(':') && a.any { it.isLetter() }
             }

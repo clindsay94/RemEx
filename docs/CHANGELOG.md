@@ -339,6 +339,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- On the phone, a paired PC you haven't given a nickname now shows the PC's own name (for example
+  "CONNOR-DESKTOP") instead of its IP address, in the Known PCs list, the unpair prompt and the
+  startup splash. A nickname you chose still comes first, and the address is only used when the PC
+  hasn't said its name. The PC now sends its name every time the phone connects, so PCs you paired
+  before this update pick it up on the next connection without pairing again. An older PC simply
+  keeps showing its address until RemEx on it is updated. (RemEx-odqj5)
+
 - The splash screens on the PC and the phone now really draw "RemEx" in Victor Mono Bold. The
   bundled font file was a saved web page with a `.ttf` name, so both apps quietly fell back to their
   default font. It is now the official Victor Mono Bold (SIL Open Font License, included as

@@ -828,6 +828,9 @@ class SettingsManager(val context: Context) {
         private fun knownHostLastConnectedKey(identity: String) =
                 longPreferencesKey(KnownHosts.lastConnectedKeyName(identity))
 
+        private fun knownHostMachineNameKey(identity: String) =
+                stringPreferencesKey(KnownHosts.machineNameKeyName(identity))
+
         val knownHostRecordsFlow: Flow<Map<String, KnownHostRecord>> =
                 context.dataStore.data.map { prefs ->
                         KnownHosts.parseRecords(prefs.asMap().mapKeys { it.key.name })
@@ -865,10 +868,31 @@ class SettingsManager(val context: Context) {
         }
 
         /**
+         * Remembers the machine name a PC reported in its `host_info` (RemEx-odqj5), so a known PC
+         * with no nickname is labelled by name rather than by IP.
+         *
+         * Written on every connect, not only at pairing, because that is the only path that reaches
+         * PCs paired before this existed. A blank name is ignored rather than stored: it is how an
+         * older PC says nothing, and overwriting a name the PC reported last time with it would put
+         * the IP back on the row. Skips the write when the stored name already matches, so a reconnect
+         * does not rewrite DataStore (and re-emit every collector) for nothing.
+         */
+        suspend fun recordKnownHostMachineName(identity: String, machineName: String) {
+                val trimmed = machineName.trim()
+                if (identity.isBlank() || trimmed.isEmpty()) return
+                context.dataStore.edit { prefs ->
+                        if (prefs[knownHostMachineNameKey(identity)] != trimmed) {
+                                prefs[knownHostMachineNameKey(identity)] = trimmed
+                        }
+                }
+        }
+
+        /**
          * Moves a PC's remembered details onto the identity it has after a certificate change
          * (RemEx-bye7).
          *
-         * ONLY THE NICKNAME IS CARRIED, and the omissions are the point. The address, port and
+         * ONLY THE NICKNAME (AND THE REPORTED MACHINE NAME, RemEx-odqj5) IS CARRIED, and the
+         * omissions are the point. The address, port and
          * timestamp are all being written by the connection that triggered this, so copying the old
          * ones would either be redundant or actively wrong — an older "last connected" would sort
          * the PC the user is sitting on below one they have not touched in a week. The nickname is
@@ -908,10 +932,22 @@ class SettingsManager(val context: Context) {
                                 prefs[knownHostNicknameKey(newIdentity)] = nickname
                         }
 
+                        // The machine name follows on the same destination-wins rule (RemEx-odqj5).
+                        // The repaired PC's own host_info may already have written a fresh one under
+                        // the new identity, and that is the better reading; the old one only fills
+                        // the gap until it arrives, so the row never flashes back to its IP.
+                        val machineName = prefs[knownHostMachineNameKey(oldIdentity)]?.trim()
+                        if (!machineName.isNullOrEmpty() &&
+                                        prefs[knownHostMachineNameKey(newIdentity)].isNullOrBlank()
+                        ) {
+                                prefs[knownHostMachineNameKey(newIdentity)] = machineName
+                        }
+
                         prefs.remove(knownHostNicknameKey(oldIdentity))
                         prefs.remove(knownHostLastAddressKey(oldIdentity))
                         prefs.remove(knownHostLastPortKey(oldIdentity))
                         prefs.remove(knownHostLastConnectedKey(oldIdentity))
+                        prefs.remove(knownHostMachineNameKey(oldIdentity))
                 }
         }
 
@@ -929,6 +965,7 @@ class SettingsManager(val context: Context) {
                         prefs.remove(knownHostLastAddressKey(identity))
                         prefs.remove(knownHostLastPortKey(identity))
                         prefs.remove(knownHostLastConnectedKey(identity))
+                        prefs.remove(knownHostMachineNameKey(identity))
                 }
         }
 

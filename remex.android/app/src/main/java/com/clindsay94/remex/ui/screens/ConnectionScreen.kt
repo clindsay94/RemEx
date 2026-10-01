@@ -1116,9 +1116,7 @@ fun ConnectionScreenContent(
                                                                 stringResource(
                                                                         R.string
                                                                                 .connection_known_pc_unpair_title,
-                                                                        target.nickname.ifBlank {
-                                                                                target.preferredAddress
-                                                                        }
+                                                                        target.displayName
                                                                 )
                                                         )
                                                 },
@@ -2261,9 +2259,10 @@ private fun KnownPcRow(
                 },
                 supportingContent = {
                         Column {
-                                // Only when the name is a nickname, otherwise the headline already
-                                // IS the endpoint and this would print it twice.
-                                if (entry.nickname.isNotBlank()) {
+                                // Only when the headline is a name (nickname or the PC's machine
+                                // name, RemEx-odqj5), otherwise it already IS the endpoint and this
+                                // would print it twice.
+                                if (entry.isNamed) {
                                         Text(
                                                 endpoint,
                                                 style = MaterialTheme.typography.bodySmall,

@@ -51,9 +51,17 @@ data class KnownPcEntry(
     val hasEverConnected: Boolean
         get() = lastConnectedAtMillis > 0L
 
-    /** The row's headline: the PC's name when it has one, otherwise the address itself. */
+    /**
+     * The row's headline: the user's nickname, else the machine name the PC reported, else this
+     * row's address (RemEx-odqj5). Delegates to [KnownHosts.displayName] so the order is defined
+     * once; the address is this row's own, not the machine's preferred one.
+     */
     val displayName: String
-        get() = nickname.ifBlank { address }
+        get() = KnownHosts.displayName(nickname, knownHost?.machineName.orEmpty(), address)
+
+    /** Whether [displayName] is a name rather than the bare address, so the address needs its own line. */
+    val isNamed: Boolean
+        get() = displayName != address
 }
 
 /**

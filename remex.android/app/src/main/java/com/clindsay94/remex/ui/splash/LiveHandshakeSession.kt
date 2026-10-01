@@ -145,7 +145,7 @@ internal fun androidLiveHandshakeSignals(context: Context, scope: CoroutineScope
 
 /**
  * The paired PCs, one per machine, most recently used first, named by [HandshakePeer.displayNameFor]
- * (nickname first, as the Known PCs rows do). The identity key is an opaque hash and never shown.
+ * (nickname, then machine name, as the Known PCs rows do). The identity key is an opaque hash and never shown.
  */
 private suspend fun loadAndroidPeers(context: Context): PeerSetup {
     val settings = SettingsManager(context)
@@ -155,7 +155,7 @@ private suspend fun loadAndroidPeers(context: Context): PeerSetup {
     val peers = KnownHosts.build(paired, records).map { host ->
         HandshakePeer(
             id = host.identity,
-            name = HandshakePeer.displayNameFor(host.nickname, host.addresses),
+            name = HandshakePeer.displayNameFor(host.nickname, host.addresses, host.machineName),
             addresses = host.addresses,
             port = host.port,
         )
