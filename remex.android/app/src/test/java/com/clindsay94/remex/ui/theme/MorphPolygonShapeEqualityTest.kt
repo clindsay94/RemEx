@@ -13,8 +13,8 @@ import org.junit.Test
 class MorphPolygonShapeEqualityTest {
     @Test
     fun `same index and progress produce equal shapes with matching hashCode`() {
-        val a = cardShape(5.3f, 16)
-        val b = cardShape(5.3f, 16)
+        val a = expressiveShape(5.3f, 16)
+        val b = expressiveShape(5.3f, 16)
 
         assertEquals(a, b)
         assertEquals(a.hashCode(), b.hashCode())
@@ -22,16 +22,16 @@ class MorphPolygonShapeEqualityTest {
 
     @Test
     fun `a different progress within the same index pair is not equal`() {
-        val a = cardShape(5.3f, 16)
-        val b = cardShape(5.7f, 16)
+        val a = expressiveShape(5.3f, 16)
+        val b = expressiveShape(5.7f, 16)
 
         assertNotEquals(a, b)
     }
 
     @Test
     fun `a different index pair is not equal`() {
-        val a = cardShape(2.3f, 16)
-        val b = cardShape(6.3f, 16)
+        val a = expressiveShape(2.3f, 16)
+        val b = expressiveShape(6.3f, 16)
 
         assertNotEquals(a, b)
     }

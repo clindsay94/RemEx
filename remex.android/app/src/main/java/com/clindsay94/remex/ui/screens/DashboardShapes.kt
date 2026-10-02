@@ -31,9 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.theme.CardShapes
 import com.clindsay94.remex.ui.theme.cardShape
-import com.clindsay94.remex.ui.theme.materialShapeNames
-import com.clindsay94.remex.ui.theme.materialShapesList
 
 /**
  * Category-driven card shapes (locked decision #5). Resolution order at render is:
@@ -43,7 +42,7 @@ import com.clindsay94.remex.ui.theme.materialShapesList
 object DashboardShapes {
     const val SHAPE_PRESET_INHERIT = -1f // "no explicit shape - resolve from category default"
     const val LEGACY_CLOVER_INDEX = 18f // materialShapesList[18] = Clover4Leaf
-    const val ROUNDED_RECTANGLE_INDEX = 24f
+    const val ROUNDED_RECTANGLE_INDEX = CardShapes.ROUNDED_RECTANGLE
 
     enum class CardCategory { PC_STATUS, CPU, GPU, RAM, TEMPERATURE, NETWORK, ACTION, OTHER }
 
@@ -67,16 +66,13 @@ object DashboardShapes {
         }
     }
 
-    fun defaultShapeFor(category: CardCategory): Float = when (category) {
-        CardCategory.PC_STATUS -> ROUNDED_RECTANGLE_INDEX // content-heavy (orb + status + stats)
-        CardCategory.CPU -> 1f // Square
-        CardCategory.GPU -> 8f // Slanted
-        CardCategory.RAM -> 17f // Oval
-        CardCategory.TEMPERATURE -> 11f // Gem
-        CardCategory.NETWORK -> 7f // Pill
-        CardCategory.ACTION -> 5f // Arch (Wake-on-LAN)
-        CardCategory.OTHER -> 1f // Square (safe fallback)
-    }
+    /**
+     * Every category defaults to the rounded rectangle (RemEx-kq10x.5, Connor 2026-10-02: "rounded
+     * default, keep as option"). The per-category morph defaults (Gem for temperatures, Oval for RAM,
+     * Pill for network...) clipped labels and values; the setting stays, the default is now safe.
+     */
+    @Suppress("UNUSED_PARAMETER") // kept so callers still state which category they resolve for
+    fun defaultShapeFor(category: CardCategory): Float = CardShapes.ROUNDED_RECTANGLE
 
     /**
      * Resolves a card's shape, most specific setting first:
@@ -98,6 +94,15 @@ object DashboardShapes {
         pcClassPreset: Float,
         telemetryClassPreset: Float,
         categoryPresets: Map<CardCategory, Float> = emptyMap(),
+    ): Float = CardShapes.sanitize(resolveStoredShape(card, pcClassPreset, telemetryClassPreset, categoryPresets))
+
+    // The raw winner of the precedence chain, before [CardShapes.sanitize] maps a removed shape
+    // (a saved Gem, Clover, mid-morph 5.3...) to the rounded rectangle.
+    private fun resolveStoredShape(
+        card: HomeCardState,
+        pcClassPreset: Float,
+        telemetryClassPreset: Float,
+        categoryPresets: Map<CardCategory, Float>,
     ): Float {
         if (card.shapePreset != SHAPE_PRESET_INHERIT) return card.shapePreset
         val category = categoryOf(card)
@@ -117,8 +122,6 @@ object DashboardShapes {
     }
 }
 
-/** Curated shape palette for the discrete picker: category defaults + a broader selectable set. */
-private val SHAPE_PICKER_INDICES: List<Int> = listOf(1, 0, 4, 7, 8, 5, 11, 17, 18, 24, 2, 3, 9, 10, 19, 20, 21, 22, 23)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,14 +156,15 @@ fun ShapePickerSheet(
                     onPick(DashboardShapes.SHAPE_PRESET_INHERIT)
                 }
             }
-            items(SHAPE_PICKER_INDICES) { index ->
+            // Only the content-safe shapes (RemEx-kq10x.5) - see CardShapes.
+            items(CardShapes.options) { index ->
                 ShapePickerCell(
-                    label = stringResource(materialShapeNames[index]),
-                    shapeIndex = index.toFloat(),
+                    label = stringResource(CardShapes.nameRes(index)),
+                    shapeIndex = index,
                     cornerRadiusDp = cornerRadiusDp
                 ) {
                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                    onPick(index.toFloat())
+                    onPick(index)
                 }
             }
         }

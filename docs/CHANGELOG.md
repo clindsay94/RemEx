@@ -182,6 +182,15 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **Cards look the same on the PC and the phone.** Phone tiles now default to a rounded rectangle
+  with the PC's 16dp corner radius, a tonal fill and a thin outline. The tile-shape setting stays,
+  but it only offers shapes that can't cut off a card's text: rounded rectangle and cut corner. A
+  saved blob, flower, clover or other removed shape shows as the rounded rectangle. Phone sensor
+  cards take their colours by the same rule as the PC (CPU and network in the primary colour, memory
+  and disk in secondary, GPU, temperatures, power, voltages, fans and clocks in tertiary), on the
+  label chip, the value and the graph, never on the card itself. Processes rows on both apps show
+  the name and PID on one line with small CPU and memory bars; the phone rows are rounded
+  rectangles instead of capsules (RemEx-kq10x.5).
 - **Page titles and subtitles look the same on the PC and the phone.** New installs use Bungee Shade
   for page titles on both apps, with Orbitron for the subtitle line under each title (profiles that
   already picked a font keep it). The phone now bundles both fonts with their licences. Ukrainian

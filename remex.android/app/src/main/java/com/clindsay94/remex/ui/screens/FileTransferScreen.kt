@@ -74,7 +74,7 @@ import com.clindsay94.remex.ui.components.FileManagerTextDialog
 import com.clindsay94.remex.ui.components.FileManagerToolbar
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
-import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardInnerPadding
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -118,7 +118,7 @@ fun FileTransferScreen(
     val canWrite = selectedRoot?.isWritable ?: (selectedVolume != null)
     val canDelete = selectedRoot?.canDelete ?: (selectedVolume != null)
     val canRename = selectedRoot?.canRename ?: (selectedVolume != null)
-    val padding = calculateAdaptivePadding(1f)
+    val padding = cardInnerPadding()
 
     // ── Pickers ────────────────────────────────────────────────────────────────
     val uploadLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->

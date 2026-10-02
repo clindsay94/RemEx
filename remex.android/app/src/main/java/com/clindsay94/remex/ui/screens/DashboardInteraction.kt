@@ -99,12 +99,14 @@ fun DraggableDashboardCard(
         label = "cardLiftScale"
     )
     val selectionBorderWidth by animateDpAsState(
-        targetValue = if (isSelected) 2.dp else 0.dp,
+        // Idle cards keep a 1dp outlineVariant hairline - the PC's glass-card outline, minus the
+        // glass (RemEx-kq10x.5); selection thickens it to 2dp primary.
+        targetValue = if (isSelected) 2.dp else 1.dp,
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "cardSelectionBorderWidth"
     )
     val selectionBorderColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0f),
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "cardSelectionBorderColor"
     )
@@ -163,8 +165,10 @@ fun DraggableDashboardCard(
         modifier = modifier.then(gestureModifier),
         shape = cardShape(shapeIndex, cornerRadius),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = containerAlpha),
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            // Tonal fill, not a family colour: the sensor accent lives on the label chip, the
+            // value and the sparkline/gauge (SensorAccents), never on the card body.
+            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = containerAlpha),
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         border = BorderStroke(selectionBorderWidth, selectionBorderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)

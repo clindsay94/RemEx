@@ -37,6 +37,14 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string? _killError;
 
+    /// <summary>Full scale of the CPU mini bars: the busiest listed process (RemEx-kq10x.5).</summary>
+    [ObservableProperty]
+    private double _maxCpuUsage = 1;
+
+    /// <summary>Full scale of the memory mini bars, in bytes: the largest listed process (RemEx-kq10x.5).</summary>
+    [ObservableProperty]
+    private double _maxMemoryUsage = 1;
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -150,7 +158,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
             _ => SortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
         };
 
-        Processes = new ObservableCollection<ProcessInfo>(query);
+        var visible = query.ToList();
+        MaxCpuUsage = ScaleMax(visible.Select(p => p.CpuUsage));
+        MaxMemoryUsage = ScaleMax(visible.Select(p => (double)p.MemoryUsage));
+        Processes = new ObservableCollection<ProcessInfo>(visible);
+    }
+
+    /// <summary>
+    /// The mini bars' scale: the largest value in the list, or 1 when there is none or it is 0, so
+    /// an idle host draws empty bars instead of dividing by zero. Same rule as the phone's
+    /// <c>ProcessRows.scaleMax</c> (RemEx-kq10x.5).
+    /// </summary>
+    internal static double ScaleMax(IEnumerable<double> values)
+    {
+        var max = values.DefaultIfEmpty(0).Max();
+        return max > 0 ? max : 1;
     }
 
     private async Task RefreshProcessesAsync()

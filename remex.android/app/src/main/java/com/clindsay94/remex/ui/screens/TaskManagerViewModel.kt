@@ -95,7 +95,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
             settingsManager.cardCornerRadiusFlow.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    20
+                    com.clindsay94.remex.ui.theme.CardShapes.DEFAULT_CORNER_RADIUS_DP
             )
 
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected

@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.clindsay94.remex.ui.screens.DashboardShapes
+import com.clindsay94.remex.ui.theme.CardShapes
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -204,7 +205,7 @@ class SettingsManager(val context: Context) {
                 val dynamicColor: Boolean = true,
                 val fontFamily: String = "default",
                 val fontScale: Float = 1.0f,
-                val cardCornerRadius: Int = 20,
+                val cardCornerRadius: Int = CardShapes.DEFAULT_CORNER_RADIUS_DP,
                 val cardOpacity: Float = 1.0f,
                 val pcCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val telemetryCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
@@ -356,7 +357,7 @@ class SettingsManager(val context: Context) {
 
         val cardCornerRadiusFlow: Flow<Int> =
                 context.dataStore.data.map { preferences ->
-                        preferences[CARD_CORNER_RADIUS_KEY] ?: 20
+                        preferences[CARD_CORNER_RADIUS_KEY] ?: CardShapes.DEFAULT_CORNER_RADIUS_DP
                 }
 
         val cardOpacityFlow: Flow<Float> =
@@ -437,7 +438,7 @@ class SettingsManager(val context: Context) {
                                 dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true,
                                 fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
                                 fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
-                                cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
+                                cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: CardShapes.DEFAULT_CORNER_RADIUS_DP,
                                 cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
                                 pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 telemetryCardShapePreset =

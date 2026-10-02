@@ -73,7 +73,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
-import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 
 data class AppLauncherUiState(
@@ -333,7 +333,7 @@ fun AppGridItem(
     modifier: Modifier = Modifier
 ) {
     val shape = cardShape(shapePreset, cornerRadius)
-    val adaptivePadding = calculateAdaptivePadding(shapePreset)
+    val adaptivePadding = cardInnerPadding()
 
     // Tactile spring press-scale on tap.
     val interaction = remember { MutableInteractionSource() }

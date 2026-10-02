@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -45,7 +47,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexCollapsingScrollBehavior
-import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -247,20 +249,11 @@ fun TaskManagerScreenContent(
                             }
                         }
                         TaskManagerListState.LIST -> {
-                            // Review fix (P1-20): takeIf { it > 0.0 }, not just ?: 1.0 - rounding
-                            // cpu/ram to whole numbers means an idle host (every process < 0.5%)
-                            // now legitimately floors every value to exactly 0.0, so maxOfOrNull
-                            // can return 0.0 (not null) on every poll, not just the first one.
-                            // 0.0/0.0 is NaN, which coerceIn passes straight through into
-                            // animateFloatAsState.
+                            // Bar scales: see ProcessRows.scaleMax for why 0.0 maps to 1.0 (P1-20).
                             val maxRam =
-                                    remember(processes) {
-                                        processes.maxOfOrNull { it.ram }?.takeIf { it > 0.0 } ?: 1.0
-                                    }
+                                    remember(processes) { ProcessRows.scaleMax(processes.map { it.ram }) }
                             val maxCpu =
-                                    remember(processes) {
-                                        processes.maxOfOrNull { it.cpu }?.takeIf { it > 0.0 } ?: 1.0
-                                    }
+                                    remember(processes) { ProcessRows.scaleMax(processes.map { it.cpu }) }
                             LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = 80.dp)
@@ -270,7 +263,6 @@ fun TaskManagerScreenContent(
                                             process = process,
                                             maxRam = maxRam,
                                             maxCpu = maxCpu,
-                                            shapePreset = shapePreset,
                                             cornerRadius = cornerRadius,
                                             onKill = { onKillProcess(process) },
                                             modifier =
@@ -325,8 +317,7 @@ private fun ProcessCardPreview() {
                 process = ProcessInfo(1234, "remex-host.exe", 5.0, 512.0),
                 maxRam = 1024.0,
                 maxCpu = 100.0,
-                shapePreset = 0f,
-                cornerRadius = 12,
+                cornerRadius = 16,
                 onKill = {}
             )
         }
@@ -617,14 +608,14 @@ private fun ProcessCard(
         process: ProcessInfo,
         maxRam: Double,
         maxCpu: Double,
-        shapePreset: Float,
         cornerRadius: Int,
         onKill: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     var showConfirm by remember { mutableStateOf(false) }
-    val adaptivePadding = calculateAdaptivePadding(shapePreset)
+    val adaptivePadding = cardInnerPadding()
+    val row = ProcessRows.rowFor(process, maxCpu = maxCpu, maxRam = maxRam)
 
     if (showConfirm) {
         AlertDialog(
@@ -663,11 +654,14 @@ private fun ProcessCard(
 
     Card(
             modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-            shape = cardShape(shapePreset, cornerRadius),
+            // Always a rounded rectangle, never a capsule or a morph shape: a list row is a
+            // container, and the shared card anatomy (RemEx-kq10x.5) is tonal fill + hairline.
+            shape = RoundedCornerShape(cornerRadius.dp),
             colors =
                     CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                     ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             onClick = {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 showConfirm = true
@@ -677,17 +671,25 @@ private fun ProcessCard(
                 modifier = Modifier.fillMaxWidth().padding(adaptivePadding),
                 verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // Line 1: name + "PID n", as on the PC's Processes page.
+            Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                         text = process.name,
                         style = MaterialTheme.typography.titleMediumEmphasized,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
                         text = stringResource(R.string.task_manager_pid_label, process.id),
                         style = MaterialTheme.typography.labelSmallEmphasized,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
 
@@ -699,14 +701,14 @@ private fun ProcessCard(
             ) {
                 UsageIndicator(
                         label = "CPU",
-                        value = "${process.cpu.toInt()}%",
-                        progress = (process.cpu / maxCpu).toFloat().coerceIn(0f, 1f),
+                        value = row.cpuText,
+                        progress = row.cpuFraction,
                         color = MaterialTheme.colorScheme.primary
                 )
                 UsageIndicator(
                         label = "RAM",
-                        value = "${process.ram.toInt()}MB",
-                        progress = (process.ram / maxRam).toFloat().coerceIn(0f, 1f),
+                        value = row.ramText,
+                        progress = row.ramFraction,
                         color = MaterialTheme.colorScheme.secondary
                 )
             }

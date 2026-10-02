@@ -97,10 +97,13 @@
                                     <StackPanel Width="60">
                                         <TextBlock Text="{local:Localize TaskMgr_CpuLabel}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
                                         <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right"/>
+                                        <!-- Mini bar, scaled to the busiest listed process, same as the phone's row (RemEx-kq10x.5). -->
+                                        <ProgressBar Classes="process-mini-bar" Minimum="0" Maximum="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).MaxCpuUsage}" Value="{Binding CpuUsage}" Height="4" MinWidth="0" Margin="0,4,0,0" AutomationProperties.AccessibilityView="Raw"/>
                                     </StackPanel>
                                     <StackPanel Width="80">
                                         <TextBlock Text="{local:Localize TaskMgr_MemLabel}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
                                         <TextBlock Text="{Binding MemoryUsage, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                        <ProgressBar Classes="process-mini-bar" Minimum="0" Maximum="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).MaxMemoryUsage}" Value="{Binding MemoryUsage}" Height="4" MinWidth="0" Margin="0,4,0,0" AutomationProperties.AccessibilityView="Raw"/>
                                     </StackPanel>
                                 </StackPanel>
 

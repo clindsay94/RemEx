@@ -40,7 +40,7 @@ class AppLauncherViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.clindsay94.remex.ui.theme.CardShapes.DEFAULT_CORNER_RADIUS_DP)
 
     val apps: StateFlow<List<AppEntry>> = remexClientManager.launcherEntries
         .map { data -> parseLauncherEntries(data) }

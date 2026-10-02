@@ -129,8 +129,12 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
 import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
-import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.expressiveShape
+import com.clindsay94.remex.ui.telemetry.MetricKind
+import com.clindsay94.remex.ui.telemetry.SensorAccents
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -1776,7 +1780,7 @@ private fun ConnectionOrbCard(
                                         // whole visual language is rounded — worst under the
                                         // monochrome palette at contrast 1.0, where ripple alpha is
                                         // highest against a flattened scheme.
-                                        .clip(cardShape(animatedShapePreset, cornerRadius))
+                                        .clip(expressiveShape(animatedShapePreset, cornerRadius))
                                         .clickable(
                                                 enabled = !isConnecting,
                                                 role = Role.Button,
@@ -1845,7 +1849,7 @@ private fun ConnectionOrbCard(
                         Box(
                                 modifier =
                                         Modifier.size(72.dp)
-                                                .clip(cardShape(animatedShapePreset, cornerRadius))
+                                                .clip(expressiveShape(animatedShapePreset, cornerRadius))
                                                 .drawBehind {
                                                         val alpha =
                                                                 glowAlphaState?.value
@@ -1961,7 +1965,10 @@ private fun TelemetryCardContent(
         selectionActive: Boolean,
         onOpenPicker: () -> Unit
 ) {
-        val dynamicPadding = calculateAdaptivePadding(shapeIndex)
+        val dynamicPadding = cardInnerPadding()
+        // Same category -> colour rule as the PC (SensorAccents mirrors SensorFamilies.For).
+        val scheme = MaterialTheme.colorScheme
+        val accent = SensorAccents.accentFor(sensor?.kind ?: MetricKind.UNKNOWN, scheme)
         val density = androidx.compose.ui.platform.LocalDensity.current
         val titleLineHeight = MaterialTheme.typography.labelSmall.lineHeight
 
@@ -2010,15 +2017,25 @@ private fun TelemetryCardContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                 ) {
-                        Text(
-                                title,
-                                style = MaterialTheme.typography.labelSmallEmphasized,
-                                maxLines = 1,
-                                overflow =
-                                        androidx.compose.ui.text.style.TextOverflow
-                                                .Ellipsis,
-                                modifier = Modifier.weight(1f)
-                        )
+                        // Label chip, top-left, in the sensor's family colours - the PC's
+                        // card-pill + sensor-title (SensorCardContent.axaml), RemEx-kq10x.5.
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                                Text(
+                                        title,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = accent.onChip,
+                                        maxLines = 1,
+                                        overflow =
+                                                androidx.compose.ui.text.style.TextOverflow
+                                                        .Ellipsis,
+                                        modifier =
+                                                Modifier.background(
+                                                                accent.chip,
+                                                                RoundedCornerShape(6.dp)
+                                                        )
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                        }
                         // Hidden while selectionActive (spec 4.5) - the action bar is the single
                         // control surface during lift/multi-select.
                         if (!selectionActive) {
@@ -2038,15 +2055,20 @@ private fun TelemetryCardContent(
                         }
                 }
 
-                TelemetryViewDispatch(
-                        mode = mode,
-                        sensor = sensor,
-                        history = history,
-                        secondarySensor = secondarySensor,
-                        secondaryHistory = secondaryHistory,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        showValueOverlay = showValueOverlay
-                )
+                // The telemetry views paint their value and sparkline/gauge in `primary`, so the
+                // family accent reaches all of them by re-pointing primary for this subtree only.
+                // Every other role, the type scale and the shapes are inherited unchanged.
+                MaterialTheme(colorScheme = scheme.copy(primary = accent.series)) {
+                        TelemetryViewDispatch(
+                                mode = mode,
+                                sensor = sensor,
+                                history = history,
+                                secondarySensor = secondarySensor,
+                                secondaryHistory = secondaryHistory,
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                showValueOverlay = showValueOverlay
+                        )
+                }
         }
         }
 }

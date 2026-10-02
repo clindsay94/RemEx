@@ -531,7 +531,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.clindsay94.remex.ui.theme.CardShapes.DEFAULT_CORNER_RADIUS_DP)
 
     val cardOpacity = settingsManager.cardOpacityFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)

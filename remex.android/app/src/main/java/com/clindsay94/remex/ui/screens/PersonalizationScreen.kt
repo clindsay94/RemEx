@@ -51,12 +51,13 @@ import com.clindsay94.remex.data.SplashStyles
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
-import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.isDarkThemeFor
 import com.clindsay94.remex.ui.theme.rememberPaletteColorScheme
-import com.clindsay94.remex.ui.theme.materialShapeNames
-import com.clindsay94.remex.ui.theme.materialShapesList
+import com.clindsay94.remex.ui.theme.CardShapes
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
@@ -1034,27 +1035,18 @@ fun PersonalizationScreenContent(
                                             }
                             )
 
-                    val maxShapes = (materialShapesList.size - 1).toFloat()
+                    val shapeChoices = listOf(DashboardShapes.SHAPE_PRESET_INHERIT) + CardShapes.options
 
                     shapeConfigs.forEach { (config, setter) ->
                         val (label, current) = config
                         val isInherit = current == DashboardShapes.SHAPE_PRESET_INHERIT
-                        val shapeIndex =
-                                current.roundToInt().coerceIn(0, materialShapeNames.lastIndex)
+                        // Read through CardShapes.sanitize: a saved shape that has since been
+                        // removed (a Gem, a Clover...) shows, and renders, as the rounded
+                        // rectangle (RemEx-kq10x.5).
+                        val resolvedShape = CardShapes.sanitize(current)
                         val shapeNameText =
                                 if (isInherit) stringResource(R.string.personalization_shape_auto)
-                                else stringResource(materialShapeNames[shapeIndex])
-                        // Auto has no real index to preview/morph - park the thumb + swatch at 0
-                        // (Circle) purely as a neutral resting position; the label makes clear
-                        // this is "Auto", not an actual Circle choice.
-                        val sliderDisplayValue = if (isInherit) 0f else current
-                        var lastHapticIndex by remember { mutableIntStateOf(sliderDisplayValue.toInt()) }
-                        val animatedShapePreset by
-                                animateFloatAsState(
-                                        targetValue = sliderDisplayValue,
-                                        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-                                        label = "shape_morph_$label"
-                                )
+                                else stringResource(CardShapes.nameRes(resolvedShape))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1066,8 +1058,8 @@ fun PersonalizationScreenContent(
                                         style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Cleared because the Slider below now announces this same
-                                    // shape name as its stateDescription. The category Text above
+                                    // Cleared because the shape chips below announce this same
+                                    // shape name as the selected chip. The category Text above
                                     // is deliberately left announceable, but only as the row
                                     // HEADING: unlike the other slider labels on this screen it
                                     // carries no value, so leaving it cannot repeat one. Note it
@@ -1104,47 +1096,55 @@ fun PersonalizationScreenContent(
                                     }
                                 }
                             }
-                            Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            // Auto + the content-safe shapes only (RemEx-kq10x.5). The old 0-24
+                            // morph slider offered blobs and clovers that clipped tile content.
+                            // Each chip draws its own shape as the leading swatch, and its
+                            // description names the row, so fifteen rows of identical chips stay
+                            // tellable apart for a screen-reader user (RemEx-pmo4).
+                            FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Slider(
-                                        value = sliderDisplayValue,
-                                        onValueChange = { newValue ->
-                                            val newIndex = newValue.roundToInt()
-                                            if (newIndex != lastHapticIndex) {
+                                shapeChoices.forEach { choice ->
+                                    val choiceIsAuto = choice == DashboardShapes.SHAPE_PRESET_INHERIT
+                                    val selected =
+                                            if (choiceIsAuto) isInherit
+                                            else !isInherit && resolvedShape == choice
+                                    val choiceName =
+                                            stringResource(
+                                                    if (choiceIsAuto) R.string.personalization_shape_auto
+                                                    else CardShapes.nameRes(choice)
+                                            )
+                                    FilterChip(
+                                            selected = selected,
+                                            onClick = {
                                                 view.performHapticFeedback(
                                                         HapticFeedbackConstants.CLOCK_TICK
                                                 )
-                                                lastHapticIndex = newIndex
-                                            }
-                                            setter(newIndex.toFloat())
-                                        },
-                                        valueRange = 0f..maxShapes,
-                                        steps = materialShapesList.size - 2,
-                                        // The meaningful value here is the shape NAME, not the
-                                        // index - "Circle" tells a TalkBack user what they just
-                                        // selected, "3.0" does not. One fix covers every visible
-                                        // shape slider, since they are all this one composable.
-                                        modifier =
-                                                Modifier.weight(1f).semantics {
-                                                    contentDescription = label
-                                                    stateDescription = shapeNameText
-                                                }
-                                )
-                                Box(
-                                        modifier =
-                                                Modifier.size(56.dp)
-                                                        .clip(
-                                                                cardShape(
-                                                                        animatedShapePreset,
-                                                                        cornerRadius
-                                                                )
-                                                        )
-                                                        .background(
-                                                                MaterialTheme.colorScheme.primary
-                                                        )
-                                )
+                                                setter(choice)
+                                            },
+                                            label = { Text(choiceName) },
+                                            leadingIcon = {
+                                                Box(
+                                                        modifier =
+                                                                Modifier.size(16.dp)
+                                                                        .clip(
+                                                                                cardShape(
+                                                                                        choice,
+                                                                                        cornerRadius
+                                                                                )
+                                                                        )
+                                                                        .background(
+                                                                                MaterialTheme.colorScheme.primary
+                                                                        )
+                                                )
+                                            },
+                                            modifier =
+                                                    Modifier.semantics {
+                                                        contentDescription = "$label: $choiceName"
+                                                    }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1411,7 +1411,7 @@ private fun MiniCardPreview(
                     label = "MiniCardColorAnimation"
             )
 
-    val adaptivePadding = calculateAdaptivePadding(shapePreset)
+    val adaptivePadding = cardInnerPadding()
 
     Box(
             modifier =

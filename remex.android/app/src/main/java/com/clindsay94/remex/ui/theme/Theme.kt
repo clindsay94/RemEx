@@ -178,22 +178,10 @@ val materialShapesList: List<RoundedPolygon> = listOf(
 
     // Index 24 - plain rounded rectangle for content-heavy cards (PC status). Handled as a
     // discrete special case in cardShape(), not a real morph target; the placeholder entry here
-    // only keeps materialShapesList/materialShapeNames/shapeSafety index-aligned.
+    // only keeps the index range of the expressive accents unchanged.
     MaterialShapes.Square,
 )
 
-/** Human-readable name resource IDs that correspond 1-to-1 with [materialShapesList]. */
-val materialShapeNames: List<Int> = listOf(
-    R.string.shape_circle, R.string.shape_square, R.string.shape_triangle,
-    R.string.shape_diamond, R.string.shape_pentagon, R.string.shape_arch,
-    R.string.shape_semi_circle, R.string.shape_pill, R.string.shape_slanted,
-    R.string.shape_fan, R.string.shape_clam_shell, R.string.shape_gem,
-    R.string.shape_heart, R.string.shape_flower, R.string.shape_puffy,
-    R.string.shape_puffy_diamond, R.string.shape_ghostish, R.string.shape_oval,
-    R.string.shape_clover_4_leaf, R.string.shape_clover_8_leaf, R.string.shape_sunny,
-    R.string.shape_soft_burst, R.string.shape_soft_boom, R.string.shape_pixel_circle,
-    R.string.shape_rounded_rectangle
-)
 class MorphPolygonShape(
     private val morph: Morph,
     private val progress: Float
@@ -262,7 +250,18 @@ private val morphCache: MutableMap<Long, Morph> = java.util.Collections.synchron
 )
 private const val MORPH_CACHE_MAX = 32
 
-fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
+/**
+ * The shape of a card or tile: one of the content-safe [CardShapes.options]. Every saved value is
+ * read through [CardShapes.sanitize], so a removed morph shape falls back to the rounded rectangle
+ * (RemEx-kq10x.5). For the expressive morphing accents (the connection orb), use [expressiveShape].
+ */
+fun cardShape(index: Float, cornerRadiusDp: Int): Shape = CardShapes.shapeFor(index, cornerRadiusDp)
+
+/**
+ * Morphs between the expressive [materialShapesList] polygons. ACCENTS ONLY (the connection orb,
+ * previews): these shapes clip content, so a card or tile uses [cardShape] instead.
+ */
+fun expressiveShape(index: Float, cornerRadiusDp: Int): Shape {
     if (materialShapesList.isEmpty()) {
         return RoundedCornerShape(cornerRadiusDp.dp)
     }
@@ -294,50 +293,16 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     return MorphPolygonShape(morph, progress)
 }
 
+/**
+ * Inner padding of a card. Every card shape is content-safe now ([CardShapes]), so the old
+ * per-shape "safety" inset (up to 24dp for a heart or a triangle) is gone: one padding for every
+ * card, as on the PC (RemEx-kq10x.5). Still scale-aware (RemEx-0i3x): larger text sits a little
+ * deeper so it never meets the rounded corner, capped so extreme scales don't hollow the card out.
+ */
 @Composable
-fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
-    val shapeIndex = shapePreset.toInt()
-    val progress = shapePreset - shapeIndex
-
-    // Define "safety" of each shape. 1.0 = safe (square), 0.0 = very unsafe (extreme clipping)
-    val shapeSafety = listOf(
-        0.55f, // Circle (corners cut off significantly)
-        1.00f, // Square (perfectly safe)
-        0.30f, // Triangle (extreme corner clipping)
-        0.45f, // Diamond (heavy corner clipping)
-        0.65f, // Pentagon
-        0.75f, // Arch
-        0.65f, // Semi-Circle
-        0.85f, // Pill
-        0.80f, // Slanted
-        0.70f, // Fan
-        0.65f, // Clam Shell
-        0.55f, // Gem
-        0.40f, // Heart (top-center and bottom-center clipping)
-        0.50f, // Flower
-        0.65f, // Puffy
-        0.55f, // Puffy Diamond
-        0.65f, // Ghostish
-        0.65f, // Oval
-        0.55f, // 4-Leaf Clover
-        0.55f, // 8-Leaf Clover
-        0.45f, // Sunny
-        0.55f, // Soft Burst
-        0.65f, // Soft Boom
-        0.75f, // Pixel Circle
-        0.97f  // Rounded Rectangle (plain RoundedCornerShape, no polygon clipping)
-    )
-
-    val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }
-    val nextSafety = shapeSafety.getOrElse(shapeIndex + 1) { currentSafety }
-    val safety = currentSafety + (nextSafety - currentSafety) * progress
-
-    // Base padding is 8dp, max padding for unsafe shapes is 24dp
-    // Scale-aware (RemEx-0i3x): larger text must sit deeper inside unsafe shapes, so the
-    // inset grows with the effective font scale (capped so extreme scales don't hollow out
-    // the card interior entirely).
+fun cardInnerPadding(): androidx.compose.ui.unit.Dp {
     val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.5f)
-    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety) * fontScale
+    return CardShapes.INNER_PADDING_DP.dp * fontScale
 }
 
 @SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
@@ -698,7 +663,7 @@ private fun RemExThemePreview() {
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
-                                .clip(cardShape(index.toFloat(), 12))
+                                .clip(expressiveShape(index.toFloat(), 12))
                                 .background(MaterialTheme.colorScheme.primaryContainer)
                         )
                     }
