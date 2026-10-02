@@ -848,6 +848,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     internal fun resetStreamReplayCachesForTests() {
         _desktopErrors.resetReplayCache()
         _telemetry.resetReplayCache()
+        _homePinsMessages.resetReplayCache()
     }
 
     private val _connectionError =
@@ -922,6 +923,20 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     onBufferOverflow = BufferOverflow.DROP_OLDEST
             )
     val routineStepResults = _routineStepResults.asSharedFlow()
+
+    /**
+     * Whole `home_pins_*` envelopes from the PC, raw (RemEx-wqo7a.5). Each `home_pins_sync` is a
+     * full snapshot of the PC Home's pins, so latest-wins: `replay = 1` lets a Home that starts
+     * collecting after connect still learn the list, and `DROP_OLDEST` keeps `tryEmit` from the JNI
+     * thread from ever refusing the newest one (see [_telemetry]).
+     *
+     * **THE REPLAY DIES WITH THE CONNECTION.** Cleared in [onConnectionStateChanged] in both
+     * directions: the host's revision counter restarts with each connection, and on a host switch
+     * the previous PC's list must never be shown as this one's.
+     */
+    private val _homePinsMessages =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val homePinsMessages = _homePinsMessages.asSharedFlow()
 
     /**
      * Smoothed round-trip time to the PC in milliseconds, or null before the first pong (RemEx-93n2).
@@ -1201,6 +1216,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _authenticatedConnection.value = null
         // The previous connection's host_info must not describe the next one (RemEx-pp0rt.5).
         _hostInfoForConnection.value = null
+        // The previous connection's pinned-sensor list must not describe the next one (RemEx-wqo7a.5):
+        // cleared BEFORE [_isConnected] moves, so a Home that wakes on connected=true can only be
+        // handed this connection's first home_pins_sync, never a replay of the last PC's.
+        _homePinsMessages.resetReplayCache()
         _isConnected.value = isConnected
         _isConnecting.value = false
         // Which PC this is, not merely that there is one. A host switch drives this callback false
@@ -1557,6 +1576,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             is RoutineInboundMessage.Ignored -> Unit
             else -> _routineMessages.tryEmit(message)
         }
+    }
+
+    override fun onHomePinsMessage(json: String?) {
+        // Raw, parsed by the consumer: nothing above a JNI callback can catch an exception, so the
+        // parse belongs where a malformed message can be ignored without that risk.
+        json?.let { _homePinsMessages.tryEmit(it) }
     }
 
     override fun onLinkQuality(json: String?) {

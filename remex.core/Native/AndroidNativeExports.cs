@@ -221,6 +221,9 @@ public static class AndroidNativeExports
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onClipboardMessageMethodId;
     private static IntPtr _onRoutineMessageMethodId;
+
+    /// <summary>Carries every <c>home_pins_*</c> envelope to Kotlin (RemEx-wqo7a.5).</summary>
+    private static IntPtr _onHomePinsMessageMethodId;
     private static IntPtr _onLinkQualityMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
@@ -369,6 +372,7 @@ public static class AndroidNativeExports
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onClipboardMessageMethodId = IntPtr.Zero;
         _onRoutineMessageMethodId = IntPtr.Zero;
+        _onHomePinsMessageMethodId = IntPtr.Zero;
         _onLinkQualityMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
@@ -484,6 +488,7 @@ public static class AndroidNativeExports
                 var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
                 var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
                 var onRoutineMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onRoutineMessage", "(Ljava/lang/String;)V");
+                var onHomePinsMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onHomePinsMessage", "(Ljava/lang/String;)V");
                 var onLinkQualityMethodId = GetRequiredCallbackMethodId(env, clazz, "onLinkQuality", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
@@ -508,6 +513,7 @@ public static class AndroidNativeExports
                     || onFileTransferMessageMethodId == IntPtr.Zero
                     || onClipboardMessageMethodId == IntPtr.Zero
                     || onRoutineMessageMethodId == IntPtr.Zero
+                    || onHomePinsMessageMethodId == IntPtr.Zero
                     || onLinkQualityMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
@@ -537,6 +543,7 @@ public static class AndroidNativeExports
                 _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
                 _onClipboardMessageMethodId = onClipboardMessageMethodId;
                 _onRoutineMessageMethodId = onRoutineMessageMethodId;
+                _onHomePinsMessageMethodId = onHomePinsMessageMethodId;
                 _onLinkQualityMethodId = onLinkQualityMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
@@ -2085,6 +2092,19 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onRoutineMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
+        }
+
+        // THE WHOLE home_pins_ FAMILY, BY PREFIX (RemEx-wqo7a.5). home_pins_sync is the PC Home's
+        // pinned-sensor list; without this line the host sends it, the send succeeds, and the phone's
+        // Home quietly keeps showing whatever it pinned last - the RemEx-y6x6 failure mode again,
+        // looking like a PC that never changed. The phone -> host home_pins_change matches the prefix
+        // too but never arrives on this side. The whole envelope, like the families above, because
+        // Kotlin checks `type` and the revision. Do NOT narrow it to an explicit type list.
+        if (msg.Type is { } homePinsType && homePinsType.StartsWith("home_pins_", StringComparison.Ordinal))
+        {
+            NotifyJavaData(
+                _onHomePinsMessageMethodId,
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 

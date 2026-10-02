@@ -444,6 +444,28 @@ public sealed record RemexMessage
     [JsonPropertyName("routineRunRequest")]
     [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Messages.Routines.RoutineRunRequestPayload>))]
     public Remex.Core.Messages.Routines.RoutineRunRequestPayload? RoutineRunRequest { get; init; }
+
+    // ── Home pinned sensors (RemEx-wqo7a.5). Optional additions; no protocolVersion bump. ──
+    //
+    // LENIENT FOR THE SAME REASON AS THE ROUTINE SLOTS ABOVE, AND THROUGH THE SAME GENERIC CONVERTER
+    // (its name says routine; nothing in it is). "pinned": "yes" or a number in a name list would
+    // otherwise null the whole envelope and drop the session (REGRESSION-GUARDS, the
+    // PhoneThemeSnapshot lesson); here it nulls this slot only, and the handler drops the message.
+
+    /// <summary>
+    /// The PC Home's pinned-sensor list, for <see cref="MessageTypes.HomePinsSync"/> (host → phone).
+    /// </summary>
+    [JsonPropertyName("homePins")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.HomePinnedSensors>))]
+    public Remex.Core.Models.HomePinnedSensors? HomePins { get; init; }
+
+    /// <summary>
+    /// One phone-requested pin change, for <see cref="MessageTypes.HomePinsChange"/> (phone → host).
+    /// Pairing-gated for free by the default-true <c>RequiresPairing</c>, and in no audience table.
+    /// </summary>
+    [JsonPropertyName("homePinChange")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.HomePinChange>))]
+    public Remex.Core.Models.HomePinChange? HomePinChange { get; init; }
 }
 
 /// <summary>
@@ -705,4 +727,23 @@ public static class MessageTypes
 
     /// <summary>Phone -> host: run or test one of this phone's stored PC-run routines (§7.3.8).</summary>
     public const string RoutineRunRequest = "routine_run_request";
+
+    // ── Home pinned sensors (RemEx-wqo7a.5) ──
+    //
+    // NAMING RULE, LIKE routine_ ABOVE: every HOST -> PHONE type starts with "home_pins_", so the single
+    // prefix forward in AndroidNativeExports.OnNativeMessageReceived carries all of them to
+    // RemexCallback.onHomePinsMessage. The phone -> host type matches the prefix too and never arrives
+    // on the phone side. Do not add a host -> phone home-pins type outside the prefix.
+
+    /// <summary>
+    /// Host -> phone: the PC Home's pinned and pinnable sensor names, sent on attach and on every
+    /// change. The phone replaces its state with it.
+    /// </summary>
+    public const string HomePinsSync = "home_pins_sync";
+
+    /// <summary>
+    /// Phone -> host: pin or unpin ONE sensor. Never a whole list; the reply is the next
+    /// <see cref="HomePinsSync"/>.
+    /// </summary>
+    public const string HomePinsChange = "home_pins_change";
 }

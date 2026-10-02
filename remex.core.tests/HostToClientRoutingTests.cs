@@ -62,6 +62,7 @@ public class HostToClientRoutingTests
     [InlineData("file_", "_onFileTransferMessageMethodId")]
     [InlineData("clipboard_", "_onClipboardMessageMethodId")]
     [InlineData("routine_", "_onRoutineMessageMethodId")]
+    [InlineData("home_pins_", "_onHomePinsMessageMethodId")]
     public void TheFamilyIsForwardedByPrefixToItsCallback(string prefix, string callbackField)
     {
         var body = RouterBody();
@@ -85,6 +86,7 @@ public class HostToClientRoutingTests
     [InlineData("routine_", "routine_step_result")]
     [InlineData("routine_", "routine_notify")]
     [InlineData("routine_", "routine_run_report")]
+    [InlineData("home_pins_", "home_pins_sync")]
     public void TheWireValueStartsWithThePrefixItIsRoutedBy(string prefix, string wireValue)
     {
         // THE TWO HALVES OF THE ROUTING LIVE IN DIFFERENT FILES AND NOTHING TIED THEM TOGETHER.
@@ -110,6 +112,27 @@ public class HostToClientRoutingTests
         Assert.Equal("routine_step_result", Remex.Core.Messages.MessageTypes.RoutineStepResult);
         Assert.Equal("routine_notify", Remex.Core.Messages.MessageTypes.RoutineNotify);
         Assert.Equal("routine_run_report", Remex.Core.Messages.MessageTypes.RoutineRunReport);
+
+        // Home pinned sensors (RemEx-wqo7a.5): both directions share the home_pins_ prefix.
+        Assert.Equal("home_pins_sync", Remex.Core.Messages.MessageTypes.HomePinsSync);
+        Assert.Equal("home_pins_change", Remex.Core.Messages.MessageTypes.HomePinsChange);
+    }
+
+    [Fact]
+    public void EveryHostToPhoneHomePinsTypeIsCoveredByTheHomePinsPrefix()
+    {
+        // Same shape as the routines check above: the audience table is the declared list of
+        // host -> phone home-pins types, and each must ride the prefix forward to the phone.
+        var homePinsTypes = Remex.Core.Messages.MessageAudience.HostToClient
+            .Where(e => e.Key.Contains("home_pins", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.Single(homePinsTypes);
+        foreach (var (wire, audience) in homePinsTypes)
+        {
+            Assert.StartsWith("home_pins_", wire, StringComparison.Ordinal);
+            Assert.Equal(Remex.Core.Messages.ClientSurface.AndroidControl, audience);
+        }
     }
 
     [Fact]
@@ -139,6 +162,7 @@ public class HostToClientRoutingTests
     // next one, which is the case it is most needed for.
     [InlineData("onLinkQuality", "_onLinkQualityMethodId")]
     [InlineData("onRoutineMessage", "_onRoutineMessageMethodId")]
+    [InlineData("onHomePinsMessage", "_onHomePinsMessageMethodId")]
     public void TheCallbackIsLookedUpAndAssignedDuringRegistration(string javaMethod, string field)
     {
         // **THE HOLE THE ROUTER SCAN CANNOT SEE, AND IT IS THE BIGGER ONE.** The forward can be
@@ -167,6 +191,7 @@ public class HostToClientRoutingTests
                      ("file_", "_onFileTransferMessageMethodId"),
                      ("clipboard_", "_onClipboardMessageMethodId"),
                      ("routine_", "_onRoutineMessageMethodId"),
+                     ("home_pins_", "_onHomePinsMessageMethodId"),
                  })
         {
             var match = Regex.Match(
@@ -198,6 +223,7 @@ public class HostToClientRoutingTests
         Assert.DoesNotContain("MessageTypes.FileTransfer", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.ClipboardContent", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.Routine", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("MessageTypes.HomePins", body, StringComparison.Ordinal);
     }
 
     [Fact]

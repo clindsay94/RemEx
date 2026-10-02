@@ -129,4 +129,14 @@ public sealed record HostCapabilities
     /// Null on a host that predates routines.
     /// </summary>
     public List<string>? RoutinePowerVerbs { get; init; }
+
+    /// <summary>
+    /// Whether this host shares the PC Home's pinned sensors with the phone, as <c>home_pins_sync</c>,
+    /// and accepts <c>home_pins_change</c> (RemEx-wqo7a.5).
+    /// </summary>
+    /// <remarks>
+    /// ADDITIVE, AND ABSENT MEANS FALSE ON PURPOSE: an older host would ignore a change, so a phone that
+    /// sees false never sends one and keeps a phone-local pinned list instead, with no error shown.
+    /// </remarks>
+    public bool SupportsHomePinsSync { get; init; }
 }

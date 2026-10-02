@@ -427,3 +427,39 @@ request is person-initiated.
 Destructive steps count down, because a phone request is never presence at the PC; only Run now
 confirmed on the PC itself skips the countdown, and that flag has no wire representation.
 
+
+---
+
+## 9. Home pinned sensors
+
+The phone's Home shows the same pinned sensors as the PC Home, and either side can change them. The PC
+is the single owner: the list is `DashboardProfile.PinnedSensorIds`, and only the list of sensor names
+travels, never cards, positions or themes. Payload records: `remex.core/Models/HomePinnedSensors.cs`;
+validation: `remex.core/Validation/HomePinsValidation.cs`.
+
+**Transport and gating.** `RemexMessage` on the authenticated `/ws` channel, `protocolVersion` stays `2`.
+The host never sends these to a loopback session and accepts `home_pins_change` only from an
+authenticated, non-loopback session. An invalid change is logged and dropped with no reply.
+
+| Record | Field | Type | Meaning |
+| :--- | :--- | :--- | :--- |
+| `HostCapabilities` | `supportsHomePinsSync` | `bool` | The PC sends `home_pins_sync` and accepts `home_pins_change`. Absent: the phone never sends a change and keeps a phone-local list |
+
+| `type` | Direction | Envelope property | Payload record |
+| :--- | :--- | :--- | :--- |
+| `home_pins_sync` | host → phone | `homePins` | `HomePinnedSensors { sensorNames, pinnableSensorNames, revision, updatedUtc }` |
+| `home_pins_change` | phone → host | `homePinChange` | `HomePinChange { sensorName, pinned }` |
+
+Every home-pins type starts with `home_pins_`. The Android native router forwards that whole prefix to
+`RemexCallback.onHomePinsMessage` in one place; a new host → phone type must keep the prefix or it is
+dropped without a trace. Both slots are lenient: a wrong-typed field nulls the slot, not the envelope.
+
+- **Names, not ids.** The key is `SensorReading.Name`, compared case-insensitively. A name is non-blank,
+  at most 200 characters, with no control characters; a list holds at most 100 names, duplicates removed
+  case-insensitively keeping the first.
+- **Sync.** Sent on attach and after every change. `pinnableSensorNames` lists the sensors with a placed
+  card on the PC canvas; only those can be pinned durably. `revision` rises per host process; the phone
+  ignores an older sync on the same connection and forgets the counter on reconnect.
+- **Change.** One sensor per message, never a whole list. The host applies changes in arrival order, so
+  changes to different sensors both survive and the later of two changes to one sensor wins. The answer
+  is the next `home_pins_sync`; a change the PC cannot honour is answered by resending the unchanged list.

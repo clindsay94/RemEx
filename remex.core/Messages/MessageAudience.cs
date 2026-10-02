@@ -103,6 +103,11 @@ public static class MessageAudience
         [MessageTypes.FileTransferReady] = ClientSurface.AndroidControl,
         [MessageTypes.FileTransferResult] = ClientSurface.AndroidControl,
         [MessageTypes.FileVolumesResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
+        // The phone only (RemEx-wqo7a.5). The PC's own UI publishes this list in-process through
+        // IHomePinnedSensorsStore and the host never sends it to a loopback session. It reaches Kotlin
+        // through the home_pins_ prefix forward; declaring it here is what makes that forward
+        // impossible to delete in silence.
+        [MessageTypes.HomePinsSync] = ClientSurface.AndroidControl,
         [MessageTypes.HostInfo] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LauncherSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         // The phone only, for the same reason as media_state below (RemEx-vtorl): the PC's UI shares

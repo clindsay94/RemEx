@@ -69,6 +69,17 @@ object RemexCoreClient {
          * `ClientCapabilities.supportsRoutines` on the strength of this method existing.
          */
         fun onRoutineMessage(json: String?)
+
+        /**
+         * Any `home_pins_*` message from the PC, as a whole RemexMessage envelope (RemEx-wqo7a.5):
+         * today `home_pins_sync`, the PC Home's pinned and pinnable sensor names.
+         *
+         * Forwarded by PREFIX in the native router, like `routine_*`. Switch on `type` and ignore
+         * what you do not handle. REQUIRED, not defaulted: the native callback registration is
+         * all-or-nothing, so a missing implementation fails loudly at registration instead of the
+         * PC's pins silently never arriving.
+         */
+        fun onHomePinsMessage(json: String?)
         /**
          * Link quality measured by the native layer (RemEx-93n2).
          *
