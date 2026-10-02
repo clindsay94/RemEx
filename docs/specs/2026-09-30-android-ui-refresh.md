@@ -131,8 +131,15 @@ These survive the redesign, so fixing them now is not wasted:
    RemEx-wqo7a.3.)
 3. Home (PC card, pinned sensors synced with the PC Home, Open Sensors, shortcuts, recent activity) +
    Sensors canvas (aligned grid, edit mode).
-4. Apps + Control restyle. (Commands restyle done in cohesion phase 3, b514d644.)
-5. Connection restructure + Files hidden-items toggle.
+4. Apps + Control restyle. (Commands restyle done in cohesion phase 3, b514d644. Apps done,
+   RemEx-wqo7a.6: surfaceContainer tiles at least square, refresh in the top bar plus
+   pull-to-refresh, no floating toolbar, plain loading / empty / no-answer states.)
+5. Connection restructure + Files hidden-items toggle. (done, RemEx-wqo7a.6: Connection leads with
+   "Your PCs", one card per remembered address, kept per address rather than per machine for the
+   RemEx-obxlo reason; "Add a PC" holds discovery / QR / "Add manually"; each card's details sheet
+   holds edit / rename / unpair / remove. Remote Desktop defaults left the screen and connecting no
+   longer writes them. Files: "Show hidden items" in the Sort menu, off by default and remembered,
+   display-only.)
 6. Motion pass across all destinations.
 
 Each phase: release build, the theming-axis sweep on the AVD (screenshots), Connor's device check, then

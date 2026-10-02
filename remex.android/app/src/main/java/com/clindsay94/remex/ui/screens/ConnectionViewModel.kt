@@ -112,13 +112,6 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     null
             )
 
-    val remoteDesktopPreferences: StateFlow<SettingsManager.RemoteDesktopPreferences?> =
-            settingsManager.remoteDesktopPreferencesFlow.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
-                    null
-            )
-
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
 
@@ -226,10 +219,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             macAddress: String,
             broadcastIp: String,
             subnetMask: String,
-            pairingPin: String,
-            desktopQuality: Int,
-            desktopTargetFps: Int,
-            desktopScale: Float
+            pairingPin: String
     ) {
         viewModelScope.launch {
             _connectionError.value = null
@@ -242,11 +232,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     broadcast = broadcastIp,
                     subnetMask = subnetMask
             )
-            settingsManager.saveRemoteDesktopDefaults(
-                    quality = desktopQuality,
-                    targetFps = desktopTargetFps,
-                    scale = desktopScale
-            )
+            // Remote Desktop defaults are not written here any more (RemEx-wqo7a.6): the
+            // Connection screen no longer shows them, and the stream's settings sheet
+            // (RemoteDesktopViewModel) owns them. Connecting leaves whatever was saved alone.
 
             _connectionStatus.value = res.getString(R.string.status_connecting, newHost, newPort)
             RemexClientManager.toggleConnection(pairingPin.ifBlank { null })
@@ -394,7 +382,6 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      */
     fun connectToKnownPc(entry: KnownPcEntry, pairingPin: String = "") {
         val cp = connectionPreferences.value
-        val dp = remoteDesktopPreferences.value
         connect(
                 newHost = entry.address,
                 newPort = entry.port,
@@ -405,10 +392,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 // makes RemexClientManager drop the pinned hash and force a re-pair, so carrying one
                 // into a reconnect would break the thing it was trying to do. The caller supplies a
                 // PIN only for a row whose address is NOT pinned, where pairing is the actual intent.
-                pairingPin = if (entry.isTrusted) "" else pairingPin,
-                desktopQuality = dp?.quality ?: 50,
-                desktopTargetFps = dp?.targetFps ?: 120,
-                desktopScale = dp?.scale ?: 1.0f
+                pairingPin = if (entry.isTrusted) "" else pairingPin
         )
     }
 
@@ -606,17 +590,13 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun applyQrResultAndConnect(host: String, port: Int, _pin: String) {
         val cp = connectionPreferences.value
-        val dp = remoteDesktopPreferences.value
         connect(
                 newHost = host,
                 newPort = port,
                 macAddress = cp?.macAddress ?: "",
                 broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
                 subnetMask = cp?.subnetMask ?: "255.255.255.0",
-                pairingPin = _pin,
-                desktopQuality = dp?.quality ?: 50,
-                desktopTargetFps = dp?.targetFps ?: 120,
-                desktopScale = dp?.scale ?: 1.0f
+                pairingPin = _pin
         )
     }
 
