@@ -2013,7 +2013,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// status line is re-worded from its recipe for the same reason (sweep D7, <see cref="SetStatus"/>).
     /// </summary>
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
-        Dispatcher.UIThread.Post(ApplyLocaleChange);
+        Dispatcher.UIThread.Post(() => ApplyLocaleChange());
 
     internal void ApplyLocaleChange()
     {
