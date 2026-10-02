@@ -252,7 +252,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ?? RemoteRoots.FirstOrDefault();
 
             if (SelectedRemoteRoot is null)
-                StatusText = LocalizationService.Instance["FileTransfer_NoSharedFolders"];
+                SetStatus(() => LocalizationService.Instance["FileTransfer_NoSharedFolders"]);
         }
         catch (FileTransferHostException ex)
         {
@@ -263,7 +263,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Listing the phone's shared folders failed");
-            StatusText = LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"]);
         }
         finally
         {
@@ -353,7 +353,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Browsing the connected device failed");
-            StatusText = LocalizationService.Instance["FileTransfer_BrowseErrorFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_BrowseErrorFormat"]);
         }
         finally
         {
@@ -558,15 +558,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             foreach (var entry in entries)
                 SearchResults.Add(entry);
             SearchTruncated = truncated;
-            StatusText = truncated
-                ? string.Format(LocalizationService.Instance["FileTransfer_SearchTruncatedFormat"], SearchResults.Count)
-                : string.Format(LocalizationService.Instance["FileTransfer_SearchResultsFormat"], SearchResults.Count);
+            var found = SearchResults.Count;
+            SetStatus(() => truncated
+                ? string.Format(LocalizationService.Instance["FileTransfer_SearchTruncatedFormat"], found)
+                : string.Format(LocalizationService.Instance["FileTransfer_SearchResultsFormat"], found));
         }
         catch (OperationCanceledException) { /* the user navigated away or started another search; superseding one is normal */ }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Searching the connected device failed");
-            StatusText = LocalizationService.Instance["FileTransfer_SearchFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_SearchFailedFormat"]);
         }
         finally
         {
@@ -618,6 +619,51 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private string _statusText = string.Empty;
 
+    /// <summary>
+    /// How to rebuild <see cref="StatusText"/> in the current language, or null when the line holds
+    /// text that is not ours to translate (a host message, or nothing).
+    /// </summary>
+    /// <remarks>
+    /// A LANGUAGE SWITCH USED TO LEAVE THIS LINE IN THE OLD LANGUAGE (sweep D7). Every message was
+    /// formatted once, into a frozen string, so "Renaming report.pdf…" stayed in English after the
+    /// user picked Español until the next operation happened to overwrite it. The repo rule is that no
+    /// UI-bound property holds a pre-formatted string; this keeps the recipe instead and replays it on
+    /// <see cref="OnLocaleChanged"/>. Anything the recipe reads that can change afterwards (the
+    /// selected item, a list count) is copied into a local first, so a replay re-words the SAME
+    /// message rather than describing whatever is selected now.
+    /// </remarks>
+    private Func<string>? _statusRenderer;
+    private bool _renderingStatus;
+
+    /// <summary>Shows a localized status message and remembers how to re-word it.</summary>
+    internal void SetStatus(Func<string> render)
+    {
+        _statusRenderer = render;
+        RenderStatus();
+    }
+
+    private void RenderStatus()
+    {
+        if (_statusRenderer is not { } render) return;
+        _renderingStatus = true;
+        try
+        {
+            StatusText = render();
+        }
+        finally
+        {
+            _renderingStatus = false;
+        }
+    }
+
+    // A direct assignment (a host's own message, or clearing the line) is not ours to re-word, so it
+    // drops the recipe. Without this a language switch would bring back an older message over it.
+    partial void OnStatusTextChanged(string value)
+    {
+        if (!_renderingStatus)
+            _statusRenderer = null;
+    }
+
     [RelayCommand(CanExecute = nameof(CanUpload))]
     private async Task UploadAsync()
     {
@@ -646,7 +692,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         if (PickUploadFileAsync is null)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PickerUnavailable"]);
             return;
         }
 
@@ -667,7 +713,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         if (localPaths.Count == 0)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_LocalPathUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_LocalPathUnavailable"]);
             return;
         }
 
@@ -684,7 +730,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var root = SelectedRemoteRoot;
         if (root is not { IsWritable: true })
         {
-            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_DropTargetReadOnly"]);
             return;
         }
 
@@ -712,7 +758,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 }));
         }
 
-        StatusText = LocalizationService.Instance["FileTransfer_QueuedForUpload"];
+        SetStatus(() => LocalizationService.Instance["FileTransfer_QueuedForUpload"]);
     }
 
     [RelayCommand(CanExecute = nameof(CanDownload))]
@@ -722,7 +768,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         if (PickDownloadDestinationAsync is null)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_SaveDialogUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_SaveDialogUnavailable"]);
             return;
         }
 
@@ -739,7 +785,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var localFile = destination.TryGetLocalPath();
         if (string.IsNullOrWhiteSpace(localFile))
         {
-            StatusText = LocalizationService.Instance["FileTransfer_SavePathUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_SavePathUnavailable"]);
             return;
         }
 
@@ -748,7 +794,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var remoteFile = CombineRemotePath(RemotePath, fileName);
         TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, (progress, ct) =>
             _client.DownloadAsync(root.RootId, remoteFile, localFile!, progress, ct));
-        StatusText = LocalizationService.Instance["FileTransfer_QueuedForDownload"];
+        SetStatus(() => LocalizationService.Instance["FileTransfer_QueuedForDownload"]);
     }
 
     // ─── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
@@ -772,7 +818,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         if (PickLocalFolderAsync is null)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PickerUnavailable"]);
             return;
         }
 
@@ -794,15 +840,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         RemoteSubtree subtree;
         IsLoading = true;
-        StatusText = LocalizationService.Instance["FileTransfer_FolderScanning"];
+        SetStatus(() => LocalizationService.Instance["FileTransfer_FolderScanning"]);
         try
         {
             subtree = await _client.EnumerateRemoteSubtreeAsync(root.RootId, remoteFolder, null, CancellationToken.None);
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(
-                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            var reason = ex.Message;
+            SetStatus(() => string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], reason));
             return;
         }
         finally
@@ -813,16 +860,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var queued = EnqueueSubtreeDownloads(root, subtree, localRoot);
         if (queued == 0)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_FolderEmpty"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_FolderEmpty"]);
             return;
         }
 
         // A truncated manifest means the host stopped describing the folder, so what was just queued is
         // NOT the folder. Saying so is the whole point — silently transferring a prefix looks identical
         // to success right up until something is missing.
-        StatusText = subtree.Truncated
+        var truncatedManifest = subtree.Truncated;
+        SetStatus(() => truncatedManifest
             ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedTruncated"], queued)
-            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForDownload"], queued);
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForDownload"], queued));
     }
 
     private bool CanDownloadFolder()
@@ -893,13 +941,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var root = SelectedRemoteRoot;
         if (root is not { IsWritable: true })
         {
-            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_DropTargetReadOnly"]);
             return;
         }
 
         if (PickLocalFolderAsync is null)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PickerUnavailable"]);
             return;
         }
 
@@ -925,7 +973,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var root = SelectedRemoteRoot;
         if (root is not { IsWritable: true })
         {
-            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_DropTargetReadOnly"]);
             return;
         }
 
@@ -943,14 +991,15 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            StatusText = string.Format(
-                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            var reason = ex.Message;
+            SetStatus(() => string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], reason));
             return;
         }
 
         if (localFiles.Count > FileTransferLimits.ManifestMaxTotalEntries)
         {
-            StatusText = LocalizationService.Instance["FileTransfer_FolderTooLarge"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_FolderTooLarge"]);
             return;
         }
 
@@ -980,9 +1029,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             queued++;
         }
 
-        StatusText = queued == 0
+        SetStatus(() => queued == 0
             ? LocalizationService.Instance["FileTransfer_FolderEmpty"]
-            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForUpload"], queued);
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForUpload"], queued));
     }
 
     /// <summary>
@@ -1043,8 +1092,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Creating remote folder {Folder} failed.", remoteFolder);
-                StatusText = string.Format(
-                    CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+                var reason = ex.Message;
+                SetStatus(() => string.Format(
+                    CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], reason));
                 return false;
             }
         }
@@ -1192,9 +1242,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = toDelete.Count == 1
-                ? string.Format(LocalizationService.Instance["FileTransfer_DeletingFormat"], toDelete[0].Name)
-                : string.Format(LocalizationService.Instance["FileTransfer_DeletingMultipleFormat"], toDelete.Count);
+            var deleteCount = toDelete.Count;
+            var firstName = toDelete[0].Name;
+            SetStatus(() => deleteCount == 1
+                ? string.Format(LocalizationService.Instance["FileTransfer_DeletingFormat"], firstName)
+                : string.Format(LocalizationService.Instance["FileTransfer_DeletingMultipleFormat"], deleteCount));
 
             foreach (var entry in toDelete)
             {
@@ -1202,16 +1254,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 await _client.DeleteRemoteAsync(SelectedRemoteRoot.RootId, relativePath, CancellationToken.None);
             }
 
-            StatusText = toDelete.Count == 1
+            SetStatus(() => deleteCount == 1
                 ? LocalizationService.Instance["FileTransfer_DeleteComplete"]
-                : string.Format(LocalizationService.Instance["FileTransfer_DeleteMultipleCompleteFormat"], toDelete.Count);
+                : string.Format(LocalizationService.Instance["FileTransfer_DeleteMultipleCompleteFormat"], deleteCount));
             ClearSelection();
             await BrowseRemoteAsync();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Deleting an item on the connected device failed");
-            StatusText = LocalizationService.Instance["FileTransfer_DeleteFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_DeleteFailedFormat"]);
         }
         finally
         {
@@ -1252,9 +1304,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _clipboardIsMove = isMove;
         OnPropertyChanged(nameof(HasClipboard));
         PasteCommand.NotifyCanExecuteChanged();
-        StatusText = isMove
-            ? string.Format(LocalizationService.Instance["FileTransfer_CutReadyFormat"], selection.Count)
-            : string.Format(LocalizationService.Instance["FileTransfer_CopyReadyFormat"], selection.Count);
+        var selectedCount = selection.Count;
+        SetStatus(() => isMove
+            ? string.Format(LocalizationService.Instance["FileTransfer_CutReadyFormat"], selectedCount)
+            : string.Format(LocalizationService.Instance["FileTransfer_CopyReadyFormat"], selectedCount));
     }
 
     [RelayCommand(CanExecute = nameof(CanPaste))]
@@ -1265,7 +1318,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // Copy/move are host-side single-root operations; a cross-root paste isn't supported (plan §1.2).
         if (!string.Equals(_clipboardRootId, SelectedRemoteRoot.RootId, StringComparison.Ordinal))
         {
-            StatusText = LocalizationService.Instance["FileTransfer_PasteCrossRoot"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PasteCrossRoot"]);
             return;
         }
 
@@ -1284,9 +1337,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = isMove
-                ? string.Format(LocalizationService.Instance["FileTransfer_MovingFormat"], items.Count)
-                : string.Format(LocalizationService.Instance["FileTransfer_CopyingFormat"], items.Count);
+            var itemCount = items.Count;
+            SetStatus(() => isMove
+                ? string.Format(LocalizationService.Instance["FileTransfer_MovingFormat"], itemCount)
+                : string.Format(LocalizationService.Instance["FileTransfer_CopyingFormat"], itemCount));
 
             foreach (var entry in items)
             {
@@ -1331,17 +1385,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             // a rename they did ask for still has to name the file they now have. Plain completion
             // is the only one of the four that tells them nothing they did not already know.
             if (cancelled)
-                StatusText = LocalizationService.Instance["FileTransfer_ConflictCancelled"];
+                SetStatus(() => LocalizationService.Instance["FileTransfer_ConflictCancelled"]);
             else if (abandoned.Count > 0)
-                StatusText = string.Format(
-                    LocalizationService.Instance["FileTransfer_ConflictGaveUpFormat"], string.Join(", ", abandoned));
+            {
+                var gaveUp = string.Join(", ", abandoned);
+                SetStatus(() => string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictGaveUpFormat"], gaveUp));
+            }
             else if (renamed.Count > 0)
-                StatusText = string.Format(
-                    LocalizationService.Instance["FileTransfer_ConflictSavedAsFormat"], string.Join(", ", renamed));
+            {
+                var savedAs = string.Join(", ", renamed);
+                SetStatus(() => string.Format(
+                    LocalizationService.Instance["FileTransfer_ConflictSavedAsFormat"], savedAs));
+            }
             else
-                StatusText = isMove
+                SetStatus(() => isMove
                     ? LocalizationService.Instance["FileTransfer_MoveComplete"]
-                    : LocalizationService.Instance["FileTransfer_CopyComplete"];
+                    : LocalizationService.Instance["FileTransfer_CopyComplete"]);
         }
         catch (FileTransferHostException ex)
         {
@@ -1352,7 +1412,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Pasting the clipboard selection failed");
-            StatusText = LocalizationService.Instance["FileTransfer_PasteFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PasteFailedFormat"]);
         }
         finally
         {
@@ -1599,10 +1659,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RenamingFormat"], SelectedRemoteEntry.Name, newName);
+            var oldName = SelectedRemoteEntry.Name;
+            SetStatus(() => string.Format(LocalizationService.Instance["FileTransfer_RenamingFormat"], oldName, newName));
             var relativePath = CombineRemotePath(RemotePath, SelectedRemoteEntry.Name);
             await _client.RenameRemoteAsync(SelectedRemoteRoot.RootId, relativePath, newName, CancellationToken.None);
-            StatusText = LocalizationService.Instance["FileTransfer_RenameComplete"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_RenameComplete"]);
             IsRenaming = false;
             ClearSelection();
             await BrowseRemoteAsync();
@@ -1610,7 +1671,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Renaming an item on the connected device failed");
-            StatusText = LocalizationService.Instance["FileTransfer_RenameFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_RenameFailedFormat"]);
         }
         finally
         {
@@ -1663,9 +1724,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_CreatingFolderFormat"], name);
+            SetStatus(() => string.Format(LocalizationService.Instance["FileTransfer_CreatingFolderFormat"], name));
             await _client.MakeDirectoryRemoteAsync(SelectedRemoteRoot.RootId, RelativeCurrentFolder(), name, CancellationToken.None);
-            StatusText = LocalizationService.Instance["FileTransfer_CreateFolderComplete"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_CreateFolderComplete"]);
             IsCreatingFolder = false;
             await BrowseRemoteAsync();
         }
@@ -1678,7 +1739,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Creating a folder on the phone failed");
-            StatusText = LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"]);
         }
         finally
         {
@@ -1732,7 +1793,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Loading item details from the phone failed");
-            StatusText = LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"]);
         }
 
         if (!entry.IsDirectory && IsImageFile(entry.Name))
@@ -1780,7 +1841,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = LocalizationService.Instance["FileTransfer_VolumesRequesting"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_VolumesRequesting"]);
             var (volumes, granted, denyReason) = await _client.ListVolumesAsync(CancellationToken.None);
             Volumes.Clear();
             foreach (var volume in volumes)
@@ -1790,14 +1851,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             // A REFUSAL NOBODY WAS ASKED FOR READS DIFFERENTLY (RemEx-jc4q). "Not granted" is true of
             // both and useful for only one: the peer being unreachable is the case with an action
             // attached, and it used to arrive as the same flat no.
-            StatusText = VolumesResponseClassifier.Classify(granted, denyReason, errorMessage: null) switch
+            var outcome = VolumesResponseClassifier.Classify(granted, denyReason, errorMessage: null);
+            var volumeCount = Volumes.Count;
+            SetStatus(() => outcome switch
             {
                 VolumesOutcome.Granted => string.Format(
-                    LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count),
+                    LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], volumeCount),
                 VolumesOutcome.PeerUnreachable => LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"],
                 VolumesOutcome.HostPromptTimedOut => LocalizationService.Instance["FileTransfer_VolumesHostPromptTimedOut"],
                 _ => LocalizationService.Instance["FileTransfer_VolumesDenied"],
-            };
+            });
         }
         catch (FileTransferHostException ex)
         {
@@ -1808,7 +1871,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Listing the phone's drives failed");
-            StatusText = LocalizationService.Instance["FileTransfer_VolumesFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_VolumesFailedFormat"]);
         }
         finally
         {
@@ -1835,16 +1898,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             IsLoading = true;
             VerifiedHash = null;
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_HashComputingFormat"], SelectedRemoteEntry.Name);
+            var hashedName = SelectedRemoteEntry.Name;
+            SetStatus(() => string.Format(LocalizationService.Instance["FileTransfer_HashComputingFormat"], hashedName));
             var relativePath = CombineRemotePath(RemotePath, SelectedRemoteEntry.Name);
             var hash = await _client.VerifyRemoteHashAsync(SelectedRemoteRoot.RootId, relativePath, CancellationToken.None);
             VerifiedHash = hash;
-            StatusText = LocalizationService.Instance["FileTransfer_HashComplete"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_HashComplete"]);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Verifying a transferred file hash failed");
-            StatusText = LocalizationService.Instance["FileTransfer_HashFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_HashFailedFormat"]);
         }
         finally
         {
@@ -1867,10 +1931,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = LocalizationService.Instance["FileTransfer_PinningFolder"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PinningFolder"]);
             var updatedRoots = await _client.AddRemoteRootAsync(SelectedRemoteRoot.RootId, RemotePath, CancellationToken.None);
             ReplaceRemoteRoots(updatedRoots);
-            StatusText = LocalizationService.Instance["FileTransfer_PinComplete"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PinComplete"]);
         }
         catch (FileTransferHostException ex)
         {
@@ -1881,7 +1945,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Pinning the current folder failed");
-            StatusText = LocalizationService.Instance["FileTransfer_PinFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PinFailedFormat"]);
         }
         finally
         {
@@ -1902,10 +1966,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         try
         {
             IsLoading = true;
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RemovingRootFormat"], SelectedRemoteRoot.DisplayName);
+            var rootName = SelectedRemoteRoot.DisplayName;
+            SetStatus(() => string.Format(LocalizationService.Instance["FileTransfer_RemovingRootFormat"], rootName));
             var updatedRoots = await _client.RemoveRemoteRootAsync(SelectedRemoteRoot.RootId, CancellationToken.None);
             ReplaceRemoteRoots(updatedRoots);
-            StatusText = LocalizationService.Instance["FileTransfer_RemoveRootComplete"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_RemoveRootComplete"]);
         }
         catch (FileTransferHostException ex)
         {
@@ -1916,7 +1981,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Removing the shared folder failed");
-            StatusText = LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"];
+            SetStatus(() => LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"]);
         }
         finally
         {
@@ -1944,10 +2009,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// <summary>
     /// <see cref="RemoteRootHint"/> resolves its text from <see cref="LocalizationService"/> at
     /// get-time, so a language switch changes what it would return without anything on this
-    /// view-model changing - and therefore without a notification. Re-raise it explicitly.
+    /// view-model changing - and therefore without a notification. Re-raise it explicitly. The
+    /// status line is re-worded from its recipe for the same reason (sweep D7, <see cref="SetStatus"/>).
     /// </summary>
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
-        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(RemoteRootHint)));
+        Dispatcher.UIThread.Post(ApplyLocaleChange);
+
+    internal void ApplyLocaleChange()
+    {
+        OnPropertyChanged(nameof(RemoteRootHint));
+        RenderStatus();
+    }
 
     public void Dispose()
     {
