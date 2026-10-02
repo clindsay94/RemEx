@@ -341,7 +341,46 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnSeedToneChanged(double value) => PushSeedToAccent();
 
-    partial void OnThemeContrastChanged(double value) => ApplyAndSave();
+    /// <summary>
+    /// The Contrast slider's detents (RemEx-4kv0g.16): the centre and both ends. The slider is a
+    /// continuous -1..1 track only 160 px wide, so letting go "in the middle" used to store 0.0027
+    /// while the label read 0.0 and the palette was generated for a contrast that was not 0.
+    /// </summary>
+    private static readonly double[] ContrastDetents = [-1.0, 0.0, 1.0];
+
+    /// <summary>
+    /// How close to a detent counts as "on it". Strictly less than, and the phone's Contrast slider
+    /// (PersonalizationScreen.kt) has to use the same 0.05 so both sides land on the same value -
+    /// that is the phone half of the same bead. Wide enough to catch a hand (about 4 px of
+    /// the PC slider) and narrow enough that the 0.1 arrow-key steps never fall inside it.
+    /// </summary>
+    internal const double ContrastDetentRadius = 0.05;
+
+    /// <summary>
+    /// Pulls a contrast value inside <see cref="ContrastDetentRadius"/> of -1, 0 or 1 onto that
+    /// detent; anything else comes back unchanged.
+    /// </summary>
+    internal static double SnapContrastToDetent(double value)
+    {
+        foreach (var detent in ContrastDetents)
+            if (Math.Abs(value - detent) < ContrastDetentRadius) return detent;
+        return value;
+    }
+
+    partial void OnThemeContrastChanged(double value)
+    {
+        // Only a direct write snaps. A preset, an imported palette or Match phone theme runs under
+        // _isApplyingPreset and keeps its exact value. The re-entered call is the one that saves.
+        // This does NOT move the slider's thumb: Avalonia does not push a value the source changed
+        // mid-write back to the target, so PersonalizeColourTab.OnContrastValueChanged snaps the
+        // slider itself with the same SnapContrastToDetent.
+        if (!_isApplyingPreset)
+        {
+            var snapped = SnapContrastToDetent(value);
+            if (snapped != value) { ThemeContrast = snapped; return; }
+        }
+        ApplyAndSave();
+    }
 
     partial void OnThemeModeIndexChanged(int value)
     {

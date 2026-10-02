@@ -197,6 +197,34 @@ public class PhoneThemeMappingTests
         }
     }
 
+    [Fact]
+    public void MatchPhoneThemeKeepsTheContrastItWasSentEvenNearADetent()
+    {
+        // RemEx-4kv0g.16: the Contrast slider's detent snaps a DIRECT write within 0.05 of -1, 0 or 1.
+        // Match my phone runs under _isApplyingPreset and must not: the PC copies the phone's value
+        // as sent, and the phone half of the same bead is what makes that value land on 0.
+        var savedHost = App.EmbeddedHostServices;
+        DashboardLayoutService? layoutService = null;
+        try
+        {
+            App.EmbeddedHostServices = new SingleServiceProvider(
+                new FakePhoneThemeSnapshotStore { Latest = Snapshot(contrast: 0.03) });
+            var theme = new ThemeService { PostToUiThread = action => action() };
+            layoutService = new DashboardLayoutService(theme);
+            var vm = new CustomizationViewModel(null!, layoutService, theme);
+
+            vm.MatchPhoneThemeCommand.Execute(null);
+
+            vm.ThemeContrast.Should().Be(0.03);
+            layoutService.CurrentProfile.Customization.ThemeContrast.Should().Be(0.03);
+        }
+        finally
+        {
+            App.EmbeddedHostServices = savedHost;
+            layoutService?.Dispose();
+        }
+    }
+
     /// <summary>The smallest container that answers one question, matching <c>AboutHostFingerprintTests</c>.</summary>
     private sealed class SingleServiceProvider(IPhoneThemeSnapshotStore store) : IServiceProvider
     {
