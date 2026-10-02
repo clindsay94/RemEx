@@ -1386,35 +1386,41 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Neler yeni?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>H.264 Donanım Videosu</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>Rutinler</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>Bilgisayarda NVENC, QSV, AMF veya VAAPI ile donanım hızlandırmalı uzak masaüstü. Android, kopyasız GPU teslimi için MediaCodec ile kod çözer. Donanım kodlayıcı bulunmadığında kendiliğinden MJPEG'e döner.</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>Telefonunuz artık eve gelip gittiğinizde, bir NFC etiketine dokunduğunuzda veya bilgisayarın bir sensörü sınırı aştığında kendi başına harekete geçebilir.</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Güvenlik ve Cihaz Eşleştirme</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>Bilgisayarınızda rutinler</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Tüm trafik, istemci destekliyorsa TLS 1.3 ile şifrelenir ve hiçbir zaman TLS 1.2 altına düşmez. İlk eşleştirmede 6 haneli PIN ile ECDH P-256 anahtar değişimi kullanılır — hiçbir anahtar düz metin olarak iletilmez. İstemci ardından sonraki tüm bağlantılar için bilgisayarın SHA-256 sertifika parmak izini sabitler.</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>Rutinler bilgisayarın kendisinde de çalışabilir, örneğin boşta kalınca onu uyku moduna alabilir. Kapatma veya yeniden başlatmadan önce bir geri sayım, durdurmanız için size zaman tanır.</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Uzaktan Dosya Aktarımı</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>Telefonda yeni düzen</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Sunucunun paylaşılan klasörlerine göz atın ve SHA-256 bütünlük doğrulamasıyla her iki yönde de dosya aktarın. Android kendi klasörlerini sunucuyla geri paylaşabilir. Aktarımlar, iptal desteğiyle birlikte canlı ilerleme durumunu gösterir.</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>Telefon uygulamasında artık beş sekme var. Ana Sayfası bu bilgisayarı ve buradakiyle aynı sabitlenmiş sensörleri gösterir; Sensörler ızgarasını uzun basarak düzenlersiniz.</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Android Yenilemesi</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>İki uygulamada tek görünüm</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Genelinde yay fiziği barındıran Material 3 Expressive — liste yeniden sıralama, yenilemek için kaydırma, uygulama döşemeleri, animasyonlu göstergeler. Tek dokunuşla güç komutları için 8 Hızlı Ayar döşemesi. Yeniden boyutlandırılabilir ana ekran widget'ları. İki aşamalı dokunsal geri bildirim. Hedef SDK 37 (Android 17).</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>Bilgisayar ve telefon artık aynı sözcükleri, yazı tiplerini, kartları ve renkleri kullanıyor. Yeni bir kurulum RemEx renkleriyle başlar.</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux ve Yeni Kimlik</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>Dosya aktarımı düzeltmeleri</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Birinci sınıf Linux desteği: yerel PipeWire yakalama, tam Wayland girdi enjeksiyonu ve oturum açıldığında kendiliğinden başlatma. Yeni premium başlatıcı simgesi, Cosmic Zoom açılış animasyonu, renkli ANSI başlangıç başlığı ve tuvalden panoya bitmap kopyalama.</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Telefondaki Dosyalar, siz isteyene kadar gizli ve sistem öğelerini göstermez.</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>Yeni başlangıç ekranı</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>RemEx açılırken başlangıç ekranı artık sabit bir animasyon oynatmak yerine uygulamanın gerçekten başlayıp bağlandığını gösteriyor.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

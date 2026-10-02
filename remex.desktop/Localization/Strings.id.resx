@@ -1386,35 +1386,41 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Apa yang Baru?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Video Perangkat Keras H.264</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>Rutinitas</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>Desktop jarak jauh dengan akselerasi perangkat keras melalui NVENC, QSV, AMF, atau VAAPI di PC. Android mendekode dengan MediaCodec untuk pengiriman GPU tanpa salinan. Otomatis kembali ke MJPEG bila encoder perangkat keras tidak tersedia.</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>Ponsel Anda kini bisa bertindak sendiri saat Anda tiba di rumah atau pergi, mengetuk tag NFC, atau saat sensor PC melewati batas.</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Keamanan dan Pemasangan Perangkat</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>Rutinitas di PC Anda</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Semua lalu lintas dienkripsi dengan TLS 1.3 bila klien mendukungnya, dan tidak pernah di bawah TLS 1.2. Pemasangan pertama memakai pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang pernah dikirim. Selanjutnya klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk semua koneksi berikutnya.</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>Rutinitas juga bisa berjalan di PC itu sendiri, misalnya menidurkan PC saat sedang tidak dipakai. Sebelum PC dimatikan atau dimulai ulang, ada hitung mundur agar Anda bisa membatalkannya.</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Transfer File Jarak Jauh</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>Tata letak baru di ponsel</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Telusuri folder bersama milik PC dan transfer file ke kedua arah dengan verifikasi integritas SHA-256. Android dapat membagikan foldernya sendiri kembali ke PC. Transfer menampilkan kemajuan langsung dengan dukungan pembatalan.</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>Aplikasi ponsel kini punya lima tab. Berandanya menampilkan PC ini dan sensor yang disematkan sama seperti di sini, dan tekan lama untuk mengedit kisi Sensor-nya.</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Pembaruan Android</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>Satu tampilan di kedua aplikasi</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Material 3 Ekspresif dengan fisika pegas di seluruh aplikasi — penataan ulang daftar, tarik untuk menyegarkan, ubin aplikasi, pengukur animasi. 8 ubin Pengaturan Cepat untuk perintah daya sekali ketuk. Widget layar beranda yang dapat diubah ukurannya. Umpan balik haptik dua tahap. Target SDK 37 (Android 17).</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>PC dan ponsel kini memakai kata, font, kartu, dan warna yang sama. Instalasi baru dimulai dengan warna RemEx.</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux dan Identitas Baru</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>Perbaikan transfer file</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Dukungan Linux kelas satu dengan pengambilan PipeWire native, injeksi input Wayland lengkap, dan mulai otomatis saat masuk. Ikon peluncur premium baru, animasi boot Cosmic Zoom, banner ANSI berwarna saat mulai, dan salin bitmap ke papan klip dari kanvas.</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File di ponsel menyembunyikan item tersembunyi dan item sistem sampai Anda memintanya.</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>Layar pembuka baru</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>Saat RemEx dibuka, layar pembuka kini menunjukkan aplikasi benar-benar memulai dan terhubung, bukan memutar animasi tetap.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

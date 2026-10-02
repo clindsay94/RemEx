@@ -1386,35 +1386,41 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Quoi de neuf ?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Vidéo matérielle H.264</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>Routines</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>Bureau à distance accéléré par le matériel via NVENC, QSV, AMF ou VAAPI sur le PC. Android décode avec MediaCodec pour une livraison GPU sans copie. Bascule automatiquement sur MJPEG lorsque aucun encodeur matériel n'est disponible.</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>Votre téléphone peut désormais agir seul quand vous rentrez ou partez, approchez un tag NFC, ou quand un capteur du PC dépasse un seuil.</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Sécurité et appairage des appareils</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>Routines sur votre PC</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Tout le trafic est chiffré avec TLS 1.3 lorsque le client le prend en charge, et jamais en dessous de TLS 1.2. Le premier appairage utilise un échange de clés ECDH P-256 avec un code PIN à 6 chiffres : aucune clé en clair ne circule jamais. Le client épingle ensuite l'empreinte SHA-256 du certificat du PC pour toutes les connexions suivantes.</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>Certaines routines s'exécutent sur le PC lui-même, par exemple pour le mettre en veille s'il est inactif. Un compte à rebours vous laisse annuler un arrêt ou un redémarrage.</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Transfert de fichiers à distance</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>Une nouvelle disposition sur le téléphone</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Parcourez les dossiers partagés de l'hôte et transférez des fichiers dans les deux sens avec vérification d'intégrité SHA-256. Android peut partager ses propres dossiers avec l'hôte. Les transferts affichent une progression en direct avec prise en charge de l'annulation.</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>L'application du téléphone a maintenant cinq onglets. Son Accueil affiche ce PC et les mêmes capteurs épinglés qu'ici, et un appui long modifie sa grille Capteurs.</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Refonte d'Android</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>Le même style sur les deux applications</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Material 3 Expressive avec physique de ressort partout — réorganisation des listes, glisser pour rafraîchir, tuiles d'application, jauges animées. 8 tuiles de paramètres rapides pour des commandes d'alimentation en un clic. Widgets d'accueil redimensionnables. Retour haptique à deux étapes. SDK cible 37 (Android 17).</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>Le PC et le téléphone utilisent maintenant les mêmes mots, polices, cartes et couleurs. Une nouvelle installation démarre avec les couleurs RemEx.</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux et nouvelle identité</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>Corrections du transfert de fichiers</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Prise en charge Linux de premier ordre : capture PipeWire native, injection d'entrée Wayland complète et démarrage automatique à l'ouverture de session. Nouvelle icône de lanceur premium, animation de démarrage Cosmic Zoom, bannière ANSI colorée au démarrage et copie d'images bitmap dans le presse-papiers depuis le canevas.</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>Télécharger un dossier, dans un sens comme dans l'autre, ne saute ni ne répète plus aucun fichier. Fichiers, sur le téléphone, masque les éléments cachés et système sauf si vous le demandez.</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>Un nouvel écran de démarrage</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>À l'ouverture, l'écran de démarrage montre RemEx qui démarre et se connecte vraiment, au lieu d'une animation figée.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

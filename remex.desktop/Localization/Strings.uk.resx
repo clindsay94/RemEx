@@ -1386,35 +1386,41 @@ Linux: ip addr  або  hostname -I</value>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Що нового?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Апаратне відео H.264</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>Рутини</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>Віддалений робочий стіл з апаратним прискоренням через NVENC, QSV, AMF або VAAPI на ПК. Android декодує за допомогою MediaCodec для передавання через GPU без копіювання. За відсутності апаратних кодувальників автоматично повертається до MJPEG.</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>Тепер телефон може діяти сам, коли ви приходите додому чи йдете, торкаєтеся NFC-мітки або датчик ПК перетинає поріг.</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Безпека та спарювання пристроїв</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>Рутини на вашому ПК</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Увесь трафік шифрується за TLS 1.3, якщо клієнт це підтримує, і ніколи не нижче TLS 1.2. Перше спарювання використовує обмін ключами ECDH P-256 із 6-значним PIN-кодом — жодні ключі ніколи не передаються відкритим текстом. Далі клієнт закріплює SHA-256-відбиток сертифіката ПК для всіх наступних підключень.</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>Рутини можуть працювати й на самому ПК, наприклад присипляти його, коли він простоює. Перед вимкненням чи перезапуском іде відлік, щоб ви встигли його скасувати.</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Віддалена передача файлів</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>Новий макет на телефоні</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Переглядайте спільні папки хоста та передавайте файли в обох напрямках із перевіркою цілісності SHA-256. Android може надавати спільний доступ до власних папок назад на хост. Передачі показують поточний прогрес із підтримкою скасування.</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>Тепер у застосунку на телефоні п’ять вкладок. Його Головна показує цей ПК і ті самі закріплені датчики, що й тут, а довге натискання дає змогу змінити його сітку Датчиків.</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Оновлення Android</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>Однаковий вигляд в обох застосунках</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Material 3 Expressive з фізикою пружин всюди — зміна черги списків, оновлення тягнучим рухом, плитки додатків, анімовані датчики. 8 плиток швидких налаштувань для керування живленням одним дотиком. Віджети домашнього екрана зі зміною розміру. Двохетапний тактильний відгук. Цільовий SDK 37 (Android 17).</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>ПК і телефон тепер використовують ті самі слова, шрифти, картки й кольори. Нове встановлення починається з кольорів RemEx.</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux і новий вигляд</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>Виправлення передавання файлів</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Першокласна підтримка Linux: власне захоплення через PipeWire, повне впровадження введення у Wayland і автозапуск під час входу. Нова преміальна іконка запуску, анімація завантаження Cosmic Zoom, кольоровий ANSI-банер під час запуску та копіювання зображення в буфер обміну з полотна.</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>Завантаження теки, в будь-який бік, більше не пропускає й не повторює файли. Файли на телефоні не показують прихованих і системних елементів, доки ви про це не попросите.</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>Нова заставка</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>Під час відкриття заставка тепер показує, як RemEx справді запускається й підключається, а не відтворює фіксовану анімацію.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

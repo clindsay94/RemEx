@@ -1386,35 +1386,41 @@ Linux: ip addr  या  hostname -I</value>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>नया क्या है?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>H.264 हार्डवेयर वीडियो</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>रूटीन</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>पीसी पर NVENC, QSV, AMF या VAAPI के ज़रिए हार्डवेयर-त्वरित रिमोट डेस्कटॉप। Android शून्य-कॉपी GPU डिलीवरी के लिए MediaCodec से डिकोड करता है। हार्डवेयर एनकोडर उपलब्ध न होने पर यह अपने आप MJPEG पर आ जाता है।</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>अब आपका फ़ोन अपने आप काम कर सकता है, जब आप घर पहुँचें या निकलें, कोई NFC टैग टैप करें, या PC का कोई सेंसर सीमा पार करे।</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>सुरक्षा और डिवाइस पेयरिंग</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>आपके PC पर रूटीन</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>सारा ट्रैफ़िक TLS 1.3 से एन्क्रिप्ट होता है, यदि क्लाइंट उसका समर्थन करता है, और कभी TLS 1.2 से नीचे नहीं। पहली बार पेयरिंग में 6 अंकों के PIN के साथ ECDH P-256 कुंजी विनिमय होता है — कोई कुंजी कभी प्लेन टेक्स्ट में नहीं जाती। इसके बाद क्लाइंट भविष्य के सभी कनेक्शनों के लिए पीसी के प्रमाणपत्र का SHA-256 फ़िंगरप्रिंट पिन कर लेता है।</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>रूटीन अब PC पर भी चल सकते हैं, जैसे PC खाली हो तो उसे स्लीप में भेजना। शट डाउन या रीस्टार्ट से पहले उलटी गिनती होती है, ताकि आप उसे रोक सकें।</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>रिमोट फ़ाइल ट्रांसफर</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>फ़ोन का नया लेआउट</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>होस्ट के साझा किए गए फ़ोल्डरों को ब्राउज़ करें और SHA-256 अखंडता सत्यापन के साथ किसी भी दिशा में फ़ाइलें ट्रांसफर करें। एंड्रॉइड अपने फ़ोल्डर्स को होस्ट के साथ वापस साझा कर सकता है। ट्रांसफर रद्दीकरण समर्थन के साथ लाइव प्रगति दिखाते हैं।</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>फ़ोन ऐप में अब पाँच टैब हैं। उसके होम पर यह PC और वही पिन किए गए सेंसर दिखते हैं जो यहाँ हैं, और देर तक दबाकर उसकी सेंसर ग्रिड बदली जा सकती है।</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>एंड्रॉइड ओवरहॉल</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>दोनों ऐप्स का एक जैसा रूप</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>पूरे ऐप में स्प्रिंग फिजिक्स के साथ मटीरियल 3 एक्सप्रेसिव — लिस्ट रीऑर्डर, पुल-टू-रिफ्रेश, ऐप टाइल्स, एनिमेटेड गेज। एक-टैप पावर कमांड के लिए 8 क्विक सेटिंग्स टाइल्स। रीसाइज़ करने योग्य होम स्क्रीन विजेट। दो-चरणीय हैप्टिक फीडबैक। टारगेट SDK 37 (एंड्रॉइड 17)।</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>PC और फ़ोन अब एक जैसे शब्द, फ़ॉन्ट, कार्ड और रंग इस्तेमाल करते हैं। नया इंस्टॉल RemEx के रंगों से शुरू होता है।</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux और नई पहचान</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>फ़ाइल ट्रांसफ़र में सुधार</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Linux के लिए बेहतरीन समर्थन: नेटिव PipeWire कैप्चर, पूरा Wayland इनपुट इंजेक्शन और साइन इन पर अपने आप शुरू होना। नया प्रीमियम लॉन्चर आइकन, Cosmic Zoom बूट एनिमेशन, रंगीन ANSI स्टार्टअप बैनर और कैनवास से क्लिपबोर्ड पर बिटमैप कॉपी।</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>किसी भी तरफ़ पूरा फ़ोल्डर डाउनलोड करने पर अब फ़ाइलें छूटती या दोहराई नहीं जातीं। फ़ोन की फ़ाइलें स्क्रीन छिपे हुए और सिस्टम आइटम तब तक नहीं दिखाती, जब तक आप न कहें।</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>नई स्प्लैश स्क्रीन</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>RemEx खुलते समय स्प्लैश अब कोई तय एनीमेशन नहीं चलाती, बल्कि दिखाती है कि ऐप सच में कैसे शुरू होकर कनेक्ट होता है।</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
