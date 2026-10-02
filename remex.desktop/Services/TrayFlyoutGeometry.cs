@@ -16,7 +16,8 @@ public sealed record TrayFlyoutGeometry
     // promise living only in prose. Read the same sizes TrayFlyoutWindow.axaml uses:
     //   - ChromeSideInset: outer Border Margin="12" (12+12) + content Grid Margin="16" (16+16) = 56.
     //   - ScrollBarAllowance: worst case width the vertical ScrollBar can claim when it shows = 16.
-    //   - CardPitch: one flyout-card's footprint — Border Width="200" + Margin="6" each side = 212.
+    //   - CardPitch: one flyout-card's narrowest footprint — Border MinWidth="200" + Margin="6" each
+    //     side = 212. Cards stretch past it to fill the row (RemEx-8tm8l, CardSlotWidth below).
     //   - CardsPanelInset: the cards ItemsControl's own Margin="6,0" (6+6) = 12.
     // A window fits N card columns when Width - ChromeSideInset - ScrollBarAllowance
     // >= N * CardPitch + CardsPanelInset (see TrayFlyoutGeometryTests.MaxWidthFitsFourCardColumns
@@ -25,6 +26,61 @@ public sealed record TrayFlyoutGeometry
     public const double ScrollBarAllowance = 16;
     public const double CardPitch = 212;
     public const double CardsPanelInset = 12;
+
+    /// <summary>The flyout-card Border's own <c>Margin="6"</c>, each side.</summary>
+    public const double CardMargin = 6;
+
+    /// <summary>
+    /// The narrowest a flyout card gets (<c>MinWidth="200"</c> on the <c>flyout-card</c> Border):
+    /// <see cref="CardPitch"/> minus <see cref="CardMargin"/> both sides. Cards grow from here to
+    /// fill the row (RemEx-8tm8l, <see cref="CardSlotWidth"/>); they never shrink below it.
+    /// </summary>
+    public const double CardMinWidth = CardPitch - 2 * CardMargin;
+
+    /// <summary>
+    /// How many card columns the cards panel holds at <paramref name="cardsPanelWidth"/> (the cards
+    /// <c>ItemsControl</c>'s own width, inside its <see cref="CardsPanelInset"/>): as many whole
+    /// <see cref="CardPitch"/> slots as fit, and never fewer than one. This is the same column-fit
+    /// rule <see cref="DefaultWidth"/> and <c>TrayFlyoutGeometryValidator.MaxWidth</c> are pinned
+    /// against, so there is one sizing model for the cards, not two.
+    /// </summary>
+    public static int CardColumns(double cardsPanelWidth)
+    {
+        if (!IsUsableWidth(cardsPanelWidth))
+            return 1;
+
+        return Math.Max(1, (int)Math.Floor(cardsPanelWidth / CardPitch));
+    }
+
+    /// <summary>
+    /// The width of one card's slot (card plus its <see cref="CardMargin"/> both sides) at
+    /// <paramref name="cardsPanelWidth"/>, bound to the cards <c>WrapPanel</c>'s <c>ItemWidth</c>
+    /// (RemEx-8tm8l). The panel's width is shared out evenly over <see cref="CardColumns"/>, so the
+    /// cards scale up with the flyout and fill the row instead of leaving a ragged gap on the right
+    /// at every width that is not an exact multiple of <see cref="CardPitch"/>.
+    /// </summary>
+    /// <returns>
+    /// <see cref="double.NaN"/> while the panel has no usable width yet (before first layout), which
+    /// <c>WrapPanel.ItemWidth</c> reads as "size each item to its content" - the card's own
+    /// <see cref="CardMinWidth"/> then applies, the same footprint the fixed-width card had.
+    /// Otherwise rounded down to a whole pixel, so the columns' total never exceeds the panel and
+    /// the last card in a row never wraps onto the next.
+    /// </returns>
+    /// <remarks>
+    /// WIDTH ONLY. The card's height stays 150 (<see cref="CardRowHeight"/>), because
+    /// <see cref="CardsMaxHeight"/> and <c>TrayFlyoutGeometryValidator.MinHeight</c> are both whole
+    /// numbers of card rows: a height that followed the width would show a cut-off row under the
+    /// transient popup's cap. A taller pinned flyout shows more rows instead.
+    /// </remarks>
+    public static double CardSlotWidth(double cardsPanelWidth)
+    {
+        if (!IsUsableWidth(cardsPanelWidth))
+            return double.NaN;
+
+        return Math.Floor(cardsPanelWidth / CardColumns(cardsPanelWidth));
+    }
+
+    private static bool IsUsableWidth(double width) => double.IsFinite(width) && width > 0;
 
     /// <summary>
     /// The transient popup's width (the same literal as <c>TrayFlyoutWindow.axaml</c>'s
@@ -128,7 +184,7 @@ public sealed record TrayFlyoutGeometry
 
     /// <summary>
     /// Height budget for one row of the pinned-sensor cards (Flyout D2 .2, RemEx-4kv0g.18.6) — one
-    /// <c>flyout-card</c> Border (<c>Width="200" Height="150" Margin="6"</c>): 150 + 6 + 6 = 162.
+    /// <c>flyout-card</c> Border (<c>MinWidth="200" Height="150" Margin="6"</c>): 150 + 6 + 6 = 162.
     /// Named so <see cref="CardsMaxHeight"/>'s and <see cref="TrayFlyoutGeometryValidator.MinHeight"/>'s
     /// own derivations do not each repeat the 150/12 arithmetic separately.
     /// </summary>

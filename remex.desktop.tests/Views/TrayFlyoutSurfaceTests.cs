@@ -116,8 +116,14 @@ public class TrayFlyoutSurfaceTests
         var card = Regex.Match(text, @"<Border Classes=""flyout-card""[^>]*>", RegexOptions.Singleline);
         card.Success.Should().BeTrue("the card host should be a Border.flyout-card");
         var normalizedCard = Regex.Replace(card.Value, @"\s+", " ");
-        normalizedCard.Should().Contain("Width=\"200\"");
+        // RemEx-8tm8l: 200 is the card's floor, not its size - the WrapPanel's ItemWidth (asserted
+        // below) widens each card to fill the row. A fixed Width would pin it back at 200 and leave
+        // the ragged gap the bead removed, whatever ItemWidth says.
+        normalizedCard.Should().Contain("MinWidth=\"200\"");
+        normalizedCard.Should().NotMatchRegex(@"(?<![A-Za-z])Width=""",
+            "a fixed card Width would stop the cards scaling with the flyout");
         normalizedCard.Should().Contain("Height=\"150\"");
+        TrayFlyoutGeometry.CardMinWidth.Should().Be(200, "the card's MinWidth literal mirrors CardMinWidth");
         normalizedCard.Should().Contain("Classes.family-primary=\"{Binding IsPrimaryFamily}\"");
         normalizedCard.Should().Contain("Classes.family-secondary=\"{Binding IsSecondaryFamily}\"");
         normalizedCard.Should().Contain("Classes.family-tertiary=\"{Binding IsTertiaryFamily}\"");
@@ -150,6 +156,10 @@ public class TrayFlyoutSurfaceTests
         itemsPanelProperty.Should().NotBeNull();
         itemsPanelProperty!.Descendants(av + "WrapPanel").Should().ContainSingle(
             "the ItemsControl's ItemsPanel must be a WrapPanel, not the old horizontal StackPanel");
+        ((string?)itemsPanelProperty.Descendants(av + "WrapPanel").Single().Attribute("ItemWidth")).Should().Be(
+            "{Binding $parent[ItemsControl].Bounds.Width, Converter={x:Static conv:TrayFlyoutCardSlotWidthConverter.Instance}}",
+            "RemEx-8tm8l: the cards scale with the flyout by sharing the cards panel's own width out over "
+            + "TrayFlyoutGeometry.CardColumns - drop this and they go back to fixed 200px tiles");
 
         var itemTemplateProperty = scrollViewerItemsControl.Element(av + "ItemsControl.ItemTemplate");
         itemTemplateProperty.Should().NotBeNull();
@@ -298,7 +308,9 @@ public class TrayFlyoutSurfaceTests
         TrayFlyoutGeometry.CardsPanelInset.Should().Be(2 * itemsControlHorizontalMargin,
             "CardsPanelInset is the cards ItemsControl's own horizontal Margin, both sides");
         TrayFlyoutGeometry.CardPitch.Should().Be(200 + 2 * cardMargin,
-            "CardPitch is the flyout-card's own Width (200, asserted elsewhere) plus its Margin, both sides");
+            "CardPitch is the flyout-card's own MinWidth (200, asserted elsewhere) plus its Margin, both sides");
+        TrayFlyoutGeometry.CardMargin.Should().Be(cardMargin,
+            "CardMargin mirrors the flyout-card Border's own Margin");
     }
 
     [Fact]

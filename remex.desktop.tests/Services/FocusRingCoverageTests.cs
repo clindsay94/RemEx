@@ -44,8 +44,16 @@ public class FocusRingCoverageTests
         "CheckBox",
         "RadioButton",
         "ToggleSwitch",
-        "Slider"
+        // RemEx-a9aez: Material makes the Slider unfocusable and its Thumb the tab stop, so the
+        // slider's ring is declared on the thumb inside its template, not on the Slider itself.
+        SliderRingSelector
     ];
+
+    /// <summary>
+    /// The slider ring's selector up to <c>:focus-visible</c>. Also the marker the ring section ends
+    /// at. A plain <c>Slider:focus-visible</c> never matches under Material 3.19.0 (RemEx-a9aez).
+    /// </summary>
+    private const string SliderRingSelector = "Slider /template/ Thumb";
 
     [Theory]
     [MemberData(nameof(ControlTypeCases))]
@@ -72,7 +80,7 @@ public class FocusRingCoverageTests
         // rings in its own accent.
         var appAxaml = File.ReadAllText(Path.Combine(RepoRoot, "remex.desktop", "App.axaml"));
         var focusRingSection = appAxaml[appAxaml.IndexOf("KEYBOARD-FOCUS VISIBLE RING", StringComparison.Ordinal)..];
-        var endOfSection = focusRingSection.IndexOf("Slider:focus-visible", StringComparison.Ordinal);
+        var endOfSection = focusRingSection.IndexOf(SliderRingSelector + ":focus-visible", StringComparison.Ordinal);
 
         var declarations = focusRingSection[..endOfSection];
 
@@ -113,8 +121,8 @@ public class FocusRingCoverageTests
         Assert.True(start >= 0, "the focus-ring section's banner comment moved or was renamed");
 
         var section = appAxaml[start..];
-        var end = section.IndexOf("Slider:focus-visible", StringComparison.Ordinal);
-        Assert.True(end >= 0, "the focus-ring section no longer ends at Slider — check the scan");
+        var end = section.IndexOf(SliderRingSelector + ":focus-visible", StringComparison.Ordinal);
+        Assert.True(end >= 0, "the focus-ring section no longer ends at the slider thumb's ring — check the scan");
 
         return section[..end];
     }

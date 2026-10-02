@@ -55,8 +55,17 @@ public class FocusVisibleStyleGuardTests
     /// three content controls, but not for ListBoxItem: its ListBoxItem template has none at all, so
     /// the ring is set on the control itself there instead of reached in through a template part.
     /// The three that remain are not templated anywhere in this repo.
+    /// <para>
+    /// The slider is the one exception that reaches in for something other than a ContentPresenter
+    /// (RemEx-a9aez): Material makes the Slider unfocusable and its Thumb the tab stop, so the ring
+    /// has to sit on the thumb's own <c>Border#PART_HoverEffect</c>. That part's existence is pinned
+    /// by rendering it (remex.desktop.render.tests' SliderFocusRingRenderTests), not by this file.
+    /// </para>
     /// </remarks>
-    private static readonly string[] MayUseTheTemplateForm = ["Button", "ToggleButton", "RepeatButton"];
+    private static readonly string[] MayUseTheTemplateForm = ["Button", "ToggleButton", "RepeatButton", SliderRing];
+
+    /// <summary>The slider ring's selector up to <c>:focus-visible</c> (RemEx-a9aez).</summary>
+    private const string SliderRing = "Slider /template/ Thumb";
 
     /// <summary>
     /// Every control the app rings on focus. Losing one is a silent accessibility regression, so the
@@ -65,9 +74,26 @@ public class FocusVisibleStyleGuardTests
     private static readonly string[] RingedControls =
     [
         "Button", "ToggleButton", "RepeatButton", "ListBoxItem",
-        "TextBox", "ComboBox", "CheckBox", "RadioButton", "ToggleSwitch", "Slider",
+        "TextBox", "ComboBox", "CheckBox", "RadioButton", "ToggleSwitch", SliderRing,
         "TabItem",
     ];
+
+    [Fact]
+    public void TheSliderRingIsOnTheThumbBecauseMaterialMakesTheSliderUnfocusable()
+    {
+        // RemEx-a9aez. `Slider:focus-visible` compiled, applied to every slider and never fired:
+        // Material 3.19.0's slider theme sets Focusable=False on the Slider and makes
+        // Thumb#PART_SliderThumb the tab stop. The ring goes on the thumb's halo border, which is
+        // drawn outside the knob - a ring on the accent-filled knob itself would be invisible.
+        var slider = FocusStyles().Single(s => s.Control == SliderRing);
+        slider.Suffix.Trim().Should().Be("/template/ Border#PART_HoverEffect");
+        FocusStyles().Should().NotContain(s => s.Control == "Slider",
+            "a control-level Slider ring never matches under Material, so it would only look like coverage");
+
+        // A view that swapped in its own Slider or Thumb template would take the halo part away.
+        TemplateOverrides("Slider").Should().BeEmpty();
+        TemplateOverrides("Thumb").Should().BeEmpty();
+    }
 
     [Fact]
     public void EveryInteractiveControlStillHasAFocusRing()

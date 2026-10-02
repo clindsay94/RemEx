@@ -195,6 +195,83 @@ public class TrayFlyoutGeometryTests
                 >= 4 * TrayFlyoutGeometry.CardPitch + TrayFlyoutGeometry.CardsPanelInset);
     }
 
+    // RemEx-8tm8l: the cards scale with the flyout. The cards panel's width (the ItemsControl's own,
+    // inside CardsPanelInset) is shared out evenly over CardColumns, so a card is never narrower
+    // than CardMinWidth and a row never leaves a slot-sized gap on the right.
+    private static double PanelWidthAt(double windowWidth, bool scrollBarShowing) =>
+        windowWidth - TrayFlyoutGeometry.ChromeSideInset - TrayFlyoutGeometry.CardsPanelInset
+        - (scrollBarShowing ? TrayFlyoutGeometry.ScrollBarAllowance : 0);
+
+    [Theory]
+    [InlineData(211.9, 1)]
+    [InlineData(212, 1)]
+    [InlineData(423.9, 1)]
+    [InlineData(424, 2)]
+    [InlineData(635.9, 2)]
+    [InlineData(636, 3)]
+    [InlineData(848, 4)]
+    [InlineData(100, 1)] // narrower than one card: still one column, never zero
+    public void CardColumnsBreakAtWholeCardPitches(double panelWidth, int expected)
+    {
+        Assert.Equal(expected, TrayFlyoutGeometry.CardColumns(panelWidth));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void BeforeLayoutTheSlotWidthIsLeftToTheCard(double panelWidth)
+    {
+        // NaN is WrapPanel.ItemWidth's "size to content": the card's MinWidth then gives the old
+        // fixed 200px footprint until the panel has a real width.
+        Assert.True(double.IsNaN(TrayFlyoutGeometry.CardSlotWidth(panelWidth)));
+        Assert.Equal(1, TrayFlyoutGeometry.CardColumns(panelWidth));
+    }
+
+    [Fact]
+    public void TheTransientDefaultShowsTwoColumnsThatFillTheRow()
+    {
+        foreach (var scrollBar in new[] { false, true })
+        {
+            var panel = PanelWidthAt(TrayFlyoutGeometry.DefaultWidth, scrollBar);
+            var slot = TrayFlyoutGeometry.CardSlotWidth(panel);
+
+            Assert.Equal(2, TrayFlyoutGeometry.CardColumns(panel));
+            Assert.True(slot > TrayFlyoutGeometry.CardPitch, $"the cards should widen past 200px at the default width (slot {slot})");
+            Assert.True(panel - 2 * slot < 2, $"two slots should fill the {panel}px panel to the pixel (slot {slot})");
+        }
+    }
+
+    [Fact]
+    public void EveryWidthTheFlyoutCanBeResizedToFillsItsRowsWithoutWrappingEarly()
+    {
+        for (var window = TrayFlyoutGeometryValidator.MinWidth; window <= TrayFlyoutGeometryValidator.MaxWidth; window++)
+        {
+            foreach (var scrollBar in new[] { false, true })
+            {
+                var panel = PanelWidthAt(window, scrollBar);
+                var columns = TrayFlyoutGeometry.CardColumns(panel);
+                var slot = TrayFlyoutGeometry.CardSlotWidth(panel);
+
+                Assert.True(slot >= TrayFlyoutGeometry.CardPitch,
+                    $"at {window}px a card slot of {slot} is narrower than a 200px card plus margins");
+                Assert.True(columns * slot <= panel,
+                    $"at {window}px {columns} slots of {slot} overflow the {panel}px panel, so the last card wraps");
+                Assert.True(panel - columns * slot < TrayFlyoutGeometry.CardPitch,
+                    $"at {window}px a whole extra card would still fit in the gap - a column was lost");
+                Assert.True(panel - columns * slot < columns,
+                    $"at {window}px the row leaves {panel - columns * slot}px unused - the cards should fill it");
+            }
+        }
+    }
+
+    [Fact]
+    public void TheWidestFlyoutShowsFourColumns()
+    {
+        Assert.Equal(4, TrayFlyoutGeometry.CardColumns(PanelWidthAt(TrayFlyoutGeometryValidator.MaxWidth, scrollBarShowing: true)));
+    }
+
     // Fix round 1 (RemEx-4kv0g.18.6 review, MEDIUM): Avalonia's MaxHeight bounds an element's own
     // content box, not its externally-applied Margin. Wiring ToolbarMaxHeight (96 - the row's
     // 16px top margin plus two 40px content rows) straight into the toolbar ItemsControl's

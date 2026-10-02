@@ -118,8 +118,9 @@
             <!-- Sensor cards, directly under the status line rather than along the bottom edge
                  (RemEx-or8f8, same placement rule the old strip used). RemEx-4kv0g.18.2 replaces
                  the name/value/44x16-sparkline strip with the canvas's own SensorCardContent
-                 (RemEx-4kv0g.18.1) in a scrolling WrapPanel: canvas-size (200x150) cards, the same
-                 family palette (spec B), as many columns as the popup's width holds. It collapses
+                 (RemEx-4kv0g.18.1) in a scrolling WrapPanel: canvas-size (200x150 at their
+                 narrowest, widening to fill the row since RemEx-8tm8l) cards, the same family
+                 palette (spec B), as many columns as the popup's width holds. It collapses
                  entirely when nothing is pinned, for the same reason the strip did - a command
                  center with no telemetry should just be shorter, not show a paragraph explaining
                  its own emptiness. The double bang is Avalonia's coercion-to-bool; the negated
@@ -143,9 +144,18 @@
                           MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"
                           IsVisible="{Binding !!FlyoutSensors.Count}">
                 <ItemsControl ItemsSource="{Binding FlyoutSensors}" Margin="6,0">
+                    <!-- Cards SCALE WITH THE FLYOUT (RemEx-8tm8l). ItemWidth shares the panel's width
+                         out evenly over as many 212px (TrayFlyoutGeometry.CardPitch) columns as fit,
+                         so each card grows from its 200px MinWidth to fill the row instead of leaving
+                         a ragged gap on the right - the same column-fit rule DefaultWidth/MaxWidth are
+                         pinned against, not a second sizing model. Width only: Height stays 150 so
+                         CardsMaxHeight and MinHeight stay whole card rows (see CardSlotWidth's doc).
+                         Before first layout the converter returns NaN, which WrapPanel reads as
+                         "size to content", so the card's MinWidth gives the old 200px footprint. -->
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
+                            <WrapPanel Orientation="Horizontal"
+                                       ItemWidth="{Binding $parent[ItemsControl].Bounds.Width, Converter={x:Static conv:TrayFlyoutCardSlotWidthConverter.Instance}}"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
@@ -156,7 +166,7 @@
                                  does, instead of edge-to-edge (fix round 3, whole-branch review). DraggableCard binds
                                  against its TemplatedParent because CornerRadius lives on the templated control; this
                                  Border isn't templated, so $self reaches the same property directly. -->
-                            <Border Classes="flyout-card" Width="200" Height="150" Margin="6"
+                            <Border Classes="flyout-card" MinWidth="200" Height="150" Margin="6"
                                     Padding="{Binding $self.CornerRadius, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"
                                     Classes.family-primary="{Binding IsPrimaryFamily}"
                                     Classes.family-secondary="{Binding IsSecondaryFamily}"
