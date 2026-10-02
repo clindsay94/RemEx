@@ -4200,4 +4200,16 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Показники цього ПК наживо</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Налаштуйте роботу RemEx</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Остання активність, щоб розібратися, коли щось не так</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Версія та автори</value>
+  </data>
 </root>

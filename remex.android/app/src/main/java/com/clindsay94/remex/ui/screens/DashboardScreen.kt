@@ -484,6 +484,7 @@ fun DashboardScreenContent(
                 ) {
                         RemexFlexibleTopBar(
                                 title = stringResource(R.string.screen_dashboard_title),
+                                subtitle = stringResource(R.string.screen_dashboard_subtitle),
                                 scrollBehavior = topBarScrollBehavior,
                                 actions = {
                                         // Replay the first-run coach marks anytime; disabled mid-gesture

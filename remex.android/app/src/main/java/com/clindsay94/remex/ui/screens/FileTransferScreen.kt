@@ -217,21 +217,26 @@ fun FileTransferScreen(
     }
 
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
+    // Name the read-only state next to the folder it applies to, so a user looking at
+    // greyed-out upload and new-folder buttons has the reason on screen (RemEx-dc57).
+    // Note this passes selectedRoot?.isWritable, NOT canWrite - see the rule in
+    // buildLocationSubtitle for why the difference matters.
+    val locationSubtitle = FileManagerLogic.buildLocationSubtitle(
+        rootLabel = rootLabel,
+        path = remotePath,
+        selectedRootIsWritable = selectedRoot?.isWritable,
+        readOnlyLabel = stringResource(R.string.file_transfer_read_only_root),
+    )
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
             RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_file_transfer_title),
-                // Name the read-only state next to the folder it applies to, so a user looking at
-                // greyed-out upload and new-folder buttons has the reason on screen (RemEx-dc57).
-                // Note this passes selectedRoot?.isWritable, NOT canWrite - see the rule in
-                // buildLocationSubtitle for why the difference matters.
-                subtitle = FileManagerLogic.buildLocationSubtitle(
-                    rootLabel = rootLabel,
-                    path = remotePath,
-                    selectedRootIsWritable = selectedRoot?.isWritable,
-                    readOnlyLabel = stringResource(R.string.file_transfer_read_only_root),
-                ),
+                // Before a folder is open there is no location to name, so the page shows the
+                // same plain subtitle as the PC's Files page, in the display font (RemEx-kq10x.4).
+                // A location is data (folder names in any script), so it keeps the body font.
+                subtitle = locationSubtitle ?: stringResource(R.string.screen_file_transfer_subtitle),
+                subtitleInDisplayFont = locationSubtitle == null,
                 scrollBehavior = topBarScrollBehavior,
             )
         },

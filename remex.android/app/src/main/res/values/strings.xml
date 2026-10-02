@@ -1643,4 +1643,13 @@
     <string name="faq_q20">Can a routine shut down my PC while I\'m using it?</string>
     <string name="faq_q21">Can I edit routines on my PC?</string>
     <string name="faq_q22">How do NFC tags work with routines?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Live readings from this PC</string>
+    <string name="screen_app_launcher_subtitle">Programs your phone can start</string>
+    <string name="screen_remote_control_subtitle">Lock, restart or shut down this PC</string>
+    <string name="screen_task_manager_subtitle">What\'s running on this PC</string>
+    <string name="screen_file_transfer_subtitle">Folders your phone can browse and send to</string>
+    <string name="screen_routines_subtitle">They run on this PC even when your phone is away</string>
+    <string name="screen_settings_subtitle">Choose how RemEx works</string>
+    <string name="screen_remote_desktop_subtitle">See and control your PC\'s screen</string>
 </resources>

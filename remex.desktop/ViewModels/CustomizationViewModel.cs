@@ -761,7 +761,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
                                  ?? AvailableFonts.FirstOrDefault();
         // Null on disk means "follows the title font" (RemEx-n6csl); the picker shows the effective font.
-        _selectedPageSubtitleFont = AvailableFonts.FirstOrDefault(f => f.Value == (settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily))
+        _selectedPageSubtitleFont = AvailableFonts.FirstOrDefault(f => f.Value == PageDisplayFontRule.SubtitleFont(settings.PageSubtitleFontFamily, settings.PageTitleFontFamily))
                                     ?? AvailableFonts.FirstOrDefault();
         _selectedBodyFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.BodyFontFamily)
                             ?? AvailableFonts.FirstOrDefault();
@@ -1937,7 +1937,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // DashboardProfile.SyncWithHardware for why the field itself stays.
             SyncWithHardware = carried.SyncWithHardware,
             SplashStyle = SplashStyle,
-            PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
+            PageTitleFontFamily = SelectedPageTitleFont?.Value ?? PageDisplayFontRule.DefaultTitleFont,
             // No literal fallback: null stays null and keeps following the title font (RemEx-n6csl).
             PageSubtitleFontFamily = SelectedPageSubtitleFont?.Value,
             CardHeaderFontFamily = carried.CardHeaderFontFamily,

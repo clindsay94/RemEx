@@ -399,6 +399,7 @@ fun RemoteControlScreenContent(
             topBar = {
                 RemexFlexibleTopBar(
                         title = stringResource(R.string.screen_remote_control_title),
+                        subtitle = stringResource(R.string.screen_remote_control_subtitle),
                         scrollBehavior = scrollBehavior
                 )
             },

@@ -49,6 +49,39 @@ public class BundledFontFilesTests
         notFonts.Should().BeEmpty("a file named .ttf/.otf that is not a font loads as null and the app silently draws in a fallback font");
     }
 
+    /// <summary>
+    /// The phone's display fonts are byte-for-byte the PC's, and every shipped family carries its
+    /// OFL licence (RemEx-kq10x.4). A licence can't live in res/font, so the phone keeps them in
+    /// assets/licenses.
+    /// </summary>
+    [Theory]
+    [InlineData("bungee_shade_regular.ttf", "BungeeShade-Regular.ttf")]
+    [InlineData("orbitron_medium.ttf", "Orbitron-Medium.ttf")]
+    [InlineData("victor_mono_bold.ttf", "victor_mono_bold.ttf")]
+    public void PhoneDisplayFontsAreThePcFiles(string phoneFile, string pcFile)
+    {
+        var phone = Path.Combine(RepoRoot(), "remex.android", "app", "src", "main", "res", "font", phoneFile);
+        var pc = Path.Combine(RepoRoot(), "remex.desktop", "Assets", "Fonts", pcFile);
+
+        File.Exists(phone).Should().BeTrue($"the phone draws titles in {phoneFile}");
+        File.ReadAllBytes(phone).Should().Equal(File.ReadAllBytes(pc), "both apps share one display type");
+    }
+
+    [Theory]
+    [InlineData("remex.desktop/Assets/Fonts/OFL-Orbitron.txt")]
+    [InlineData("remex.desktop/Assets/Fonts/OFL-VictorMono.txt")]
+    [InlineData("remex.desktop/Assets/Fonts/OFL-BungeeShade.txt")]
+    [InlineData("remex.android/app/src/main/assets/licenses/OFL-Orbitron.txt")]
+    [InlineData("remex.android/app/src/main/assets/licenses/OFL-VictorMono.txt")]
+    [InlineData("remex.android/app/src/main/assets/licenses/OFL-BungeeShade.txt")]
+    public void EveryShippedDisplayFontHasItsOflLicence(string relativePath)
+    {
+        var path = Path.Combine(RepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        File.Exists(path).Should().BeTrue("the SIL Open Font License requires the licence to travel with the font");
+        File.ReadAllText(path).Should().Contain("SIL Open Font License");
+    }
+
     private static IEnumerable<string> BundledFonts() =>
         FontDirectories
             .Select(d => Path.Combine(RepoRoot(), d))

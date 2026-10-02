@@ -422,13 +422,15 @@ public record CustomizationSettings
 
     /// <summary>Font family for page-title headers (an avares URI for a bundled font, or a system font name).</summary>
     [JsonPropertyName("pageTitleFont")]
-    public string PageTitleFontFamily { get; init; } = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+    public string PageTitleFontFamily { get; init; } = "avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade";
 
     /// <summary>
     /// Font family for the page-subtitle line under each page title (RemEx-n6csl). <c>null</c> means
     /// "follows <see cref="PageTitleFontFamily"/>" — the upgrade path for profiles written before this
-    /// field existed, which is why it is nullable with no default rather than defaulting to Orbitron:
-    /// a profile that chose a custom title font keeps its subtitles matching after upgrade.
+    /// field existed, which is why it is nullable with no default: a profile that chose a custom title
+    /// font keeps its subtitles matching after upgrade. The one exception is the default title font,
+    /// Bungee Shade, which pairs with Orbitron subtitles on both apps (RemEx-kq10x.4); the desktop
+    /// resolves that in <c>PageDisplayFontRule.SubtitleFont</c>.
     /// </summary>
     [JsonPropertyName("pageSubtitleFont")]
     public string? PageSubtitleFontFamily { get; init; }

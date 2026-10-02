@@ -16,6 +16,7 @@
 
             <!-- Header -->
             <TextBlock Classes="page-title" Text="{local:Localize About_Header}" HorizontalAlignment="Center"/>
+            <TextBlock Classes="page-subtitle" Text="{local:Localize About_Subheader}" HorizontalAlignment="Center"/>
 
             <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
             <WrapPanel x:Name="AboutCards" HorizontalAlignment="Stretch">

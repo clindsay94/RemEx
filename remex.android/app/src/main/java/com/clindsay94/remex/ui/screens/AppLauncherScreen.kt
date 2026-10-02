@@ -140,6 +140,7 @@ fun AppLauncherScreenContent(
         topBar = {
             RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_app_launcher_title),
+                subtitle = stringResource(R.string.screen_app_launcher_subtitle),
                 scrollBehavior = scrollBehavior
             )
         }

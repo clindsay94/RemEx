@@ -20,7 +20,10 @@
 
     <Grid RowDefinitions="Auto,*" Margin="40" HorizontalAlignment="Stretch">
         <!-- Header -->
-        <TextBlock Grid.Row="0" Classes="page-title" Text="{local:Localize Logs_Header}" Margin="0,0,0,24"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Classes="page-title" Text="{local:Localize Logs_Header}"/>
+            <TextBlock Classes="page-subtitle" Text="{local:Localize Logs_Subheader}"/>
+        </StackPanel>
 
         <!-- Main Card -->
         <material:Card Grid.Row="1" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

@@ -121,10 +121,14 @@
                 <!-- Background="Transparent" stays: this "button" is a non-interactive title label
                      (IsHitTestVisible="False"), not a real secondary surface — a documented exception,
                      not drift (RemEx-cgrv3). -->
-                <Button AutomationProperties.Name="{local:Localize Canvas_Header}" Classes="secondary" IsHitTestVisible="False" Background="Transparent">
-                    <TextBlock Text="{local:Localize Canvas_Header}" Theme="{StaticResource Headline5TextBlock}" FontFamily="{DynamicResource PageTitleFontFamily}" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                </Button>
-                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <!-- One header pattern on both apps (RemEx-kq10x.4): the title, then one plain subtitle
+                     line under it. The subtitle replaced a muted caption that repeated the title. -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <Button AutomationProperties.Name="{local:Localize Canvas_Header}" Classes="secondary" IsHitTestVisible="False" Background="Transparent">
+                        <TextBlock Text="{local:Localize Canvas_Header}" Theme="{StaticResource Headline5TextBlock}" FontFamily="{DynamicResource PageTitleFontFamily}" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    </Button>
+                    <TextBlock Classes="page-subtitle" Text="{local:Localize Sensors_Subheader}" Margin="16,0,0,0"/>
+                </StackPanel>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="secondary" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">

@@ -1569,4 +1569,13 @@
     <string name="faq_q20">Чи може рутина вимкнути мій комп\'ютер, поки я ним користуюся?</string>
     <string name="faq_q21">Чи можна редагувати рутини на комп\'ютері?</string>
     <string name="faq_q22">Як NFC-мітки працюють із рутинами?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Показники цього ПК наживо</string>
+    <string name="screen_app_launcher_subtitle">Програми, які може запустити ваш телефон</string>
+    <string name="screen_remote_control_subtitle">Заблокуйте, перезапустіть або вимкніть цей ПК</string>
+    <string name="screen_task_manager_subtitle">Що працює на цьому ПК</string>
+    <string name="screen_file_transfer_subtitle">Папки, які ваш телефон може переглядати й куди може надсилати файли</string>
+    <string name="screen_routines_subtitle">Працюють на цьому комп\'ютері, навіть коли телефона немає поруч</string>
+    <string name="screen_settings_subtitle">Налаштуйте роботу RemEx</string>
+    <string name="screen_remote_desktop_subtitle">Бачте екран свого ПК і керуйте ним</string>
 </resources>

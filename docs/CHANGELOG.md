@@ -182,6 +182,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **Page titles and subtitles look the same on the PC and the phone.** New installs use Bungee Shade
+  for page titles on both apps, with Orbitron for the subtitle line under each title (profiles that
+  already picked a font keep it). The phone now bundles both fonts with their licences. Ukrainian
+  titles switch to Victor Mono and Hindi titles to the system font, because the display fonts have no
+  Cyrillic or Devanagari letters; the switch follows a live language change. Every main page on both
+  apps now has one plain subtitle line, with the same words on both (for example Sensors: "Live
+  readings from this PC"), and phone titles shrink to fit on one line on narrow screens instead of
+  being cut off. (RemEx-kq10x.4)
 - **Commands look and read the same on the PC and the phone.** Both apps now show two groups in the same
   order: Standard (Lock, Sign out, Shutdown, Restart, Sleep, Hibernate) and "Forced — unsaved work is lost"
   (Force shutdown, Force restart, Reboot to UEFI), with the same names in all nine languages. Both apps hide

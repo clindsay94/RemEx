@@ -70,7 +70,10 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="secondary" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
 
-                <TextBlock Grid.Column="1" Classes="page-title" Text="{local:Localize Settings_Header}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Classes="page-title" Text="{local:Localize Settings_Header}" HorizontalAlignment="Center"/>
+                    <TextBlock Classes="page-subtitle" Text="{local:Localize Settings_Subheader}" HorizontalAlignment="Center"/>
+                </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>

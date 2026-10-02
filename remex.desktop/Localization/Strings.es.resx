@@ -4212,4 +4212,16 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Lecturas en directo de este PC</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Elige cómo funciona RemEx</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Actividad reciente, para cuando algo falla</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Versión y créditos</value>
+  </data>
 </root>

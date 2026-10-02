@@ -936,6 +936,10 @@ fun RemoteDesktopScreenContent(
                                                 stringResource(
                                                         R.string.screen_remote_desktop_title
                                                 ),
+                                        subtitle =
+                                                stringResource(
+                                                        R.string.screen_remote_desktop_subtitle
+                                                ),
                                         actions = {
                                                 RemexTooltip(stringResource(R.string.cd_show_keyboard)) {
                                                         IconButton(

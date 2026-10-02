@@ -4203,4 +4203,16 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Bu bilgisayardan canlı ölçümler</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>RemEx'in nasıl çalışacağını seçin</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Bir şeyler ters gittiğinde işe yarayan son etkinlikler</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Sürüm ve emeği geçenler</value>
+  </data>
 </root>

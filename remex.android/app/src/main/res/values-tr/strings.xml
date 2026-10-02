@@ -1545,4 +1545,13 @@
     <string name="faq_q20">Bir rutin, ben kullanırken bilgisayarımı kapatabilir mi?</string>
     <string name="faq_q21">Rutinleri bilgisayarımda düzenleyebilir miyim?</string>
     <string name="faq_q22">NFC etiketleri rutinlerle nasıl çalışır?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Bu bilgisayardan canlı ölçümler</string>
+    <string name="screen_app_launcher_subtitle">Telefonunuzun başlatabileceği programlar</string>
+    <string name="screen_remote_control_subtitle">Bu bilgisayarı kilitleyin, yeniden başlatın veya kapatın</string>
+    <string name="screen_task_manager_subtitle">Bu bilgisayarda neler çalışıyor</string>
+    <string name="screen_file_transfer_subtitle">Telefonunuzun göz atabileceği ve dosya gönderebileceği klasörler</string>
+    <string name="screen_routines_subtitle">Telefonunuz yakında olmasa da bu bilgisayarda çalışır</string>
+    <string name="screen_settings_subtitle">RemEx\'in nasıl çalışacağını seçin</string>
+    <string name="screen_remote_desktop_subtitle">Bilgisayarınızın ekranını görün ve yönetin</string>
 </resources>

@@ -4202,4 +4202,16 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Pembacaan langsung dari PC ini</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Atur cara kerja RemEx</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Aktivitas terbaru, untuk membantu saat ada masalah</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Versi dan kredit</value>
+  </data>
 </root>

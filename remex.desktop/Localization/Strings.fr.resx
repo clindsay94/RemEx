@@ -4199,4 +4199,16 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Mesures en direct de ce PC</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Choisissez le fonctionnement de RemEx</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Activité récente, utile quand quelque chose ne va pas</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Version et crédits</value>
+  </data>
 </root>

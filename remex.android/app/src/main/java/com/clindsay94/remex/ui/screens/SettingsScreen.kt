@@ -206,6 +206,7 @@ private fun SettingsCategoryList(
         topBar = {
             RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_settings_title),
+                subtitle = stringResource(R.string.screen_settings_subtitle),
                 scrollBehavior = topBarScrollBehavior,
             )
         }

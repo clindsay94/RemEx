@@ -391,6 +391,7 @@ private fun RoutinesListPane(
             topBar = {
                 RemexFlexibleTopBar(
                     title = stringResource(R.string.screen_routines_title),
+                    subtitle = stringResource(R.string.screen_routines_subtitle),
                     scrollBehavior = scrollBehavior,
                     actions = {
                         if (canEdit) {

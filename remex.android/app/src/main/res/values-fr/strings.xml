@@ -1543,4 +1543,13 @@
     <string name="faq_q20">Une routine peut-elle éteindre mon PC pendant que je l\'utilise ?</string>
     <string name="faq_q21">Puis-je modifier les routines sur mon PC ?</string>
     <string name="faq_q22">Comment fonctionnent les tags NFC avec les routines ?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Mesures en direct de ce PC</string>
+    <string name="screen_app_launcher_subtitle">Programmes que votre téléphone peut lancer</string>
+    <string name="screen_remote_control_subtitle">Verrouillez, redémarrez ou éteignez ce PC</string>
+    <string name="screen_task_manager_subtitle">Ce qui tourne sur ce PC</string>
+    <string name="screen_file_transfer_subtitle">Dossiers que votre téléphone peut parcourir et où il peut envoyer des fichiers</string>
+    <string name="screen_routines_subtitle">Elles s\'exécutent sur ce PC même quand votre téléphone est absent</string>
+    <string name="screen_settings_subtitle">Choisissez le fonctionnement de RemEx</string>
+    <string name="screen_remote_desktop_subtitle">Voyez et contrôlez l\'écran de votre PC</string>
 </resources>

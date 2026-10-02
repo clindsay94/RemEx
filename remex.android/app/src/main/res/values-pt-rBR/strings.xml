@@ -1543,4 +1543,13 @@
     <string name="faq_q20">Uma rotina pode desligar meu PC enquanto estou usando?</string>
     <string name="faq_q21">Posso editar rotinas no meu PC?</string>
     <string name="faq_q22">Como as etiquetas NFC funcionam com as rotinas?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Leituras ao vivo deste PC</string>
+    <string name="screen_app_launcher_subtitle">Programas que seu celular pode abrir</string>
+    <string name="screen_remote_control_subtitle">Bloqueie, reinicie ou desligue este PC</string>
+    <string name="screen_task_manager_subtitle">O que está rodando neste PC</string>
+    <string name="screen_file_transfer_subtitle">Pastas que seu celular pode explorar e para onde pode enviar arquivos</string>
+    <string name="screen_routines_subtitle">Elas rodam neste PC mesmo quando o celular está longe</string>
+    <string name="screen_settings_subtitle">Escolha como o RemEx funciona</string>
+    <string name="screen_remote_desktop_subtitle">Veja e controle a tela do seu PC</string>
 </resources>

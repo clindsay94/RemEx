@@ -1543,4 +1543,13 @@
     <string name="faq_q20">क्या कोई रूटीन मेरे इस्तेमाल के दौरान मेरा PC बंद कर सकता है?</string>
     <string name="faq_q21">क्या मैं अपने PC पर रूटीन बदल सकता हूँ?</string>
     <string name="faq_q22">रूटीन के साथ NFC टैग कैसे काम करते हैं?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">इस पीसी की लाइव रीडिंग</string>
+    <string name="screen_app_launcher_subtitle">प्रोग्राम जिन्हें आपका फ़ोन शुरू कर सकता है</string>
+    <string name="screen_remote_control_subtitle">इस पीसी को लॉक, रीस्टार्ट या बंद करें</string>
+    <string name="screen_task_manager_subtitle">इस पीसी पर क्या चल रहा है</string>
+    <string name="screen_file_transfer_subtitle">फ़ोल्डर जिन्हें आपका फ़ोन ब्राउज़ कर सकता है और जिनमें फ़ाइलें भेज सकता है</string>
+    <string name="screen_routines_subtitle">ये इस PC पर तब भी चलते हैं जब आपका फ़ोन दूर हो</string>
+    <string name="screen_settings_subtitle">चुनें कि RemEx कैसे काम करे</string>
+    <string name="screen_remote_desktop_subtitle">अपने पीसी की स्क्रीन देखें और नियंत्रित करें</string>
 </resources>

@@ -142,6 +142,7 @@ fun TaskManagerScreenContent(
             topBar = {
                 RemexFlexibleTopBar(
                         title = stringResource(R.string.screen_task_manager_title),
+                        subtitle = stringResource(R.string.screen_task_manager_subtitle),
                         scrollBehavior = scrollBehavior,
                         actions = {
                             IconButton(

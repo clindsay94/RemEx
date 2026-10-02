@@ -4199,4 +4199,16 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Leituras ao vivo deste PC</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Escolha como o RemEx funciona</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Atividade recente, para quando algo dá errado</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Versão e créditos</value>
+  </data>
 </root>

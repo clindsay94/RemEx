@@ -1538,4 +1538,13 @@
     <string name="faq_q20">Bisakah rutinitas mematikan PC saat saya sedang memakainya?</string>
     <string name="faq_q21">Bisakah saya mengedit rutinitas di PC?</string>
     <string name="faq_q22">Bagaimana tag NFC bekerja dengan rutinitas?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Pembacaan langsung dari PC ini</string>
+    <string name="screen_app_launcher_subtitle">Program yang bisa dijalankan dari ponsel Anda</string>
+    <string name="screen_remote_control_subtitle">Kunci, mulai ulang, atau matikan PC ini</string>
+    <string name="screen_task_manager_subtitle">Apa yang berjalan di PC ini</string>
+    <string name="screen_file_transfer_subtitle">Folder yang bisa dijelajahi dan dikirimi file dari ponsel Anda</string>
+    <string name="screen_routines_subtitle">Rutinitas berjalan di PC ini meski ponsel Anda tidak ada</string>
+    <string name="screen_settings_subtitle">Atur cara kerja RemEx</string>
+    <string name="screen_remote_desktop_subtitle">Lihat dan kendalikan layar PC Anda</string>
 </resources>

@@ -4199,4 +4199,16 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}। {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>इस पीसी की लाइव रीडिंग</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>चुनें कि RemEx कैसे काम करे</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>हाल की गतिविधि, जब कुछ गड़बड़ हो तब काम आती है</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>संस्करण और श्रेय</value>
+  </data>
 </root>

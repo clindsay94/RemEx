@@ -111,12 +111,31 @@ public class ThemeServiceTypographyTests
 
         // Perf audit P2-14: the direct app.Resources[key] = value assignment is now wrapped in
         // SetOwnResourceIfChanged (skip-if-unchanged, still the same own key, same fallback font).
+        // RemEx-kq10x.4: both page fonts now pass the per-language rule first (ApplyPageDisplayFonts),
+        // then the same ResolveDisplayFont guard, so assert the own key and the guard separately.
         source.Should().Contain(
-            @"SetOwnResourceIfChanged(app.Resources, ""PageSubtitleFontFamily"", SystemFontService.ResolveFontOrDefault(",
-            "PageSubtitleFontFamily must be written through the same own-key/guard mechanism as PageTitleFontFamily");
+            @"SetOwnResourceIfChanged(app.Resources, ""PageSubtitleFontFamily"",",
+            "PageSubtitleFontFamily must be written through the same own-key mechanism as PageTitleFontFamily");
         source.Should().Contain(
-            "settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily",
-            "a profile with no chosen subtitle font must fall back to the title font, not silently reset to the Orbitron default");
+            @"PageDisplayFontRule.ForLanguage(culture, _configuredSubtitleFont), PageDisplayFontRule.DefaultSubtitleFont)",
+            "the subtitle font must go through the same load guard as the title font, falling back to Orbitron");
+        source.Should().Contain(
+            "SystemFontService.ResolveFontOrDefault(font, fallbackUri)",
+            "an unloadable font must fall back to a bundled default instead of throwing at render time");
+        source.Should().Contain(
+            "PageDisplayFontRule.SubtitleFont(settings.PageSubtitleFontFamily, settings.PageTitleFontFamily)",
+            "a profile with no chosen subtitle font must fall back to the title font, not silently reset to a default");
+    }
+
+    [Theory]
+    [InlineData(null, "Segoe UI", "Segoe UI")]
+    [InlineData(null, PageDisplayFontRule.DefaultSubtitleFont, PageDisplayFontRule.DefaultSubtitleFont)]
+    [InlineData(null, PageDisplayFontRule.DefaultTitleFont, PageDisplayFontRule.DefaultSubtitleFont)]
+    [InlineData("Arial", PageDisplayFontRule.DefaultTitleFont, "Arial")]
+    public void UnsetSubtitleFollowsTheTitleExceptTheDefaultBungeeShadePairsWithOrbitron(
+        string? subtitle, string title, string expected)
+    {
+        PageDisplayFontRule.SubtitleFont(subtitle, title).Should().Be(expected);
     }
 
     private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisSourceFile = "")

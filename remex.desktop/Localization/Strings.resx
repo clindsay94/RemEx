@@ -4205,4 +4205,16 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="Routines_Card_AccessibleWithNote" xml:space="preserve">
     <value>{0}. {1}</value>
   </data>
+  <data name="Sensors_Subheader" xml:space="preserve">
+    <value>Live readings from this PC</value>
+  </data>
+  <data name="Settings_Subheader" xml:space="preserve">
+    <value>Choose how RemEx works</value>
+  </data>
+  <data name="Logs_Subheader" xml:space="preserve">
+    <value>Recent activity, to help when something goes wrong</value>
+  </data>
+  <data name="About_Subheader" xml:space="preserve">
+    <value>Version and credits</value>
+  </data>
 </root>

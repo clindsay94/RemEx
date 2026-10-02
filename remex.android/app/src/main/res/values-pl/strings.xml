@@ -1569,4 +1569,13 @@
     <string name="faq_q20">Czy rutyna może wyłączyć mój komputer, gdy go używam?</string>
     <string name="faq_q21">Czy mogę edytować rutyny na komputerze?</string>
     <string name="faq_q22">Jak działają tagi NFC z rutynami?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Odczyty na żywo z tego komputera</string>
+    <string name="screen_app_launcher_subtitle">Programy, które telefon może uruchomić</string>
+    <string name="screen_remote_control_subtitle">Zablokuj, uruchom ponownie lub wyłącz ten komputer</string>
+    <string name="screen_task_manager_subtitle">Co działa na tym komputerze</string>
+    <string name="screen_file_transfer_subtitle">Foldery, które telefon może przeglądać i do których może wysyłać pliki</string>
+    <string name="screen_routines_subtitle">Działają na tym komputerze, nawet gdy telefonu nie ma w pobliżu</string>
+    <string name="screen_settings_subtitle">Wybierz, jak działa RemEx</string>
+    <string name="screen_remote_desktop_subtitle">Podgląd i sterowanie ekranem komputera</string>
 </resources>

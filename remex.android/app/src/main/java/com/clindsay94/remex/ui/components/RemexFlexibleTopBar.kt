@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.PlainTooltip
@@ -20,12 +21,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.currentDisplayType
 
 /**
  * Project-wide flexible top app bar.
@@ -53,22 +65,33 @@ fun RemexFlexibleTopBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors = remexFlexibleTopBarColors(),
+    subtitleInDisplayFont: Boolean = true,
 ) {
+    // Page title and subtitle use the PC's display type, picked per UI language (RemEx-kq10x.4).
+    // Pass subtitleInDisplayFont = false when the subtitle is data (a folder path), not a sentence.
+    val display = currentDisplayType()
     MediumTopAppBar(
         title = {
             Column {
-                Text(
+                FittedHeaderText(
                     text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    style = LocalTextStyle.current.copy(
+                        fontFamily = display.titleFamily,
+                        fontWeight = display.titleWeight,
+                    ),
+                    floor = MaterialTheme.typography.titleMedium.fontSize,
                 )
                 if (subtitle != null) {
-                    Text(
+                    val base = MaterialTheme.typography.bodySmall
+                    FittedHeaderText(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = if (subtitleInDisplayFont) {
+                            base.copy(fontFamily = display.subtitleFamily, fontWeight = display.subtitleWeight)
+                        } else {
+                            base
+                        },
+                        floor = MaterialTheme.typography.labelSmall.fontSize,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -97,6 +120,41 @@ fun RemexTooltip(label: String, content: @Composable () -> Unit) {
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
         content = content,
+    )
+}
+
+/** Each shrink step keeps this share of the previous size. */
+private const val HEADER_SHRINK_STEP = 0.9f
+
+/**
+ * One-line header text that shrinks in steps until it fits, down to [floor], before it may wrap
+ * (RemEx-kq10x.4). Titles have to fit on one line at 360dp in all 9 languages; the wide display font
+ * and long translations (Polish, Ukrainian) would otherwise end in an ellipsis. Only at the floor is
+ * a second line allowed, and then it breaks between words.
+ */
+@Composable
+private fun FittedHeaderText(
+    text: String,
+    style: TextStyle,
+    floor: TextUnit,
+    color: Color = Color.Unspecified,
+) {
+    var fontSize by remember(text, style) { mutableStateOf(style.fontSize) }
+    val atFloor = !fontSize.isSp || !floor.isSp || fontSize.value <= floor.value
+    Text(
+        text = text,
+        style = style.copy(fontSize = fontSize, lineBreak = LineBreak.Heading, hyphens = Hyphens.None),
+        color = color,
+        maxLines = if (atFloor) 2 else 1,
+        softWrap = atFloor,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { layout ->
+            val overflowed = layout.hasVisualOverflow ||
+                (layout.lineCount > 0 && layout.isLineEllipsized(layout.lineCount - 1))
+            if (overflowed && !atFloor) {
+                fontSize = (fontSize.value * HEADER_SHRINK_STEP).coerceAtLeast(floor.value).sp
+            }
+        },
     )
 }
 

@@ -1543,4 +1543,13 @@
     <string name="faq_q20">¿Puede una rutina apagar mi PC mientras lo estoy usando?</string>
     <string name="faq_q21">¿Puedo editar rutinas en mi PC?</string>
     <string name="faq_q22">¿Cómo funcionan las etiquetas NFC con las rutinas?</string>
+    <!-- Page subtitles, same text as the PC page of the same name (RemEx-kq10x.4). -->
+    <string name="screen_dashboard_subtitle">Lecturas en directo de este PC</string>
+    <string name="screen_app_launcher_subtitle">Programas que tu teléfono puede abrir</string>
+    <string name="screen_remote_control_subtitle">Bloquea, reinicia o apaga este PC</string>
+    <string name="screen_task_manager_subtitle">Lo que se está ejecutando en este PC</string>
+    <string name="screen_file_transfer_subtitle">Carpetas que tu teléfono puede explorar y a las que puede enviar archivos</string>
+    <string name="screen_routines_subtitle">Se ejecutan en este PC aunque el teléfono no esté cerca</string>
+    <string name="screen_settings_subtitle">Elige cómo funciona RemEx</string>
+    <string name="screen_remote_desktop_subtitle">Ve y controla la pantalla de tu PC</string>
 </resources>

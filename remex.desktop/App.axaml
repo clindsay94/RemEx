@@ -27,9 +27,9 @@
             <FontFamily x:Key="Sixtyfour">avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
             <FontFamily x:Key="VictorMono">avares://Remex.Desktop/Assets/Fonts/victor_mono_bold.ttf#Victor Mono</FontFamily>
             <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
-            <!-- Themeable header font — overridden live by the personalization font picker; default = Orbitron. -->
-            <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
-            <!-- Themeable page-subtitle font — overridden live by the picker; an unset profile value follows the title font, so the default matches it. -->
+            <!-- Themeable header font — overridden live by the personalization font picker; default = Bungee Shade (RemEx-kq10x.4). -->
+            <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
+            <!-- Themeable page-subtitle font — overridden live by the picker; default = Orbitron, which the default Bungee Shade title pairs with (PageDisplayFontRule.SubtitleFont). -->
             <FontFamily x:Key="PageSubtitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
             <!-- Themeable content/body font — overridden live by the picker; default = Inter (the app default font). -->
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>

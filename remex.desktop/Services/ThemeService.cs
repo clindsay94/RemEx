@@ -68,6 +68,8 @@ public class ThemeService : IDisposable
 
     public ThemeService()
     {
+        LocalizationService.Instance.PropertyChanged += OnUiLanguageChanged;
+
         // Add our override dictionary to the application resources.
         // We ensure it's added after theme files so it takes precedence.
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -91,6 +93,49 @@ public class ThemeService : IDisposable
     {
         CustomizationApplied = null;
         DetachOsThemeListener();
+        LocalizationService.Instance.PropertyChanged -= OnUiLanguageChanged;
+    }
+
+    // ─── Page title fonts follow the UI language (RemEx-kq10x.4) ────────────────────────────────
+
+    /// <summary>The title and subtitle fonts from the last apply, before the language rule.</summary>
+    private string? _configuredTitleFont;
+    private string? _configuredSubtitleFont;
+
+    /// <summary>
+    /// Writes PageTitleFontFamily and PageSubtitleFontFamily for the current UI language. The bundled
+    /// display fonts are Latin-only, so <see cref="PageDisplayFontRule"/> swaps in a font that covers
+    /// the language's script. Resolved through the same guard as the other fonts, so a font that
+    /// can't load falls back to Orbitron instead of freezing the UI thread at render time.
+    /// </summary>
+    private void ApplyPageDisplayFonts(Application app)
+    {
+        if (_configuredTitleFont is null || _configuredSubtitleFont is null) return;
+        var culture = LocalizationService.Instance.CultureTag;
+        SetOwnResourceIfChanged(app.Resources, "PageTitleFontFamily", ResolveDisplayFont(
+            PageDisplayFontRule.ForLanguage(culture, _configuredTitleFont), PageDisplayFontRule.DefaultTitleFont));
+        SetOwnResourceIfChanged(app.Resources, "PageSubtitleFontFamily", ResolveDisplayFont(
+            PageDisplayFontRule.ForLanguage(culture, _configuredSubtitleFont), PageDisplayFontRule.DefaultSubtitleFont));
+    }
+
+    private static FontFamily ResolveDisplayFont(string font, string fallbackUri) =>
+        font == PageDisplayFontRule.PlatformDefault
+            ? FontFamily.Default
+            : SystemFontService.ResolveFontOrDefault(font, fallbackUri);
+
+    /// <summary>
+    /// Live language switch: LocalizationService raises PropertyChanged with an empty name once per
+    /// switch (after the indexer notifications), so the fonts are re-applied once, on the UI thread.
+    /// </summary>
+    private void OnUiLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(e.PropertyName)) return;
+        void Reapply()
+        {
+            if (Application.Current is { } app) ApplyPageDisplayFonts(app);
+        }
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) Reapply();
+        else Avalonia.Threading.Dispatcher.UIThread.Post(Reapply);
     }
 
     // ─── System mode: follow the OS light/dark setting, live (RemEx-zk5bc) ──────────────────────
@@ -824,13 +869,11 @@ public class ThemeService : IDisposable
             // the App.axaml default if it can't be materialized. A bad avares URI or a font the
             // platform can't load otherwise throws at RENDER time (outside any try/catch here), which
             // freezes the UI thread — so validation must happen now, before the resource is assigned.
-            SetOwnResourceIfChanged(app.Resources, "PageTitleFontFamily", SystemFontService.ResolveFontOrDefault(
-                settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron"));
-
             // An unset subtitle font follows the title font (RemEx-n6csl): the field is null in every
             // profile written before it existed, and page-subtitle used the title font until then.
-            SetOwnResourceIfChanged(app.Resources, "PageSubtitleFontFamily", SystemFontService.ResolveFontOrDefault(
-                settings.PageSubtitleFontFamily ?? settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron"));
+            _configuredTitleFont = settings.PageTitleFontFamily;
+            _configuredSubtitleFont = PageDisplayFontRule.SubtitleFont(settings.PageSubtitleFontFamily, settings.PageTitleFontFamily);
+            ApplyPageDisplayFonts(app);
 
             SetOwnResourceIfChanged(app.Resources, "BodyFontFamily", SystemFontService.ResolveFontOrDefault(
                 settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter"));
