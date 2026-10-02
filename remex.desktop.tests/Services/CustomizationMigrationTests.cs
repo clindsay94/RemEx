@@ -34,13 +34,14 @@ public class CustomizationMigrationTests
     /// its own arm to reach. Schema 6 (RemEx-bnz2x) is the same story again for CardBorderThickness,
     /// and schema 7 (RemEx-4kv0g.18.5) again for the tray flyout's own settings. Schema 8
     /// (RemEx-8g6n0.2) moves a stored CosmicZoom to the new Live Handshake default: schema 7 shipped
-    /// with CosmicZoom as the default, so it needs its own arm for the same reason again.
+    /// with CosmicZoom as the default, so it needs its own arm for the same reason again. Schema 9
+    /// (sweep D11) rewrites folder-scoped bundled-font URIs to file-scoped ones.
     /// Move this number only with a new arm and a reason.
     /// </summary>
     [Fact]
-    public void TheCurrentSchemaIsEightUntilANewArmSaysOtherwise()
+    public void TheCurrentSchemaIsNineUntilANewArmSaysOtherwise()
     {
-        CustomizationMigration.CurrentSchemaVersion.Should().Be(8);
+        CustomizationMigration.CurrentSchemaVersion.Should().Be(9);
     }
 
     /// <summary>
@@ -1091,6 +1092,61 @@ public class CustomizationMigrationTests
         settings!.PageSubtitleFontFamily.Should().BeNull(
             "null means 'follows PageTitleFontFamily' - an upgraded profile must keep its subtitles matching, not reset to Orbitron");
         settings.PageTitleFontFamily.Should().Be("avares://Remex.Desktop/Assets/Fonts#Orbitron");
+    }
+
+    /// <summary>
+    /// Arm 8 -> 9 (sweep D11): folder-scoped bundled-font URIs become file-scoped, so a stored one
+    /// stops making Avalonia load every bundled .ttf at first paint.
+    /// </summary>
+    [Fact]
+    public void ASchemaEightProfileStoringFolderScopedFontsIsRewrittenToFileScoped()
+    {
+        var old = new CustomizationSettings
+        {
+            SchemaVersion = 8,
+            PageTitleFontFamily = "avares://Remex.Desktop/Assets/Fonts#Orbitron",
+            PageSubtitleFontFamily = "avares://Remex.Desktop/Assets/Fonts#Orbitron",
+            CardHeaderFontFamily = "avares://Remex.Desktop/Assets#JetBrains Mono, Consolas, DejaVu Sans Mono, monospace",
+            BodyFontFamily = "Segoe UI",
+        };
+
+        var migrated = CustomizationMigration.Migrate(old, out _);
+
+        migrated.SchemaVersion.Should().Be(9);
+        migrated.PageTitleFontFamily.Should().Be("avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron");
+        migrated.PageSubtitleFontFamily.Should().Be("avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron");
+        migrated.CardHeaderFontFamily.Should().Be("JetBrains Mono, Consolas, DejaVu Sans Mono, monospace");
+        migrated.BodyFontFamily.Should().Be("Segoe UI", "a system font is the user's, and is never rewritten");
+    }
+
+    [Fact]
+    public void ANullSubtitleStaysNullThroughTheFontArm()
+    {
+        // Null means "follows the title" (RemEx-n6csl); the font arm must not invent a value.
+        CustomizationMigration.Migrate(new CustomizationSettings { SchemaVersion = 8 }, out _)
+            .PageSubtitleFontFamily.Should().BeNull();
+    }
+
+    [Fact]
+    public void NoShippedSourceAddressesABundledFontByFolder()
+    {
+        // The source-level half of D11: App.axaml and the font tables address every bundled font by
+        // file. A folder address ("…/Assets#X" or "…/Assets/Fonts#X") is the defect.
+        var root = RepoRoot();
+        var files = new[]
+        {
+            Path.Combine(root, "remex.desktop", "App.axaml"),
+            Path.Combine(root, "remex.desktop", "Services", "PageDisplayFontRule.cs"),
+            Path.Combine(root, "remex.desktop", "Services", "SystemFontService.cs"),
+            Path.Combine(root, "remex.core", "Models", "DashboardProfile.cs"),
+        };
+        var folderScoped = new System.Text.RegularExpressions.Regex(@"avares://Remex\.Desktop/Assets(/Fonts)?#");
+        foreach (var file in files)
+        {
+            File.Exists(file).Should().BeTrue(file);
+            folderScoped.IsMatch(File.ReadAllText(file)).Should().BeFalse(
+                $"{Path.GetFileName(file)} addresses a bundled font by folder, which loads every bundled .ttf");
+        }
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path

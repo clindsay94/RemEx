@@ -56,7 +56,7 @@
                  (App.axaml.cs's ApplyThemeBeforeWindowShown and the DashboardLayoutService.LoadAsync
                  path) run before MainWindow exists, so a persisted BodyBold=true opened the shell
                  Regular at cold start until the next settings change — and the same gap applied to
-                 every on-demand window (TrayFlyoutWindow, PairingDialog, CommandPaletteWindow, etc.)
+                 every on-demand window (TrayFlyoutWindow, CommandPaletteWindow, etc.)
                  created after the last Apply.
                  THE MECHANISM: a STATIC Style, present from the moment Typography.axaml loads,
                  selecting every Window and setting the INHERITED attached property
@@ -139,7 +139,7 @@
          DynamicResource TypographyService keeps ALWAYS PRESENT: FontWeight.Bold when Body bold is
          on, FontWeight.Normal (an explicit ordinary value, not AvaloniaProperty.UnsetValue) when
          off. Present from the moment this file loads, so every window — cold start's MainWindow
-         included, and every on-demand window (TrayFlyoutWindow, PairingDialog,
+         included, and every on-demand window (TrayFlyoutWindow,
          CommandPaletteWindow, etc.) — gets the current value from construction, no per-window push
          required. -->
     <Style Selector="Window">

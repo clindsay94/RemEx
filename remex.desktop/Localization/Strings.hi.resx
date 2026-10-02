@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>कनेक्ट</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>डिसकनेक्ट</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>रद्द करें</value>
   </data>
@@ -115,9 +112,6 @@
   <data name="Btn_Browse" xml:space="preserve">
     <value>ब्राउज़...</value>
   </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>खोजें</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ शुरू करें</value>
   </data>
@@ -127,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  कमांड</value>
+    <value>कमांड</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>इस पीसी को लॉक, रीस्टार्ट या बंद करें</value>
@@ -182,12 +176,6 @@
   <data name="Settings_Connection" xml:space="preserve">
     <value>कनेक्शन</value>
   </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>होस्ट पता</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>सहेजें &amp; पुनः कनेक्ट करें</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>ग्रिड पर स्नैप</value>
   </data>
@@ -237,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  ऐप्स</value>
+    <value>ऐप्स</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>प्रोग्राम जिन्हें आपका फ़ोन शुरू कर सकता है</value>
@@ -388,13 +376,13 @@
     <value>कोने की त्रिज्या</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>ग्लास अपारदर्शिता</value>
+    <value>कार्ड अपारदर्शिता</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>विंडो अपारदर्शिता</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>फ्लाईआउट</value>
+    <value>ट्रे पॉप-अप</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>पॉपअप अपारदर्शिता</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>डिसकनेक्ट (सर्वर बंद)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>mDNS के माध्यम से कोई होस्ट नहीं मिला।</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>होस्ट खोज रहे हैं…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>डिस्कवरी सेवा उपलब्ध नहीं।</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (कोई टाइमस्टैम्प नहीं)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>कनेक्शन का समय समाप्त</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>होस्ट मिला: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>आपके नेटवर्क पर {0} RemEx पीसी मिले।</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>पीसी का पता आवश्यक है।</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} के लिए एक कनेक्टेड RemEx होस्ट की आवश्यकता है। अपना कनेक्शन कॉन्फ़िगर करने के लिए सेटिंग्स खोलें।</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>होस्ट के साथ पेयरिंग हो रही है...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>पिन ठीक 6 अंकों का होना चाहिए।</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>युग्मित</value>
   </data>
 
   
@@ -743,7 +707,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>🪟 बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं।</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>सेटिंग्स → पिन किए गए सेंसर से अपने पसंदीदा सेंसर को होम स्क्रीन पर पिन करें।</value>
+    <value>वैयक्तिकृत करें → लेआउट → पिन किए गए सेंसर से अपने पसंदीदा सेंसर होम पर पिन करें।</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -813,10 +777,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>आप तैयार हैं!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>होम, सेंसर, कमांड, ऐप्स, प्रक्रियाएँ, फ़ाइलें, रूटीन और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें।</value>
+    <value>होम, सेंसर, कमांड, रूटीन, ऐप्स, प्रक्रियाएँ, फ़ाइलें, लॉग और निदान, सेटिंग्स और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें। वैयक्तिकृत करें साइडबार में सबसे नीचे है।</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>अपनी थीम, कनेक्शन, स्ट्रीम गुणवत्ता अनुकूलित करने और होम पर सेंसर पिन करने के लिए सेटिंग्स (⚙) खोलें।</value>
+    <value>सेटिंग्स में पेयरिंग, साझा फ़ोल्डर, भरोसेमंद डिवाइस, सेंसर अलर्ट और बैकअप हैं। भाषा, थीम और पिन किए गए सेंसर वैयक्तिकृत करें में हैं।</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>आप सेटिंग्स से कभी भी इस ट्यूटोरियल को फिर से चला सकते हैं।</value>
@@ -1218,7 +1182,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>ग्राफ़ प्रकार</value>
+    <value>एक दृश्य चुनें</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>पीसी लॉक करें</value>
@@ -1290,7 +1254,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Android पर, Lock, Sleep, Restart या Wake-on-LAN जैसी तुरंत क्रियाओं के लिए क्विक सेटिंग्स में RemEx टाइलें जोड़ें।</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>शब्दावली: अनुकूलन</value>
+    <value>शब्दावली: वैयक्तिकृत करें</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>थीम, पैलेट रणनीति, फ़ॉन्ट, कार्ड आकार और अपारदर्शिता को अपनी निगरानी और नियंत्रण की शैली के अनुसार समायोजित करें।</value>
@@ -1329,7 +1293,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>के बारे में</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>आपके PC का सुरक्षित रिमोट कंट्रोल</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>बिल्ड</value>
@@ -1398,12 +1362,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI में रीस्टार्ट करें</value>
-  </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>PC के साथ पेयर करें</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>PC पर दिखाया गया 6 अंकों का PIN दर्ज करें:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>पेयर करें</value>
@@ -1475,7 +1433,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>मैं अपने पीसी का IP पता कैसे ढूँढूँ?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: Command Prompt में 'ipconfig'. macOS: System Settings → Network. Linux: टर्मिनल में 'ip addr'. आप अपने पीसी पर RemEx विंडो में सीधे IP भी देख सकते हैं।</value>
+    <value>Windows: Command Prompt में 'ipconfig' चलाएँ। Linux: टर्मिनल में 'ip addr' चलाएँ। इसकी ज़रूरत कम ही पड़ती है: इस PC के पेयरिंग QR कोड में उसका पता पहले से होता है।</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>ऑटो-डिस्कवरी मेरा पीसी नहीं ढूँढ पा रही है। मुझे क्या जाँचना चाहिए?</value>
@@ -1583,7 +1541,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>कम गति</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>एनिमेशन को कम से कम रखें। पेज बिना स्लाइड किए बदलते हैं और सजावटी गति रुक जाती है।</value>
+    <value>एनिमेशन को कम से कम रखें। पेज बिना स्लाइड किए बदलते हैं और सजावटी गति रुक जाती है। शुरुआत में यह आपके कंप्यूटर की एनिमेशन सेटिंग के अनुसार रहता है।</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>चालू</value>
@@ -1592,7 +1550,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>बंद</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>लॉग और डायग्नोस्टिक्स</value>
+    <value>लॉग और निदान</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>लाइव एप्लिकेशन लॉग</value>
@@ -1870,7 +1828,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>डिसकनेक्ट</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>रेमेक्स - रिमोट निष्पादन / लाइव टेलीमेट्री</value>
+    <value>RemEx: अपने फ़ोन से PC चलाएँ और उसके सेंसर देखें</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>लॉग और निदान</value>
@@ -1966,7 +1924,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पिक्सेल में बॉर्डर कॉर्नर त्रिज्या</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>ग्लासमॉर्फ़िज़्म पृष्ठभूमि प्रभाव के दृश्य अपारदर्शिता स्तर को समायोजित करें</value>
+    <value>कार्ड कितने ठोस दिखें। पृष्ठभूमि दिखाने के लिए इसे कम करें।</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>ग्लास फ्रॉस्टिंग अपारदर्शिता प्रतिशत</value>
@@ -1980,18 +1938,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>स्टार्टअप स्वागत स्प्लैश स्क्रीन अनुक्रम एनीमेशन की शैली चुनें</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>रेमेक्स होस्ट पता कॉन्फ़िगर करें (वेबसॉकेट प्रोटोकॉल wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>कनेक्शन URL इनपुट करें, जैसे wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>automatic network discovery का उपयोग करके अपने नेटवर्क पर स्थानीय सक्रिय रेमेक्स होस्ट को स्वचालित रूप से खोजें</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>इस पीसी से डिसकनेक्ट करें</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>संरेखण मार्गदर्शिकाएँ सक्षम करें ताकि सेंसर टाइलें प्लेसमेंट कैनवास पर मानक वेतन वृद्धि में स्नैप हो सकें</value>
   </data>
@@ -2003,9 +1949,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>साइडबार टॉगल करें</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>होस्ट कॉन्फ़िगरेशन पता सहेजें और इससे जुड़ने का प्रयास करें</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>क्या आपको फिर से वॉकथ्रू देखने की आवश्यकता है?</value>
@@ -2059,25 +2002,25 @@ Linux: ip addr  या  hostname -I</value>
     <value>RemEx विंडो को पिन या अनपिन करें</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>ऑटो (स्मार्ट)</value>
+    <value>स्वचालित</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>बार ▮▮▮</value>
+    <value>बार हिस्टोग्राम</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>रेखा ╱╲╱</value>
+    <value>रेखा</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>रिंग ◍</value>
+    <value>रिंग गेज</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>एलईडी मीटर</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>चमक ▒▓▒</value>
+    <value>चमक</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>गेज ━━━</value>
+    <value>गेज</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>रंग / प्रीसेट</value>
@@ -2177,12 +2120,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>पूर्ण डिवाइस ब्राउज़िंग की अनुमति दें?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>एक युग्मित डिवाइस इस पीसी पर फ़ाइलें भेजना चाहता है।</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>आने वाली फ़ाइलें स्वीकार करें?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>इस डिवाइस के लिए मेरा चयन याद रखें</value>
@@ -2394,17 +2331,14 @@ Linux: ip addr  या  hostname -I</value>
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>आने वाली फ़ाइलें स्वतः स्वीकार करें</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>नियंत्रित करें कि प्रत्येक युग्मित डिवाइस आपकी फ़ाइलों के साथ क्या कर सकता है। पूर्ण डिवाइस ब्राउज़िंग और आने वाली फ़ाइलों को स्वतः स्वीकार करना डिफ़ॉल्ट रूप से बंद है।</value>
+    <value>नियंत्रित करें कि हर युग्मित फ़ोन आपकी फ़ाइलों के साथ क्या कर सकता है। पूरे डिवाइस की ब्राउज़िंग तब तक बंद रहती है जब तक आप अनुमति न दें। फ़ोन से अपलोड सिर्फ़ उन साझा फ़ोल्डरों में जाते हैं जिन्हें आपने लिखने योग्य बनाया है।</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>अभी तक किसी भी डिवाइस को फ़ाइल-साझाकरण अनुमतियां नहीं दी गई हैं।</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>सभी ड्राइव ब्राउज़ करने की अनुमति दें</value>
+    <value>पूरे डिवाइस को ब्राउज़ करने की अनुमति दें</value>
   </data>
   <data name="Settings_TrustRefresh" xml:space="preserve">
     <value>रिफ्रेश करें</value>
@@ -2438,24 +2372,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>दिखावट वैयक्तिकृत करें</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>कनेक्शन</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>आपका फ़ोन इस पीसी तक कैसे पहुँचता है</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>होस्ट पता</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>मेरे नेटवर्क पर होस्ट खोजें</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>होस्ट</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>विलंबता</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>छोड़ने के लिए कहीं भी क्लिक करें</value>
@@ -2572,7 +2488,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>मुख्य और सामग्री टेक्स्ट के लिए फ़ॉन्ट — विवरण, लेबल और सेंसर पेज। स्थिर-चौड़ाई वाले डेटा रीडआउट अपना मोनोस्पेस फ़ॉन्ट रखते हैं।</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
-    <value>UI आकार</value>
+    <value>इंटरफ़ेस का आकार</value>
   </data>
   <data name="Custom_UiScaleTip" xml:space="preserve">
     <value>सब कुछ — पाठ और नियंत्रण — 85% से 130% तक बड़ा या छोटा करें।</value>
@@ -2728,7 +2644,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Google Play पर Android के लिए RemEx डाउनलोड करें।</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
-    <value>दोहरा मीट्रिक ⑂</value>
+    <value>दोहरा मीट्रिक</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>दूसरा मीट्रिक</value>
@@ -2761,7 +2677,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>दूसरा मीट्रिक चुनें</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>दूसरा सेंसर ओवरले करें</value>
+    <value>इस पर दूसरा सेंसर ओवरले करें</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>सेंसर खोजें…</value>
@@ -2919,7 +2835,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>ठोस रंग</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>टोनल स्पॉट</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>जीवंत</value>
@@ -2972,17 +2888,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>पेयरिंग पिन नहीं बनाया जा सका</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>PC ने पेयरिंग पिन नहीं दिया</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>पेयरिंग अभी उपलब्ध नहीं है</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>पेयरिंग विफल। PC पर दिख रहा पिन देखें</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>पेयरिंग रद्द की गई</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>कनेक्शन सेटिंग्स जांचें</value>
@@ -3060,15 +2967,15 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>RemEx का रूप कैसे बदलें?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>«दिखावट वैयक्तिकृत करें» बटन से वैयक्तिकृत करें पैनल खोलें।
+    <value>साइडबार में सबसे नीचे वैयक्तिकृत करें खोलें।
 
 आप बदल सकते हैं:
 • अपने पैलेट का सीड रंग — इसे कलर व्हील से चुनें, हेक्स कोड टाइप करें, Windows के एक्सेंट से मिलाएं, या अपने वॉलपेपर से लें
 • लाइट, डार्क या सिस्टम मोड, और कंट्रास्ट
 • स्कीम वेरिएंट और बैकग्राउंड मटीरियल
-• कोनों की त्रिज्या, ग्लास की अपारदर्शिता और ग्लो की तीव्रता
+• कोनों की त्रिज्या, कार्ड की अपारदर्शिता और ग्लो की तीव्रता
 • स्प्लैश स्क्रीन का स्टाइल
-• पेज टाइटल और कंटेंट के फ़ॉन्ट, और UI स्केल
+• पेज टाइटल और कंटेंट के फ़ॉन्ट, और इंटरफ़ेस का आकार
 • ऐप की भाषा, आपके Windows या Linux की भाषा से अलग</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -4210,5 +4117,11 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>संस्करण और श्रेय</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>इस PC पर RemEx सिर्फ़ खुद से कनेक्ट होता है। किसी दूसरे PC तक पहुँचने के लिए अपने फ़ोन पर RemEx ऐप इस्तेमाल करें।</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>बड़ा मान</value>
   </data>
 </root>

@@ -148,9 +148,10 @@ public class PairingQrExpiryTests
             })
             .ToArray();
 
-        buttons.Should().HaveCount(2,
-            "ConnectionView and SettingsView each offer the QR button; a scan finding neither is a "
-            + "guard that has stopped looking, not a clean result");
+        buttons.Should().HaveCount(1,
+            "SettingsView offers the QR button (the unreachable ConnectionView that carried a second "
+            + "was deleted in sweep D1); a scan finding none is a guard that has stopped looking, "
+            + "not a clean result");
 
         buttons.Should().OnlyContain(
             button => button.Contains("IsVisible=\"{Binding CanRevealPairingPin}\"", StringComparison.Ordinal)

@@ -105,33 +105,23 @@ public class MinimizedStartupDefersMainWindowTests
     }
 
     [Fact]
-    public void EmbeddedPairingAttachSkipsStartingTheStandaloneTimer()
+    public void StartupWiresOnlyTheEmbeddedPairingServiceAndOnlyTheOwnHostAddress()
     {
-        // P1-31: the standalone 2s IPC poll used to start unconditionally even when the embedded
-        // pairing service was just attached and already pushes PIN state via
-        // PinDisplayed/PinCleared events. Pin that the poll start (and its priming refresh) are
-        // now gated on whether embedded pairing was attached this run.
+        // RemEx-f2dwg: there used to be a standalone PIN query + 2s poll "for when no embedded host
+        // is present". Without an embedded host it could only throw every tick, so it is gone, and
+        // the embedded attach is the one pairing wiring left.
+        // Sweep D1: the profile's stored HostAddress was applied here when the host had not set an
+        // override. The Settings box and Discover button could store ANOTHER PC's address, which made
+        // this app a client of that PC on every start. Only the own-host override is applied now.
         var body = OnFrameworkInitializationCompletedSource();
 
-        var flagIndex = body.IndexOf("var embeddedPairingAttached = false;", System.StringComparison.Ordinal);
-        var setIndex = body.IndexOf("embeddedPairingAttached = true;", System.StringComparison.Ordinal);
-        flagIndex.Should().BeGreaterThanOrEqualTo(0, "the attach flag must still exist");
-        setIndex.Should().BeGreaterThanOrEqualTo(0, "successfully attaching embedded pairing must still set the flag");
-
-        body.Should().MatchRegex(
-            @"if\s*\(!embeddedPairingAttached\)\s*\{[^}]*RefreshStandalonePairingPinAsync\(\)[^}]*StartStandalonePairingPinPolling\(\)[^}]*\}",
-            "the standalone poll's priming refresh and StartStandalonePairingPinPolling() must both " +
-            "be gated behind !embeddedPairingAttached, not run unconditionally");
-
-        // AttachStandalonePairingPinQueryService itself must stay unconditional - it's the fallback
-        // wiring (CanRevealPairingPin) for a host with no embedded IPairingService.
-        var attachIndex = body.IndexOf(
-            "AttachStandalonePairingPinQueryService(pairingPinQueryService);", System.StringComparison.Ordinal);
-        var gateIndex = body.IndexOf("if (!embeddedPairingAttached)", System.StringComparison.Ordinal);
-        attachIndex.Should().BeGreaterThanOrEqualTo(0);
-        gateIndex.Should().BeGreaterThanOrEqualTo(0);
-        attachIndex.Should().BeLessThan(gateIndex,
-            "AttachStandalonePairingPinQueryService must run before the embedded-pairing gate, not inside it");
+        body.Should().Contain("AttachEmbeddedPairingService(pairingService);",
+            "anti-vacuity: the scan must be looking at the method that wires pairing");
+        body.Should().NotContain("Standalone", "the standalone pairing-PIN path is deleted");
+        body.Should().NotContain("profile.HostAddress",
+            "a stored address can name another PC; this UI only ever links to its own host");
+        body.Should().Contain("viewModel.Connection.HostAddress = $\"wss://localhost:{OverrideHostPort.Value}",
+            "the own-host override is the one address startup may apply");
     }
 
     /// <summary>

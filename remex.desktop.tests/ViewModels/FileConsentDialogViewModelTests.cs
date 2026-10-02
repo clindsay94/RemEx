@@ -67,10 +67,10 @@ public class FileConsentDialogViewModelTests
     [Fact]
     public void Kind_And_Detail_ReflectRequest()
     {
-        var vm = new FileConsentDialogViewModel(Request(FileConsentKinds.IncomingPush, detail: "photo.jpg (2 MB)"));
+        var vm = new FileConsentDialogViewModel(Request(FileConsentKinds.FullBrowse, detail: "Browse all drives"));
 
-        vm.Kind.Should().Be(FileConsentKinds.IncomingPush);
-        vm.Detail.Should().Be("photo.jpg (2 MB)");
+        vm.Kind.Should().Be(FileConsentKinds.FullBrowse);
+        vm.Detail.Should().Be("Browse all drives");
         vm.HasDetail.Should().BeTrue();
     }
 
@@ -83,12 +83,60 @@ public class FileConsentDialogViewModelTests
     }
 
     [Fact]
-    public void TitleAndMessage_DifferByKind()
+    public void TitleAndMessage_AreTheFullBrowseCopy()
     {
-        var fullBrowse = new FileConsentDialogViewModel(Request(FileConsentKinds.FullBrowse));
-        var incomingPush = new FileConsentDialogViewModel(Request(FileConsentKinds.IncomingPush));
+        var vm = new FileConsentDialogViewModel(Request(FileConsentKinds.FullBrowse));
 
-        // The two consent kinds must present distinct copy so the user knows what they are approving.
-        fullBrowse.Title.Should().NotBe(incomingPush.Title);
+        vm.Title.Should().Be(Remex.Desktop.Services.LocalizationService.Instance["FileConsent_FullBrowseTitle"]);
+        vm.Message.Should().Be(Remex.Desktop.Services.LocalizationService.Instance["FileConsent_FullBrowseMessage"]);
+    }
+
+    /// <summary>
+    /// The PC's incoming-push consent surface stays gone (RemEx-bezf).
+    /// </summary>
+    /// <remarks>
+    /// RemEx-e11w deleted the PC's incoming-push prompt, which left a per-device "auto-accept incoming"
+    /// switch that persisted a flag nothing read, plus a dialog branch and two strings for a prompt the
+    /// PC never raises. A switch that does nothing still reads like protection, so all of it went.
+    /// Each assertion below fails if its piece comes back.
+    /// </remarks>
+    [Fact]
+    public void TheInertAutoAcceptIncomingSurfaceIsGone()
+    {
+        typeof(FileTrustDeviceItem).GetProperty("AutoAcceptIncoming").Should().BeNull(
+            "the Settings switch bound to this, and nothing reads what it saved");
+
+        var root = RepoRoot();
+        var settingsView = File.ReadAllText(Path.Combine(root, "remex.desktop", "Views", "SettingsView.axaml"));
+        settingsView.Should().NotContain("AutoAcceptIncoming").And.NotContain("Settings_TrustAutoAccept");
+
+        var dialogVm = File.ReadAllText(Path.Combine(root, "remex.desktop", "ViewModels", "FileConsentDialogViewModel.cs"));
+        dialogVm.Should().NotContain("FileConsent_IncomingPush",
+            "the PC never asks about incoming pushes, so the dialog has no copy for them");
+
+        var resx = Directory.GetFiles(Path.Combine(root, "remex.desktop", "Localization"), "Strings*.resx");
+        resx.Should().HaveCount(9, "anti-vacuity: the scan must actually see all nine locale files");
+        foreach (var file in resx)
+        {
+            var text = File.ReadAllText(file);
+            text.Should().NotContain("\"Settings_TrustAutoAccept\"", Path.GetFileName(file));
+            text.Should().NotContain("\"FileConsent_IncomingPushTitle\"", Path.GetFileName(file));
+            text.Should().NotContain("\"FileConsent_IncomingPushMessage\"", Path.GetFileName(file));
+        }
+
+        // The card's own description used to promise an auto-accept switch that is gone.
+        var english = File.ReadAllText(Path.Combine(root, "remex.desktop", "Localization", "Strings.resx"));
+        var desc = System.Text.RegularExpressions.Regex.Match(english,
+            "<data name=\"Settings_TrustDesc\"[^>]*>\\s*<value>(.*?)</value>", System.Text.RegularExpressions.RegexOptions.Singleline);
+        desc.Success.Should().BeTrue();
+        desc.Groups[1].Value.Should().NotContainEquivalentOf("auto-accept");
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Remex.sln")))
+            dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("Could not find the repo root (Remex.sln).");
     }
 }

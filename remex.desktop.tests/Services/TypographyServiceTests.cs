@@ -83,4 +83,44 @@ public class TypographyServiceTests
 
         headers.Should().BeSameAs(body, "one DropShadowEffect per apply, referenced by every shadowed section");
     }
+
+    /// <summary>
+    /// An identical apply publishes nothing (RemEx-hwarp).
+    /// </summary>
+    /// <remarks>
+    /// ThemeService calls Apply on every theme apply. A full publish clears and refills the
+    /// dictionary (two tree-wide notifications when merged) and builds a new DropShadowEffect, which
+    /// every shadowed TextBlock then re-renders against, even when nothing about the text changed.
+    /// The same effect instance surviving is the observable proof the second call skipped the publish.
+    /// </remarks>
+    [Fact]
+    public void AnIdenticalApply_KeepsThePublishedResources()
+    {
+        var service = new TypographyService();
+        var settings = new TypographySettings { HeadersBold = true };
+        service.Apply(settings, TypographyService.DefaultSurface);
+        var effect = service.Overrides[TypographyResolver.ShadowKey(TypographySection.Headers)];
+
+        // A fresh but EQUAL settings record: value equality, not reference, is what decides.
+        service.Apply(settings with { }, TypographyService.DefaultSurface);
+
+        service.Overrides[TypographyResolver.ShadowKey(TypographySection.Headers)].Should().BeSameAs(effect,
+            "nothing changed, so nothing should have been rebuilt");
+    }
+
+    [Fact]
+    public void AChangedSettingOrSurface_StillRepublishes()
+    {
+        var service = new TypographyService();
+        var before = service.Overrides[TypographyResolver.ShadowKey(TypographySection.Headers)];
+
+        service.Apply(TypographySettings.Default, Color.FromRgb(0xFA, 0xFA, 0xFA));
+        var afterSurface = (DropShadowEffect)service.Overrides[TypographyResolver.ShadowKey(TypographySection.Headers)]!;
+        afterSurface.Should().NotBeSameAs(before);
+        afterSurface.Color.Should().Be(Color.FromRgb(0xFA, 0xFA, 0xFA), "the halo follows the new surface");
+
+        service.Apply(new TypographySettings { HeadersScale = 1.2 }, Color.FromRgb(0xFA, 0xFA, 0xFA));
+        service.LastApplied!.FontSizes["Typo.Headline6.FontSize"].Should().BeApproximately(24.0, 1e-9,
+            "a changed scale must reach the published sizes");
+    }
 }

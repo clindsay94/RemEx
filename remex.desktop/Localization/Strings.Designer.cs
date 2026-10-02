@@ -54,7 +54,6 @@ namespace Remex.Desktop.Localization {
         public static string Btn_Save => ResourceManager.GetString("Btn_Save", resourceCulture)!;
         public static string Btn_Apply => ResourceManager.GetString("Btn_Apply", resourceCulture)!;
         public static string Btn_Browse => ResourceManager.GetString("Btn_Browse", resourceCulture)!;
-        public static string Btn_Discover => ResourceManager.GetString("Btn_Discover", resourceCulture)!;
         public static string Btn_Start => ResourceManager.GetString("Btn_Start", resourceCulture)!;
         public static string Btn_Stop => ResourceManager.GetString("Btn_Stop", resourceCulture)!;
 
@@ -79,8 +78,6 @@ namespace Remex.Desktop.Localization {
         public static string Settings_SaveChanges => ResourceManager.GetString("Settings_SaveChanges", resourceCulture)!;
         public static string Settings_SavedStatus => ResourceManager.GetString("Settings_SavedStatus", resourceCulture)!;
         public static string Settings_Connection => ResourceManager.GetString("Settings_Connection", resourceCulture)!;
-        public static string Settings_HostAddress => ResourceManager.GetString("Settings_HostAddress", resourceCulture)!;
-        public static string Settings_SaveReconnect => ResourceManager.GetString("Settings_SaveReconnect", resourceCulture)!;
         public static string Settings_Layout => ResourceManager.GetString("Settings_Layout", resourceCulture)!;
         public static string Settings_SnapToGrid => ResourceManager.GetString("Settings_SnapToGrid", resourceCulture)!;
         public static string Settings_SnapToGridDesc => ResourceManager.GetString("Settings_SnapToGridDesc", resourceCulture)!;
@@ -168,7 +165,6 @@ namespace Remex.Desktop.Localization {
         public static string Status_ServerClosed => ResourceManager.GetString("Status_ServerClosed", resourceCulture)!;
         public static string Status_NoHostsFound => ResourceManager.GetString("Status_NoHostsFound", resourceCulture)!;
         public static string Status_SearchingHosts => ResourceManager.GetString("Status_SearchingHosts", resourceCulture)!;
-        public static string Status_DiscoveryUnavailable => ResourceManager.GetString("Status_DiscoveryUnavailable", resourceCulture)!;
         public static string Status_PongNoTimestamp => ResourceManager.GetString("Status_PongNoTimestamp", resourceCulture)!;
         public static string Status_Pong => ResourceManager.GetString("Status_Pong", resourceCulture)!;
         public static string Status_NotStreaming => ResourceManager.GetString("Status_NotStreaming", resourceCulture)!;

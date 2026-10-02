@@ -118,25 +118,12 @@
                                 </StackPanel>
                             </Border>
 
-                            <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_ConfigureHostAddressTooltip}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_HostAddress}" AutomationProperties.Name="{local:Localize Settings_HostAddress}"/>
-                                    <Button Grid.Column="1" Classes="secondary" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Padding="14,10" Margin="8,0,0,0" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DiscoverHostsTooltip}"/>
-                                </Grid>
-                            </StackPanel>
-
+                            <!-- NO ADDRESS BOX, DISCOVER, SAVE & RECONNECT OR DISCONNECT HERE (sweep D1, hard
+                                 rule 1). They made this PC a client that could be pointed at ANOTHER PC; the
+                                 phone is the only client. The UI's link to its own host is internal plumbing,
+                                 and the only thing a user does from this card is pair a phone. -->
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="secondary" Command="{Binding SaveAndReconnectCommand}" Padding="18,10" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}" AutomationProperties.Name="{local:Localize Settings_SaveReconnect}">
-                                    <TextBlock Text="{local:Localize Settings_SaveReconnect}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
-                                </Button>
-                                <!-- Background/Foreground removed: they were reinstating the pre-vocabulary
-                                     danger shape (Transparent fill + bare SystemErrorBrush text, 1.24:1 contrast)
-                                     that ErrorTintForegroundBrush + SystemErrorBackgroundBrush on .danger
-                                     replaced app-wide (App.axaml ~465-471, RemEx-1elh). BorderThickness/BorderBrush
-                                     kept — .danger already supplies the same BorderBrush, so it's a harmless
-                                     duplicate, not a paint bug (RemEx-cgrv3). -->
-                                <Button Classes="secondary danger" Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
-                                <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3); see ConnectionView. -->
+                                <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3): the QR and the PIN are one act. -->
                                 <Button
                                         Classes="secondary"
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
@@ -149,9 +136,7 @@
                                 </Button>
                             </StackPanel>
 
-                            <!-- QR Code Display Panel — contents shared with ConnectionView
-                                 (RemEx-xmgw). The card chrome here is deliberately NOT the
-                                 Card surface ConnectionView uses; see PairingQrPanelView. -->
+                            <!-- QR Code Display Panel — contents in PairingQrPanelView (RemEx-xmgw). -->
                             <Border IsVisible="{Binding Connection.ShowQrCode}"
                                     Background="{DynamicResource GlassBaseDarkBrush}"
                                     CornerRadius="12" Padding="20"
@@ -159,7 +144,7 @@
                                 <views:PairingQrPanelView DataContext="{Binding Connection}"/>
                             </Border>
 
-                            <!-- Pairing PIN Display Panel — contents shared with ConnectionView -->
+                            <!-- Pairing PIN Display Panel — contents in PairingPinPanelView -->
                             <Border IsVisible="{Binding Connection.ShowPairingPin}"
                                     Background="{DynamicResource GlassBaseDarkBrush}"
                                     CornerRadius="12" Padding="20"
@@ -489,10 +474,8 @@
                                                 <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustFullBrowse}" Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
                                             </Grid>
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustAutoAccept}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustAutoAccept}" Grid.Column="1" IsChecked="{Binding AutoAcceptIncoming}" OnContent="" OffContent=""/>
-                                            </Grid>
+                                            <!-- No "auto-accept incoming" switch (RemEx-bezf): nothing read it. -->
+
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

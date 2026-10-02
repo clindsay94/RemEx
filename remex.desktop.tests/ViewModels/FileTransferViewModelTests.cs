@@ -92,7 +92,7 @@ public class FileTransferViewModelTests
     [Fact]
     public void SetSelectedEntries_WithMultiple_ReportsMultiSelection()
     {
-        using var connection = new ConnectionViewModel(null, null, null);
+        using var connection = new ConnectionViewModel(null);
         using var vm = new FileTransferViewModel(connection);
 
         vm.SetSelectedEntries(new[] { File("a"), File("b") });
@@ -104,7 +104,7 @@ public class FileTransferViewModelTests
     [Fact]
     public void SetSelectedEntries_ExcludesParentPlaceholder()
     {
-        using var connection = new ConnectionViewModel(null, null, null);
+        using var connection = new ConnectionViewModel(null);
         using var vm = new FileTransferViewModel(connection);
 
         vm.SetSelectedEntries(new[] { Parent(), File("a") });
@@ -116,7 +116,7 @@ public class FileTransferViewModelTests
     [Fact]
     public void SelectionCount_FallsBackToSingleHighlight_WhenNoMultiSelection()
     {
-        using var connection = new ConnectionViewModel(null, null, null);
+        using var connection = new ConnectionViewModel(null);
         using var vm = new FileTransferViewModel(connection);
 
         vm.SetSelectedEntries(System.Array.Empty<FileEntry>());
@@ -128,7 +128,7 @@ public class FileTransferViewModelTests
     [Fact]
     public void SortByCommand_TogglesDirectionWhenSameFieldReselected()
     {
-        using var connection = new ConnectionViewModel(null, null, null);
+        using var connection = new ConnectionViewModel(null);
         using var vm = new FileTransferViewModel(connection);
 
         vm.SortField.Should().Be(FileSortField.Name);

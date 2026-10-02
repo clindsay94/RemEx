@@ -36,7 +36,7 @@ namespace Remex.Desktop.Render.Tests;
 /// at Apply time. Measured broken for a different reason: both startup Apply calls run before
 /// <c>MainWindow</c> exists, so a persisted Body-bold-on opened the shell Regular at cold start
 /// until the next settings change, and the same gap applied to every on-demand window
-/// (<c>TrayFlyoutWindow</c>, <c>PairingDialog</c>, <c>CommandPaletteWindow</c>, etc.) created after
+/// (<c>TrayFlyoutWindow</c>, <c>CommandPaletteWindow</c>, etc.) created after
 /// the last Apply — this test's own first version hid that bug by injecting its probe window
 /// AFTER calling Apply, the opposite of the real gap.
 /// </para>

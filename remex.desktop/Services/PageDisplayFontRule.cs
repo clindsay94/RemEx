@@ -23,7 +23,7 @@ public static class PageDisplayFontRule
     public const string DefaultTitleFont = "avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade";
 
     /// <summary>The default page-subtitle font on both apps: Orbitron.</summary>
-    public const string DefaultSubtitleFont = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+    public const string DefaultSubtitleFont = "avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron";
 
     private const string BundledFontPrefix = "avares://Remex.Desktop/Assets/Fonts";
 

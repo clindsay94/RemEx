@@ -265,7 +265,7 @@ try {
 
         # Only the customization fields the sweep cares about — everything else in the profile
         # (canvas layout, connection history, sensor alerts...) passes through untouched.
-        # schemaVersion 8 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
+        # schemaVersion 9 is what this build writes (CustomizationMigration.CurrentSchemaVersion);
         # a lower number is re-migrated on read, which is not what a sweep cell asked for. Every
         # cell above uses ThemeId BaseDarkGlass or Dynamic, both of which carry the record default
         # CardBorderThickness (1) - RemEx-bnz2x's new field needs no cell-specific write here for
@@ -280,7 +280,7 @@ try {
         # profile was carrying silently: a script or test that opens the flyout against a sweep
         # profile got an invisible popup. Stamped explicitly at the record defaults so this profile
         # behaves exactly like a freshly-migrated one.
-        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 8                  -Force
+        $customization | Add-Member -NotePropertyName 'schemaVersion'          -NotePropertyValue 9                  -Force
         $customization | Add-Member -NotePropertyName 'baseTheme'              -NotePropertyValue $cell.ThemeId       -Force
         $customization | Add-Member -NotePropertyName 'accentColor'            -NotePropertyValue $cell.Seed          -Force
         $customization | Add-Member -NotePropertyName 'schemeVariant'          -NotePropertyValue $cell.SchemeVariant -Force

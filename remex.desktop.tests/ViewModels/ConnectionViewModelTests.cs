@@ -41,16 +41,14 @@ public class ConnectionViewModelTests : IDisposable
             "_allowFirstTimeTrustForCurrentConnect",
             BindingFlags.NonPublic | BindingFlags.Instance)!;
 
-    private readonly Mock<IMdnsDiscoveryService> _mockDiscoveryService;
     private readonly Mock<ILogger<ConnectionViewModel>> _mockLogger;
     private ConnectionViewModel _viewModel;
     private readonly IServiceProvider? _originalAppServices;
 
     public ConnectionViewModelTests()
     {
-        _mockDiscoveryService = new Mock<IMdnsDiscoveryService>();
         _mockLogger = new Mock<ILogger<ConnectionViewModel>>();
-        _viewModel = new ConnectionViewModel(_mockDiscoveryService.Object, null, _mockLogger.Object);
+        _viewModel = new ConnectionViewModel(_mockLogger.Object);
         _originalAppServices = App.Services;
     }
 
@@ -63,10 +61,86 @@ public class ConnectionViewModelTests : IDisposable
     [Fact]
     public void Constructor_WithAllNullDependencies_ShouldNotThrow()
     {
-        var vm = new ConnectionViewModel(null, null, null);
+        var vm = new ConnectionViewModel(null);
         vm.Should().NotBeNull();
         vm.IsConnected.Should().BeFalse();
         vm.Dispose();
+    }
+
+    /// <summary>
+    /// The UI's socket reaches this PC's own host and nothing else (sweep D1, hard rule 1).
+    /// </summary>
+    /// <remarks>
+    /// It used to accept any address, and a non-loopback one opened a "pair with PC" dialog that made
+    /// this app a client of ANOTHER PC. The phone is the only network client. The refusal must happen
+    /// before any socket opens, so the status line is the whole observable outcome.
+    /// </remarks>
+    [Theory]
+    [InlineData("wss://192.168.1.25:5005/ws")]
+    [InlineData("wss://desktop-office.local:5005/ws")]
+    public async Task ConnectCommand_RefusesAnAddressOnAnotherMachine(string address)
+    {
+        _viewModel.HostAddress = address;
+
+        await _viewModel.ConnectCommand.ExecuteAsync(null);
+
+        _viewModel.StatusText.Should().Be(LocalizationService.Instance["Status_OwnHostOnly"]);
+        _viewModel.IsConnecting.Should().BeFalse("nothing was attempted");
+        _viewModel.IsConnected.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("wss://localhost:5005/ws", false)]
+    [InlineData("wss://127.0.0.1:5005/ws", false)]
+    [InlineData("wss://127.0.0.2:5005/ws", false)]
+    [InlineData("wss://[::1]:5005/ws", false)]
+    [InlineData("wss://192.168.1.25:5005/ws", true)]
+    [InlineData("wss://my-pc.local:5005/ws", true)]
+    [InlineData("not a uri", false)]
+    [InlineData(null, false)]
+    public void IsAnotherMachine_SeparatesThisPcFromEveryOtherHost(string? address, bool expected)
+    {
+        ConnectionViewModel.IsAnotherMachine(address).Should().Be(expected,
+            "loopback in every spelling is this PC; an unparseable address is left to the existing validation");
+    }
+
+    /// <summary>
+    /// The pieces that made this PC a client of another PC stay deleted (sweep D1).
+    /// </summary>
+    [Fact]
+    public void ThePcSideClientSurfaceIsGone()
+    {
+        typeof(ConnectionViewModel).GetMethod("PairWithDialogAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+            .Should().BeNull("this PC never pairs with another PC");
+        typeof(ConnectionViewModel).GetProperty("DiscoverHostsCommand").Should().BeNull(
+            "PCs do not discover PCs; phones do");
+        typeof(SettingsViewModel).GetProperty("HostAddress").Should().BeNull(
+            "Settings must not offer an address box that can point this PC at another one");
+        typeof(SettingsViewModel).GetProperty("SaveAndReconnectCommand").Should().BeNull();
+        typeof(App).Assembly.GetType("Remex.Desktop.Views.PairingDialog").Should().BeNull();
+        typeof(App).Assembly.GetType("Remex.Desktop.Views.ConnectionView").Should().BeNull(
+            "an unreachable page that only offered an address box and Discover");
+    }
+
+    /// <summary>
+    /// The dead standalone pairing-PIN path stays deleted (RemEx-f2dwg).
+    /// </summary>
+    /// <remarks>
+    /// It queried the in-process host through an extra service and polled every two seconds as a
+    /// "fallback for when no embedded host is present" — but without an embedded host that service
+    /// could only throw, every tick, while the pair button stayed on offer for a command that could
+    /// only fail. With only the embedded path left, the button is offered only once it is wired.
+    /// </remarks>
+    [Fact]
+    public void CanRevealPairingPin_IsTrueOnlyOnceTheEmbeddedPairingServiceIsAttached()
+    {
+        _viewModel.CanRevealPairingPin.Should().BeFalse("nothing is attached yet, so the button could only fail");
+        typeof(App).Assembly.GetType("Remex.Desktop.Services.Security.IPairingPinQueryService").Should().BeNull();
+        typeof(ConnectionViewModel).GetMethod("AttachStandalonePairingPinQueryService").Should().BeNull();
+
+        _viewModel.AttachEmbeddedPairingService(new FakePairingService(active: false));
+
+        _viewModel.CanRevealPairingPin.Should().BeTrue();
     }
 
     /// <summary>
@@ -213,7 +287,7 @@ public class ConnectionViewModelTests : IDisposable
     [Fact]
     public void Dispose_ShouldNotThrowOnDoubleDispose()
     {
-        var vm = new ConnectionViewModel(_mockDiscoveryService.Object, null, _mockLogger.Object);
+        var vm = new ConnectionViewModel(_mockLogger.Object);
         var act = () => { vm.Dispose(); vm.Dispose(); };
         act.Should().NotThrow();
     }
@@ -241,31 +315,6 @@ public class ConnectionViewModelTests : IDisposable
     }
 
     [Fact]
-    public void DiscoverHostsCommand_ShouldExist()
-    {
-        _viewModel.DiscoverHostsCommand.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task DiscoverHostsCommand_WhenNoDiscoveryService_ShouldNotCrash()
-    {
-        var vmWithoutDiscovery = new ConnectionViewModel(null, null, null);
-        await vmWithoutDiscovery.DiscoverHostsCommand.ExecuteAsync(null);
-        vmWithoutDiscovery.StatusText.Should().NotBeNullOrEmpty();
-        vmWithoutDiscovery.Dispose();
-    }
-
-    [Fact]
-    public async Task DiscoverHostsCommand_WhenNoHostsFound_ShouldUpdateStatusText()
-    {
-        _mockDiscoveryService
-            .Setup(x => x.DiscoverHostsAsync(It.IsAny<TimeSpan>(), default))
-            .ReturnsAsync(new List<string>());
-        await _viewModel.DiscoverHostsCommand.ExecuteAsync(null);
-        _viewModel.StatusText.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
     public void AttachEmbeddedPairingService_WhenPinAlreadyActive_ShouldSyncCurrentState()
     {
         var service = new FakePairingService("123456", DateTimeOffset.UtcNow.AddMinutes(2));
@@ -276,39 +325,6 @@ public class ConnectionViewModelTests : IDisposable
         _viewModel.ActivePairingPin.Should().Be("123456");
         _viewModel.ShowPairingPin.Should().BeTrue();
         _viewModel.PairingPinExpiresInText.Should().NotBeNullOrWhiteSpace();
-    }
-
-    [Fact]
-    public async Task RefreshStandalonePairingPinAsync_WhenPinAppearsLater_ShouldSyncCurrentState()
-    {
-        var queryService = new FakeStandalonePairingPinQueryService(
-            null,
-            new PairingPinInfo("654321", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds()));
-
-        _viewModel.AttachStandalonePairingPinQueryService(queryService);
-
-        await _viewModel.RefreshStandalonePairingPinAsync();
-        _viewModel.HasActivePairingPin.Should().BeFalse();
-
-        await _viewModel.RefreshStandalonePairingPinAsync();
-        _viewModel.HasActivePairingPin.Should().BeTrue();
-        _viewModel.ActivePairingPin.Should().Be("654321");
-        _viewModel.ShowPairingPin.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task RefreshStandalonePairingPinAsync_WhenEmbeddedHostInactive_ShouldSurfaceStandalonePin()
-    {
-        _viewModel.AttachEmbeddedPairingService(new FakePairingService(active: false));
-        _viewModel.AttachStandalonePairingPinQueryService(
-            new FakeStandalonePairingPinQueryService(
-                new PairingPinInfo("777777", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds())));
-
-        await _viewModel.RefreshStandalonePairingPinAsync();
-
-        _viewModel.HasActivePairingPin.Should().BeTrue();
-        _viewModel.ActivePairingPin.Should().Be("777777");
-        _viewModel.ShowPairingPin.Should().BeTrue();
     }
 
     [Fact]
@@ -396,6 +412,9 @@ internal sealed class FakePairingService : IPairingService
     public int StartCalls { get; private set; }
     public int GetOrStartCalls { get; private set; }
 
+    /// <summary>When set, <see cref="GetOrStartPairingAsync"/> throws it: a host that cannot start pairing.</summary>
+    public Exception? GetOrStartFailure { get; init; }
+
     public FakePairingService(string pin = "123456", DateTimeOffset? expiresAt = null, bool active = true)
     {
         _pin = pin;
@@ -412,6 +431,8 @@ internal sealed class FakePairingService : IPairingService
     public Task<PairingState> GetOrStartPairingAsync(CancellationToken ct)
     {
         GetOrStartCalls++;
+        if (GetOrStartFailure is not null)
+            return Task.FromException<PairingState>(GetOrStartFailure);
         return Task.FromResult(new PairingState(string.Empty, _pin, _expiresAtUnixMs));
     }
 
@@ -457,26 +478,6 @@ internal sealed class FakeCertificateService : ICertificateService
     public string GetSpkiSha256Base64() => "fake-spki-hash==";
 
     public Task RegenerateAsync(CancellationToken ct) => Task.CompletedTask;
-}
-
-internal sealed class FakeStandalonePairingPinQueryService : IPairingPinQueryService
-{
-    private readonly Queue<PairingPinInfo?> _responses;
-
-    public FakeStandalonePairingPinQueryService(params PairingPinInfo?[] responses)
-    {
-        _responses = new Queue<PairingPinInfo?>(responses);
-    }
-
-    public Task<PairingPinInfo?> GetActivePairingPinAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
-    }
-
-    public Task<PairingPinInfo?> GeneratePairingPinAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -544,7 +545,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
 
     public ConnectionViewModelCorrelationTests()
     {
-        _viewModel = new ConnectionViewModel(null, null, null);
+        _viewModel = new ConnectionViewModel(null);
     }
 
     public void Dispose() => _viewModel.Dispose();
@@ -629,7 +630,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
     [Fact]
     public async Task SendCommandAndWaitAsync_WhenHostNeverResponds_ThrowsOperationCanceled()
     {
-        var vm = new ConnectionViewModel(null, null, null);
+        var vm = new ConnectionViewModel(null);
         var sender = new SilentSender();
         vm.OutboundSender = sender;
         vm.CommandTimeout = TimeSpan.FromMilliseconds(150);
@@ -648,7 +649,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
     [Fact]
     public async Task SendCommandAndWaitAsync_ConcurrentCalls_EachReceivesItsOwnResponse()
     {
-        var vm = new ConnectionViewModel(null, null, null);
+        var vm = new ConnectionViewModel(null);
         var sender = new SilentSender();
         vm.OutboundSender = sender;
         vm.CommandTimeout = TimeSpan.FromSeconds(5);

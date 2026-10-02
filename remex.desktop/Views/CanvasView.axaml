@@ -235,6 +235,12 @@
                                                         <mi:MaterialIcon Kind="AutoAwesome" Width="16" Height="16"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
+                                                <!-- Big value (RemEx-hc15q): no graph, the reading large and centred. Same name and place as the phone's picker. -->
+                                                <MenuItem Header="{local:Localize Canvas_GraphBigValue}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="BigValue">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="Numeric" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
                                                 <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar">
                                                     <MenuItem.Icon>
                                                         <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"/>
@@ -330,7 +336,7 @@
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
                                             <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" AutomationProperties.Name="{conv:Localize Conn_HostAddress}" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                            <!-- No host-address box (sweep D1): this PC only ever links to its own host. -->
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->

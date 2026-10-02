@@ -10,7 +10,7 @@ namespace Remex.Desktop.Tests;
 /// </summary>
 public class PageDisplayFontRuleTests
 {
-    private const string Orbitron = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+    private const string Orbitron = "avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron";
     private const string BungeeShade = "avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade";
 
     [Theory]

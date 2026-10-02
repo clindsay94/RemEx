@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Conectar</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Desconectar</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Cancelar</value>
   </data>
@@ -115,9 +112,6 @@
   <data name="Btn_Browse" xml:space="preserve">
     <value>Examinar...</value>
   </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Descubrir</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Iniciar</value>
   </data>
@@ -127,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  Comandos</value>
+    <value>Comandos</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>Bloquea, reinicia o apaga este PC</value>
@@ -168,7 +162,7 @@
 
   
   <data name="Settings_Header" xml:space="preserve">
-    <value>CONFIGURACIÓN</value>
+    <value>Configuración</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
     <value>← Inicio</value>
@@ -180,13 +174,7 @@
     <value>¡Configuración Guardada!</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
-    <value>CONEXIÓN</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Dirección del PC</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Guardar &amp; Reconectar</value>
+    <value>Conexión</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Ajustar a Cuadrícula</value>
@@ -198,7 +186,7 @@
     <value>Tamaño de Cuadrícula</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>SENSORES FIJADOS</value>
+    <value>Sensores fijados</value>
   </data>
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Seleccionar sensores para mostrar en la pantalla de inicio</value>
@@ -237,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  Aplicaciones</value>
+    <value>Aplicaciones</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>Programas que tu teléfono puede abrir</value>
@@ -312,10 +300,10 @@
     <value>MÁX</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
-    <value>SENSORES ACTIVOS</value>
+    <value>Sensores activos</value>
   </data>
   <data name="Canvas_NewSensors" xml:space="preserve">
-    <value>NUEVOS SENSORES</value>
+    <value>Nuevos sensores</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
     <value>+ Agregar Tarjeta</value>
@@ -341,7 +329,7 @@
 
   
   <data name="RemoteDesktop_Header" xml:space="preserve">
-    <value>ESCRITORIO REMOTO</value>
+    <value>Escritorio remoto</value>
   </data>
   <data name="RemoteDesktop_Quality" xml:space="preserve">
     <value>Calidad:</value>
@@ -388,13 +376,13 @@
     <value>Radio de Esquina</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Opacidad del Vidrio</value>
+    <value>Opacidad de tarjeta</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opacidad de la Ventana</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>FLOTANTE</value>
+    <value>Ventana emergente de la bandeja</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>Opacidad de la Ventana Flotante</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Desconectado (servidor cerrado)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>No se encontraron hosts via mDNS.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Buscando hosts…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Servicio de descubrimiento no disponible.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (sin marca de tiempo)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Tiempo de espera de conexión agotado</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>PC encontrado: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Se encontraron {0} PCs RemEx en tu red.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>Se requiere la dirección del PC.</value>
@@ -616,15 +589,6 @@
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} requiere un PC de RemEx conectado. Abre Configuración para configurar tu conexión.</value>
   </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Emparejando con el PC...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>El PIN debe tener exactamente 6 dígitos.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Emparejado</value>
-  </data>
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
@@ -674,7 +638,7 @@
   </data>
   
   <data name="Tutorial_Header" xml:space="preserve">
-    <value>GUÍA DE INICIO</value>
+    <value>Guía de inicio</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
     <value>Omitir ✕</value>
@@ -747,7 +711,7 @@ Requiere que HWiNFO esté ejecutándose.</value>
 Siempre disponibles, sin software adicional.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>Fija tus sensores favoritos a la pantalla de Inicio desde Configuración → SENSORES FIJADOS.</value>
+    <value>Fija tus sensores favoritos en Inicio desde Personalizar → Diseño → Sensores fijados.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -818,10 +782,10 @@ Linux: ip addr  o  hostname -I</value>
     <value>¡Ya estás listo!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Usa la barra lateral para ir a Inicio, Sensores, Comandos, Aplicaciones, Procesos, Archivos, Rutinas y Acerca de.</value>
+    <value>Usa la barra lateral para ir a Inicio, Sensores, Comandos, Rutinas, Aplicaciones, Procesos, Archivos, Registros y Diagnósticos, Configuración y Acerca de. Personalizar está al final de la barra lateral.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Abre Configuración (⚙) para personalizar tu tema, conexión, calidad de transmisión y fijar sensores en Inicio.</value>
+    <value>En Configuración encontrarás el emparejamiento, las carpetas compartidas, los dispositivos de confianza, las alertas de sensores y las copias de seguridad. El idioma, el tema y los sensores fijados están en Personalizar.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Puedes repetir este tutorial en cualquier momento desde Configuración.</value>
@@ -856,7 +820,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Escanear con la app RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PIN DE EMPAREJAMIENTO</value>
+    <value>PIN de emparejamiento</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Introduce este código en tu teléfono para completar el emparejamiento</value>
@@ -870,7 +834,7 @@ Linux: ip addr  o  hostname -I</value>
 
   
   <data name="Settings_General" xml:space="preserve">
-    <value>GENERAL</value>
+    <value>General</value>
   </data>
   <data name="Settings_CloseToTray" xml:space="preserve">
     <value>Minimizar a la bandeja al cerrar</value>
@@ -903,7 +867,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Salir</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
-    <value>AYUDA</value>
+    <value>Ayuda</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Repetir Tutorial</value>
@@ -912,7 +876,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Ver de nuevo el tutorial de inicio</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
-    <value>CARPETAS COMPARTIDAS</value>
+    <value>Carpetas compartidas</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Elige qué carpetas de este PC aparecen en Archivos. Las carpetas de solo lectura permiten explorar y descargar, y las de escritura también aceptan archivos enviados desde tu teléfono.</value>
@@ -1223,7 +1187,7 @@ Linux: ip addr  o  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>Tipo de Gráfico</value>
+    <value>Elige una vista</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>Bloquear PC</value>
@@ -1295,7 +1259,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>En Android, añade mosaicos de RemEx a los Ajustes rápidos para acciones instantáneas como Bloquear, Suspender, Reiniciar o Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glosario: Personalización</value>
+    <value>Glosario: Personalizar</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Ajusta temas, estrategia de paleta, fuentes, formas de tarjeta y opacidad para adaptarlos a tu forma de supervisar y controlar tu equipo.</value>
@@ -1334,7 +1298,7 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>Acerca de</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>Control remoto seguro de tu PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>Compilación</value>
@@ -1403,12 +1367,6 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reiniciar a UEFI</value>
-  </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Emparejar con el PC</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Introduce el PIN de 6 dígitos mostrado en la máquina PC:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Emparejar</value>
@@ -1480,7 +1438,7 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>¿Cómo encuentro la dirección IP de mi PC?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' en el Símbolo del sistema. macOS: Ajustes del Sistema → Red. Linux: 'ip addr' en el terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
+    <value>Windows: ejecuta 'ipconfig' en el Símbolo del sistema. Linux: ejecuta 'ip addr' en un terminal. Casi nunca hace falta: el código QR de emparejamiento de este PC ya incluye su dirección.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>La detección automática no encuentra mi PC. ¿Qué debo comprobar?</value>
@@ -1588,7 +1546,7 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>Movimiento reducido</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Reduce las animaciones al mínimo. Las páginas cambian sin deslizarse y el movimiento decorativo se detiene.</value>
+    <value>Reduce las animaciones al mínimo. Las páginas cambian sin deslizarse y el movimiento decorativo se detiene. Al principio sigue el ajuste de animaciones de tu equipo.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Activado</value>
@@ -1597,7 +1555,7 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>Desactivado</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>REGISTROS Y DIAGNÓSTICOS</value>
+    <value>Registros y Diagnósticos</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>Registros de aplicación en vivo</value>
@@ -1875,7 +1833,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Desconectar</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>REMEX - Ejecución Remota / Telemetría en Vivo</value>
+    <value>RemEx: controla tu PC y consulta sus sensores desde el teléfono</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Registros y Diagnósticos</value>
@@ -1971,7 +1929,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Radio del borde en píxeles</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Ajustar el nivel de opacidad del efecto de vidrio esmerilado</value>
+    <value>Lo sólidas que se ven las tarjetas. Bájalo para que se vea el fondo.</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>Porcentaje de opacidad del vidrio esmerilado</value>
@@ -1985,18 +1943,6 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Seleccionar el estilo de animación de la pantalla de bienvenida</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Configurar la dirección del PC RemEx (protocolo websocket wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Ingrese la URL de conexión, ej. wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Descubrir automáticamente hosts activos en la red local usando automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Desconectar de este PC</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Activar guías de alineación para que los sensores se ajusten a la cuadrícula</value>
   </data>
@@ -2008,9 +1954,6 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alternar barra lateral</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Guardar la dirección de configuración del PC e intentar conectarse</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>¿Necesita ver el tutorial de nuevo?</value>
@@ -2064,25 +2007,25 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Fijar o dejar de fijar la ventana de RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>Auto (inteligente)</value>
+    <value>Automático</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>Barra ▮▮▮</value>
+    <value>Histograma de barras</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>Línea ╱╲╱</value>
+    <value>Línea</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>Anillo ◍</value>
+    <value>Medidor de anillo</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>Medidor LED</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>Brillo ▒▓▒</value>
+    <value>Brillo</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>Indicador ━━━</value>
+    <value>Indicador</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>Color / Preajuste</value>
@@ -2112,7 +2055,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Advertencia de seguridad: mientras esté activado, cualquier persona con un dispositivo emparejado puede ver y controlar este PC sin desbloquearlo con el teclado. Actívalo solo en un PC de confianza.</value>
   </data>
   <data name="Settings_BackupSection" xml:space="preserve">
-    <value>COPIA DE SEGURIDAD Y RESTAURACIÓN</value>
+    <value>Copia de seguridad y restauración</value>
   </data>
   <data name="Settings_BackupDescription" xml:space="preserve">
     <value>Exporta todo lo que RemEx recuerda —el diseño de tu lienzo, las aplicaciones del lanzador, las carpetas compartidas y el tema— a un solo archivo, o importa uno para restaurarlo. Los emparejamientos y certificados nunca se incluyen; deberás volver a emparejar tu teléfono después de restaurar.</value>
@@ -2273,7 +2216,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Muestra los detalles y una vista previa del elemento seleccionado.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
-    <value>PROPIEDADES</value>
+    <value>Propiedades</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
     <value>No se pudieron cargar los detalles de ese elemento. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
@@ -2300,7 +2243,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Muestra las unidades del dispositivo conectado (requiere permiso).</value>
   </data>
   <data name="FileTransfer_VolumesTitle" xml:space="preserve">
-    <value>UNIDADES</value>
+    <value>Unidades</value>
   </data>
   <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
     <value>Solicitando acceso a las unidades…</value>
@@ -2321,7 +2264,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>No se pudieron enumerar las unidades. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
-    <value>TRANSFERENCIAS</value>
+    <value>Transferencias</value>
   </data>
   <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
     <value>Cancelar todo</value>
@@ -2339,13 +2282,13 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Añadido a la cola de transferencias.</value>
   </data>
   <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
-    <value>SUBIDA</value>
+    <value>Subida</value>
   </data>
   <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
-    <value>DESCARGA</value>
+    <value>Descarga</value>
   </data>
   <data name="FileTransfer_QueueKindSend" xml:space="preserve">
-    <value>ENVÍO</value>
+    <value>Envío</value>
   </data>
   <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
     <value>Esperando…</value>
@@ -2385,12 +2328,6 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
     <value>Un dispositivo emparejado solicita explorar todas las unidades y carpetas de este PC.</value>
   </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>¿Aceptar los archivos entrantes?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Un dispositivo emparejado quiere enviar archivos a este PC.</value>
-  </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Recordar mi elección para este dispositivo</value>
   </data>
@@ -2403,10 +2340,10 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
 
   <!-- ═══ 2.1 File Sharing Overhaul — trust settings ═══ -->
   <data name="Settings_TrustSection" xml:space="preserve">
-    <value>CONFIANZA PARA COMPARTIR ARCHIVOS</value>
+    <value>Confianza para compartir archivos</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Controla lo que cada dispositivo emparejado puede hacer con tus archivos. La exploración completa del dispositivo y la aceptación automática de archivos entrantes están desactivadas de forma predeterminada.</value>
+    <value>Controla lo que cada teléfono emparejado puede hacer con tus archivos. La exploración de todo el dispositivo está desactivada hasta que la permitas. Lo que sube un teléfono solo va a las carpetas compartidas con escritura habilitada.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Ningún dispositivo tiene permisos de uso compartido de archivos todavía.</value>
@@ -2418,10 +2355,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Revocar</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>Permitir explorar todas las unidades</value>
-  </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Aceptar automáticamente los archivos entrantes</value>
+    <value>Permitir explorar todo el dispositivo</value>
   </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Configuración de confianza actualizada.</value>
@@ -2447,28 +2381,10 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Personalizar</value>
   </data>
   <data name="Personalize_Subtitle" xml:space="preserve">
-    <value>APARIENCIA EN VIVO</value>
+    <value>Apariencia en vivo</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalizar apariencia</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Conexión</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Cómo llega tu teléfono a este PC</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Dirección del host</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Buscar hosts en mi red</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Latencia</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Haz clic en cualquier lugar para omitir</value>
@@ -2615,7 +2531,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Fuente para el texto del cuerpo y del contenido: descripciones, etiquetas y la página Sensores. Las lecturas de datos de ancho fijo mantienen su fuente monoespaciada.</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
-    <value>Tamaño de IU</value>
+    <value>Tamaño de la interfaz</value>
   </data>
   <data name="Custom_UiScaleTip" xml:space="preserve">
     <value>Haz que todo —texto y controles— sea más grande o más pequeño, del 85% al 130%.</value>
@@ -2630,7 +2546,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Cambiar entre vista de cuadrícula y lista</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
-    <value>BORRAR</value>
+    <value>Borrar</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx en GitHub</value>
@@ -2690,10 +2606,10 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>CPU</value>
   </data>
   <data name="Home_StatMemory" xml:space="preserve">
-    <value>MEMORIA</value>
+    <value>Memoria</value>
   </data>
   <data name="Home_StatUptime" xml:space="preserve">
-    <value>TIEMPO DE ACTIVIDAD</value>
+    <value>Tiempo de actividad</value>
   </data>
   <data name="Home_WelcomeTitle" xml:space="preserve">
     <value>Bienvenido a RemEx</value>
@@ -2759,7 +2675,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Buscar en registros…</value>
   </data>
   <data name="Remote_ThisPcMac" xml:space="preserve">
-    <value>DIRECCIÓN MAC DE ESTE PC</value>
+    <value>Dirección MAC de este PC</value>
   </data>
   <data name="Remote_CopyMac" xml:space="preserve">
     <value>Copiar</value>
@@ -2780,7 +2696,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Añadir métrica secundaria</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>MÉTRICA SECUNDARIA</value>
+    <value>Superponer un segundo sensor en</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>Buscar sensores…</value>
@@ -2932,7 +2848,7 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
     <value>Color sólido</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>Punto tonal</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>Vibrante</value>
@@ -2985,17 +2901,8 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>No se pudo crear un PIN de emparejamiento</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>El PC no proporcionó un PIN de emparejamiento</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>El emparejamiento no está disponible ahora</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Error de emparejamiento. Comprueba el PIN en el PC</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Emparejamiento cancelado</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Revisa los ajustes de conexión</value>
@@ -3073,15 +2980,15 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
     <value>¿Cómo cambio el aspecto de RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Usa el botón «Personalizar apariencia» para abrir el panel Personalizar.
+    <value>Abre Personalizar al final de la barra lateral.
 
 Puedes cambiar:
 • El color base de tu paleta: elígelo en la rueda de colores, escribe un código hexadecimal, iguálalo con el acento de Windows o tómalo de tu fondo de pantalla
 • El modo claro, oscuro o del sistema, y el contraste
 • La variante del esquema y el material de fondo
-• El radio de las esquinas, la opacidad del cristal y la intensidad del resplandor
+• El radio de las esquinas, la opacidad de las tarjetas y la intensidad del resplandor
 • El estilo de la pantalla de bienvenida
-• Las tipografías del título de página y del contenido, y la escala de la interfaz
+• Las tipografías del título de página y del contenido, y el tamaño de la interfaz
 • El idioma de la aplicación, independientemente del de Windows o Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3322,7 +3229,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>RemEx no se está ejecutando en este PC</value>
   </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
-    <value>TELÉFONO</value>
+    <value>Teléfono</value>
   </data>
   <data name="Settings_PairedDevices" xml:space="preserve">
     <value>Dispositivos vinculados</value>
@@ -3484,7 +3391,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>Nombre de la paleta</value>
   </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
-    <value>COMPORTAMIENTO</value>
+    <value>Comportamiento</value>
   </data>
   <data name="Custom_Tab_Colour" xml:space="preserve">
     <value>Color</value>
@@ -3589,7 +3496,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>Se abandonó «{0}» tras varios intentos. No se cambió nada de ese elemento.</value>
   </data>
   <data name="Custom_SectionFonts" xml:space="preserve">
-    <value>FUENTES</value>
+    <value>Fuentes</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Encabezados</value>
@@ -4223,5 +4130,11 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Versión y créditos</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx en este PC solo se conecta a sí mismo. Para llegar a otro PC, usa la app RemEx de tu teléfono.</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Valor grande</value>
   </data>
 </root>

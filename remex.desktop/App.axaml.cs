@@ -93,16 +93,17 @@ public partial class App : Application
         collection.AddSingleton(_ => new WindowsAccentWatcher(SystemSeedSources.TryGetWindowsAccent, TimeProvider.System));
         collection.AddSingleton<ColorSourceCoordinator>();
         collection.AddSingleton<UpdateCheckService>();
-        collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();
-        collection.AddSingleton<IPairingPinQueryService, IpcPairingPinQueryService>();
 
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
         collection.AddTransient<AddProgramViewModel>();
         collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<HomeViewModel>();
-        collection.AddSingleton<ShellViewModel>();
+        // The OS animation probe is passed explicitly (sweep D8): a bare Func<bool?> is not something
+        // to register container-wide, and the shell is the one place that reads it.
+        collection.AddSingleton<ShellViewModel>(sp => ActivatorUtilities.CreateInstance<ShellViewModel>(
+            sp, (Func<bool?>)SystemMotionPreference.TryGetOsPrefersReducedMotion));
         // Singleton: the tray flyout window is created once and reused, and its tile list is
         // rebuilt in place as phone presence changes rather than per show.
         collection.AddSingleton<TrayFlyoutViewModel>();
@@ -260,23 +261,22 @@ public partial class App : Application
                     $"--view '{requestedView}' is not a recognised view name; staying on Home", null);
             }
 
+            // The UI's socket goes to this PC's own host and nowhere else (sweep D1, hard rule 1).
+            // The profile's stored HostAddress is deliberately NOT applied any more: the Settings box
+            // and Discover button that used to write it could point it at ANOTHER PC, and an address
+            // saved that way would otherwise keep this app a client of that machine with no control
+            // left to undo it. Without an override the default (wss://localhost:5005/ws) stands.
             if (OverrideHostPort.HasValue)
             {
                 viewModel.Connection.HostAddress = $"wss://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
             }
-            else if (profile != null && !string.IsNullOrWhiteSpace(profile.HostAddress))
-            {
-                viewModel.Connection.HostAddress = profile.HostAddress;
-            }
 
             // Wire the embedded host's pairing service so the desktop UI can display
             // the PIN that the user's phone is asking for.
-            var embeddedPairingAttached = false;
             if (EmbeddedHostServices?.GetService(typeof(Remex.Core.Services.Security.IPairingService))
                 is Remex.Core.Services.Security.IPairingService pairingService)
             {
                 viewModel.Connection.AttachEmbeddedPairingService(pairingService);
-                embeddedPairingAttached = true;
             }
 
             // Wire the embedded host's file-trust service so this (serving) PC raises a consent dialog when
@@ -289,23 +289,6 @@ public partial class App : Application
                     Avalonia.Threading.Dispatcher.UIThread.Post(
                         () => ShowFileConsentDialogAsync(fileTrustService, prompt)
                             .FireAndForget("show the file-consent dialog"));
-            }
-
-            if (OperatingSystem.IsWindows() && !CommandModeContext.IsServerMode)
-            {
-                var pairingPinQueryService = Services.GetService<IPairingPinQueryService>(); // optional service
-                if (pairingPinQueryService != null)
-                {
-                    viewModel.Connection.AttachStandalonePairingPinQueryService(pairingPinQueryService);
-
-                    // Embedded pairing already pushes PIN state via PinDisplayed/PinCleared events;
-                    // the standalone poll exists only as a fallback for when no embedded host is present.
-                    if (!embeddedPairingAttached)
-                    {
-                        await viewModel.Connection.RefreshStandalonePairingPinAsync();
-                        viewModel.Connection.StartStandalonePairingPinPolling();
-                    }
-                }
             }
 
             _ = viewModel.Connection.AutoConnectAsync();

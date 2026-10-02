@@ -262,7 +262,22 @@ public partial class SensorViewModel : ObservableObject
             _lastIsDualMetric = dual;
             OnPropertyChanged(nameof(IsDualMetric));
         }
+
+        var big = graphType == GraphType.BigValue;
+        if (_lastIsBigValue != big)
+        {
+            _lastIsBigValue = big;
+            OnPropertyChanged(nameof(IsBigValue));
+        }
     }
+
+    private bool? _lastIsBigValue;
+
+    /// <summary>
+    /// True when this card shows the "Big value" view (RemEx-hc15q): no graph, the reading large and
+    /// centred. Meant for readings that never move, such as total RAM, where a sparkline is a flat line.
+    /// </summary>
+    public bool IsBigValue => ResolvedGraphType == GraphType.BigValue;
 
     private bool IsPercentMetric =>
         RawReading?.Kind is MetricKind.CpuLoad or MetricKind.GpuLoad or MetricKind.RamLoad
@@ -295,6 +310,7 @@ public partial class SensorViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ResolvedGraphType));
         OnPropertyChanged(nameof(IsDualMetric));
+        OnPropertyChanged(nameof(IsBigValue));
     }
 
     partial void OnNameChanged(string value)

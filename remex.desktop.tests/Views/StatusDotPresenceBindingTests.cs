@@ -33,9 +33,9 @@ public class StatusDotPresenceBindingTests
     /// Views whose status dot is DELIBERATELY still about the host link, with the reason.
     /// </summary>
     /// <remarks>
-    /// ONE ENTRY, AND IT HAS TO EARN ITS PLACE. ConnectionView is the single screen where the host
-    /// connection IS the subject — its dot sits beside the box you type the host address into, so
-    /// presence there would answer a question nobody asked.
+    /// EMPTY NOW, AND ANY ENTRY HAS TO EARN ITS PLACE. ConnectionView was the one screen where the
+    /// host connection was the subject (its dot sat beside a host-address box), and it was deleted in
+    /// sweep D1: it was unreachable, and that box let this PC be pointed at another PC.
     /// <para>
     /// TrayFlyoutWindow was briefly on this list, attributed to RemEx-3s4v. That was wrong and review
     /// caught it: 3s4v is the tray TOOLTIP and menu header, new surfaces with new strings, and says
@@ -44,7 +44,7 @@ public class StatusDotPresenceBindingTests
     /// entry is a claim that a dot SHOULD show the host link, never a place to park one.
     /// </para>
     /// </remarks>
-    private static readonly string[] DeliberatelyHostLink = ["ConnectionView.axaml"];
+    private static readonly string[] DeliberatelyHostLink = [];
 
     [Fact]
     public void NoStatusDotOutsideTheAllowListStillBindsTheLoopbackLink()
@@ -103,7 +103,7 @@ public class StatusDotPresenceBindingTests
     {
         // A number in a diff. Adding an exemption is legitimate — but it must be a deliberate edit
         // somebody has to justify, not a filename quietly appended to make CI green (review).
-        DeliberatelyHostLink.Should().HaveCount(1,
+        DeliberatelyHostLink.Should().BeEmpty(
             "every entry is a claim that a status dot SHOULD report the host link rather than phone "
             + "presence. If you are adding one, say why in its remark and change this number on purpose");
     }

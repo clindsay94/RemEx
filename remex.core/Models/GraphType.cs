@@ -37,7 +37,7 @@ public enum GraphType
     /// <summary>Full 360° ring gauge with a centered value.</summary>
     Ring,
 
-    /// <summary>Big numeric value plus a trend delta; no chart.</summary>
+    /// <summary>"Big value": the reading large and centred on the card; no chart (RemEx-hc15q).</summary>
     BigValue,
 
     /// <summary>Value headline plus a compact mini-sparkline (the smart default).</summary>

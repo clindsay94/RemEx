@@ -38,9 +38,9 @@ public class CanvasViewTypographyTests
         var textBoxesWithFontSize = doc.Descendants(XName.Get("TextBox", Avalonia))
             .Count(e => e.Attribute("FontSize") != null);
 
-        textBoxesWithFontSize.Should().Be(2, "the connection HostAddress box and the inline rename " +
-            "editor keep their inline size — Theme would replace the TextBox's own theme and kill " +
-            "SelectionBrush (exception 4, conventions brief)");
+        textBoxesWithFontSize.Should().Be(1, "the inline rename editor keeps its inline size — Theme " +
+            "would replace the TextBox's own theme and kill SelectionBrush (exception 4, conventions " +
+            "brief). The connection card's HostAddress box was the second until sweep D1 removed it");
 
         var nonTextBoxWithFontSize = doc.Descendants()
             .Where(e => e.Name.LocalName != "TextBox")

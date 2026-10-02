@@ -20,7 +20,7 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// </para>
 /// <para>
 /// The specific regression that prompted the XAML half: an earlier revision put the crossfade on a
-/// bare <c>Window</c> selector, which reaches ConfirmationDialog, PairingDialog, FileConsentDialog,
+/// bare <c>Window</c> selector, which reaches ConfirmationDialog, FileConsentDialog,
 /// TrayFlyoutWindow, CommandPaletteWindow and the rest — none of which carry the suppression class.
 /// Those windows snapped before the bead and would have animated for 400ms afterwards with no way to
 /// turn it off, including under reduced motion. The selector is opt-in now, and

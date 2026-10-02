@@ -682,7 +682,7 @@ public class DestructiveActionFailClosedTests : IDisposable
         var vm = CreateSettings();
         vm.FileTrustServiceForTests = new RevokeRecordingTrustService();
 
-        var device = new FileTrustDeviceItem("client-abcdef123456", fullBrowseGranted: true, autoAcceptIncoming: false, names: null);
+        var device = new FileTrustDeviceItem("client-abcdef123456", fullBrowseGranted: true, names: null);
         vm.TrustedDevices.Add(device);
         return (vm, device);
     }

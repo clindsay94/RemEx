@@ -54,11 +54,14 @@ public class PairingFailureReachesTheUserTests : IDisposable
     [Fact]
     public async Task AHostThatCannotProduceAPinIsANNOUNCED_NotJustWrittenToTheStatusLine()
     {
-        // The standalone query service answering "no pin" is the reachable failure: the installed
-        // agent is running but pairing could not start. Before this it set a status line and drew
-        // nothing else — and the status line is inside the window that is usually closed.
+        // The embedded pairing service failing to start a session is the reachable failure: the agent
+        // is running but pairing could not start. Before this it set a status line and drew nothing
+        // else — and the status line is inside the window that is usually closed.
         var vm = new ConnectionViewModel();
-        vm.AttachStandalonePairingPinQueryService(new FakeStandalonePairingPinQueryService((PairingPinInfo?)null));
+        vm.AttachEmbeddedPairingService(new FakePairingService(active: false)
+        {
+            GetOrStartFailure = new InvalidOperationException("pairing could not start"),
+        });
 
         await vm.GenerateQrCodeCommand.ExecuteAsync(null);
 
@@ -71,7 +74,7 @@ public class PairingFailureReachesTheUserTests : IDisposable
         // command — leaving the half of AnnouncePairingProblem the doc argues hardest for, that the
         // record survives the upgrade to notifications, with no guard at all.
         vm.StatusText.Should().Be(
-            Remex.Desktop.Services.LocalizationService.Instance["Status_FailedGeneratePinHost"],
+            Remex.Desktop.Services.LocalizationService.Instance["Status_FailedGeneratePin"],
             "the status line is the RECORD, and it stays");
     }
 
@@ -101,8 +104,7 @@ public class PairingFailureReachesTheUserTests : IDisposable
         // is already visible — the panel opens with the digits in it, in front of whoever is sitting
         // at the PC, which is the whole basis on which showing them is safe.
         var vm = new ConnectionViewModel();
-        vm.AttachStandalonePairingPinQueryService(new FakeStandalonePairingPinQueryService(
-            new PairingPinInfo("654321", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds())));
+        vm.AttachEmbeddedPairingService(new FakePairingService("654321", DateTimeOffset.UtcNow.AddMinutes(2), active: false));
 
         await vm.GenerateQrCodeCommand.ExecuteAsync(null);
 

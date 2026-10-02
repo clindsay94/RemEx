@@ -340,8 +340,12 @@ public class SparklineControl : Control
                 RenderBars(context, bounds);
                 break;
             case GraphType.Line:
-            case GraphType.BigValue:   // retired view — renders as a line (saved-layout compat)
                 RenderLine(context, bounds, filled: false);
+                break;
+            case GraphType.BigValue:
+                // "Big value" draws no graph at all (RemEx-hc15q): the card shows the number large and
+                // centred instead, for readings like total RAM that never move. It used to be a retired
+                // view drawn as a line; a saved layout holding it now gets the view it was named for.
                 break;
             case GraphType.Gauge:
                 RenderGauge(context, bounds);

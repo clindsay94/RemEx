@@ -1,15 +1,12 @@
 <!--
-    The QR pairing panel's contents, shared by ConnectionView and SettingsView.
+    The QR pairing panel's contents. SettingsView hosts it; it was shared with ConnectionView until
+    sweep D1 deleted that unreachable page (RemEx-xmgw made it a shared control in the first place).
 
-    Only the CONTENTS are shared, not the card around them: the two hosts wrap this in visibly
-    different chrome (ConnectionView uses the Card surface, which is CardBackgroundBrush plus a
-    box shadow; SettingsView uses a flat GlassBaseDarkBrush card). Unifying that would silently
-    restyle one of the two screens across all four themes, which is a design decision and not part
-    of RemEx-xmgw's dedupe.
+    Only the CONTENTS live here, not the card around them: SettingsView wraps this in a flat
+    GlassBaseDarkBrush card of its own.
 
-    DataContext is the ConnectionViewModel. ConnectionView inherits it; SettingsView passes it in
-    explicitly via DataContext="{Binding Connection}", which is what lets the bindings below drop the
-    "Connection." prefix that used to be the only difference between the two copies.
+    DataContext is the ConnectionViewModel, passed in explicitly via
+    DataContext="{Binding Connection}", which is why the bindings below have no "Connection." prefix.
 -->
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -27,9 +24,7 @@
 
         <!-- Deliberately a hardcoded White plate rather than a theme brush: a QR code needs a light
              quiet zone and high contrast against the dark modules to stay scannable, so this one
-             does not follow the theme (the same exemption the theme preview tiles carry). Chrome
-             differs by host (ConnectionView vs SettingsView), but both hosts are now Material
-             surfaces, so the plate's own quiet zone stays consistent between them. -->
+             does not follow the theme (the same exemption the theme preview tiles carry). -->
         <Border Background="White" Padding="16" CornerRadius="12" HorizontalAlignment="Center">
             <!-- 260, not the old 180 (RemEx-7ykyn, item 3): the plate is scanned from across a
                  desk by a phone that is also holding a camera steady, and 180 device-independent
