@@ -30,7 +30,10 @@ import com.clindsay94.remex.routines.Routines
 import com.clindsay94.remex.routines.model.RoutineInbound
 import com.clindsay94.remex.routines.model.RoutineInboundMessage
 import com.clindsay94.remex.routines.model.RoutineStepResultPayload
+import com.clindsay94.remex.service.AndroidFileTransferHost
 import com.clindsay94.remex.service.FileTransferChannelClient
+import com.clindsay94.remex.service.FileTransferEngine
+import com.clindsay94.remex.service.LosslessEventRelay
 import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.PairingErrors
 import com.clindsay94.remex.ui.screens.PairingSurface
@@ -50,7 +53,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -457,6 +462,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
         startTelemetryBackgroundPause(appContext)
         val reconnectAllowed = startReconnectGateSignals(appContext)
+        startIdleTeardown(appContext, reconnectAllowed)
 
         // Start Global Connection Heartbeat with exponential backoff.
         // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS) - see [ReconnectGate.backoffDelayMs].
@@ -679,7 +685,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     /**
      * Pauses the host's 1 Hz telemetry push while the app is in the background and resumes it on the
-     * way back (perf audit P0-5). See [TelemetryBackgroundGate] for the decision table.
+     * way back (perf audit P0-5), and in the foreground whenever nothing visible reads it (no
+     * [TelemetryDemand] lease, Leanness K8). See [TelemetryBackgroundGate] for the decision table.
      *
      * APP-LEVEL, NOT SCREEN-LEVEL: telemetry feeds the dashboard and the widget cache, not one screen,
      * so this keys off ProcessLifecycleOwner (which also debounces ON_STOP, so a rotation does not
@@ -714,10 +721,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         }
 
         managerScope.launch {
-            combine(appForeground, authenticatedConnection) { foreground, connection ->
-                foreground to connection
-            }.collect { (foreground, connection) ->
-                val action = gate.reconcile(foreground, connection, isHardwareWidgetPlaced(appContext))
+            // Leanness K8: the foreground alone no longer keeps the stream running; a visible reader
+            // must hold a TelemetryDemand lease (Sensors canvas, Home with pins, Routines pickers).
+            combine(appForeground, authenticatedConnection, TelemetryDemand.leases.wanted) { foreground, connection, wanted ->
+                Triple(foreground, connection, wanted)
+            }.collect { (foreground, connection, wanted) ->
+                val action = gate.reconcile(foreground, connection, isHardwareWidgetPlaced(appContext), telemetryWanted = wanted)
                 val message =
                         when (action) {
                             TelemetryBackgroundGate.Action.PAUSE ->
@@ -737,6 +746,87 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     }
                 }
             }
+        }
+    }
+
+    /** True while the idle teardown has stopped the keepalive and the foreground has not restored it. */
+    @Volatile private var keepaliveStoppedForIdle = false
+
+    /**
+     * Stops the keepalive service after [ConnectionIdlePolicy.IDLE_TIMEOUT_MS] of background idleness
+     * and restores it when the app comes back (RemEx-9yei0). See [ConnectionIdlePolicy] for the rule.
+     *
+     * [connectionWanted] is the heartbeat's own [ReconnectGate] signal: while it is true (a hardware
+     * widget on a lit screen) the connection is in use by definition. The countdown restarts on every
+     * foreground or gate change, and `collectLatest` abandons a countdown the moment either changes.
+     *
+     * Called once, from [initialize], which its early return keeps single-shot.
+     */
+    private fun startIdleTeardown(appContext: Context, connectionWanted: Flow<Boolean>) {
+        if (!ConnectionIdlePolicy.ENABLED) return
+        managerScope.launch(Dispatchers.Default) {
+            combine(appForeground, connectionWanted) { foreground, wanted -> foreground to wanted }
+                    .distinctUntilChanged()
+                    .collectLatest { (foreground, wanted) ->
+                        // Leaving the foreground (or any gate change) starts the countdown afresh.
+                        ConnectionActivity.touch()
+                        if (foreground) {
+                            restoreKeepaliveAfterIdle(appContext)
+                            return@collectLatest
+                        }
+                        while (true) {
+                            val busy = ConnectionActivity.tracker.busy || fileTransferInFlight()
+                            val wait =
+                                    ConnectionIdlePolicy.teardownDelayMs(
+                                            foreground = false,
+                                            connectionWanted = wanted,
+                                            busy = busy,
+                                            quietMs = ConnectionActivity.tracker.quietMs,
+                                    )
+                            when {
+                                // Wanted: nothing to count down until the gate changes.
+                                wanted -> return@collectLatest
+                                // Busy: whatever holds it restarts the countdown when it ends, so a
+                                // full window from now is the earliest teardown could be due.
+                                wait == null -> delay(ConnectionIdlePolicy.IDLE_TIMEOUT_MS)
+                                wait > 0L -> delay(wait)
+                                else -> {
+                                    stopKeepaliveForIdle(appContext)
+                                    return@collectLatest
+                                }
+                            }
+                        }
+                    }
+        }
+    }
+
+    /** Transfers are read where they live rather than mirrored into holds that could drift. */
+    private fun fileTransferInFlight(): Boolean =
+            FileTransferChannelClient.isOpen ||
+                    AndroidFileTransferHost.hasActiveTransfers ||
+                    FileTransferEngine.queue.value.any {
+                        it.state == com.clindsay94.remex.service.TransferState.Queued ||
+                                it.state == com.clindsay94.remex.service.TransferState.Negotiating ||
+                                it.state == com.clindsay94.remex.service.TransferState.Active ||
+                                it.state == com.clindsay94.remex.service.TransferState.Verifying
+                    }
+
+    private fun stopKeepaliveForIdle(appContext: Context) {
+        if (!RemexConnectionService.isRunning) return
+        Log.i("RemexManager", "Background connection idle for ${ConnectionIdlePolicy.IDLE_TIMEOUT_MS / 60_000} min; stopping the keepalive")
+        keepaliveStoppedForIdle = true
+        runCatching { RemexConnectionService.stop(appContext) }
+                .onFailure { Log.w("RemexManager", "Failed to stop the idle keepalive", it) }
+    }
+
+    private suspend fun restoreKeepaliveAfterIdle(appContext: Context) {
+        if (!keepaliveStoppedForIdle) return
+        keepaliveStoppedForIdle = false
+        if (settingsManager?.hostFlow?.first().isNullOrBlank()) return
+        // In the foreground, so starting a foreground service is allowed.
+        withContext(Dispatchers.Main) {
+            runCatching { RemexConnectionService.start(appContext) }
+                    .onFailure { Log.w("RemexManager", "Failed to restore the keepalive", it) }
         }
     }
 
@@ -798,6 +888,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      */
     internal suspend fun startOneShotConnect(context: Context): Boolean {
         initialize(context.applicationContext)
+        // A widget tap or a routine step is use: it restarts the idle teardown's countdown.
+        ConnectionActivity.touch()
         val settings = settingsManager ?: return false
         if (settings.hostFlow.first().isBlank()) return false
         if (_isConnected.value) return true
@@ -864,20 +956,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val connectionError = _connectionError.asSharedFlow()
 
-    // Perf audit P3-6: capacity 8 was an unexamined default, not a deliberate choice like the
-    // latest-value flows above. Unlike cursor position or connection status, a file-control message
-    // (offer/accept/progress/complete) is a discrete event that isn't safe to conflate - dropping one
-    // can hang a transfer with no error, since the four collectors below (AndroidFileTransferHost,
-    // FileTransferEngine, FileTransferViewModel, ShareToPcViewModel) all read the same broadcast and a
-    // burst from concurrent transfers could outrun a slow one before all four drain it. This callback
-    // is invoked from JNI (RemexCallback), so tryEmit is the only option - raised to 64 instead of
-    // switching to SUSPEND, which a native callback thread cannot honor anyway.
-    private val _fileTransferMessages =
-            MutableSharedFlow<String>(
-                    extraBufferCapacity = 64,
-                    onBufferOverflow = BufferOverflow.DROP_OLDEST
-            )
-    val fileTransferMessages = _fileTransferMessages.asSharedFlow()
+    // A file-control message (offer/accept/progress/complete, and a legacy v2 chunk's bytes) is a
+    // discrete event that is never safe to drop: losing one hangs a transfer or shortens a file with no
+    // error, and the four collectors (AndroidFileTransferHost, FileTransferEngine,
+    // FileTransferViewModel, ShareToPcViewModel) all read the same broadcast at their own pace. The
+    // callback runs on the JNI thread, which cannot suspend, so it hands each message to a
+    // LosslessEventRelay: an unbounded ordered inbox pumped into a SUSPENDING SharedFlow. It replaced a
+    // 64-slot DROP_OLDEST flow that a fast PC could outrun while the host wrote chunks to disk
+    // (RemEx-1iszs).
+    private val fileTransferRelay =
+            LosslessEventRelay<String>(CoroutineScope(managerScope.coroutineContext + Dispatchers.Default))
+    val fileTransferMessages: SharedFlow<String> = fileTransferRelay.events
 
     /**
      * Whole `clipboard_*` envelopes from the PC (RemEx-ci98m).
@@ -939,10 +1028,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
      * **THE REPLAY DIES WITH THE CONNECTION.** Cleared in [onConnectionStateChanged] in both
      * directions: the host's revision counter restarts with each connection, and on a host switch
      * the previous PC's list must never be shown as this one's.
+     *
+     * **EACH ONE CARRIES ITS CONNECTION'S EPOCH (phase 3 review R3).** Read from [connectedHost] in
+     * the callback, which runs after [onConnectionStateChanged] set it for this socket, so the
+     * repository can tell B's first sync from A's even when its connection collector lags behind.
      */
     private val _homePinsMessages =
-            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val homePinsMessages = _homePinsMessages.asSharedFlow()
+            MutableSharedFlow<HomePinsInbound>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val homePinsMessages: SharedFlow<HomePinsInbound> = _homePinsMessages.asSharedFlow()
+
+    /** One `home_pins_*` envelope and the epoch of the connection it arrived on (null: none known). */
+    data class HomePinsInbound(val connectionEpoch: Long?, val json: String)
 
     /**
      * The connected PC's Home pinned sensors (RemEx-wqo7a.6), fed from [homePinsMessages],
@@ -1009,7 +1105,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             }
         }
         managerScope.launch(Dispatchers.IO) {
-            homePinsMessages.collect { json -> homePinsRepository.onSyncMessage(json) }
+            homePinsMessages.collect { inbound -> homePinsRepository.onSyncMessage(inbound.json, inbound.connectionEpoch) }
         }
         managerScope.launch(Dispatchers.IO) {
             authenticatedConnection.collect { connection ->
@@ -1642,7 +1738,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onFileTransferMessage(json: String?) {
-        json?.let { _fileTransferMessages.tryEmit(it) }
+        json ?: return
+        // A transfer message is use of the connection (RemEx-9yei0), however the transfer is driven.
+        ConnectionActivity.touch()
+        fileTransferRelay.offer(json)
     }
 
     override fun onClipboardMessage(json: String?) {
@@ -1661,7 +1760,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     override fun onHomePinsMessage(json: String?) {
         // Raw, parsed by the consumer: nothing above a JNI callback can catch an exception, so the
         // parse belongs where a malformed message can be ignored without that risk.
-        json?.let { _homePinsMessages.tryEmit(it) }
+        json?.let { _homePinsMessages.tryEmit(HomePinsInbound(_connectedHost.value?.epoch, it)) }
     }
 
     override fun onLinkQuality(json: String?) {

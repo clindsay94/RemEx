@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.ConnectionActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
@@ -1029,6 +1030,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     init {
+        // A running stream holds the background connection so the idle teardown never stops the
+        // keepalive under it (RemEx-9yei0). Observes the flag only; the stream itself is untouched.
+        viewModelScope.launch {
+            _isStreaming.collect { streaming ->
+                if (streaming) ConnectionActivity.hold(ConnectionActivity.REMOTE_DESKTOP)
+                else ConnectionActivity.release(ConnectionActivity.REMOTE_DESKTOP)
+            }
+        }
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
                 _configState.value =
@@ -2533,5 +2542,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         recycleCurrentFrame()
         activeH264Decoder?.release()
         activeH264Decoder = null
+        // viewModelScope is already cancelled, so the collector above cannot release it.
+        ConnectionActivity.release(ConnectionActivity.REMOTE_DESKTOP)
     }
 }

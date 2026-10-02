@@ -296,6 +296,8 @@ class RefreshTelemetryCallback : ActionCallback {
             return
         }
 
+        // A refresh is use of the background connection: it restarts the idle teardown's countdown.
+        com.clindsay94.remex.ConnectionActivity.touch()
         if (RemexClientManager.isConnected.value) {
             widgetToast(context, context.getString(R.string.widget_toast_refreshing))
             val result = RemexCoreClient.GetTelemetry()

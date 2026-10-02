@@ -28,7 +28,7 @@
     <string name="tutorial_get_started">शुरू करें</string>
     <string name="tutorial_next">आगे</string>
     <string name="tutorial_page1_title">RemEx में आपका स्वागत है</string>
-    <string name="tutorial_page1_body">RemEx आपका रिमोट पीसी प्रबंधन कमांड सेंटर है। अपने फोन से कंप्यूटर को नियंत्रित करें, ऐप्स लॉन्च करें, प्रदर्शन की निगरानी करें और अपना डेस्कटॉप भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
+    <string name="tutorial_page1_body">RemEx से आप अपने फ़ोन से अपना पीसी इस्तेमाल कर सकते हैं। उसे नियंत्रित करें, ऐप्स खोलें, देखें कि वह कैसे चल रहा है, और उसकी स्क्रीन भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
     <string name="tutorial_page2_title">पहले पीसी इंस्टॉल करें</string>
     <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपके पीसी पर RemEx ऐप चलना चाहिए।\n\nइंस्टॉल करने के लिए बस एक ही ऐप है — यह आपके पीसी में साइन इन करते ही अपने आप शुरू हो जाता है और आपके फ़ोन के कनेक्ट होने का इंतज़ार करता है।\n\nGitHub से नवीनतम रिलीज़ डाउनलोड करें और पेयर करने से पहले इसे चलाएं।</string>
     <string name="tutorial_page2_link_label">GitHub रिलीज़ से डाउनलोड करें</string>
@@ -39,7 +39,7 @@
     <string name="tutorial_page5_title">मैन्युअल कनेक्शन</string>
     <string name="tutorial_page5_body">एक बार जब आपके पास आईपी पता हो जाए:\n\n1. कनेक्शन स्क्रीन पर जाएं (अधिक → सेटिंग्स → कनेक्शन)\n2. अपने पीसी का आईपी पता दर्ज करें\n3. पोर्ट दर्ज करें (डिफ़ॉल्ट 5005 है)\n4. \'सेव और कनेक्ट\' पर टैप करें\n5. यदि पूछा जाए, तो सुरक्षित पेयरिंग पूरी करने के लिए अपने पीसी पर दिखाया गया 6 अंकों का पिन दर्ज करें\n\nआपकी कनेक्शन जानकारी अगली बार के लिए सहेज ली जाती है।</string>
     <string name="tutorial_page6_title">आप पूरी तरह तैयार हैं!</string>
-    <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nअपने पीसी की लाइव रीडिंग देखने के लिए %1$s खोलें। बाकी टैब से आप कमांड भेज सकते हैं, ऐप्स शुरू कर सकते हैं, देख सकते हैं कि क्या चल रहा है, साझा फ़ोल्डर ब्राउज़ कर सकते हैं और अपना डेस्कटॉप स्ट्रीम कर सकते हैं।\n\nभाषा, थीम, कार्ड आकार और रंग बदलने के लिए पर्सनलाइजेशन पर जाएं।\n\nपेयरिंग, फ़ाइल ट्रांसफर या रिमोट डेस्कटॉप ट्यूनिंग में मदद चाहिए तो कभी भी FAQ खोलें।</string>
+    <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nअपने पीसी की लाइव रीडिंग देखने के लिए %1$s खोलें। बाकी टैब से आप कमांड भेज सकते हैं, ऐप्स शुरू कर सकते हैं, देख सकते हैं कि क्या चल रहा है, साझा फ़ोल्डर ब्राउज़ कर सकते हैं और अपना डेस्कटॉप स्ट्रीम कर सकते हैं।\n\nभाषा, थीम, कार्ड आकार और रंग बदलने के लिए वैयक्तिकृत करें पर जाएं।\n\nपेयरिंग, फ़ाइल ट्रांसफर या रिमोट डेस्कटॉप ट्यूनिंग में मदद चाहिए तो कभी भी FAQ खोलें।</string>
     <string name="tutorial_page_qr_title">QR कोड से तुरंत पेयर करें</string>
     <string name="tutorial_page_qr_body">कनेक्ट करने का सबसे तेज़ तरीका QR कोड स्कैन करना है।\n\n1. अपने पीसी पर RemEx विंडो खोलें\n2. सेटिंग्स → कनेक्शन → QR कोड दिखाएं पर जाएं\n3. अपने फ़ोन पर, कनेक्शन स्क्रीन पर QR आइकन पर टैप करें\n4. कोड स्कैन करें और यदि पूछा जाए तो पेयरिंग पिन की पुष्टि करें\n\nRemEx सुरक्षित कनेक्शन विवरण स्वचालित रूप से सेव कर लेता है।</string>
     <string name="status_disconnected">डिस्कनेक्ट हो गया</string>
@@ -81,7 +81,7 @@
     <string name="cd_keyboard">कीबोर्ड</string>
     <string name="screen_settings_title">सेटिंग्स</string>
     <string name="settings_tab_connection">कनेक्शन</string>
-    <string name="settings_tab_personalization">पर्सनलाइजेशन</string>
+    <string name="settings_tab_personalization">वैयक्तिकृत करें</string>
     <string name="settings_tab_input">इनपुट</string>
     <string name="settings_tab_file_transfer">फ़ाइलें</string>
     <string name="settings_tab_help">सहायता</string>
@@ -246,14 +246,11 @@
     <string name="pairing_submit">पेयर करें</string>
     <string name="pairing_cancel">रद्द करें</string>
     <string name="pairing_error_bad_pin">पिन गलत है या पेयरिंग की समय-सीमा समाप्त हो गई। अपने पीसी पर अब दिख रहा पिन डालें और दोबारा कोशिश करें।</string>
-    <string name="pairing_error_cert_mismatch">इस पीसी का सुरक्षा प्रमाणपत्र बदल गया है, इसलिए आपका फोन अब उस पर भरोसा नहीं करता। अपने फोन पर इस पीसी को अनपेयर करें, फिर नया प्रमाणपत्र स्वीकार करने के लिए दोबारा पेयर करें।</string>
     <string name="qr_scanner_title">QR कोड स्कैन करें</string>
     <string name="cd_back">वापस</string>
     <string name="qr_scanner_hint">अपने PC पर दिखाए गए QR कोड पर कैमरा पॉइंट करें</string>
     <string name="qr_scanner_permission_required">QR कोड स्कैन करने के लिए कैमरा अनुमति आवश्यक है</string>
     <string name="qr_scanner_grant_permission">अनुमति दें</string>
-    <string name="qr_error_old_format">यह QR कोड RemEx PC के पुराने संस्करण द्वारा बनाया गया था। PC को अपडेट करें और नया RemEx 2.x QR कोड बनाएं।</string>
-    <string name="qr_error_invalid">अमान्य RemEx QR कोड</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">के बारे में</string>
     <string name="about_github_star">GitHub पर RemEx को फ़ॉलो करें</string>
@@ -276,14 +273,14 @@
     <string name="faq_q6">क्या मैं इंटरनेट पर कनेक्ट कर सकता हूँ (केवल LAN पर नहीं)?</string>
     <string name="faq_a6">हाँ — Tailscale के साथ सुरक्षित रूप से (अनुशंसित)। Tailscale आपके डिवाइसों के बीच एक निजी, एंड-टू-एंड एन्क्रिप्टेड नेटवर्क बनाता है (WireGuard® का उपयोग करके), जिससे यह ऐप आपके पीसी तक कहीं से भी पहुँच सकता है — मोबाइल डेटा, ऑफ़िस का Wi-Fi, कोई कैफ़े — राउटर सेटअप के बिना और सार्वजनिक इंटरनेट पर कुछ भी उजागर किए बिना।\n\nचरण-दर-चरण निर्देशों के लिए नीचे दिया गया प्रश्न देखें: \'सुरक्षित रिमोट एक्सेस के लिए मैं Tailscale कैसे सेटअप करूँ?\'।\n\nअनुशंसित नहीं: आप इसके बजाय अपने राउटर पर एक पोर्ट खोल सकते हैं और अपने सार्वजनिक आईपी पते से कनेक्ट कर सकते हैं, लेकिन इससे आपका पीसी इंटरनेट पर उजागर होता है और यह एक वास्तविक सुरक्षा जोखिम है। इसके बजाय Tailscale (या WireGuard जैसा कोई अन्य वीपीएन) उपयोग करें।</string>
     <string name="faq_q7">डेस्कटॉप स्क्रीन धीमी है या काम नहीं कर रही। मैं क्या कर सकता हूँ?</string>
-    <string name="faq_a7">• कनेक्शन → डेस्कटॉप डिफ़ॉल्ट में क्वालिटी स्लाइडर को कम करें।\n• लक्ष्य FPS कम करें (अधिकांश उपयोग के मामलों के लिए 15–20 FPS पर्याप्त है)।\n• स्ट्रीम किए जा रहे रिज़ॉल्यूशन को कम करने के लिए स्केल कम करें।\n• Windows पर, remex.agent स्वचालित रूप से सबसे तेज़ उपलब्ध कैप्चर बैकएंड चुनता है — Windows.Graphics.Capture, फिर DXGI Desktop Duplication, फिर GDI। Linux पर, यह XDG डेस्कटॉप पोर्टल (X11 या Wayland) के माध्यम से PipeWire से कैप्चर करता है।\n• जांचें कि आप तेज़, स्थानीय वाई-फाई नेटवर्क (5 GHz बेहतर) पर हैं।</string>
+    <string name="faq_a7">• कनेक्शन → डेस्कटॉप डिफ़ॉल्ट में क्वालिटी स्लाइडर को कम करें।\n• लक्ष्य FPS कम करें। यह 120 से शुरू होता है, जो एक ऊपरी सीमा है, वादा नहीं: जब आपका नेटवर्क या पीसी साथ नहीं दे पाता, तो पीसी कम फ़्रेम भेजता है। अगर तस्वीर फिर भी अटकती है, तो रोज़मर्रा के उपयोग के लिए 30–60 FPS काफ़ी है।\n• स्ट्रीम किए जा रहे रिज़ॉल्यूशन को कम करने के लिए स्केल कम करें।\n• Windows पर, remex.agent स्वचालित रूप से सबसे तेज़ उपलब्ध कैप्चर बैकएंड चुनता है — Windows.Graphics.Capture, फिर DXGI Desktop Duplication, फिर GDI। Linux पर, यह XDG डेस्कटॉप पोर्टल (X11 या Wayland) के माध्यम से PipeWire से कैप्चर करता है।\n• जांचें कि आप तेज़, स्थानीय वाई-फाई नेटवर्क (5 GHz बेहतर) पर हैं।</string>
     <string name="faq_q8">वेक-ऑन-लैन (WOL) क्या है?</string>
     <string name="faq_a8">वेक-ऑन-लैन आपको नेटवर्क पर \"मैजिक पैकेट\" भेजकर अपने पीसी को रिमोट से पावर ऑन करने देता है।\n\nइसका उपयोग करने के लिए:\n1. अपने पीसी की BIOS/UEFI सेटिंग्स में WOL सक्षम करें।\n2. अपने नेटवर्क एडॉप्टर के गुणों में WOL सक्षम करें (Windows: डिवाइस मैनेजर → नेटवर्क एडॉप्टर → पावर मैनेजमेंट)।\n3. कनेक्शन स्क्रीन में अपने पीसी का MAC पता दर्ज करें।\n4. %1$s या कमांड स्क्रीन पर \'Wake PC\' कार्ड का उपयोग करें।\n\nPC चालू करना और उस तक दोबारा पहुँच पाना एक ही बात नहीं है। Wake-on-LAN मशीन चालू करता है और वह साइन-इन स्क्रीन पर रुक जाती है; RemEx तभी शुरू होता है जब कोई PC पर साइन इन करता है।</string>
     <string name="faq_q9">मैं ऐप की उपस्थिति को कैसे कस्टमाइज़ करूँ?</string>
-    <string name="faq_a9">More टैब खोलें और पर्सनलाइजेशन पर टैप करें (या सेटिंग्स → पर्सनलाइजेशन)।\n\nआप बदल सकते हैं:\n• थीम पैलेट और कलर सीड\n• कार्ड कॉर्नर रेडियस और शेप प्रीसेट\n• फ़ॉन्ट फैमिली और स्केल\n• कार्ड अपारदर्शिता (Opacity)\n• डार्क/लाइट/सिस्टम थीम मोड\n• ऐप की भाषा (आपके सिस्टम की भाषा से स्वतंत्र)</string>
+    <string name="faq_a9">More टैब खोलें और वैयक्तिकृत करें पर टैप करें (या सेटिंग्स → वैयक्तिकृत करें)।\n\nआप बदल सकते हैं:\n• थीम पैलेट और कलर सीड\n• कार्ड कॉर्नर रेडियस और शेप प्रीसेट\n• फ़ॉन्ट फैमिली और स्केल\n• कार्ड अपारदर्शिता (Opacity)\n• डार्क/लाइट/सिस्टम थीम मोड\n• ऐप की भाषा (आपके सिस्टम की भाषा से स्वतंत्र)</string>
     <string name="faq_q10">क्या मैं ट्यूटोरियल फिर से देख सकता हूँ?</string>
     <string name="faq_a10">हाँ! More टैब → सेटिंग्स → मदद खोलें। वहाँ आपको किसी भी समय ट्यूटोरियल को फिर से चलाने का विकल्प मिलेगा।</string>
-    <string name="screen_personalization_title">पर्सनलाइजेशन</string>
+    <string name="screen_personalization_title">वैयक्तिकृत करें</string>
     <string name="personalization_appearance_studio">अपीयरेंस स्टूडियो</string>
     <string name="personalization_section_language">भाषा</string>
     <string name="personalization_app_language">ऐप की भाषा</string>
@@ -479,7 +476,7 @@
     <string name="about_whats_new_1_label">सेंसर अलर्ट</string>
     <string name="about_whats_new_1_body">अपने PC पर, किसी भी सेंसर पर थ्रेशोल्ड सेट करें और उसके पार होते ही उसका कार्ड लाल घंटी दिखाता है। अलर्ट तब तक जलता रहता है जब तक आप उसे स्वीकार न करें, इसलिए दूर रहते हुए छूटा हुआ स्पाइक भी चिह्नित रहता है, और एक क्रिटिकल अलर्ट विंडो नज़र से बाहर होने पर एक डेस्कटॉप सूचना भी भेजता है।</string>
     <string name="about_whats_new_2_label">मेरी थीम मिलाएं</string>
-    <string name="about_whats_new_2_body">अब आपका फ़ोन अपनी थीम आपके PC से साझा करता है, जिससे पर्सनलाइजेशन एक टैप में आपके रंग, लाइट हो या डार्क, मिला सकता है। बाद में अपने फ़ोन की थीम बदलें और जब चाहें PC उसे फिर से अपना सकता है।</string>
+    <string name="about_whats_new_2_body">अब आपका फ़ोन अपनी थीम आपके PC से साझा करता है, जिससे वैयक्तिकृत करें एक टैप में आपके रंग, लाइट हो या डार्क, मिला सकता है। बाद में अपने फ़ोन की थीम बदलें और जब चाहें PC उसे फिर से अपना सकता है।</string>
     <string name="about_whats_new_3_label">क्लिपबोर्ड सिंक</string>
     <string name="about_whats_new_3_body">अपने फ़ोन पर टेक्स्ट कॉपी करें और कमांड स्क्रीन से इसे अपने PC के क्लिपबोर्ड पर भेजें — पहुंचते ही यह पेस्ट के लिए तैयार होता है। रास्ते में कुछ भी सेव नहीं होता, इसलिए कोई पासवर्ड या लॉगिन कोड बस गुज़र कर चला जाता है।</string>
     <string name="about_whats_new_4_label">जाने-पहचाने PC</string>
@@ -770,7 +767,7 @@
     <string name="dashboard_view_value_spark">मान + स्पार्कलाइन</string>
     <string name="dashboard_view_ring_gauge">रिंग गेज</string>
     <string name="dashboard_view_arc_gauge">आर्क गेज</string>
-    <string name="dashboard_view_line">पंक्ति</string>
+    <string name="dashboard_view_line">रेखा</string>
     <string name="dashboard_view_area">क्षेत्र</string>
     <string name="dashboard_view_bar">बार हिस्टोग्राम</string>
     <string name="dashboard_view_hue_pulse">ह्यू पल्स</string>

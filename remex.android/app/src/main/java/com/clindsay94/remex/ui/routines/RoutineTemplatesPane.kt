@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
+import com.clindsay94.remex.TelemetryDemand
+import com.clindsay94.remex.ui.screens.TelemetryLeaseEffect
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.RemexTooltip
 
@@ -60,6 +62,8 @@ internal fun RoutineTemplatesPane(
     val selectedPc by viewModel.selectedPc.collectAsStateWithLifecycle()
     val mediaKeys by viewModel.mediaKeys.collectAsStateWithLifecycle()
     val sensors by viewModel.sensors.collectAsStateWithLifecycle()
+    // Health templates pick a sensor from the PC's live stream, so the pane keeps it running.
+    TelemetryLeaseEffect(TelemetryDemand.ROUTINE_TEMPLATES)
     val pcs by viewModel.pcs.collectAsStateWithLifecycle()
     val home by viewModel.home.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf<String?>(null) }

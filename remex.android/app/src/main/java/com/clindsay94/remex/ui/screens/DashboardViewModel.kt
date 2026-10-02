@@ -382,6 +382,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun undo() = editor.undo()
 
+    /** Counts changes to the layout's history; see [SensorLayoutEditor.revision]. */
+    val editRevision: StateFlow<Long> = editor.revision
+
+    /** The card-removed snackbar's Undo: reverts the removal only if it is still the latest change. */
+    fun undoIfUnchanged(revision: Long) = editor.undoIfUnchanged(revision)
+
     fun redo() = editor.redo()
 
     /** Pins or unpins a sensor on the PC's Home (or the phone's own list for an older PC). */
@@ -558,12 +564,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val savedLayout = settingsManager.homeLayoutJsonFlow.first()
             val enabledCardsJson = settingsManager.homeEnabledCardsJsonFlow.first()
 
-            val savedEnabled =
-                runCatching {
-                    val array = JSONArray(enabledCardsJson)
-                    (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.toSet()
-                }.getOrNull().orEmpty()
-            val enabled = SensorGridMigration.migrateEnabled(savedEnabled)
+            // Null when never saved; an empty set is Clear all, not "use the defaults" (review R4).
+            val savedEnabled = SensorGridMigration.parseSavedEnabled(enabledCardsJson)
+            val migratedEnabled = savedEnabled?.let(SensorGridMigration::migrateEnabled)
 
             val decoded =
                 if (savedLayout.isBlank()) null
@@ -572,15 +575,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     .getOrNull()
             val cards = decoded?.let(SensorLayoutCodec::toCards).orEmpty()
 
-            if (cards.isEmpty() && enabled.isEmpty()) return@launch
+            if (cards.isEmpty() && migratedEnabled == null) return@launch
             val layout =
                 SensorLayout(
                     cards = cards.ifEmpty { editor.layout.value.cards },
-                    enabled = if (savedEnabled.isEmpty()) editor.layout.value.enabled else enabled
+                    enabled = migratedEnabled ?: editor.layout.value.enabled
                 )
             editor.load(layout)
             val needsRewrite =
-                (decoded != null && decoded.schemaVersion < SensorLayoutCodec.SCHEMA_VERSION) || enabled != savedEnabled
+                (decoded != null && decoded.schemaVersion < SensorLayoutCodec.SCHEMA_VERSION) ||
+                    (savedEnabled != null && migratedEnabled != savedEnabled)
             if (needsRewrite) persistHomeLayout(layout)
         }
     }

@@ -503,6 +503,77 @@ class FileHostHandlerTest {
         )
     }
 
+    /**
+     * A root holding one folder, `Mid`, whose children all sort on one side of the folder's own name.
+     * The cursor carries the base prefix (`Mid/...`), so a host that compares it against `Mid`'s
+     * children without stripping the prefix skips (children before "Mid") or repeats (after) entries.
+     */
+    private fun nonRootManifestTree(dirName: String, fileName: String): FakeNode {
+        val root = FakeNode("root1", true)
+        val mid = FakeNode("Mid", true, parent = root)
+        val dir = FakeNode(dirName, true, parent = mid)
+        val inner = FakeNode("inner.txt", false, content = "abc".toByteArray(), parent = dir)
+        val file = FakeNode(fileName, false, content = "z".toByteArray(), parent = mid)
+        dir.children["inner.txt"] = inner
+        mid.children[dirName] = dir
+        mid.children[fileName] = file
+        root.children["Mid"] = mid
+        return root
+    }
+
+    private suspend fun pagedManifest(h: FileHostHandler, sender: CapturingSender, relativePath: String): List<String> {
+        val paged = mutableListOf<String>()
+        var cursor: String? = null
+        var guard = 0
+        do {
+            val cursorJson = if (cursor == null) "" else ",\"cursor\":\"" + cursor + "\""
+            h.handleControlMessage(
+                "{\"type\":\"file_manifest_request\",\"fileManifestRequest\":{\"requestId\":\"p\"," +
+                    "\"rootId\":\"root1\",\"relativePath\":\"" + relativePath + "\"" + cursorJson + ",\"maxEntries\":1}}"
+            )
+            val payload = sender.last().getJSONObject("fileManifestResponse")
+            paged.addAll(manifestPaths(payload))
+            cursor = if (payload.has("nextCursor")) payload.getString("nextCursor") else null
+            assertTrue("The manifest did not terminate", ++guard < 50)
+        } while (cursor != null)
+        return paged
+    }
+
+    @Test
+    fun manifest_pagedNonRootFolder_childrenSortingBeforeTheFolderName_areAllListed() = runBlocking {
+        // "Alpha" and "Beta.txt" order before "Mid": an unstripped cursor skipped them silently.
+        val (h, sender, _) = build(nonRootManifestTree(dirName = "Alpha", fileName = "Beta.txt"))
+        assertEquals(
+            listOf("Mid/Alpha", "Mid/Alpha/inner.txt", "Mid/Beta.txt"),
+            pagedManifest(h, sender, "Mid"),
+        )
+    }
+
+    @Test
+    fun manifest_pagedNonRootFolder_childrenSortingAfterTheFolderName_areListedOnce() = runBlocking {
+        // "Xray" and "Zulu.txt" order after "Mid": an unstripped cursor repeated page one forever.
+        val (h, sender, _) = build(nonRootManifestTree(dirName = "Xray", fileName = "Zulu.txt"))
+        assertEquals(
+            listOf("Mid/Xray", "Mid/Xray/inner.txt", "Mid/Zulu.txt"),
+            pagedManifest(h, sender, "Mid"),
+        )
+    }
+
+    @Test
+    fun manifest_cursorFromAnotherFolder_restartsFromPageOneWithTotals() = runBlocking {
+        // Matches the PC host (docs/API_CONTRACTS.md "Folder Manifest Paging"): a cursor whose path is
+        // not under the requested folder was not produced by this walk, so it starts over, count and all.
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"m1","rootId":"root1","relativePath":"Docs","cursor":"3|Empty","maxEntries":1}}"""
+        )
+        val payload = sender.last().getJSONObject("fileManifestResponse")
+        assertEquals(listOf("Docs/deep"), manifestPaths(payload))
+        assertEquals("1|Docs/deep", payload.getString("nextCursor"))
+        assertEquals(1L, payload.getLong("totalFiles"))
+        assertEquals(1L, payload.getLong("totalDirectories"))
+    }
+
     @Test
     fun manifest_missingFolder_answersWithAnErrorRatherThanGoingQuiet() = runBlocking {
         val (h, sender, _) = build(manifestTree())

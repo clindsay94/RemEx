@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Route
@@ -83,9 +82,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.TelemetryDemand
 import com.clindsay94.remex.data.HomePinsState
 import com.clindsay94.remex.data.KnownPcEntry
 import com.clindsay94.remex.routines.RoutineReasonText
+import com.clindsay94.remex.ui.components.LinkGlyph
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.navigation.NavDestination
@@ -143,6 +144,10 @@ fun HomeScreen(
     val uptime by viewModel.uptime.collectAsStateWithLifecycle()
     val sensors by viewModel.sensors.collectAsStateWithLifecycle()
     val pins by viewModel.homePins.collectAsStateWithLifecycle()
+    // Home holds the telemetry lease while it's on screen (Leanness K8): its pinned tiles read it,
+    // and so does the PC card's uptime line, which froze when the lease depended on having pins.
+    // The PC still pauses the stream on every other tab and in the background.
+    TelemetryLeaseEffect(TelemetryDemand.HOME_PINNED)
     val history by viewModel.routineHistory.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val knownPcRows by connectionViewModel.knownPcRows.collectAsStateWithLifecycle()
@@ -583,6 +588,8 @@ private fun PinnedTile(sensor: TelemetrySensor, shape: androidx.compose.ui.graph
 @Composable
 private fun PinSheet(state: HomeUiState, onSetPinned: (String, Boolean) -> Unit, onDismiss: () -> Unit) {
     val view = LocalView.current
+    // The sheet lists what the PC reports right now, so it reads telemetry while open (Leanness K8).
+    TelemetryLeaseEffect(TelemetryDemand.HOME_PIN_SHEET)
     val groups = HomeLogic.pinSheet(state.pins, state.sensors)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
@@ -768,7 +775,7 @@ private fun RecentActivitySection(recent: List<RecentActivity>, shape: androidx.
                                                 else RoutineReasonText.history(context, item.reasonCode, item.reasonArgs)
                                         )
                                 is RecentActivity.Connected ->
-                                        Triple(Icons.Default.Link, item.pcName, stringResource(R.string.home_recent_status_connected))
+                                        Triple(LinkGlyph, item.pcName, stringResource(R.string.home_recent_status_connected))
                             }
                     Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),

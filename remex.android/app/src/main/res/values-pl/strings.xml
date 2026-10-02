@@ -25,7 +25,7 @@
     <string name="tutorial_get_started">Rozpocznij</string>
     <string name="tutorial_next">Dalej</string>
     <string name="tutorial_page1_title">Witaj w RemEx</string>
-    <string name="tutorial_page1_body">RemEx to Twoje centrum dowodzenia zdalnym zarządzaniem PC. Steruj komputerem, uruchamiaj aplikacje, monitoruj wydajność, a nawet wyświetlaj pulpit — wszystko z telefonu.\n\nPołączmy się w kilku prostych krokach.</string>
+    <string name="tutorial_page1_body">RemEx pozwala korzystać z komputera z poziomu telefonu. Steruj nim, otwieraj aplikacje, sprawdzaj, jak działa, a nawet oglądaj jego ekran.\n\nPołączmy się w kilku prostych krokach.</string>
     <string name="tutorial_page2_title">Najpierw zainstaluj PC</string>
     <string name="tutorial_page2_body">Zanim się połączysz, na Twoim komputerze musi działać aplikacja RemEx.\n\nJest tylko jedna aplikacja do zainstalowania — uruchamia się automatycznie po zalogowaniu na komputerze i czeka na połączenie z telefonu.\n\nPobierz najnowsze wydanie z GitHuba i uruchom je przed parowaniem.</string>
     <string name="tutorial_page2_link_label">Pobierz z wydań GitHub</string>
@@ -36,7 +36,7 @@
     <string name="tutorial_page5_title">Połączenie ręczne</string>
     <string name="tutorial_page5_body">Gdy masz już adres IP:\n\n1. Przejdź do ekranu Połączenia (Więcej → Ustawienia → Połączenie)\n2. Wprowadź adres IP komputera\n3. Wprowadź port (domyślny to 5005)\n4. Dotknij „Zapisz i połącz”\n5. Jeśli pojawi się prośba, wprowadź 6-cyfrowy kod PIN wyświetlony na komputerze, aby zakończyć bezpieczne parowanie\n\nDane połączenia zostaną zapisane na następny raz.</string>
     <string name="tutorial_page6_title">Wszystko gotowe!</string>
-    <string name="tutorial_page6_body">Jesteś gotowy, by przejąć kontrolę.\n\nOtwórz %1$s, aby śledzić odczyty z komputera na żywo. Pozostałe karty pozwalają wysyłać polecenia, uruchamiać aplikacje, sprawdzać, co działa, przeglądać udostępnione foldery i przesyłać obraz pulpitu.\n\nPrzejdź do Personalizacji, aby zmienić język, motyw, kształty kart i kolory.\n\nOtwórz FAQ w dowolnym momencie, jeśli potrzebujesz pomocy z parowaniem, transferem plików lub dostrajaniem pulpitu zdalnego.</string>
+    <string name="tutorial_page6_body">Jesteś gotowy, by przejąć kontrolę.\n\nOtwórz %1$s, aby śledzić odczyty z komputera na żywo. Pozostałe karty pozwalają wysyłać polecenia, uruchamiać aplikacje, sprawdzać, co działa, przeglądać udostępnione foldery i przesyłać obraz pulpitu.\n\nPrzejdź do ekranu Personalizuj, aby zmienić język, motyw, kształty kart i kolory.\n\nOtwórz FAQ w dowolnym momencie, jeśli potrzebujesz pomocy z parowaniem, transferem plików lub dostrajaniem pulpitu zdalnego.</string>
     <string name="tutorial_page_qr_title">Szybkie parowanie kodem QR</string>
     <string name="tutorial_page_qr_body">Najszybszym sposobem na połączenie jest zeskanowanie kodu QR.\n\n1. Otwórz okno RemEx na komputerze\n2. Przejdź do Ustawienia → Połączenie → Pokaż kod QR\n3. Na telefonie dotknij ikony QR na ekranie połączenia\n4. Zeskanuj kod i potwierdź kod PIN parowania, jeśli zostaniesz o to poproszony\n\nRemEx automatycznie zapisuje dane bezpiecznego połączenia.</string>
     <string name="status_disconnected">Rozłączono</string>
@@ -72,7 +72,7 @@
     <string name="cd_keyboard">Klawiatura</string>
     <string name="screen_settings_title">Ustawienia</string>
     <string name="settings_tab_connection">Połączenie</string>
-    <string name="settings_tab_personalization">Personalizacja</string>
+    <string name="settings_tab_personalization">Personalizuj</string>
     <string name="settings_tab_help">Pomoc</string>
     <string name="settings_help_title">Pomoc</string>
     <string name="settings_replay_tutorial">📖 Powtórz samouczek</string>
@@ -233,14 +233,11 @@
     <string name="pairing_submit">Sparuj</string>
     <string name="pairing_cancel">Anuluj</string>
     <string name="pairing_error_bad_pin">Nieprawidłowy kod PIN lub parowanie wygasło. Wprowadź kod PIN wyświetlany teraz na komputerze, a następnie spróbuj ponownie.</string>
-    <string name="pairing_error_cert_mismatch">Certyfikat bezpieczeństwa tego komputera się zmienił, więc telefon przestał mu ufać. Usuń sparowanie tego komputera na telefonie, a następnie sparuj ponownie, aby zaakceptować nowy certyfikat.</string>
     <string name="qr_scanner_title">Skanuj kod QR</string>
     <string name="cd_back">Wstecz</string>
     <string name="qr_scanner_hint">Skieruj aparat na kod QR wyświetlony na komputerze</string>
     <string name="qr_scanner_permission_required">Uprawnienie do aparatu jest wymagane do skanowania kodów QR</string>
     <string name="qr_scanner_grant_permission">Udziel uprawnienia</string>
-    <string name="qr_error_old_format">Ten kod QR został wygenerowany przez starszą wersję RemEx PC. Zaktualizuj PC i wygeneruj nowy kod QR RemEx 2.x.</string>
-    <string name="qr_error_invalid">Nieprawidłowy kod QR RemEx</string>
     <string name="about_github_star">Obserwuj RemEx na GitHubie</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="faq_header">Najczęściej zadawane pytania</string>
@@ -260,14 +257,14 @@
     <string name="faq_q6">Czy mogę łączyć się przez internet (nie tylko LAN)?</string>
     <string name="faq_a6">Tak — bezpiecznie, za pomocą Tailscale (zalecane). Tailscale tworzy prywatną sieć z szyfrowaniem end-to-end między Twoimi urządzeniami (przy użyciu WireGuard®), dzięki czemu ta aplikacja może połączyć się z komputerem z dowolnego miejsca — dane mobilne, Wi-Fi w pracy, kawiarnia — bez konfigurowania routera i bez wystawiania czegokolwiek do publicznego internetu.\n\nInstrukcje krok po kroku znajdziesz poniżej w pytaniu: \'Jak skonfigurować Tailscale do zdalnego dostępu?\'.\n\nNiezalecane: możesz zamiast tego otworzyć port na routerze i łączyć się przez publiczny adres IP, ale to wystawia komputer na internet i stanowi realne ryzyko dla bezpieczeństwa. Zamiast tego użyj Tailscale (lub innego VPN, np. WireGuard).</string>
     <string name="faq_q7">Ekran Pulpit działa wolno lub nie działa. Co mogę zrobić?</string>
-    <string name="faq_a7">• Zmniejsz suwak Jakość w Połączenie → Domyślne ustawienia pulpitu.\n• Zmniejsz docelowe FPS (15–20 FPS wystarcza do większości zastosowań).\n• Zmniejsz Skalę, aby ograniczyć rozdzielczość strumienia.\n• W systemie Windows remex.agent automatycznie wybiera najszybszy dostępny mechanizm przechwytywania obrazu — Windows.Graphics.Capture, z awaryjnym przejściem na DXGI Desktop Duplication, a następnie GDI. W systemie Linux przechwytywanie odbywa się przez PipeWire za pośrednictwem portalu XDG desktop (X11 lub Wayland).\n• Sprawdź, czy korzystasz z szybkiej, lokalnej sieci Wi-Fi (zalecane 5 GHz).</string>
+    <string name="faq_a7">• Zmniejsz suwak Jakość w Połączenie → Domyślne ustawienia pulpitu.\n• Zmniejsz docelowe FPS. Domyślnie to 120, czyli górny limit, a nie obietnica: komputer wysyła mniej klatek, gdy sieć lub komputer nie nadąża. Jeśli obraz nadal się zacina, do codziennego użytku wystarczy 30–60 FPS.\n• Zmniejsz Skalę, aby ograniczyć rozdzielczość strumienia.\n• W systemie Windows remex.agent automatycznie wybiera najszybszy dostępny mechanizm przechwytywania obrazu — Windows.Graphics.Capture, z awaryjnym przejściem na DXGI Desktop Duplication, a następnie GDI. W systemie Linux przechwytywanie odbywa się przez PipeWire za pośrednictwem portalu XDG desktop (X11 lub Wayland).\n• Sprawdź, czy korzystasz z szybkiej, lokalnej sieci Wi-Fi (zalecane 5 GHz).</string>
     <string name="faq_q8">Co to jest Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">Wake-on-LAN pozwala na zdalne włączenie komputera poprzez wysłanie „magicznego pakietu” przez sieć.\n\nAby z niego skorzystać:\n1. Włącz WOL w ustawieniach BIOS/UEFI komputera.\n2. Włącz WOL we właściwościach karty sieciowej (Windows: Menedżer urządzeń → Karty sieciowe → Zarządzanie energią).\n3. Wprowadź adres MAC komputera na ekranie Połączenia.\n4. Użyj karty „Obudź PC” na ekranie %1$s lub ekranie Polecenia.\n\nWłączenie komputera to nie to samo co odzyskanie do niego dostępu. Wake-on-LAN uruchamia maszynę, która zatrzymuje się na ekranie logowania; RemEx startuje dopiero, gdy ktoś zaloguje się na samym komputerze.</string>
     <string name="faq_q9">Jak dostosować wygląd aplikacji?</string>
-    <string name="faq_a9">Otwórz zakładkę Więcej i dotknij Personalizacja (lub Ustawienia → Personalizacja).\n\nMożesz zmienić:\n• Paletę motywu i kolor bazowy\n• Promień zaokrąglenia kart i gotowe kształty\n• Rodzinę czcionek i skalę\n• Krycie kart\n• Tryb motywu ciemny/jasny/systemowy\n• Język aplikacji (niezależny od języka systemu)</string>
+    <string name="faq_a9">Otwórz zakładkę Więcej i dotknij Personalizuj (lub Ustawienia → Personalizuj).\n\nMożesz zmienić:\n• Paletę motywu i kolor bazowy\n• Promień zaokrąglenia kart i gotowe kształty\n• Rodzinę czcionek i skalę\n• Krycie kart\n• Tryb motywu ciemny/jasny/systemowy\n• Język aplikacji (niezależny od języka systemu)</string>
     <string name="faq_q10">Czy mogę ponownie obejrzeć samouczek?</string>
     <string name="faq_a10">Tak! Otwórz zakładkę Więcej → Ustawienia → Pomoc. Znajdziesz tam opcję ponownego odtworzenia samouczka w dowolnym momencie.</string>
-    <string name="screen_personalization_title">Personalizacja</string>
+    <string name="screen_personalization_title">Personalizuj</string>
     <string name="personalization_appearance_studio">Studio wyglądu</string>
     <string name="personalization_section_language">Język</string>
     <string name="personalization_app_language">Język aplikacji</string>
@@ -296,7 +293,7 @@
     <string name="personalization_shape_remote_mouse">Zdalna mysz</string>
     <string name="personalization_shape_task_manager">Procesy</string>
     <string name="personalization_shape_pc_orb">Orb połączenia PC</string>
-    <string name="personalization_preview">PODGLĄD</string>
+    <string name="personalization_preview">Podgląd</string>
     <string name="widget_config_app_launcher_title">Konfiguruj Aplikacje</string>
     <string name="widget_config_app_launcher_hint">Wybierz aplikacje do wyświetlenia na widżecie:</string>
     <string name="widget_config_no_apps">Brak dostępnych aplikacji.</string>
@@ -472,7 +469,7 @@
     <string name="about_whats_new_1_label">Alerty czujników</string>
     <string name="about_whats_new_1_body">Na komputerze ustaw próg dla dowolnego czujnika, a jego karta pokaże dzwonek, który zmieni się na czerwony w chwili przekroczenia progu. Alert świeci się, dopóki go nie potwierdzisz, więc skok, który przegapiłeś pod Twoją nieobecność, wciąż jest oznaczony, a alert krytyczny dodatkowo wywołuje powiadomienie na pulpicie, gdy okno jest poza zasięgiem wzroku.</string>
     <string name="about_whats_new_2_label">Dopasuj mój motyw</string>
-    <string name="about_whats_new_2_body">Twój telefon dzieli się teraz swoim motywem z komputerem, więc Personalizacja może dopasować Twoje kolory, jasne lub ciemne, jednym dotknięciem. Zmień motyw telefonu później, a PC może go ponownie przejąć, kiedy tylko poprosisz.</string>
+    <string name="about_whats_new_2_body">Twój telefon dzieli się teraz swoim motywem z komputerem, więc ekran Personalizuj może dopasować Twoje kolory, jasne lub ciemne, jednym dotknięciem. Zmień motyw telefonu później, a PC może go ponownie przejąć, kiedy tylko poprosisz.</string>
     <string name="about_whats_new_3_label">Synchronizacja schowka</string>
     <string name="about_whats_new_3_body">Skopiuj tekst na telefonie i wyślij go do schowka na PC z ekranu Polecenia — jest gotowy do wklejenia, gdy tylko dotrze. Nic po drodze nie jest zapisywane, więc hasło czy kod logowania po prostu przechodzi i znika.</string>
     <string name="about_whats_new_4_label">Znane komputery</string>
@@ -801,7 +798,7 @@
     <string name="dashboard_view_dual_metric">Podwójny wskaźnik</string>
     <string name="dashboard_view_hue_pulse">Puls koloru</string>
     <string name="dashboard_view_led_meter">Miernik LED</string>
-    <string name="dashboard_view_line">Liniowy</string>
+    <string name="dashboard_view_line">Linia</string>
     <string name="dashboard_view_picker_title">Wybierz widok</string>
     <string name="dashboard_view_ring_gauge">Wskaźnik pierścieniowy</string>
     <string name="dashboard_view_value_spark">Wartość + wykres</string>

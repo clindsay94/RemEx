@@ -73,6 +73,25 @@ class SensorLayoutEditor(
     private val _canRedo = MutableStateFlow(false)
     val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
 
+    private val _revision = MutableStateFlow(0L)
+
+    /**
+     * Bumped by every change to the layout's history: a commit, a finished drag, undo, redo, load.
+     * An Undo offered for one change (the card-removed snackbar) records it and passes it back to
+     * [undoIfUnchanged], so it can never undo some later change instead (phase 3 review R5).
+     */
+    val revision: StateFlow<Long> = _revision.asStateFlow()
+
+    /**
+     * Undoes the latest change only if nothing has changed since [revision] was read. Returns false,
+     * and changes nothing, when a newer edit has landed: that Undo was offered for a change that is no
+     * longer the latest, and plain [undo] would revert the newer one.
+     */
+    fun undoIfUnchanged(revision: Long): Boolean {
+        if (revision != _revision.value) return false
+        return undo()
+    }
+
     /** Replaces the layout from storage. Not undoable: there is nothing before a load to go back to. */
     fun load(layout: SensorLayout) {
         _draggingId.value = null
@@ -242,6 +261,8 @@ class SensorLayoutEditor(
     private fun refreshHistoryFlags() {
         _canUndo.value = undoStack.isNotEmpty()
         _canRedo.value = redoStack.isNotEmpty()
+        // Every path that changes the history comes through here, so this is the one place to count.
+        _revision.value = _revision.value + 1
     }
 
     /**

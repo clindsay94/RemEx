@@ -374,7 +374,9 @@ class SettingsManager(val context: Context) {
 
         val homeEnabledCardsJsonFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        preferences[HOME_ENABLED_CARDS_JSON_KEY] ?: "[]"
+                        // "" when never saved, so a saved "[]" (Clear all) reads as empty rather
+                        // than as "use the defaults" (phase 3 review R4).
+                        preferences[HOME_ENABLED_CARDS_JSON_KEY] ?: ""
                 }
 
         val themeModeFlow: Flow<String> =

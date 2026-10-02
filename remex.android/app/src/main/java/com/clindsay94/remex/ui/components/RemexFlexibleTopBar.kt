@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -34,7 +35,6 @@ import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.currentDisplayType
@@ -123,14 +123,17 @@ fun RemexTooltip(label: String, content: @Composable () -> Unit) {
     )
 }
 
-/** Each shrink step keeps this share of the previous size. */
-private const val HEADER_SHRINK_STEP = 0.9f
-
 /**
- * One-line header text that shrinks in steps until it fits, down to [floor], before it may wrap
+ * One-line header text that shrinks until it fits, down to [floor], before it may wrap
  * (RemEx-kq10x.4). Titles have to fit on one line at 360dp in all 9 languages; the wide display font
  * and long translations (Polish, Ukrainian) would otherwise end in an ellipsis. Only at the floor is
  * a second line allowed, and then it breaks between words.
+ *
+ * The size is found inside ONE measure pass by [TextAutoSize.StepBased] (Leanness K9). It replaced a
+ * loop that shrank by 10% per frame from `onTextLayout`, which composed and laid the title out up to
+ * four times, visibly stepping down, every time a screen opened. Clip, not Ellipsis, in the
+ * single-line pass: auto-size judges fit by overflow, and an ellipsized line does not report one. A
+ * title that still overflows at the floor switches, once, to the two-line form.
  */
 @Composable
 private fun FittedHeaderText(
@@ -139,23 +142,30 @@ private fun FittedHeaderText(
     floor: TextUnit,
     color: Color = Color.Unspecified,
 ) {
-    var fontSize by remember(text, style) { mutableStateOf(style.fontSize) }
-    val atFloor = !fontSize.isSp || !floor.isSp || fontSize.value <= floor.value
-    Text(
-        text = text,
-        style = style.copy(fontSize = fontSize, lineBreak = LineBreak.Heading, hyphens = Hyphens.None),
-        color = color,
-        maxLines = if (atFloor) 2 else 1,
-        softWrap = atFloor,
-        overflow = TextOverflow.Ellipsis,
-        onTextLayout = { layout ->
-            val overflowed = layout.hasVisualOverflow ||
-                (layout.lineCount > 0 && layout.isLineEllipsized(layout.lineCount - 1))
-            if (overflowed && !atFloor) {
-                fontSize = (fontSize.value * HEADER_SHRINK_STEP).coerceAtLeast(floor.value).sp
-            }
-        },
-    )
+    val headerStyle = style.copy(lineBreak = LineBreak.Heading, hyphens = Hyphens.None)
+    val canShrink = style.fontSize.isSp && floor.isSp && style.fontSize.value > floor.value
+    var wrapAtFloor by remember(text, style, floor) { mutableStateOf(false) }
+    if (canShrink && !wrapAtFloor) {
+        Text(
+            text = text,
+            style = headerStyle,
+            color = color,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+            autoSize = TextAutoSize.StepBased(minFontSize = floor, maxFontSize = style.fontSize),
+            onTextLayout = { layout -> if (layout.hasVisualOverflow) wrapAtFloor = true },
+        )
+    } else {
+        Text(
+            text = text,
+            style = if (canShrink) headerStyle.copy(fontSize = floor) else headerStyle,
+            color = color,
+            maxLines = 2,
+            softWrap = true,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

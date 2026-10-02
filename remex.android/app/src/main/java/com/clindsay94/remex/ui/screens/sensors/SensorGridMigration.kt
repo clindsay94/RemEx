@@ -60,6 +60,20 @@ object SensorGridMigration {
                     .map { it.value.card.copy(span = spanFor(it.value.geometry)) }
 
     fun migrateEnabled(enabled: Set<String>): Set<String> = enabled - REMOVED_CARD_IDS
+
+    /**
+     * The saved shown-cards list (`SettingsManager.homeEnabledCardsJsonFlow`), or null when none was
+     * ever saved (or it is unreadable) and the defaults apply. An empty list is a real answer, kept
+     * apart from "never saved": it is what Clear all writes, and reading it back as "use the defaults"
+     * brought the seven default cards back on the next launch (phase 3 review R4).
+     */
+    fun parseSavedEnabled(json: String?): Set<String>? {
+        if (json.isNullOrBlank()) return null
+        return runCatching {
+            val array = org.json.JSONArray(json)
+            (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.toSet()
+        }.getOrNull()
+    }
 }
 
 /**

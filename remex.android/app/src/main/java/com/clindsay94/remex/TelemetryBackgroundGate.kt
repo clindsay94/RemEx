@@ -17,6 +17,10 @@ package com.clindsay94.remex
  * same stream while the app is backgrounded (WidgetDataCache), so pausing would freeze it on its last
  * reading. The widget's own poll interval already throttles what it does with each sample.
  *
+ * **OPEN IS NOT ENOUGH (Leanness K8).** In the foreground the stream also pauses when no visible
+ * surface reads it (no [TelemetryDemand] lease), and resumes when one appears; the first reading
+ * then lands within about a second, at the host's next sample.
+ *
  * Plain Kotlin with no Android dependency so the decision table is unit-testable. Synchronized
  * because the lifecycle observer and the authentication collector may call it from different threads.
  */
@@ -39,15 +43,26 @@ internal class TelemetryBackgroundGate {
      * @param foreground whether any of the app's UI is started (ProcessLifecycleOwner ON_START).
      * @param connection the current authenticated connection, or null when there is none.
      * @param widgetPlaced whether a hardware widget is on the home screen and needs live telemetry.
+     * @param telemetryWanted whether anything on screen reads telemetry right now: a
+     *   [TelemetryDemand] lease is held (Leanness K8). The app being open is no longer enough on its
+     *   own; the default keeps the pre-K8 meaning for callers that only ask about the background.
      */
     @Synchronized
-    fun reconcile(foreground: Boolean, connection: EstablishedConnection?, widgetPlaced: Boolean): Action {
+    fun reconcile(
+            foreground: Boolean,
+            connection: EstablishedConnection?,
+            widgetPlaced: Boolean,
+            telemetryWanted: Boolean = true,
+    ): Action {
         // A different (or no) connection: whatever was paused belonged to a socket that is gone,
         // and the new one starts unpaused on the host.
         if (connection != pausedConnection) pausedConnection = null
         if (connection == null) return Action.NONE
 
-        val wantPaused = !foreground && !widgetPlaced
+        // Streams for a placed widget always, and otherwise only while the app is open AND a
+        // visible surface holds a lease. A lease held in the background (a screen that missed its
+        // ON_STOP) does not keep a pocketed phone streaming.
+        val wantPaused = !widgetPlaced && !(foreground && telemetryWanted)
         val isPaused = pausedConnection != null
         return when {
             wantPaused == isPaused -> Action.NONE

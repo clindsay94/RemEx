@@ -201,6 +201,53 @@ class HomePinsRepositoryTest {
         assertFalse(repo.state.value.syncSupported)
     }
 
+    // ── Phase 3 review R3: syncs are tied to the connection they arrived on ──
+
+    @Test
+    fun `B's first sync landing before B is announced is neither scored nor saved as A's`() = runTest {
+        // The connection flow conflated A -> null -> B, and B's sync beat the connection collector.
+        repo.onConnected(1, "pc-a")
+        repo.onSyncMessage(sync(listOf("CPU"), listOf("CPU", "GPU"), 9), connectionEpoch = 1)
+
+        repo.onSyncMessage(sync(listOf("RAM"), listOf("RAM"), 1), connectionEpoch = 2)
+        assertEquals("A's list must stand until B is announced", listOf("CPU"), repo.state.value.pinned)
+        assertEquals(listOf("CPU"), store.saved["pc-a"]?.names)
+
+        repo.onConnected(2, "pc-b")
+        // Applied for B despite revision 1 < A's 9, and saved under B's key, not A's.
+        assertEquals(listOf("RAM"), repo.state.value.pinned)
+        assertEquals(listOf("RAM"), store.saved["pc-b"]?.names)
+        assertEquals(listOf("CPU"), store.saved["pc-a"]?.names)
+        // It was B's own sync, so it is B's baseline: an older one on B is refused.
+        repo.onSyncMessage(sync(listOf("GPU"), listOf("GPU", "RAM"), 0), connectionEpoch = 2)
+        assertEquals(listOf("RAM"), repo.state.value.pinned)
+    }
+
+    @Test
+    fun `a sync held for B survives the disconnect of A that the collector sees late`() = runTest {
+        repo.onConnected(1, "pc-a")
+        repo.onSyncMessage(sync(listOf("RAM"), listOf("RAM"), 1), connectionEpoch = 2)
+        repo.onDisconnected()
+        repo.onConnected(2, "pc-b")
+        assertEquals(listOf("RAM"), repo.state.value.pinned)
+    }
+
+    @Test
+    fun `a straggler from an older connection is dropped`() = runTest {
+        repo.onConnected(2, "pc-b")
+        repo.onSyncMessage(sync(listOf("RAM"), listOf("RAM"), 1), connectionEpoch = 2)
+        repo.onSyncMessage(sync(listOf("CPU"), listOf("CPU"), 50), connectionEpoch = 1)
+        assertEquals(listOf("RAM"), repo.state.value.pinned)
+        assertEquals(listOf("RAM"), store.saved["pc-b"]?.names)
+    }
+
+    @Test
+    fun `a held sync for a connection that never came is not applied to the one that did`() = runTest {
+        repo.onSyncMessage(sync(listOf("CPU"), listOf("CPU"), 1), connectionEpoch = 3)
+        repo.onConnected(4, "pc-b")
+        assertEquals(emptyList<String>(), repo.state.value.pinned)
+    }
+
     @Test
     fun `nothing changes while disconnected`() = runTest {
         assertFalse(repo.setPinned("CPU", pinned = true))

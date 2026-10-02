@@ -36,6 +36,15 @@ class RemexConnectionService : Service() {
             val intent = Intent(context, RemexConnectionService::class.java)
             context.stopService(intent)
         }
+
+        /**
+         * Whether the keepalive is up in this process: set once it is actually in the foreground,
+         * cleared when it is destroyed. Read by the idle teardown (RemEx-9yei0), which has nothing to
+         * stop, and nothing to restore later, when the service never started.
+         */
+        @Volatile
+        var isRunning = false
+            private set
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -58,6 +67,7 @@ class RemexConnectionService : Service() {
         try {
             startForeground(
                 NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            isRunning = true
         } catch (e: SecurityException) {
             android.util.Log.w("RemexService", "Cannot start foreground service (missing permissions), connection will work without background persistence", e)
             stopSelf()
@@ -97,6 +107,7 @@ class RemexConnectionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        isRunning = false
         AndroidFileTransferHost.stop()
         serviceScope.cancel()
         super.onDestroy()

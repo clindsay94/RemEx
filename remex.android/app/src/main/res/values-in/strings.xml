@@ -28,7 +28,7 @@
     <string name="tutorial_get_started">Mulai</string>
     <string name="tutorial_next">Berikutnya</string>
     <string name="tutorial_page1_title">Selamat Datang di RemEx</string>
-    <string name="tutorial_page1_body">RemEx adalah pusat komando manajemen PC jarak jauh Anda. Kendalikan komputer, luncurkan aplikasi, pantau performa, dan bahkan lihat desktop Anda — semuanya dari ponsel Anda.\n\nMari hubungkan Anda dalam beberapa langkah cepat.</string>
+    <string name="tutorial_page1_body">RemEx memungkinkan Anda memakai PC dari ponsel. Kendalikan PC, buka aplikasi, periksa kinerjanya, dan bahkan lihat layarnya.\n\nMari hubungkan Anda dalam beberapa langkah cepat.</string>
     <string name="tutorial_page2_title">Instal PC Terlebih Dahulu</string>
     <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan aplikasi RemEx yang berjalan.\n\nHanya ada satu aplikasi yang perlu diinstal — aplikasi ini mulai otomatis saat Anda masuk ke PC dan menunggu ponsel Anda terhubung.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
     <string name="tutorial_page2_link_label">Unduh dari Rilis GitHub</string>
@@ -246,14 +246,11 @@
     <string name="pairing_submit">Sandingkan</string>
     <string name="pairing_cancel">Batal</string>
     <string name="pairing_error_bad_pin">PIN salah atau masa penyandingan telah berakhir. Masukkan PIN yang kini tampil di PC Anda, lalu coba lagi.</string>
-    <string name="pairing_error_cert_mismatch">Sertifikat keamanan PC ini telah berubah, sehingga ponsel Anda tidak lagi mempercayainya. Lepas sandingan PC ini di ponsel Anda, lalu sandingkan lagi untuk menerima sertifikat baru.</string>
     <string name="qr_scanner_title">Pindai Kode QR</string>
     <string name="cd_back">Kembali</string>
     <string name="qr_scanner_hint">Arahkan kamera ke kode QR yang ditampilkan di PC Anda</string>
     <string name="qr_scanner_permission_required">Izin kamera diperlukan untuk memindai kode QR</string>
     <string name="qr_scanner_grant_permission">Berikan Izin</string>
-    <string name="qr_error_old_format">Kode QR ini dibuat oleh RemEx PC versi lama. Perbarui PC dan buat kode QR RemEx 2.x yang baru.</string>
-    <string name="qr_error_invalid">Kode QR RemEx tidak valid</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Tentang</string>
     <string name="about_github_star">Ikuti RemEx di GitHub</string>
@@ -276,7 +273,7 @@
     <string name="faq_q6">Bisakah saya terhubung melalui internet (bukan hanya LAN)?</string>
     <string name="faq_a6">Ya — secara aman, menggunakan Tailscale (direkomendasikan). Tailscale membangun jaringan pribadi dengan enkripsi ujung-ke-ujung di antara perangkat Anda (menggunakan WireGuard®), sehingga aplikasi ini dapat menjangkau PC Anda dari mana saja — data seluler, Wi-Fi kantor, sebuah kafe — tanpa penyiapan router dan tidak ada yang diekspos ke internet publik.\n\nLihat pertanyaan \'Bagaimana cara mengatur Tailscale untuk akses jarak jauh?\' di bawah untuk petunjuk langkah demi langkah.\n\nTidak direkomendasikan: Anda bisa saja membuka port di router dan terhubung melalui alamat IP publik Anda, tetapi itu mengekspos PC Anda ke internet dan merupakan risiko keamanan yang nyata. Sebaiknya gunakan Tailscale (atau VPN lain seperti WireGuard).</string>
     <string name="faq_q7">Layar Desktop lambat atau tidak berfungsi. Apa yang bisa saya lakukan?</string>
-    <string name="faq_a7">• Turunkan slider Kualitas di Koneksi → Default Desktop.\n• Kurangi Target FPS (15–20 FPS cukup untuk sebagian besar penggunaan).\n• Turunkan Skala untuk mengurangi resolusi yang dialirkan.\n• Di Windows, remex.agent secara otomatis memilih backend tangkapan layar tercepat yang tersedia — Windows.Graphics.Capture, dengan fallback ke DXGI Desktop Duplication, lalu GDI. Di Linux, tangkapan layar dilakukan melalui PipeWire lewat XDG desktop portal (X11 atau Wayland).\n• Pastikan Anda berada di jaringan Wi-Fi lokal yang cepat (5 GHz lebih disukai).</string>
+    <string name="faq_a7">• Turunkan slider Kualitas di Koneksi → Default Desktop.\n• Kurangi Target FPS. Nilai awalnya 120, yaitu batas atas, bukan janji: PC mengirim lebih sedikit frame saat jaringan atau PC Anda tidak sanggup mengikutinya. Jika gambar masih tersendat, 30–60 FPS sudah cukup untuk penggunaan sehari-hari.\n• Turunkan Skala untuk mengurangi resolusi yang dialirkan.\n• Di Windows, remex.agent secara otomatis memilih backend tangkapan layar tercepat yang tersedia — Windows.Graphics.Capture, dengan fallback ke DXGI Desktop Duplication, lalu GDI. Di Linux, tangkapan layar dilakukan melalui PipeWire lewat XDG desktop portal (X11 atau Wayland).\n• Pastikan Anda berada di jaringan Wi-Fi lokal yang cepat (5 GHz lebih disukai).</string>
     <string name="faq_q8">Apa itu Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh dengan mengirimkan \"paket ajaib\" melalui jaringan.\n\nCara menggunakannya:\n1. Aktifkan WOL di pengaturan BIOS/UEFI PC Anda.\n2. Aktifkan WOL di properti adaptor jaringan (Windows: Manajer Perangkat → Adaptor Jaringan → Manajemen Daya).\n3. Masukkan alamat MAC PC Anda di layar Koneksi.\n4. Gunakan kartu \'Bangunkan PC\' di %1$s atau layar Perintah.\n\nMenyalakan PC tidak sama dengan mendapatkan aksesnya kembali. Wake-on-LAN menghidupkan mesin dan berhenti di layar masuk; RemEx baru berjalan setelah seseorang masuk di PC itu sendiri.</string>
     <string name="faq_q9">Bagaimana cara menyesuaikan tampilan aplikasi?</string>
@@ -312,7 +309,7 @@
     <string name="personalization_shape_remote_mouse">Mouse Jarak Jauh</string>
     <string name="personalization_shape_task_manager">Proses</string>
     <string name="personalization_shape_pc_orb">Orb Koneksi PC</string>
-    <string name="personalization_preview">PRATINJAU</string>
+    <string name="personalization_preview">Pratinjau</string>
     <string name="widget_config_app_launcher_title">Konfigurasi Aplikasi</string>
     <string name="widget_config_app_launcher_hint">Pilih aplikasi untuk ditampilkan di widget Anda:</string>
     <string name="widget_config_no_apps">Belum ada aplikasi yang tersedia.</string>

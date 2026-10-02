@@ -32,10 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
@@ -99,8 +96,12 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.TelemetryDemand
 import com.clindsay94.remex.data.HomePinsState
+import com.clindsay94.remex.ui.components.DeleteSweepGlyph
+import com.clindsay94.remex.ui.components.RedoGlyph
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.UndoGlyph
 import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
 import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
@@ -116,6 +117,9 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -146,6 +150,8 @@ fun DashboardScreen(
         viewModel.setVisible(isVisible)
         onStopOrDispose { viewModel.setVisible(false) }
     }
+    // The canvas reads live telemetry only while it is the visible page (Leanness K8).
+    TelemetryLeaseEffect(TelemetryDemand.SENSORS_CANVAS, active = isVisible)
 
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     val telemetrySensors by viewModel.telemetrySensors.collectAsStateWithLifecycle()
@@ -210,6 +216,8 @@ fun DashboardScreen(
                 onSetValueOverlay = viewModel::setCardValueOverlay,
                 onReplayCoach = viewModel::replayCoach,
                 onMenuAnchor = { menuAnchor = it },
+                editRevision = viewModel.editRevision,
+                onUndoIfUnchanged = { viewModel.undoIfUnchanged(it) },
         )
         // First-run coach marks (RemEx-km0i.10), mounted last = top of z-order. Never over edit mode.
         AnimatedVisibility(
@@ -261,6 +269,9 @@ fun DashboardScreenContent(
         onSetValueOverlay: (String, Boolean) -> Unit,
         onReplayCoach: () -> Unit = {},
         onMenuAnchor: (Offset) -> Unit = {},
+        /** Counts layout edits, so the card-removed Undo targets only its own removal (review R5). */
+        editRevision: StateFlow<Long> = MutableStateFlow(0L),
+        onUndoIfUnchanged: (Long) -> Unit = {},
 ) {
     val view = LocalView.current
     val chrome = SensorsChrome.forMode(editMode)
@@ -315,11 +326,11 @@ fun DashboardScreenContent(
                         actions = {
                             if (chrome.showEditActions) {
                                 IconButton(onClick = onUndo, enabled = canUndo) {
-                                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = undoText)
+                                    Icon(UndoGlyph, contentDescription = undoText)
                                 }
                                 IconButton(onClick = onRedo, enabled = canRedo) {
                                     Icon(
-                                            Icons.AutoMirrored.Filled.Redo,
+                                            RedoGlyph,
                                             contentDescription = stringResource(R.string.dashboard_menu_redo)
                                     )
                                 }
@@ -360,7 +371,7 @@ fun DashboardScreenContent(
                                                 text = { Text(stringResource(R.string.dashboard_menu_clear_cards)) },
                                                 leadingIcon = {
                                                     Icon(
-                                                            Icons.Default.DeleteSweep,
+                                                            DeleteSweepGlyph,
                                                             contentDescription = null,
                                                             tint = MaterialTheme.colorScheme.error
                                                     )
@@ -434,7 +445,8 @@ fun DashboardScreenContent(
                                     pin =
                                             CardPinControl(
                                                     pinned = homePins.isPinned(sensorName),
-                                                    canPin = homePins.connected && homePins.canPin(sensorName)
+                                                    canPin = homePins.connected && homePins.canPin(sensorName),
+                                                    connected = homePins.connected,
                                             ),
                                     onTogglePin = { onSetHomePin(sensorName, !homePins.isPinned(sensorName)) },
                                     onPinUnavailable = {
@@ -445,14 +457,26 @@ fun DashboardScreenContent(
                                     onCycleSize = { onCycleSpan(card.id) },
                                     onRemove = {
                                         onRemoveCard(card.id)
+                                        // The Undo here is for THIS removal. Read the revision right after
+                                        // it; a newer edit (a resize, another removal) dismisses the
+                                        // snackbar, and a late tap still cannot undo that newer edit.
+                                        val offeredFor = editRevision.value
                                         scope.launch {
+                                            val dismissOnNewerEdit =
+                                                    launch {
+                                                        editRevision.first { it != offeredFor }
+                                                        snackbarHostState.currentSnackbarData
+                                                                ?.takeIf { it.visuals.message == cardRemovedText }
+                                                                ?.dismiss()
+                                                    }
                                             val result =
                                                     snackbarHostState.showSnackbar(
                                                             cardRemovedText,
                                                             actionLabel = undoText,
                                                             duration = SnackbarDuration.Short
                                                     )
-                                            if (result == SnackbarResult.ActionPerformed) onUndo()
+                                            dismissOnNewerEdit.cancel()
+                                            if (result == SnackbarResult.ActionPerformed) onUndoIfUnchanged(offeredFor)
                                         }
                                     },
                                     modifier =
@@ -579,6 +603,11 @@ private fun SensorGridLayout(
         val currentPlacements by rememberUpdatedState(placements)
         val currentCards by rememberUpdatedState(cards)
         val currentEditMode by rememberUpdatedState(editMode)
+        // The cell size changes with the width (MainActivity handles rotation itself, so the gesture
+        // coroutine below survives a 2 -> 4 column switch); reading the captured values made a drag
+        // after rotating jump and drop at the wrong index (phase 3 review R1).
+        val currentCell by rememberUpdatedState(cell)
+        val currentRowHeight by rememberUpdatedState(rowHeight)
         // Where the lifted card's top-left is, in px, while it follows the finger.
         var dragTopLeft by remember { mutableStateOf<Offset?>(null) }
 
@@ -621,8 +650,8 @@ private fun SensorGridLayout(
                                                                 val p = currentPlacements.first { it.id == card.id }
                                                                 dragTopLeft =
                                                                         Offset(
-                                                                                SensorGrid.x(p.col, cell, gutter).dp.toPx(),
-                                                                                SensorGrid.y(p.row, rowHeight, gutter).dp.toPx()
+                                                                                SensorGrid.x(p.col, currentCell, gutter).dp.toPx(),
+                                                                                SensorGrid.y(p.row, currentRowHeight, gutter).dp.toPx()
                                                                         )
                                                             }
                                                         },
@@ -632,9 +661,11 @@ private fun SensorGridLayout(
                                                             val moved = start + amount
                                                             dragTopLeft = moved
                                                             val p = currentPlacements.firstOrNull { it.id == card.id } ?: return@detectDragGesturesAfterLongPress
-                                                            val centreX = moved.x.toDp().value + SensorGrid.extent(p.colSpan, cell, gutter) / 2f
-                                                            val centreY = moved.y.toDp().value + SensorGrid.extent(p.rowSpan, rowHeight, gutter) / 2f
-                                                            val over = SensorGrid.indexAt(currentPlacements, centreX, centreY, cell, rowHeight, gutter)
+                                                            val cellNow = currentCell
+                                                            val rowNow = currentRowHeight
+                                                            val centreX = moved.x.toDp().value + SensorGrid.extent(p.colSpan, cellNow, gutter) / 2f
+                                                            val centreY = moved.y.toDp().value + SensorGrid.extent(p.rowSpan, rowNow, gutter) / 2f
+                                                            val over = SensorGrid.indexAt(currentPlacements, centreX, centreY, cellNow, rowNow, gutter)
                                                             val from = currentCards.indexOfFirst { it.id == card.id }
                                                             if (over != null && over != from) onDragTo(over)
                                                         },

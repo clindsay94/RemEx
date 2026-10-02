@@ -237,6 +237,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - The PC loads only the font files it uses at startup instead of every bundled font twice, and a theme
   change that doesn't change any text settings no longer redraws all text. (RemEx-pp4cm, RemEx-hwarp)
 - File Transfer status messages on the PC switch language straight away. (RemEx-pp4cm)
+- **The PC only streams live sensor readings to the phone while a phone screen shows them** (Home,
+  the Sensors page, the routine editor's sensor picker, a placed widget), instead of whenever the app
+  is open, which saves battery and network on the other tabs. (RemEx-pp4cm)
+- Phone wording matches the PC: "Personalize", the same sensor view names, and an honest note in the
+  FAQ about the adaptive frame rate. (RemEx-pp4cm)
+- The PC's Contrast slider clicks into the middle and both ends, so landing on exactly 0 is easy;
+  arrow keys still move in 0.1 steps, and presets, imports and "Match my phone" keep their exact
+  values. (RemEx-4kv0g.16)
+- PC switches no longer draw the word "Off" on top of the knob, and the tutorial's QR steps name the
+  real "Pair a phone" button in every language. (RemEx-pp4cm)
 
 - **The phone's splash plays every time you open the app.** It used to play once per process, so
   closing the app and opening it again while Android still had it cached skipped straight past it.
@@ -441,6 +451,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The PC downloading a folder from the phone no longer skips or repeats files inside subfolders: the
+  phone's folder listing pages the same way as the PC's (one shared cursor rule). (RemEx-pp4cm)
+- Large file transfers from older PCs no longer lose pieces when the phone is busy saving: file
+  messages go through a lossless relay instead of a buffer that dropped the oldest under pressure.
+  (RemEx-1iszs)
+- The phone's process list waits for the PC to accept the connection instead of reporting the PC as
+  unresponsive right after a reconnect. (RemEx-pp4cm)
+- On the phone's Sensors page, "Clear all" stays cleared after a restart, Undo on "card removed"
+  undoes only that removal, dragging a card after rotating the phone lands where you drop it, and
+  pinning while disconnected says why it can't. Page titles fit in one step instead of visibly
+  shrinking. (RemEx-pp4cm)
 - **Downloading a folder from inside a shared folder no longer skips files or stops early.** Big
   folders come in pages, and every page after the first went wrong for anything below the top level:
   it either repeated the first page until the size limit or quietly ended with files missing while

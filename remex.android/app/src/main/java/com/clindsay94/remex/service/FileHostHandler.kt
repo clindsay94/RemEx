@@ -630,8 +630,10 @@ class FileHostHandler(
             return
         }
 
-        val (emittedBefore, cursorPath) = parseManifestCursor(req.optString("cursor"))
-        val cursorSegments = cursorPath?.split('/')?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
+        val (cursorEmitted, cursorPath) = parseManifestCursor(req.optString("cursor"))
+        val cursorSegments = toBaseRelativeCursorSegments(cursorPath, relativePath)
+        // A cursor this walk did not produce restarts from page one, so its count must restart too.
+        val emittedBefore = if (cursorSegments == null) 0L else cursorEmitted
 
         val state = ManifestPageState(pageSize = pageSize, emittedBefore = emittedBefore)
         manifestWalk(base, relativePath, cursorSegments, 0, state)
@@ -781,6 +783,27 @@ class FileHostHandler(
         val emitted = cursor.substring(0, separator).toLongOrNull()?.takeIf { it >= 0 } ?: return 0L to null
         val path = cursor.substring(separator + 1)
         return if (path.isEmpty()) 0L to null else emitted to path
+    }
+
+    /**
+     * Turns a cursor's ROOT-relative `lastPath` into segments relative to the requested folder
+     * ([baseRelative]), matching the PC host's `ToBaseRelativeCursorSegments` (docs/API_CONTRACTS.md,
+     * "Folder Manifest Paging"). Entry paths carry the base prefix, so the walk, which compares
+     * segments against the base's own children, needs it stripped first; without that every page after
+     * the first repeats or skips entries for any folder other than the root. A path that is not under
+     * the base, or that names the base itself, is not a cursor this walk produced: null restarts it.
+     */
+    private fun toBaseRelativeCursorSegments(cursorPath: String?, baseRelative: String): List<String>? {
+        if (cursorPath.isNullOrEmpty()) return null
+        val withinBase =
+            if (baseRelative.isEmpty()) {
+                cursorPath
+            } else {
+                val prefix = "$baseRelative/"
+                if (!cursorPath.startsWith(prefix)) return null
+                cursorPath.substring(prefix.length)
+            }
+        return withinBase.split('/').filter { it.isNotEmpty() }.takeIf { it.isNotEmpty() }
     }
 
     private fun sendManifest(

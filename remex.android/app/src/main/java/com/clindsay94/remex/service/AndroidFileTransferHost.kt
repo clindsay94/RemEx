@@ -91,6 +91,9 @@ object AndroidFileTransferHost {
 
     private val activeTransfers = ConcurrentHashMap<String, TransferState>()
 
+    /** Whether a legacy v2 transfer is mid-flight, so the idle teardown leaves it alone (RemEx-9yei0). */
+    val hasActiveTransfers: Boolean get() = activeTransfers.isNotEmpty()
+
     fun start(ctx: Context) {
         // Cancel whatever a PRIOR start() left running before launching a fresh set - a re-creation
         // (service restarted without an intervening stop(), or stop() itself missing some of these

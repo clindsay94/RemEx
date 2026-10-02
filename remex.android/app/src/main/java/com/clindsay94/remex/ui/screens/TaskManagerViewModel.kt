@@ -333,7 +333,10 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun refreshProcesses(showSpinner: Boolean = true) {
         viewModelScope.launch {
-            if (!RemexClientManager.isConnected.value || !RemexCoreClient.isLibraryLoaded) {
+            // Authenticated, not merely connected: process_list_request is pairing-gated on the PC,
+            // so one sent between the socket opening and the host's reconnect ack is refused, gets
+            // no reply, and used to count as a timeout towards "the PC isn't answering".
+            if (!RemexClientManager.isAuthenticated.value || !RemexCoreClient.isLibraryLoaded) {
                 if (showSpinner) _isRefreshing.value = false
                 return@launch
             }

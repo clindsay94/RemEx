@@ -11,9 +11,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.components.WifiGlyph
 import kotlinx.serialization.Serializable
 
 /**
@@ -111,7 +111,7 @@ sealed class Screen {
     @Serializable
     data object Connection : NavDestination() {
         override val titleRes = R.string.screen_connection_title
-        override val icon = Icons.Default.Wifi
+        override val icon = WifiGlyph
     }
 
     @Serializable

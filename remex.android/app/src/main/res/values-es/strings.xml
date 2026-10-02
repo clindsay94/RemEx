@@ -28,7 +28,7 @@
     <string name="tutorial_get_started">Comenzar</string>
     <string name="tutorial_next">Siguiente</string>
     <string name="tutorial_page1_title">Bienvenido a RemEx</string>
-    <string name="tutorial_page1_body">RemEx es tu centro de mando para la gestión remota de PC. Controla tu ordenador, lanza apps, monitoriza el rendimiento e incluso visualiza tu escritorio, todo desde tu teléfono.\n\nVamos a conectarte en unos pocos pasos.</string>
+    <string name="tutorial_page1_body">RemEx te permite usar tu PC desde el teléfono. Contrólalo, abre apps, comprueba cómo funciona e incluso mira su pantalla.\n\nVamos a conectarte en unos pocos pasos.</string>
     <string name="tutorial_page2_title">Instala primero el PC</string>
     <string name="tutorial_page2_body">Antes de conectar, tu PC necesita la aplicación RemEx en ejecución.\n\nSolo hay una aplicación que instalar: se inicia automáticamente al iniciar sesión en tu PC y espera a que tu teléfono se conecte.\n\nDescarga la última versión desde GitHub y ejecútala antes de emparejar.</string>
     <string name="tutorial_page2_link_label">Descargar desde GitHub Releases</string>
@@ -39,7 +39,7 @@
     <string name="tutorial_page5_title">Conexión Manual</string>
     <string name="tutorial_page5_body">Una vez tengas tu dirección IP:\n\n1. Ve a la pantalla de Conexión (Más → Ajustes → Conexión)\n2. Introduce la IP de tu PC\n3. Introduce el puerto (por defecto es 5005)\n4. Toca \'Guardar y Conectar\'\n5. Si se solicita, introduce el PIN de 6 dígitos mostrado en tu PC para completar el emparejamiento seguro\n\nLos datos de tu conexión se guardan para la próxima vez.</string>
     <string name="tutorial_page6_title">¡Todo listo!</string>
-    <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nAbre %1$s para ver las lecturas en vivo de tu PC. Las otras pestañas te permiten enviar comandos, abrir aplicaciones, ver lo que se está ejecutando, explorar carpetas compartidas y transmitir tu escritorio.\n\nVe a Personalización para cambiar el idioma, el tema, las formas de las tarjetas y los colores.\n\nAbre las FAQ cuando quieras si necesitas ayuda con el emparejamiento, la transferencia de archivos o el ajuste del escritorio remoto.</string>
+    <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nAbre %1$s para ver las lecturas en vivo de tu PC. Las otras pestañas te permiten enviar comandos, abrir aplicaciones, ver lo que se está ejecutando, explorar carpetas compartidas y transmitir tu escritorio.\n\nVe a Personalizar para cambiar el idioma, el tema, las formas de las tarjetas y los colores.\n\nAbre las FAQ cuando quieras si necesitas ayuda con el emparejamiento, la transferencia de archivos o el ajuste del escritorio remoto.</string>
     <string name="tutorial_page_qr_title">Emparejamiento rápido con código QR</string>
     <string name="tutorial_page_qr_body">La forma más rápida de conectarse es escaneando un código QR.\n\n1. Abre la ventana de RemEx en tu PC\n2. Ve a Ajustes → Conexión → Mostrar Código QR\n3. En tu teléfono, toca el icono QR en la pantalla de Conexión\n4. Escanea el código y confirma el PIN de emparejamiento si se solicita\n\nRemEx guarda los datos de la conexión segura automáticamente.</string>
     <string name="status_disconnected">Desconectado</string>
@@ -81,7 +81,7 @@
     <string name="cd_keyboard">Teclado</string>
     <string name="screen_settings_title">Ajustes</string>
     <string name="settings_tab_connection">Conexión</string>
-    <string name="settings_tab_personalization">Personalización</string>
+    <string name="settings_tab_personalization">Personalizar</string>
     <string name="settings_tab_input">Entrada</string>
     <string name="settings_tab_file_transfer">Archivos</string>
     <string name="settings_tab_help">Ayuda</string>
@@ -246,14 +246,11 @@
     <string name="pairing_submit">Emparejar</string>
     <string name="pairing_cancel">Cancelar</string>
     <string name="pairing_error_bad_pin">PIN incorrecto o emparejamiento caducado. Introduce el PIN que aparece ahora en tu PC y vuelve a intentarlo.</string>
-    <string name="pairing_error_cert_mismatch">El certificado de seguridad de este PC ha cambiado, por lo que tu teléfono ya no confía en él. Desempareja este PC en tu teléfono y vuelve a emparejarlo para aceptar el nuevo certificado.</string>
     <string name="qr_scanner_title">Escanear código QR</string>
     <string name="cd_back">Atrás</string>
     <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
     <string name="qr_scanner_permission_required">Se necesita permiso de cámara para escanear códigos QR</string>
     <string name="qr_scanner_grant_permission">Conceder permiso</string>
-    <string name="qr_error_old_format">Este código QR fue generado por una versión anterior de RemEx PC. Actualiza el PC y genera un nuevo código QR de RemEx 2.x.</string>
-    <string name="qr_error_invalid">Código QR de RemEx no válido</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Acerca de</string>
     <string name="about_github_star">Sigue a RemEx en GitHub</string>
@@ -276,14 +273,14 @@
     <string name="faq_q6">¿Puedo conectar por internet (fuera de casa)?</string>
     <string name="faq_a6">Sí — de forma segura, usando Tailscale (recomendado). Tailscale crea una red privada y cifrada de extremo a extremo entre tus dispositivos (mediante WireGuard®), de modo que esta app puede acceder a tu PC desde cualquier lugar — datos móviles, el Wi-Fi del trabajo, una cafetería — sin configurar el router y sin exponer nada a internet.\n\nConsulta más abajo la pregunta \'¿Cómo configuro un acceso remoto seguro con Tailscale?\' para ver las instrucciones paso a paso.\n\nNo recomendado: también podrías abrir un puerto en tu router y conectarte mediante tu IP pública, pero eso expone tu PC a internet y es un riesgo de seguridad real. Usa Tailscale (u otra VPN como WireGuard) en su lugar.</string>
     <string name="faq_q7">La pantalla Escritorio va lenta o no funciona. ¿Qué puedo hacer?</string>
-    <string name="faq_a7">• Baja el control deslizante de Calidad en Conexión → Valores de Escritorio.\n• Reduce los FPS objetivo (15–20 FPS es suficiente para la mayoría de los casos).\n• Baja la Escala para reducir la resolución transmitida.\n• En Windows, remex.agent elige automáticamente el backend de captura más rápido disponible — Windows.Graphics.Capture, con reserva a DXGI Desktop Duplication y luego GDI. En Linux, captura mediante PipeWire a través del portal de escritorio XDG (X11 o Wayland).\n• Comprueba que estés en una red Wi-Fi local y rápida (se prefiere 5 GHz).</string>
+    <string name="faq_a7">• Baja el control deslizante de Calidad en Conexión → Valores de Escritorio.\n• Reduce los FPS objetivo. Empiezan en 120, que es un límite y no una promesa: el PC envía menos fotogramas cuando tu red o tu PC no dan para más. Si la imagen sigue entrecortándose, 30–60 FPS bastan para el uso diario.\n• Baja la Escala para reducir la resolución transmitida.\n• En Windows, remex.agent elige automáticamente el backend de captura más rápido disponible — Windows.Graphics.Capture, con reserva a DXGI Desktop Duplication y luego GDI. En Linux, captura mediante PipeWire a través del portal de escritorio XDG (X11 o Wayland).\n• Comprueba que estés en una red Wi-Fi local y rápida (se prefiere 5 GHz).</string>
     <string name="faq_q8">¿Qué es Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">WOL permite encender tu PC de forma remota enviando un \"paquete mágico\".\n\nPara usarlo:\n1. Activa WOL en la BIOS/UEFI de tu PC.\n2. Activa WOL en las propiedades de tu tarjeta de red en Windows.\n3. Introduce la dirección MAC en la pantalla de Conexión.\n4. Usa la tarjeta \'Encender PC\' en la pantalla %1$s o en la pantalla Comandos.\n\nEncender el PC no es lo mismo que recuperar el acceso. Wake-on-LAN enciende el equipo y este se detiene en la pantalla de inicio de sesión; RemEx solo se inicia cuando alguien inicia sesión en el propio PC.</string>
     <string name="faq_q9">¿Cómo personalizo la apariencia?</string>
-    <string name="faq_a9">Abre la pestaña Más y toca Personalización (o Ajustes → Personalización).\n\nPuedes cambiar:\n• Paleta de colores y semilla de color\n• Radio de las esquinas y estilos de forma de las tarjetas\n• Familia y escala de la fuente\n• Opacidad de las tarjetas\n• Modo de tema oscuro/claro/sistema\n• Idioma de la app (independiente del idioma del sistema)</string>
+    <string name="faq_a9">Abre la pestaña Más y toca Personalizar (o Ajustes → Personalizar).\n\nPuedes cambiar:\n• Paleta de colores y semilla de color\n• Radio de las esquinas y estilos de forma de las tarjetas\n• Familia y escala de la fuente\n• Opacidad de las tarjetas\n• Modo de tema oscuro/claro/sistema\n• Idioma de la app (independiente del idioma del sistema)</string>
     <string name="faq_q10">¿Puedo volver a ver el tutorial?</string>
     <string name="faq_a10">¡Sí! Abre la pestaña Más → Ajustes → Ayuda. Allí encontrarás una opción para volver a ver el tutorial en cualquier momento.</string>
-    <string name="screen_personalization_title">Personalización</string>
+    <string name="screen_personalization_title">Personalizar</string>
     <string name="personalization_appearance_studio">Estudio de Apariencia</string>
     <string name="personalization_section_language">Idioma</string>
     <string name="personalization_app_language">Idioma de la App</string>
@@ -312,7 +309,7 @@
     <string name="personalization_shape_remote_mouse">Ratón Remoto</string>
     <string name="personalization_shape_task_manager">Procesos</string>
     <string name="personalization_shape_pc_orb">Orbe de Conexión PC</string>
-    <string name="personalization_preview">VISTA PREVIA</string>
+    <string name="personalization_preview">Vista previa</string>
     <string name="widget_config_app_launcher_title">Configurar Aplicaciones</string>
     <string name="widget_config_app_launcher_hint">Selecciona las apps para mostrar en tu widget:</string>
     <string name="widget_config_no_apps">No hay apps disponibles todavía.</string>
@@ -479,7 +476,7 @@
     <string name="about_whats_new_1_label">Alertas de sensores</string>
     <string name="about_whats_new_1_body">En tu PC, define un umbral en cualquier sensor y su tarjeta mostrará una campana que se pone roja en cuanto se supera. La alerta permanece encendida hasta que la reconozcas, así que un pico que te perdiste mientras estabas fuera sigue marcado, y una alerta crítica también genera una notificación de escritorio mientras la ventana está fuera de vista.</string>
     <string name="about_whats_new_2_label">Igualar mi tema</string>
-    <string name="about_whats_new_2_body">Tu teléfono ahora comparte su tema con tu PC, así que Personalización puede igualar tus colores, claros u oscuros, con un toque. Cambia el tema de tu teléfono más tarde y el PC puede volver a adoptarlo cuando quieras.</string>
+    <string name="about_whats_new_2_body">Tu teléfono ahora comparte su tema con tu PC, así que Personalizar puede igualar tus colores, claros u oscuros, con un toque. Cambia el tema de tu teléfono más tarde y el PC puede volver a adoptarlo cuando quieras.</string>
     <string name="about_whats_new_3_label">Sincronización del portapapeles</string>
     <string name="about_whats_new_3_body">Copia texto en tu teléfono y envíalo al portapapeles de tu PC desde la pantalla Comandos — queda listo para pegar en cuanto llega. Nada se guarda por el camino, así que una contraseña o un código de acceso pasa y desaparece.</string>
     <string name="about_whats_new_4_label">PC conocidos</string>

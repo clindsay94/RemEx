@@ -119,6 +119,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
+import com.clindsay94.remex.TelemetryDemand
+import com.clindsay94.remex.ui.screens.TelemetryLeaseEffect
 import com.clindsay94.remex.routines.RoutineReasonText
 import com.clindsay94.remex.routines.RoutineSaveResult
 import com.clindsay94.remex.routines.RoutineSyncStates
@@ -179,6 +181,8 @@ internal fun RoutineEditorPane(
     val routinesSupport by viewModel.routinesSupport.collectAsStateWithLifecycle()
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     val sensors by viewModel.sensors.collectAsStateWithLifecycle()
+    // The sensor picker lists the PC's sensors from its live stream, so the editor keeps it running.
+    TelemetryLeaseEffect(TelemetryDemand.ROUTINE_EDITOR)
     // A new draft opened before the PCs loaded picks up the default PC and its MAC once they do.
     LaunchedEffect(draftOrNull?.isNew, pcs, selectedPc, selectedMac) { viewModel.adoptDefaultPc() }
     // A health template opened before the PC's sensors arrived picks its sensor once they do.

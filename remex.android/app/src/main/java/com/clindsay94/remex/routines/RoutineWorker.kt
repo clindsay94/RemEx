@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.clindsay94.remex.ConnectionActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.routines.model.RoutineReasonCodes
 import kotlinx.coroutines.CancellationException
@@ -25,6 +26,9 @@ class RoutineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     override suspend fun doWork(): Result {
         val ticket = ticketFrom(inputData, runAttemptCount) ?: return Result.failure()
+        // The run holds the connection, so the idle teardown never stops it mid-run (RemEx-9yei0).
+        val hold = ConnectionActivity.routineRun(ticket.runId)
+        ConnectionActivity.hold(hold)
         return try {
             // A background trigger can start this in a fresh process: the client manager must be up
             // (callback registered, routine collector subscribed) before any step talks to the PC.
@@ -46,6 +50,8 @@ class RoutineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 RoutineLog.e("Could not finalise run ${RoutineLog.id(ticket.runId)} after a failure.", backstop)
             }
             Result.failure()
+        } finally {
+            ConnectionActivity.release(hold)
         }
     }
 

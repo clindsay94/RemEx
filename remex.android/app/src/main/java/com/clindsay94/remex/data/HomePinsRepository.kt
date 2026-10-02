@@ -72,6 +72,8 @@ class HomePinsRepository(
         private var identity: String? = null
         private var lastRevision = NoRevision
         private var pendingSync: HomePinsSyncMessage? = null
+        /** The connection [pendingSync] arrived on, or null when the caller could not say. */
+        private var pendingSyncEpoch: Long? = null
         private var hostInfoSupport: Pair<Long, Boolean>? = null
         private var cachedSource = HomePinsSource.LOCAL
         private var cachedNames: List<String> = emptyList()
@@ -111,21 +113,36 @@ class HomePinsRepository(
                                         source = cachedSource,
                                         connected = true
                                 )
+                        val heldEpoch = pendingSyncEpoch
+                        pendingSyncEpoch = null
                         pendingSync?.let { held ->
                                 pendingSync = null
-                                // Not a baseline: a held sync may be a straggler from before this
-                                // connection, and the next real one must never be refused against it.
-                                applySync(held, setsBaseline = false)
+                                when (heldEpoch) {
+                                        // Untagged: it may be a straggler from before this connection,
+                                        // so it is shown but is not a baseline the next one is refused
+                                        // against.
+                                        null -> applySync(held, setsBaseline = false)
+                                        // This connection's own first sync, which beat this call here.
+                                        connectionEpoch -> applySync(held, setsBaseline = true)
+                                        // Another connection's: never this PC's list.
+                                        else -> Unit
+                                }
                         }
                 }
         }
 
         suspend fun onDisconnected() {
                 mutex.withLock {
+                        // A sync held for a NEWER connection (it beat both this call and that
+                        // connection's onConnected) is that connection's, so it survives.
+                        val heldForNewer = pendingSyncEpoch?.let { it > epoch } == true
+                        if (!heldForNewer) {
+                                pendingSync = null
+                                pendingSyncEpoch = null
+                        }
                         connected = false
                         epoch = NoEpoch
                         identity = null
-                        pendingSync = null
                         pendingSeed = emptyList()
                         _state.value = _state.value.copy(connected = false, syncSupported = false)
                 }
@@ -149,12 +166,22 @@ class HomePinsRepository(
                 mutex.withLock { flushSeed() }
         }
 
-        /** One whole `home_pins_*` envelope from the PC. */
-        suspend fun onSyncMessage(json: String) {
+        /**
+         * One whole `home_pins_*` envelope from the PC, tagged with the [connectionEpoch] it arrived
+         * on (phase 3 review R3). The connection collector and this one run separately, and the
+         * connection flow can conflate A -> null -> B into A -> B, so B's first sync can land while
+         * this repository still holds A's epoch, revision and identity. Untagged, it was scored
+         * against A's revision (and refused if lower) or saved under A's key. Tagged, a sync for a
+         * connection not yet announced is held until [onConnected] names that epoch, and one for an
+         * older connection is dropped. Null keeps the untagged behaviour for a caller that cannot say.
+         */
+        suspend fun onSyncMessage(json: String, connectionEpoch: Long? = null) {
                 val message = HomePins.parseSync(json) ?: return
                 mutex.withLock {
-                        if (!connected) {
+                        if (connected && connectionEpoch != null && connectionEpoch < epoch) return
+                        if (!connected || (connectionEpoch != null && connectionEpoch != epoch)) {
                                 pendingSync = message
+                                pendingSyncEpoch = connectionEpoch
                                 return
                         }
                         if (lastRevision != NoRevision && message.revision < lastRevision) return

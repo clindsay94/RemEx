@@ -163,4 +163,63 @@ class SensorLayoutEditorTest {
         editor.undo()
         assertEquals(listOf("a", "b", "c", "d"), order())
     }
+
+    // ── Phase 3 review R5: the snackbar's Undo targets the removal it was offered for ──
+
+    @Test
+    fun `undo offered for a removal does nothing once a newer edit has landed`() {
+        editor.enterEditMode()
+        editor.removeCard("b")
+        val offeredFor = editor.revision.value
+        editor.cycleSpan("a")
+        val resized = editor.layout.value
+
+        assertFalse(editor.undoIfUnchanged(offeredFor))
+        assertEquals("the resize must not be reverted by the removal's Undo", resized, editor.layout.value)
+        assertEquals(listOf("a", "c", "d"), order())
+    }
+
+    @Test
+    fun `undo offered for a removal still undoes it while it is the latest change`() {
+        editor.enterEditMode()
+        editor.removeCard("b")
+        val offeredFor = editor.revision.value
+
+        assertTrue(editor.undoIfUnchanged(offeredFor))
+        assertEquals(listOf("a", "b", "c", "d"), order())
+    }
+
+    @Test
+    fun `every kind of history change moves the revision`() {
+        editor.enterEditMode()
+        val seen = mutableListOf(editor.revision.value)
+        editor.removeCard("a"); seen += editor.revision.value
+        editor.undo(); seen += editor.revision.value
+        editor.redo(); seen += editor.revision.value
+        editor.beginDrag("b"); editor.dragTo(2); editor.endDrag(); seen += editor.revision.value
+        editor.load(editor.layout.value); seen += editor.revision.value
+        assertEquals(seen.size, seen.toSet().size)
+    }
+
+    // ── Phase 3 review R4: an empty saved list is Clear all, not "never saved" ──
+
+    @Test
+    fun `a saved empty list reads as empty and only a missing one means the defaults`() {
+        assertEquals(emptySet<String>(), SensorGridMigration.parseSavedEnabled("[]"))
+        assertEquals(setOf("a", "b"), SensorGridMigration.parseSavedEnabled("""["a","b",""]"""))
+        assertNull(SensorGridMigration.parseSavedEnabled(""))
+        assertNull(SensorGridMigration.parseSavedEnabled(null))
+        assertNull(SensorGridMigration.parseSavedEnabled("not json"))
+    }
+
+    // ── Phase 3 review R6: a refused pin tap is reported, never silent ──
+
+    @Test
+    fun `a pinned card cannot toggle while disconnected, so the tap reports instead`() {
+        assertFalse(CardPinControl(pinned = true, canPin = false, connected = false).canToggle)
+        assertFalse(CardPinControl(pinned = false, canPin = false, connected = false).canToggle)
+        assertTrue(CardPinControl(pinned = true, canPin = false, connected = true).canToggle)
+        assertTrue(CardPinControl(pinned = false, canPin = true, connected = true).canToggle)
+        assertFalse(CardPinControl(pinned = false, canPin = false, connected = true).canToggle)
+    }
 }

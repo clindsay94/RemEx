@@ -60,6 +60,8 @@ fun TaskManagerScreen(
 ) {
     val processes by viewModel.processes.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    // Polling waits for the host's reconnect ack: the list request is refused before it.
+    val isAuthenticated by RemexClientManager.isAuthenticated.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val sortField by viewModel.sortField.collectAsStateWithLifecycle()
@@ -75,8 +77,8 @@ fun TaskManagerScreen(
     // the state has already gone back to STARTED - the poll would never actually stop while
     // backgrounded. LifecycleStartEffect is a lifecycle OBSERVER, not a recomposition, so its
     // onStopOrDispose fires on ON_STOP regardless of the frame clock.
-    LifecycleStartEffect(viewModel, isVisible, isConnected) {
-        viewModel.setAutoRefreshEnabled(isVisible && isConnected)
+    LifecycleStartEffect(viewModel, isVisible, isAuthenticated) {
+        viewModel.setAutoRefreshEnabled(isVisible && isAuthenticated)
         onStopOrDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
     }
 

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
@@ -36,6 +35,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.components.PushPinOutlinedGlyph
 
 /**
  * A fading [AnimatedVisibility] called from top level, so the Card's ColumnScope receiver does not
@@ -57,7 +57,16 @@ data class CardPinControl(
         val pinned: Boolean,
         /** It can be pinned: the PC has a card for it, or the PC is too old to keep the list. */
         val canPin: Boolean,
-)
+        /** A PC is connected. With none, neither pinning nor unpinning can go anywhere. */
+        val connected: Boolean = true,
+) {
+    /**
+     * Whether a tap would change anything. A PINNED card used to count as toggleable whatever the
+     * connection, so unpinning one while disconnected did nothing and said nothing (phase 3 review
+     * R6); now that tap shows the "can't pin right now" message like any other refused one.
+     */
+    val canToggle: Boolean get() = connected && (pinned || canPin)
+}
 
 /**
  * One Sensors grid tile (RemEx-wqo7a.7 / .8): the same rounded tile for every card, tonal
@@ -148,14 +157,14 @@ fun SensorGridCard(
                                 checked = pin.pinned,
                                 onCheckedChange = {
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                    if (pin.pinned || pin.canPin) onTogglePin() else onPinUnavailable()
+                                    if (pin.canToggle) onTogglePin() else onPinUnavailable()
                                 },
                                 modifier =
-                                        Modifier.graphicsLayer { alpha = if (pin.pinned || pin.canPin) 1f else 0.38f }
+                                        Modifier.graphicsLayer { alpha = if (pin.canToggle) 1f else 0.38f }
                                                 .semantics { if (pin.pinned) stateDescription = pinnedState }
                         ) {
                             Icon(
-                                    if (pin.pinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                                    if (pin.pinned) Icons.Filled.PushPin else PushPinOutlinedGlyph,
                                     contentDescription = pinLabel
                             )
                         }

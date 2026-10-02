@@ -28,7 +28,7 @@
     <string name="tutorial_get_started">Başla</string>
     <string name="tutorial_next">İleri</string>
     <string name="tutorial_page1_title">RemEx\'e Hoş Geldiniz</string>
-    <string name="tutorial_page1_body">RemEx, uzaktan bilgisayar yönetimi için komuta merkezinizdir. Bilgisayarınızı kontrol edin, uygulamalar başlatın, performansı izleyin, hatta masaüstünüzü görüntüleyin — hepsi telefonunuzdan.\n\nBirkaç hızlı adımda bağlanalım.</string>
+    <string name="tutorial_page1_body">RemEx, bilgisayarınızı telefonunuzdan kullanmanızı sağlar. Onu kontrol edin, uygulamaları açın, nasıl çalıştığına bakın, hatta ekranını görün.\n\nBirkaç hızlı adımda bağlanalım.</string>
     <string name="tutorial_page2_title">Önce PC Yazılımını Kurun</string>
     <string name="tutorial_page2_body">Bağlanmadan önce, bilgisayarınızda RemEx uygulamasının çalışıyor olması gerekir.\n\nYüklemeniz gereken tek bir uygulama var — bilgisayarınızda oturum açtığınızda otomatik olarak başlar ve telefonunuzun bağlanmasını bekler.\n\nGitHub\'dan en son sürümü indirin ve eşleştirmeden önce çalıştırın.</string>
     <string name="tutorial_page2_link_label">GitHub Sürümlerinden İndir</string>
@@ -39,7 +39,7 @@
     <string name="tutorial_page5_title">Manuel Bağlantı</string>
     <string name="tutorial_page5_body">IP adresinizi aldıktan sonra:\n\n1. Bağlantı ekranına gidin (Diğer → Ayarlar → Bağlantı)\n2. PC\'nizin IP adresini girin\n3. Bağlantı noktasını girin (varsayılan 5005)\n4. \'Kaydet ve Bağlan\'a dokunun\n5. İstenirse, güvenli eşleştirmeyi tamamlamak için PC\'nizde gösterilen 6 haneli PIN\'i girin\n\nBağlantı bilgileriniz bir sonraki sefer için kaydedilir.</string>
     <string name="tutorial_page6_title">Her Şey Hazır!</string>
-    <string name="tutorial_page6_body">Kontrolü ele almaya hazırsınız.\n\nBilgisayarınızın canlı değerlerini izlemek için %1$s ekranını açın. Diğer sekmelerle komut gönderebilir, uygulama başlatabilir, neyin çalıştığını görebilir, paylaşılan klasörlere göz atabilir ve masaüstünüzü yayınlayabilirsiniz.\n\nDili, temayı, kart şekillerini ve renkleri değiştirmek için Kişiselleştirme bölümüne gidin.\n\nEşleştirme, dosya aktarımı veya Uzak Masaüstü ayarları hakkında yardıma ihtiyacınız olursa FAQ bölümünü dilediğiniz zaman açın.</string>
+    <string name="tutorial_page6_body">Kontrolü ele almaya hazırsınız.\n\nBilgisayarınızın canlı değerlerini izlemek için %1$s ekranını açın. Diğer sekmelerle komut gönderebilir, uygulama başlatabilir, neyin çalıştığını görebilir, paylaşılan klasörlere göz atabilir ve masaüstünüzü yayınlayabilirsiniz.\n\nDili, temayı, kart şekillerini ve renkleri değiştirmek için Kişiselleştir bölümüne gidin.\n\nEşleştirme, dosya aktarımı veya Uzak Masaüstü ayarları hakkında yardıma ihtiyacınız olursa FAQ bölümünü dilediğiniz zaman açın.</string>
     <string name="tutorial_page_qr_title">QR Kodu ile Hızlı Eşleştirme</string>
     <string name="tutorial_page_qr_body">Bağlanmanın en hızlı yolu bir QR kodu taramaktır.\n\n1. Bilgisayarınızda RemEx penceresini açın\n2. Ayarlar → Bağlantı → QR Kodunu Göster yolunu izleyin\n3. Telefonunuzda Bağlantı ekranındaki QR simgesine dokunun\n4. Kodu tarayın ve istenirse eşleştirme PIN\'ini onaylayın\n\nRemEx, güvenli bağlantı bilgilerini otomatik olarak kaydeder.</string>
     <string name="status_disconnected">Bağlantı kesildi</string>
@@ -81,7 +81,7 @@
     <string name="cd_keyboard">Klavye</string>
     <string name="screen_settings_title">Ayarlar</string>
     <string name="settings_tab_connection">Bağlantı</string>
-    <string name="settings_tab_personalization">Kişiselleştirme</string>
+    <string name="settings_tab_personalization">Kişiselleştir</string>
     <string name="settings_tab_input">Giriş</string>
     <string name="settings_tab_file_transfer">Dosyalar</string>
     <string name="settings_tab_help">Yardım</string>
@@ -246,14 +246,11 @@
     <string name="pairing_submit">Eşleştir</string>
     <string name="pairing_cancel">İptal</string>
     <string name="pairing_error_bad_pin">PIN kodu hatalı veya eşleştirme süresi doldu. Bilgisayarınızda şu anda görünen PIN kodunu girin, ardından tekrar deneyin.</string>
-    <string name="pairing_error_cert_mismatch">Bu bilgisayarın güvenlik sertifikası değişti, bu yüzden telefonunuz ona artık güvenmiyor. Telefonunuzda bu bilgisayarın eşleştirmesini kaldırın, ardından yeni sertifikayı kabul etmek için yeniden eşleştirin.</string>
     <string name="qr_scanner_title">QR Kodunu Tara</string>
     <string name="cd_back">Geri</string>
     <string name="qr_scanner_hint">Kamerayı bilgisayarınızda gösterilen QR koduna doğrultun</string>
     <string name="qr_scanner_permission_required">QR kodlarını taramak için kamera izni gereklidir</string>
     <string name="qr_scanner_grant_permission">İzin Ver</string>
-    <string name="qr_error_old_format">Bu QR kodu daha eski bir RemEx PC tarafından oluşturulmuş. Bilgisayardaki uygulamayı güncelleyin ve yeni bir RemEx 2.x QR kodu oluşturun.</string>
-    <string name="qr_error_invalid">Geçersiz RemEx QR kodu</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Hakkında</string>
     <string name="about_github_star">RemEx\'i GitHub\'da takip edin</string>
@@ -276,14 +273,14 @@
     <string name="faq_q6">İnternet üzerinden bağlanabilir miyim (yalnızca yerel ağ değil)?</string>
     <string name="faq_a6">Evet — Tailscale kullanarak güvenli bir şekilde (önerilir). Tailscale, cihazlarınız arasında (WireGuard® ile) özel, uçtan uca şifreli bir ağ kurar; böylece bu uygulama bilgisayarınıza her yerden ulaşabilir — mobil veri, iş yeri Wi-Fi ağı, bir kafe — yönlendirici ayarı yapmadan ve herkese açık internete hiçbir şey açmadan.\n\nAdım adım talimatlar için aşağıdaki \'Uzaktan erişim için Tailscale\'i nasıl kurarım?\' sorusuna bakın.\n\nÖnerilmez: bunun yerine yönlendiricinizde bir bağlantı noktası açıp herkese açık IP adresiniz üzerinden bağlanabilirsiniz, ancak bu bilgisayarınızı internete açar ve gerçek bir güvenlik riskidir. Bunun yerine Tailscale (veya WireGuard gibi başka bir VPN) kullanın.</string>
     <string name="faq_q7">Masaüstü ekranı yavaş veya çalışmıyor. Ne yapabilirim?</string>
-    <string name="faq_a7">• Bağlantı → Masaüstü Varsayılanları bölümünde Kalite kaydırıcısını düşürün.\n• Hedef FPS\'i azaltın (çoğu kullanım durumu için 15–20 FPS yeterlidir).\n• Akışın çözünürlüğünü azaltmak için Ölçeği düşürün.\n• Windows\'ta remex.agent, kullanılabilir en hızlı yakalama arka ucunu otomatik olarak seçer — Windows.Graphics.Capture, olmazsa DXGI Desktop Duplication, ardından GDI\'ya geçer. Linux\'ta ise XDG masaüstü portalı (X11 veya Wayland) üzerinden PipeWire ile yakalama yapar.\n• Hızlı, yerel bir Wi-Fi ağında olduğunuzdan emin olun (5 GHz tercih edilir).</string>
+    <string name="faq_a7">• Bağlantı → Masaüstü Varsayılanları bölümünde Kalite kaydırıcısını düşürün.\n• Hedef FPS\'i azaltın. 120\'den başlar; bu bir söz değil, bir üst sınırdır: ağınız veya bilgisayarınız yetişemediğinde bilgisayar daha az kare gönderir. Görüntü hâlâ takılıyorsa günlük kullanım için 30–60 FPS yeterlidir.\n• Akışın çözünürlüğünü azaltmak için Ölçeği düşürün.\n• Windows\'ta remex.agent, kullanılabilir en hızlı yakalama arka ucunu otomatik olarak seçer — Windows.Graphics.Capture, olmazsa DXGI Desktop Duplication, ardından GDI\'ya geçer. Linux\'ta ise XDG masaüstü portalı (X11 veya Wayland) üzerinden PipeWire ile yakalama yapar.\n• Hızlı, yerel bir Wi-Fi ağında olduğunuzdan emin olun (5 GHz tercih edilir).</string>
     <string name="faq_q8">Wake-on-LAN (WOL) nedir?</string>
     <string name="faq_a8">Wake-on-LAN, ağ üzerinden bir \"uyandırma sinyali\" göndererek bilgisayarınızı uzaktan açmanızı sağlar.\n\nKullanmak için:\n1. Bilgisayarınızın BIOS/UEFI ayarlarında WOL\'u etkinleştirin.\n2. Ağ bağdaştırıcınızın özelliklerinde WOL\'u etkinleştirin (Windows: Aygıt Yöneticisi → Ağ Bağdaştırıcısı → Güç Yönetimi).\n3. Bilgisayarınızın MAC adresini Bağlantı ekranına girin.\n4. %1$s ekranındaki \'Bilgisayarı Uyandır\' kartını veya Komutlar ekranını kullanın.\n\nBilgisayarı uyandırmak, ona yeniden erişmekle aynı şey değildir. Wake-on-LAN makineyi açar ve makine oturum açma ekranında bekler; RemEx ancak biri bilgisayarda oturum açtığında başlar.</string>
     <string name="faq_q9">Uygulamanın görünümünü nasıl kişiselleştiririm?</string>
-    <string name="faq_a9">Diğer sekmesini açın ve Kişiselleştirme\'ye dokunun (veya Ayarlar → Kişiselleştirme).\n\nŞunları değiştirebilirsiniz:\n• Tema paleti ve renk tohumu\n• Kart köşe yarıçapı ve şekil ön ayarları\n• Yazı tipi ailesi ve ölçeği\n• Kart opaklığı\n• Koyu/açık/sistem tema modu\n• Uygulama dili (sistem dilinizden bağımsız)</string>
+    <string name="faq_a9">Diğer sekmesini açın ve Kişiselleştir\'e dokunun (veya Ayarlar → Kişiselleştir).\n\nŞunları değiştirebilirsiniz:\n• Tema paleti ve renk tohumu\n• Kart köşe yarıçapı ve şekil ön ayarları\n• Yazı tipi ailesi ve ölçeği\n• Kart opaklığı\n• Koyu/açık/sistem tema modu\n• Uygulama dili (sistem dilinizden bağımsız)</string>
     <string name="faq_q10">Öğreticiyi yeniden izleyebilir miyim?</string>
     <string name="faq_a10">Evet! Diğer sekmesi → Ayarlar → Yardım yolunu izleyin. Orada, öğreticiyi istediğiniz zaman yeniden oynatma seçeneğini bulacaksınız.</string>
-    <string name="screen_personalization_title">Kişiselleştirme</string>
+    <string name="screen_personalization_title">Kişiselleştir</string>
     <string name="personalization_appearance_studio">Görünüm Stüdyosu</string>
     <string name="personalization_section_language">Dil</string>
     <string name="personalization_app_language">Uygulama Dili</string>
@@ -312,7 +309,7 @@
     <string name="personalization_shape_remote_mouse">Uzak Fare</string>
     <string name="personalization_shape_task_manager">İşlemler</string>
     <string name="personalization_shape_pc_orb">Bilgisayar Bağlantı Göstergesi</string>
-    <string name="personalization_preview">ÖN İZLEME</string>
+    <string name="personalization_preview">Ön izleme</string>
     <string name="widget_config_app_launcher_title">Uygulamaları Yapılandır</string>
     <string name="widget_config_app_launcher_hint">Widget üzerinde gösterilecek uygulamaları seçin:</string>
     <string name="widget_config_no_apps">Henüz kullanılabilir uygulama yok.</string>
@@ -479,7 +476,7 @@
     <string name="about_whats_new_1_label">Sensör Uyarıları</string>
     <string name="about_whats_new_1_body">PC\'nizde herhangi bir sensöre eşik belirleyin; eşik aşıldığı anda kartında kırmızıya dönen bir zil belirir. Uyarı, siz onaylayana kadar yanık kalır, böylece siz yokken kaçırdığınız bir sıçrama işaretli kalmaya devam eder; kritik bir uyarı ise pencere gözden uzaktayken ayrıca bir masaüstü bildirimi tetikler.</string>
     <string name="about_whats_new_2_label">Temamı Eşleştir</string>
-    <string name="about_whats_new_2_body">Telefonunuz artık temasını PC\'nizle paylaşıyor, böylece Kişiselleştirme tek dokunuşla renklerinizi, açık ya da koyu, eşleştirebiliyor. Telefonunuzun temasını daha sonra değiştirin, PC istediğinizde onu yeniden benimseyebilir.</string>
+    <string name="about_whats_new_2_body">Telefonunuz artık temasını PC\'nizle paylaşıyor, böylece Kişiselleştir tek dokunuşla renklerinizi, açık ya da koyu, eşleştirebiliyor. Telefonunuzun temasını daha sonra değiştirin, PC istediğinizde onu yeniden benimseyebilir.</string>
     <string name="about_whats_new_3_label">Pano Eşitleme</string>
     <string name="about_whats_new_3_body">Telefonunuzda metin kopyalayın ve Komutlar ekranından PC\'nizin panosuna gönderin — ulaşır ulaşmaz yapıştırmaya hazır olur. Yol boyunca hiçbir şey saklanmaz, bu yüzden bir şifre veya giriş kodu sadece geçip gider.</string>
     <string name="about_whats_new_4_label">Bilinen PC\'ler</string>
