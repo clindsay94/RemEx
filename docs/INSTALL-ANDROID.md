@@ -51,13 +51,14 @@ or [LINUX_INSTALL.md](LINUX_INSTALL.md) for the full Linux walkthrough.
 2. Open the app on your phone. On a fresh install, a short first-run tutorial walks you through the
    basics; you can watch it again later. The in-app FAQ (the More tab on the phone, the About page
    on the PC) covers that under "Can I watch the tutorial again?".
-3. Your PC should show up in the list on its own through auto-discovery. If it doesn't, the PC's
-   dashboard displays its own address, and you can add it by IP instead (FAQ: "How do I find my
-   PC's IP address?", "Auto-discovery isn't finding my PC").
-4. Tap the PC. The PC shows a **6-digit PIN** on its screen. Type that PIN into your phone within
+3. On the Connection screen, tap **Add a PC**, then **Discover Automatically** to find your PC on
+   the network. If it isn't found, scan the QR code the PC shows (**Scan QR Code**), or choose
+   **Add manually** and type the address the PC's dashboard displays (FAQ: "How do I find my PC's IP
+   address?", "Auto-discovery isn't finding my PC").
+4. Connect. The PC shows a **6-digit PIN** on its screen. Type that PIN into your phone within
    about **2 minutes**, before it expires.
-5. Once that's done, your phone remembers the PC's certificate. Reconnecting after that is just
-   tapping the PC in the list, no PIN required.
+5. Once that's done, your phone remembers the PC's certificate and lists it under **Your PCs**.
+   Reconnecting after that is just tapping the PC there, no PIN required.
 
 ## Remote access away from home
 

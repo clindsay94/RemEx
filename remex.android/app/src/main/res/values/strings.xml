@@ -65,20 +65,20 @@
     <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
 
     <string name="tutorial_page3_title">Auto-Discovery</string>
-    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure remex.agent is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
+    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure remex.agent is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. On the Connection screen, tap \'Add a PC\', then \'Discover Automatically\'\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
 
     <string name="tutorial_page4_title">Finding Your IP Address</string>
     <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the RemEx window on your PC.</string>
 
     <string name="tutorial_page5_title">Manual Connection</string>
-    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
+    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Settings → Connection)\n2. Tap \'Add a PC\', then \'Add manually\', and enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
 
     <string name="tutorial_page6_title">You\'re All Set!</string>
     <string name="tutorial_page6_body">You\'re ready to take control.\n\nOpen %1$s to watch your PC\'s live readings. The other tabs let you send commands, start apps, see what\'s running, browse shared folders, and stream your desktop.\n\nHead to Personalization to change language, theme, card shapes, and colors.\n\nOpen the FAQ anytime if you need help with pairing, file transfer, or remote desktop tuning.</string>
 
     
     <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. Go to Settings → Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. Go to Settings → Connection → Show QR Code\n3. On your phone, tap \'Add a PC\' on the Connection screen, then \'Scan QR Code\'\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
 
     
     <string name="status_disconnected">Disconnected</string>
@@ -171,6 +171,10 @@
     <string name="app_launcher_no_apps">No apps found</string>
     <string name="app_launcher_recent">Recent</string>
     <string name="button_fetch_from_host">Fetch from PC</string>
+    <string name="app_launcher_no_apps_hint">Add programs to the app list in RemEx on your PC, then refresh.</string>
+    <string name="app_launcher_loading">Getting your apps from your PC…</string>
+    <string name="app_launcher_no_answer">Your PC didn\'t send its app list. Check that RemEx is open on the PC, then try again.</string>
+    <string name="app_launcher_try_again">Try again</string>
 
     
     <string name="screen_remote_control_title">Commands</string>
@@ -316,12 +320,18 @@
 
     
     <string name="screen_connection_title">Connection</string>
-    <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
+    <string name="screen_connection_subtitle">Choose which PC this phone controls</string>
+    <string name="connection_your_pcs_title">Your PCs</string>
+    <string name="connection_your_pcs_empty">No PCs yet. Add one to get started.</string>
+    <string name="connection_add_pc">Add a PC</string>
+    <string name="connection_add_manually">Add manually</string>
+    <string name="connection_edit_details">Edit connection details</string>
+    <string name="connection_edit_details_title">Edit %1$s</string>
+    <string name="connection_pc_status_connected">Connected now</string>
+    <string name="connection_pc_status_connecting">Connecting…</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>
-    <string name="connection_found_host">Found: %1$s — Search Again</string>
     <string name="connection_discover_button">Discover Automatically</string>
-    <string name="connection_host_found">PC found and fields filled in below.</string>
     <string name="connection_scan_qr_code">Scan QR Code</string>
     <string name="connection_help_title">How to connect manually</string>
     <string name="connection_help_step1_title">Install RemEx PC on your PC</string>
@@ -335,7 +345,6 @@
     <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for \"IPv4 Address\" under your Wi-Fi adapter.</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
-    <string name="connection_or_enter_manually">Or enter manually</string>
     <string name="connection_label_host">PC IP Address</string>
     <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
     <string name="connection_label_port">Port</string>
@@ -349,16 +358,10 @@
     <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
     <string name="connection_label_pairing_pin">Pairing PIN (6-digits)</string>
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
-    <string name="connection_desktop_defaults_title">Desktop Defaults</string>
-    <string name="connection_quality_label">Quality: %1$d%%</string>
-    <string name="connection_fps_label">Target FPS: %1$d</string>
-    <string name="connection_scale_label">Scale: %1$s</string>
     <string name="button_save_connect">Save &amp; Connect</string>
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
-    <string name="connection_known_pcs_title">Known PCs</string>
-    <string name="connection_known_pcs_hint">Tap an address to connect.</string>
     <string name="connection_known_pc_last_connected">Last connected %1$s</string>
     <string name="connection_known_pc_never_connected">Not connected yet</string>
     <string name="connection_known_pc_actions">Options for %1$s</string>
@@ -437,7 +440,7 @@
     <string name="faq_a6">Yes — securely, using Tailscale (recommended). Tailscale builds a private, end-to-end encrypted network between your devices (using WireGuard®), so this app can reach your PC from anywhere — cellular data, work Wi-Fi, a coffee shop — with no router setup and nothing exposed to the public internet.\n\nSee \'How do I set up secure remote access with Tailscale?\' further down for step-by-step instructions.\n\nNot recommended: you could instead open a port on your router and connect through your public IP, but that exposes your PC to the internet and is a real security risk. Use Tailscale (or another VPN such as WireGuard) instead.</string>
 
     <string name="faq_q7">The Desktop screen is laggy or not working. What can I do?</string>
-    <string name="faq_a7">• Lower the Quality slider in Connection → Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• On Windows, remex.agent automatically picks the fastest available capture backend — Windows.Graphics.Capture, falling back to DXGI Desktop Duplication, then GDI. On Linux, it captures via PipeWire through the XDG desktop portal (X11 or Wayland).\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
+    <string name="faq_a7">• Lower the Quality slider in Desktop → Stream Configuration.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• On Windows, remex.agent automatically picks the fastest available capture backend — Windows.Graphics.Capture, falling back to DXGI Desktop Duplication, then GDI. On Linux, it captures via PipeWire through the XDG desktop portal (X11 or Wayland).\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
 
     <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a \"wake signal\" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on %1$s or the Commands screen.\n\nWaking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</string>
@@ -811,6 +814,8 @@
     <string name="file_manager_sort_name">Name</string>
     <string name="file_manager_sort_size">Size</string>
     <string name="file_manager_sort_date">Date</string>
+    <string name="file_manager_show_hidden">Show hidden items</string>
+    <string name="file_manager_only_hidden_items">This folder only has hidden items. Turn on Show hidden items in the Sort menu to see them.</string>
     <string name="file_manager_view_grid">Grid view</string>
     <string name="file_manager_view_list">List view</string>
     <string name="file_manager_new_folder">New folder</string>

@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.EstablishedConnection
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
@@ -55,7 +56,6 @@ import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +64,9 @@ fun ConnectionScreen(
         onNavigateToQrScanner: () -> Unit = {}
 ) {
         val connectionPrefs by viewModel.connectionPreferences.collectAsStateWithLifecycle()
-        val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsStateWithLifecycle()
         val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+        val connectedHost by RemexClientManager.connectedHost.collectAsStateWithLifecycle()
         val status by viewModel.connectionStatus.collectAsStateWithLifecycle()
         val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
         val isCertMismatch by viewModel.isCertMismatch.collectAsStateWithLifecycle()
@@ -86,9 +86,9 @@ fun ConnectionScreen(
         ConnectionScreenContent(
                 certRepair = certRepair,
                 connectionPrefs = connectionPrefs,
-                desktopPrefs = desktopPrefs,
                 isConnecting = isConnecting,
                 isConnected = isConnected,
+                connectedHost = connectedHost,
                 status = status,
                 connectionError = connectionError,
                 isCertMismatch = isCertMismatch,
@@ -97,18 +97,8 @@ fun ConnectionScreen(
                 discoveredHost = discoveredHost,
                 knownPcRows = knownPcRows,
                 onNavigateToQrScanner = onNavigateToQrScanner,
-                onConnect = { host, port, mac, broadcast, subnet, pairingPin, quality, fps, scale ->
-                        viewModel.connect(
-                                host,
-                                port,
-                                mac,
-                                broadcast,
-                                subnet,
-                                pairingPin,
-                                quality,
-                                fps,
-                                scale
-                        )
+                onConnect = { host, port, mac, broadcast, subnet, pairingPin ->
+                        viewModel.connect(host, port, mac, broadcast, subnet, pairingPin)
                 },
                 onClearError = { viewModel.clearError() },
                 onDiscoverHost = { viewModel.discoverHost() },
@@ -137,7 +127,6 @@ fun ConnectionScreen(
 @Composable
 fun ConnectionScreenContent(
         connectionPrefs: SettingsManager.ConnectionPreferences?,
-        desktopPrefs: SettingsManager.RemoteDesktopPreferences?,
         isConnecting: Boolean,
         isConnected: Boolean,
         status: String,
@@ -148,8 +137,9 @@ fun ConnectionScreenContent(
         discoveredHost: DiscoveredHost?,
         knownPcRows: List<KnownPcEntry>,
         certRepair: CertRepairPrompt? = null,
+        connectedHost: EstablishedConnection? = null,
         onNavigateToQrScanner: () -> Unit,
-        onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
+        onConnect: (String, Int, String, String, String, String) -> Unit,
         onClearError: () -> Unit,
         onDiscoverHost: () -> Unit,
         onRepair: (android.content.Context, String, Int) -> Unit,
@@ -174,10 +164,13 @@ fun ConnectionScreenContent(
         var broadcastInput by remember { mutableStateOf("") }
         var subnetInput by remember { mutableStateOf("") }
         var pairingPinInput by remember { mutableStateOf("") }
-        var qualityInput by remember { mutableFloatStateOf(50f) }
-        var targetFpsInput by remember { mutableFloatStateOf(120f) }
-        var scaleInput by remember { mutableFloatStateOf(1.0f) }
         var showHelpSection by remember { mutableStateOf(false) }
+
+        // The sheets (RemEx-wqo7a.6). Held here, with the form fields, so every sheet reads and
+        // writes the same state the old single form did and the connect paths are unchanged.
+        var showAddPcSheet by remember { mutableStateOf(false) }
+        var detailsEntry by remember { mutableStateOf<KnownPcEntry?>(null) }
+        var connectionForm by remember { mutableStateOf<ConnectionFormRequest?>(null) }
 
         // Known PCs row actions (RemEx-k62t). Held at screen level rather than inside the row so a
         // dialog is not torn down by the very action it confirms — unpairing removes the row.
@@ -262,10 +255,7 @@ fun ConnectionScreenContent(
                         macInput.trim(),
                         broadcastInput.trim().ifEmpty { "255.255.255.255" },
                         subnetInput.trim().ifEmpty { "255.255.255.0" },
-                        pairingPinInput.trim(),
-                        qualityInput.roundToInt(),
-                        targetFpsInput.roundToInt(),
-                        scaleInput
+                        pairingPinInput.trim()
                 )
         }
 
@@ -367,20 +357,16 @@ fun ConnectionScreenContent(
                 }
 
         // Initialize inputs from saved values only once they are loaded
-        LaunchedEffect(connectionPrefs, desktopPrefs) {
-                if (connectionPrefs != null && desktopPrefs != null) {
+        // Remote Desktop defaults are no longer on this screen (RemEx-wqo7a.6): they live in the
+        // stream's own settings sheet, and connecting no longer rewrites them.
+        LaunchedEffect(connectionPrefs) {
+                if (connectionPrefs != null) {
                         if (hostInput.isEmpty() && connectionPrefs.host.isNotEmpty()) hostInput =
                             connectionPrefs.host
                         if (portInput.isEmpty()) portInput = connectionPrefs.port.toString()
                         if (macInput.isEmpty()) macInput = connectionPrefs.macAddress
                         if (broadcastInput.isEmpty()) broadcastInput = connectionPrefs.broadcastIp
                         if (subnetInput.isEmpty()) subnetInput = connectionPrefs.subnetMask
-                        if (qualityInput == 50f && desktopPrefs.quality != 50)
-                                qualityInput = desktopPrefs.quality.toFloat()
-                        if (targetFpsInput == 120f && desktopPrefs.targetFps != 120)
-                                targetFpsInput = desktopPrefs.targetFps.toFloat()
-                        if (scaleInput == 1.0f && desktopPrefs.scale != 1.0f) scaleInput =
-                            desktopPrefs.scale
                 }
         }
 
@@ -411,12 +397,16 @@ fun ConnectionScreenContent(
         // *before* showing the snackbar (and fire the snackbar on the screen's own scope, not this
         // effect) so a configuration change — e.g. rotation — during the snackbar's few seconds can't
         // replay the 'PC found' message: the state is already cleared. (RemEx-b0lv)
+        // A found PC opens straight into the "Add manually" form with its address filled in
+        // (RemEx-wqo7a.6), which is where the old screen pointed: "fields filled in below".
         LaunchedEffect(discoveredHost) {
                 discoveredHost?.let {
                         hostInput = it.host
                         portInput = it.port.toString()
                         val discoveredHostName = it.host
                         onConsumeDiscoveredHost()
+                        showAddPcSheet = false
+                        connectionForm = ConnectionFormRequest(ConnectionFormMode.Add, null)
                         scope.launch {
                                 snackbarHostState.showSnackbar(
                                         hostDiscoveredFormat.format(discoveredHostName)
@@ -425,18 +415,71 @@ fun ConnectionScreenContent(
                 }
         }
 
+        /** A card's Connect: a paired address reconnects; an unpaired one asks for the PIN first. */
+        fun connectKnownPc(entry: KnownPcEntry) {
+                // AN UNPINNED ADDRESS PAIRS RATHER THAN CONNECTS, and it has to ask for the PIN
+                // before the permission prompt: the connection cannot succeed without one, and
+                // spending a system dialog on an attempt that is already doomed reads as the card
+                // being broken.
+                if (entry.isTrusted) {
+                        startKnownPcConnect(entry, "")
+                } else {
+                        rowPinInput = ""
+                        pairingEntry = entry
+                }
+        }
+
+        /** "Discover automatically", asking for the nearby-devices permission first if needed. */
+        fun startDiscovery() {
+                if (isDiscovering) return
+                if (!hasNearbyWifiPermission()) {
+                        pendingDiscover = true
+                        val permsToRequest = if (Build.VERSION.SDK_INT >= 36) {
+                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES, "android.permission.ACCESS_LOCAL_NETWORK")
+                        } else {
+                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
+                        }
+                        discoverPermissionLauncher.launch(permsToRequest)
+                } else {
+                        onDiscoverHost()
+                }
+        }
+
+        /**
+         * Opens the address form. Editing a PC fills in its own address and port; adding keeps
+         * whatever the form already holds (the last PC tried, or the one discovery just found).
+         */
+        fun openConnectionForm(mode: ConnectionFormMode, entry: KnownPcEntry?) {
+                if (entry != null) {
+                        hostInput = entry.address
+                        portInput = entry.port.toString()
+                }
+                connectionForm = ConnectionFormRequest(mode, entry)
+        }
+
+        val connectedEndpoint = connectedHost?.takeIf { isConnected }?.let { PcEndpoint(it.host, it.port) }
+        // The stored host is written before the connection starts (ConnectionViewModel.connect), so
+        // while a connection is being made it names the address being tried.
+        val connectingEndpoint =
+                connectionPrefs?.takeIf { isConnecting && it.host.isNotBlank() }?.let { PcEndpoint(it.host, it.port) }
+        val yourPcCards =
+                remember(knownPcRows, connectedEndpoint, connectingEndpoint) {
+                        YourPcCards.build(knownPcRows, connectedEndpoint, connectingEndpoint)
+                }
+
         val scrollBehavior = rememberRemexTopBarScrollBehavior()
         Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {
                         RemexFlexibleTopBar(
                                 title = stringResource(R.string.screen_connection_title),
+                                subtitle = stringResource(R.string.screen_connection_subtitle),
                                 scrollBehavior = scrollBehavior
                         )
                 },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
-                val prefsLoaded = connectionPrefs != null && desktopPrefs != null
+                val prefsLoaded = connectionPrefs != null
                 AnimatedContent(
                         targetState = prefsLoaded,
                         transitionSpec = {
@@ -455,16 +498,8 @@ fun ConnectionScreenContent(
                                 modifier =
                                         Modifier.fillMaxSize()
                                                 .padding(padding)
-                                                // Before verticalScroll on purpose: this
-                                                // shrinks the scroll VIEWPORT when the
-                                                // keyboard opens, so the lower fields can be
-                                                // scrolled above it. Applied after the scroll
-                                                // it would only pad the content, leaving the
-                                                // viewport itself behind the keyboard
-                                                // (RemEx-a9ci).
-                                                .imePadding()
                                                 .verticalScroll(rememberScrollState())
-                                                .padding(24.dp),
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                                 // --- Error display ---
@@ -575,366 +610,22 @@ fun ConnectionScreenContent(
                                         }
                                 }
 
-                                // --- Auto-discovery (primary action) ---
-                                Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .primaryContainer
-                                                )
-                                ) {
-                                        Column(
-                                                modifier = Modifier.padding(16.dp),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                                Row(
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Wifi,
-                                                                contentDescription = null,
-                                                                tint =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onPrimaryContainer
-                                                        )
-                                                        Spacer(Modifier.width(8.dp))
-                                                        Text(
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_auto_discover_title
-                                                                ),
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .titleSmallEmphasized,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onPrimaryContainer
-                                                        )
-                                                }
-                                                Text(
-                                                        stringResource(
-                                                                R.string
-                                                                        .connection_auto_discover_hint
-                                                        ),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color =
-                                                                MaterialTheme.colorScheme
-                                                                        .onPrimaryContainer
-                                                )
-                                                Button(
-                                                        onClick = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .KEYBOARD_TAP
-                                                                )
-                                                                if (isDiscovering) return@Button
-                                                                if (!hasNearbyWifiPermission()) {
-                                                                        pendingDiscover = true
-                                                                        val permsToRequest = if (Build.VERSION.SDK_INT >= 36) {
-                                                                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES, "android.permission.ACCESS_LOCAL_NETWORK")
-                                                                        } else {
-                                                                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
-                                                                        }
-                                                                        discoverPermissionLauncher.launch(permsToRequest)
-                                                                } else {
-                                                                        onDiscoverHost()
-                                                                }
-                                                        },
-                                                        enabled = !isDiscovering,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                        AnimatedContent(
-                                                                targetState = isDiscovering,
-                                                                transitionSpec = {
-                                                                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
-                                                                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
-                                                                },
-                                                                label = "discoverButtonContent"
-                                                        ) { discovering ->
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        if (discovering) {
-                                                                                RemexLoadingIndicator(
-                                                                                        modifier =
-                                                                                                Modifier.size(
-                                                                                                        24.dp
-                                                                                                ),
-                                                                                        color =
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .onPrimary
-                                                                                )
-                                                                                Spacer(
-                                                                                        modifier =
-                                                                                                Modifier.width(8.dp)
-                                                                                )
-                                                                                Text(
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .connection_searching
-                                                                                        )
-                                                                                )
-                                                                        } else {
-                                                                                Icon(
-                                                                                        Icons.Default.Search,
-                                                                                        contentDescription = null
-                                                                                )
-                                                                                Spacer(
-                                                                                        modifier =
-                                                                                                Modifier.width(8.dp)
-                                                                                )
-                                                                                Text(
-                                                                                        if (discoveredHost != null
-                                                                                        ) {
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .connection_found_host,
-                                                                                                        discoveredHost
-                                                                                                                .host
-                                                                                                )
-                                                                                        } else {
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .connection_discover_button
-                                                                                                )
-                                                                                        }
-                                                                                )
-                                                                        }
-                                                                }
-                                                        }
-                                                }
-
-                                                OutlinedButton(
-                                                        onClick = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .CONFIRM
-                                                                )
-                                                                onNavigateToQrScanner()
-                                                        },
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        colors =
-                                                                ButtonDefaults.outlinedButtonColors(
-                                                                        contentColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onPrimaryContainer
-                                                                )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.QrCodeScanner,
-                                                                contentDescription = null
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_scan_qr_code
-                                                                )
-                                                        )
-                                                }
-
-                                                AnimatedVisibility(
-                                                        visible = discoveredHost != null,
-                                                        enter =
-                                                                expandVertically(
-                                                                        animationSpec =
-                                                                                MaterialTheme
-                                                                                        .motionScheme
-                                                                                        .fastSpatialSpec()
-                                                                ) +
-                                                                        fadeIn(
-                                                                                animationSpec =
-                                                                                        MaterialTheme
-                                                                                                .motionScheme
-                                                                                                .fastEffectsSpec()
-                                                                        ),
-                                                        exit =
-                                                                shrinkVertically(
-                                                                        animationSpec =
-                                                                                MaterialTheme
-                                                                                        .motionScheme
-                                                                                        .fastSpatialSpec()
-                                                                ) +
-                                                                        fadeOut(
-                                                                                animationSpec =
-                                                                                        MaterialTheme
-                                                                                                .motionScheme
-                                                                                                .fastEffectsSpec()
-                                                                        )
-                                                ) {
-                                                        Row(
-                                                                verticalAlignment =
-                                                                        Alignment.CenterVertically,
-                                                                horizontalArrangement =
-                                                                        Arrangement.spacedBy(6.dp)
-                                                        ) {
-                                                                Icon(
-                                                                        Icons.Default.CheckCircle,
-                                                                        contentDescription = null,
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary,
-                                                                        modifier =
-                                                                                Modifier.size(16.dp)
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .connection_host_found
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodySmall,
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onPrimaryContainer
-                                                                )
-                                                        }
-                                                }
-                                        }
-                                }
-
-                                // --- Known PCs (RemEx-k62t, RemEx-obxlo) ---
-                                // One row per ADDRESS, most recently connected first, and the
-                                // reversal of RemEx-k62t is deliberate. Certificate-keyed rows are
-                                // the right model for "which machines am I paired with" and are
-                                // still what rename and unpair act on — but they answer the wrong
-                                // question here: a PC whose DHCP lease moved collapsed into a single
-                                // row showing one address, and the address the user needed was the
-                                // one that had been hidden. RecentConnections caps the list at two
-                                // rows per machine so this cannot swing the other way and let one
-                                // churning PC bury the others.
-                                AnimatedVisibility(
-                                        visible = knownPcRows.isNotEmpty(),
-                                        enter =
-                                                expandVertically(motionScheme.fastSpatialSpec()) +
-                                                        fadeIn(motionScheme.fastEffectsSpec()),
-                                        exit =
-                                                shrinkVertically(motionScheme.fastSpatialSpec()) +
-                                                        fadeOut(motionScheme.fastEffectsSpec())
-                                ) {
-                                        Card(modifier = Modifier.fillMaxWidth()) {
-                                                Column(
-                                                        modifier = Modifier.padding(16.dp),
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                        Row(
-                                                                verticalAlignment =
-                                                                        Alignment.CenterVertically
-                                                        ) {
-                                                                Icon(
-                                                                        Icons.Default.Computer,
-                                                                        contentDescription = null,
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                )
-                                                                Spacer(Modifier.width(8.dp))
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .connection_known_pcs_title
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .titleSmallEmphasized
-                                                                )
-                                                        }
-                                                        Text(
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_known_pcs_hint
-                                                                ),
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .bodySmall,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
-                                                        )
-                                                        knownPcRows.forEach { entry ->
-                                                                // Keyed by address, not by
-                                                                // position: the list re-sorts when
-                                                                // a connection lands, and a row's
-                                                                // remembered state (its open
-                                                                // overflow menu) would otherwise
-                                                                // stay with the SLOT and end up
-                                                                // acting on whichever address moved
-                                                                // into it. The address is unique
-                                                                // per row — RecentConnections.rows
-                                                                // dedupes on it — where the
-                                                                // identity no longer is, since one
-                                                                // machine can hold two rows.
-                                                                key(entry.address) {
-                                                                KnownPcRow(
-                                                                        entry = entry,
-                                                                        enabled = !isConnecting,
-                                                                        onConnect = {
-                                                                                // AN UNPINNED
-                                                                                // ADDRESS PAIRS
-                                                                                // RATHER THAN
-                                                                                // CONNECTS, and it
-                                                                                // has to ask for the
-                                                                                // PIN before the
-                                                                                // permission prompt:
-                                                                                // the connection
-                                                                                // cannot succeed
-                                                                                // without one, and
-                                                                                // spending a system
-                                                                                // dialog on an
-                                                                                // attempt that is
-                                                                                // already doomed
-                                                                                // reads as the row
-                                                                                // being broken.
-                                                                                if (entry.isTrusted
-                                                                                ) {
-                                                                                        startKnownPcConnect(
-                                                                                                entry,
-                                                                                                ""
-                                                                                        )
-                                                                                } else {
-                                                                                        rowPinInput =
-                                                                                                ""
-                                                                                        pairingEntry =
-                                                                                                entry
-                                                                                }
-                                                                        },
-                                                                        onRename = {
-                                                                                entry.knownHost
-                                                                                        ?.let {
-                                                                                                nicknameInput =
-                                                                                                        it.nickname
-                                                                                                renamingHost =
-                                                                                                        it
-                                                                                        }
-                                                                        },
-                                                                        onUnpair = {
-                                                                                entry.knownHost
-                                                                                        ?.let {
-                                                                                                unpairingHost =
-                                                                                                        it
-                                                                                        }
-                                                                        },
-                                                                        onForget = {
-                                                                                onForgetRecentConnection(
-                                                                                        entry.address
-                                                                                )
-                                                                        }
-                                                                )
-                                                                }
-                                                        }
-                                                }
-                                        }
-                                }
+                                // --- Your PCs (RemEx-wqo7a.6) ---
+                                // The screen leads with the PCs this phone knows. Finding a new one
+                                // (discovery, QR, typing the address) moved into the "Add a PC"
+                                // sheet, and the address fields into "Add manually" and each PC's
+                                // details sheet. Pairing, pinning and reconnecting are untouched:
+                                // every path below ends in the same calls the old form made.
+                                YourPcsSection(
+                                        cards = yourPcCards,
+                                        status = status,
+                                        isConnected = isConnected,
+                                        capabilitySummary = capabilitySummary,
+                                        enabled = !isConnecting,
+                                        onConnect = { entry -> connectKnownPc(entry) },
+                                        onDetails = { entry -> detailsEntry = entry },
+                                        onAddPc = { showAddPcSheet = true }
+                                )
 
                                 // Pairing a row whose address is not pinned (RemEx-obxlo). Its own
                                 // PIN field rather than the form's: the form's PIN belongs to
@@ -1426,7 +1117,99 @@ fun ConnectionScreenContent(
                                                 }
                                         )
                                 }
+                        }
+                }
+                }
+        }
 
+        // --- Add a PC: find it on the network, scan its QR code, or type it in ---
+        if (showAddPcSheet) {
+                AddPcSheet(
+                        isDiscovering = isDiscovering,
+                        problem = connectionError,
+                        onDismiss = { showAddPcSheet = false },
+                        onDiscover = { startDiscovery() },
+                        onScanQr = {
+                                showAddPcSheet = false
+                                onNavigateToQrScanner()
+                        },
+                        onAddManually = {
+                                showAddPcSheet = false
+                                openConnectionForm(ConnectionFormMode.Add, null)
+                        }
+                )
+        }
+
+        // --- A PC's details: connect, edit its connection details, rename, unpair or forget ---
+        detailsEntry?.let { entry ->
+                val card = yourPcCards.firstOrNull { it.key == entry.address }
+                PcDetailsSheet(
+                        entry = entry,
+                        status = card?.status ?: if (entry.isTrusted) YourPcStatus.Ready else YourPcStatus.NeedsPairing,
+                        enabled = !isConnecting,
+                        onDismiss = { detailsEntry = null },
+                        onConnect = {
+                                detailsEntry = null
+                                connectKnownPc(entry)
+                        },
+                        onEdit = {
+                                detailsEntry = null
+                                openConnectionForm(ConnectionFormMode.Edit, entry)
+                        },
+                        onRename = {
+                                detailsEntry = null
+                                entry.knownHost?.let {
+                                        nicknameInput = it.nickname
+                                        renamingHost = it
+                                }
+                        },
+                        onUnpair = {
+                                detailsEntry = null
+                                entry.knownHost?.let { unpairingHost = it }
+                        },
+                        onForget = {
+                                detailsEntry = null
+                                onForgetRecentConnection(entry.address)
+                        }
+                )
+        }
+
+        // --- The address form: "Add manually", or a PC's "Edit connection details" ---
+        // The same fields, permission handling and Save & Connect the form always had; it just lives
+        // in a sheet now instead of under everything else on the screen.
+        connectionForm?.let { form ->
+                val formSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
+                ModalBottomSheet(
+                        onDismissRequest = { connectionForm = null },
+                        sheetState = formSheetState
+                ) {
+                        Column(
+                                modifier =
+                                        Modifier.fillMaxWidth()
+                                                // Before verticalScroll on purpose: this
+                                                // shrinks the scroll VIEWPORT when the
+                                                // keyboard opens, so the lower fields can be
+                                                // scrolled above it. Applied after the scroll
+                                                // it would only pad the content, leaving the
+                                                // viewport itself behind the keyboard
+                                                // (RemEx-a9ci).
+                                                .imePadding()
+                                                .verticalScroll(rememberScrollState())
+                                                .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                                Text(
+                                        text =
+                                                if (form.mode == ConnectionFormMode.Edit && form.entry != null)
+                                                        stringResource(
+                                                                R.string.connection_edit_details_title,
+                                                                form.entry.displayName
+                                                        )
+                                                else stringResource(R.string.connection_add_manually),
+                                        style = MaterialTheme.typography.titleLargeEmphasized
+                                )
+
+                                if (form.mode == ConnectionFormMode.Add) {
                                 // --- How to connect help section ---
                                 Card(
                                         modifier =
@@ -1648,17 +1431,7 @@ fun ConnectionScreenContent(
                                                 }
                                         }
                                 }
-
-                                // --- Manual host fields ---
-                                Text(
-                                        text =
-                                                stringResource(
-                                                        R.string.connection_or_enter_manually
-                                                ),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.align(Alignment.Start)
-                                )
+                                }
 
                                 OutlinedTextField(
                                         value = hostInput,
@@ -1833,100 +1606,6 @@ fun ConnectionScreenContent(
                                         }
                                 )
 
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                        Column(
-                                                modifier = Modifier.padding(16.dp),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                                Text(
-                                                        text =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_desktop_defaults_title
-                                                                ),
-                                                        style =
-                                                                MaterialTheme.typography
-                                                                        .titleMediumEmphasized
-                                                )
-
-                                                Spacer(modifier = Modifier.height(8.dp))
-
-                                                Text(
-                                                        stringResource(
-                                                                R.string.connection_quality_label,
-                                                                qualityInput.toInt()
-                                                        )
-                                                )
-                                                Slider(
-                                                        value = qualityInput,
-                                                        onValueChange = { qualityInput = it },
-                                                        onValueChangeFinished = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .CLOCK_TICK
-                                                                )
-                                                        },
-                                                        valueRange = 1f..100f,
-                                                        modifier =
-                                                                Modifier.minimumInteractiveComponentSize()
-                                                )
-
-                                                Spacer(modifier = Modifier.height(16.dp))
-
-                                                Text(
-                                                        if (targetFpsInput.toInt() >
-                                                                        DESKTOP_FPS_PACED_MAX
-                                                        )
-                                                                stringResource(
-                                                                        R.string
-                                                                                .remote_desktop_fps_unlimited_label
-                                                                )
-                                                        else
-                                                                stringResource(
-                                                                        R.string.connection_fps_label,
-                                                                        targetFpsInput.toInt()
-                                                                )
-                                                )
-                                                Slider(
-                                                        value = targetFpsInput,
-                                                        onValueChange = { targetFpsInput = it },
-                                                        onValueChangeFinished = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .CLOCK_TICK
-                                                                )
-                                                        },
-                                                        valueRange = 1f..360f,
-                                                        modifier =
-                                                                Modifier.minimumInteractiveComponentSize()
-                                                )
-
-                                                Spacer(modifier = Modifier.height(16.dp))
-
-                                                Text(
-                                                        stringResource(
-                                                                R.string.connection_scale_label,
-                                                                "%.2f".format(scaleInput)
-                                                        )
-                                                )
-                                                Slider(
-                                                        value = scaleInput,
-                                                        onValueChange = { scaleInput = it },
-                                                        onValueChangeFinished = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .CLOCK_TICK
-                                                                )
-                                                        },
-                                                        valueRange = 0.25f..1.0f,
-                                                        modifier =
-                                                                Modifier.minimumInteractiveComponentSize()
-                                                )
-                                        }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
                                 Button(
                                         onClick = {
                                                 view.performHapticFeedback(
@@ -1954,6 +1633,11 @@ fun ConnectionScreenContent(
                                                 } else {
                                                         doConnect()
                                                 }
+                                                // Back to Your PCs, where the status line and the
+                                                // card show how the attempt goes. The deferred
+                                                // permission path keeps working: its state lives
+                                                // on the screen, not in this sheet.
+                                                connectionForm = null
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         enabled = !isConnecting && hostInput.isNotEmpty()
@@ -1976,40 +1660,6 @@ fun ConnectionScreenContent(
                                                 }
                                         }
                                 }
-
-                                Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                                val statusColor by animateColorAsState(
-                                                        targetValue =
-                                                                if (isConnected)
-                                                                        MaterialTheme.colorScheme.primary
-                                                                else
-                                                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        animationSpec = motionScheme.defaultEffectsSpec(),
-                                                        label = "connectionStatusColor"
-                                                )
-                                                Text(
-                                                        text =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_status_label,
-                                                                        status
-                                                                ),
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = statusColor
-                                                )
-                                                Text(
-                                                        text = capabilitySummary,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color =
-                                                                MaterialTheme.colorScheme
-                                                                        .onSurfaceVariant
-                                                )
-                                        }
 
                                         var isPaired by
                                                 remember(hostInput) { mutableStateOf(false) }
@@ -2084,9 +1734,7 @@ fun ConnectionScreenContent(
                                                         }
                                                 }
                                         }
-                                }
                         }
-                }
                 }
         }
 }
@@ -2126,11 +1774,6 @@ private fun ConnectionScreenPreview() {
                 macAddress = "AA:BB:CC:DD:EE:FF",
                 broadcastIp = "192.168.1.255",
                 subnetMask = "255.255.255.0"
-            ),
-            desktopPrefs = SettingsManager.RemoteDesktopPreferences(
-                quality = 70,
-                targetFps = 60,
-                scale = 0.75f
             ),
             isConnecting = false,
             isConnected = true,
@@ -2180,7 +1823,8 @@ private fun ConnectionScreenPreview() {
                 )
             },
             onNavigateToQrScanner = {},
-            onConnect = { _, _, _, _, _, _, _, _, _ -> },
+            connectedHost = EstablishedConnection(host = "192.168.1.10", port = 5005, epoch = 1L),
+            onConnect = { _, _, _, _, _, _ -> },
             onClearError = {},
             onDiscoverHost = {},
             onRepair = { _, _, _ -> },
@@ -2195,60 +1839,168 @@ private fun ConnectionScreenPreview() {
     }
 }
 
+/** Which job the address form sheet is doing. */
+enum class ConnectionFormMode {
+        /** "Add manually": typing in a PC that isn't in the list yet. */
+        Add,
+
+        /** "Edit connection details" for a PC already in the list. */
+        Edit,
+}
+
+/** The address form sheet that is open, and the PC it is editing, if any. */
+private data class ConnectionFormRequest(val mode: ConnectionFormMode, val entry: KnownPcEntry?)
+
+/** "Last connected 5 min ago", or "Not connected yet", in the phone's own relative-time words. */
+@Composable
+private fun lastConnectedText(entry: KnownPcEntry): String =
+        if (entry.hasEverConnected) {
+                stringResource(
+                        R.string.connection_known_pc_last_connected,
+                        // The system's own relative-time wording, so it is localized and formatted
+                        // the way the rest of the phone does it rather than by a string this app
+                        // would have to translate nine times.
+                        DateUtils.getRelativeTimeSpanString(
+                                        entry.lastConnectedAtMillis,
+                                        System.currentTimeMillis(),
+                                        DateUtils.MINUTE_IN_MILLIS
+                                )
+                                .toString()
+                )
+        } else {
+                stringResource(R.string.connection_known_pc_never_connected)
+        }
+
 /**
- * One remembered ADDRESS in the Known PCs list (RemEx-k62t, RemEx-obxlo).
+ * The top of the Connection screen (RemEx-wqo7a.6): a title, the connection status, one card per
+ * remembered PC address, and "Add a PC".
  *
- * Tap the row or its Connect button to reach it; the overflow holds the actions that belong to the
- * machine behind it. The whole row stays clickable alongside the explicit button because
- * reconnecting is the common action on this screen and it should not need aim — the button is there
- * so a list of near-identical addresses still has an unambiguous target on each line.
- *
- * The destructive actions live behind the overflow for the reason they always did: an unpair one
- * mis-tap from a connect is one mis-tap from needing the PIN off the PC to undo.
- *
- * **Rename and unpair are hidden when [KnownPcEntry.knownHost] is null**, which is the case for an
- * address whose PC this phone is no longer paired with anywhere. There is nothing left to rename or
- * unpair there, so those rows offer "remove from list" instead — without it a dead address would sit
- * in the card forever, since the unpair that normally clears history has nothing to act on.
+ * The status line has no line limit on purpose: it used to sit at the very bottom of a long form,
+ * where a long "Connecting to …" was cut off by the edge of the screen (RemEx-wqo7a.1 item 5).
  */
 @Composable
-private fun KnownPcRow(
-        entry: KnownPcEntry,
+private fun YourPcsSection(
+        cards: List<YourPcCard>,
+        status: String,
+        isConnected: Boolean,
+        capabilitySummary: String,
         enabled: Boolean,
-        onConnect: () -> Unit,
-        onRename: () -> Unit,
-        onUnpair: () -> Unit,
-        onForget: () -> Unit
+        onConnect: (KnownPcEntry) -> Unit,
+        onDetails: (KnownPcEntry) -> Unit,
+        onAddPc: () -> Unit
 ) {
         val view = LocalView.current
-        var menuExpanded by remember { mutableStateOf(false) }
-        val displayName = entry.displayName
-        val endpoint = "${entry.address}:${entry.port}"
-        val lastConnected =
-                if (entry.hasEverConnected) {
-                        stringResource(
-                                R.string.connection_known_pc_last_connected,
-                                // The system's own relative-time wording, so it is localized and
-                                // formatted the way the rest of the phone does it rather than by a
-                                // string this app would have to translate nine times.
-                                DateUtils.getRelativeTimeSpanString(
-                                                entry.lastConnectedAtMillis,
-                                                System.currentTimeMillis(),
-                                                DateUtils.MINUTE_IN_MILLIS
-                                        )
-                                        .toString()
+        val motionScheme = MaterialTheme.motionScheme
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                                text = stringResource(R.string.connection_your_pcs_title),
+                                style = MaterialTheme.typography.titleMediumEmphasized
                         )
-                } else {
-                        stringResource(R.string.connection_known_pc_never_connected)
+                        val statusColor by animateColorAsState(
+                                targetValue =
+                                        if (isConnected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                animationSpec = motionScheme.defaultEffectsSpec(),
+                                label = "connectionStatusColor"
+                        )
+                        Text(
+                                text = stringResource(R.string.connection_status_label, status),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = statusColor
+                        )
+                        if (isConnected) {
+                                Text(
+                                        text = capabilitySummary,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                        }
                 }
 
-        ListItem(
-                modifier =
-                        Modifier.clickable(enabled = enabled) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                onConnect()
-                        },
-                leadingContent = {
+                if (cards.isEmpty()) {
+                        Text(
+                                text = stringResource(R.string.connection_your_pcs_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                }
+
+                cards.forEach { card ->
+                        // Keyed by address, not by position: the list re-sorts when a connection
+                        // lands, and a card's remembered state would otherwise stay with the SLOT
+                        // and end up acting on whichever address moved into it.
+                        key(card.key) {
+                                YourPcCardView(
+                                        card = card,
+                                        enabled = enabled,
+                                        onConnect = { onConnect(card.entry) },
+                                        onDetails = { onDetails(card.entry) }
+                                )
+                        }
+                }
+
+                // The first-run primary action when there is nothing to reconnect to; a quieter
+                // tonal button once the list has PCs in it, so "Connect" stays the loudest thing.
+                val addPc: () -> Unit = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onAddPc()
+                }
+                if (cards.isEmpty()) {
+                        Button(onClick = addPc, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_add_pc))
+                        }
+                } else {
+                        FilledTonalButton(onClick = addPc, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_add_pc))
+                        }
+                }
+        }
+}
+
+/**
+ * One remembered PC address as a card (RemEx-wqo7a.6, replacing the RemEx-k62t/obxlo row).
+ *
+ * Tapping the card connects, because reconnecting is the common action here and it should not need
+ * aim; the explicit Connect button gives a list of near-identical addresses an unambiguous target on
+ * each card. The card for the live connection connects nowhere: tapping it opens its details.
+ * Everything that changes or removes the PC (edit, rename, unpair, forget) sits one step away in the
+ * details sheet, for the reason it always sat behind an overflow: an unpair one mis-tap from a
+ * connect is one mis-tap from needing the PIN off the PC to undo.
+ */
+@Composable
+private fun YourPcCardView(
+        card: YourPcCard,
+        enabled: Boolean,
+        onConnect: () -> Unit,
+        onDetails: () -> Unit
+) {
+        val view = LocalView.current
+        val entry = card.entry
+        val displayName = entry.displayName
+        Card(
+                onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        if (card.isCurrent) onDetails() else onConnect()
+                },
+                enabled = enabled || card.isCurrent,
+                shape = MaterialTheme.shapes.large,
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                        ),
+                modifier = Modifier.fillMaxWidth()
+        ) {
+                Row(
+                        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                         Icon(
                                 Icons.Default.Computer,
                                 contentDescription = null,
@@ -2256,119 +2008,276 @@ private fun KnownPcRow(
                                         if (entry.isTrusted) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                },
-                supportingContent = {
-                        Column {
+                        Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                                Text(displayName, style = MaterialTheme.typography.titleSmallEmphasized)
                                 // Only when the headline is a name (nickname or the PC's machine
-                                // name, RemEx-odqj5), otherwise it already IS the endpoint and this
-                                // would print it twice.
+                                // name, RemEx-odqj5); otherwise it already IS the address.
                                 if (entry.isNamed) {
                                         Text(
-                                                endpoint,
+                                                "${entry.address}:${entry.port}",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                 }
                                 Text(
-                                        lastConnected,
+                                        lastConnectedText(entry),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                // Said before the tap rather than after it: pairing needs the PIN
-                                // showing on the PC, so a user who is not standing at it should
-                                // learn that from the row instead of from a dialog they cannot
-                                // answer.
-                                if (!entry.isTrusted) {
+                                YourPcStatusLabel(card.status)
+                        }
+                        if (!card.isCurrent) {
+                                FilledTonalButton(
+                                        onClick = {
+                                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                onConnect()
+                                        },
+                                        enabled = enabled,
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                ) {
+                                        Text(stringResource(R.string.button_connect))
+                                }
+                        }
+                        IconButton(onClick = onDetails) {
+                                Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription =
+                                                stringResource(R.string.connection_known_pc_actions, displayName)
+                                )
+                        }
+                }
+        }
+}
+
+/**
+ * The card's status in a word or two. Colour carries meaning only: tertiary for the live
+ * connection, the tertiary text for "needs pairing" (said before the tap, because pairing needs the
+ * PIN showing on the PC and someone who isn't at it should learn that from the card).
+ */
+@Composable
+private fun YourPcStatusLabel(status: YourPcStatus) {
+        when (status) {
+                YourPcStatus.ConnectedNow ->
+                        Surface(
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                shape = MaterialTheme.shapes.small
+                        ) {
+                                Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                        Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
+                                        )
                                         Text(
-                                                stringResource(
-                                                        R.string.connection_known_pc_needs_pairing
-                                                ),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.tertiary
+                                                stringResource(R.string.connection_pc_status_connected),
+                                                style = MaterialTheme.typography.labelMedium
                                         )
                                 }
                         }
-                },
-                trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(enabled = enabled, onClick = onConnect) {
-                                        Text(stringResource(R.string.button_connect))
-                                }
-                                Box {
-                                        IconButton(onClick = { menuExpanded = true }) {
-                                                Icon(
-                                                        Icons.Default.MoreVert,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .connection_known_pc_actions,
-                                                                        displayName
-                                                                )
-                                                )
-                                        }
-                                        DropdownMenu(
-                                                expanded = menuExpanded,
-                                                onDismissRequest = { menuExpanded = false }
-                                        ) {
-                                                if (entry.knownHost != null) {
-                                                        DropdownMenuItem(
-                                                                text = {
-                                                                        Text(
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_known_pc_rename
-                                                                                )
-                                                                        )
-                                                                },
-                                                                onClick = {
-                                                                        menuExpanded = false
-                                                                        onRename()
-                                                                }
+                YourPcStatus.Connecting ->
+                        Text(
+                                stringResource(R.string.connection_pc_status_connecting),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                        )
+                YourPcStatus.NeedsPairing ->
+                        Text(
+                                stringResource(R.string.connection_known_pc_needs_pairing),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.tertiary
+                        )
+                YourPcStatus.Ready -> Unit
+        }
+}
+
+/**
+ * "Add a PC" (RemEx-wqo7a.6): the three ways in, all of them the flows the screen already had —
+ * the network search, the QR code the PC shows, and typing the address. Nothing new on the wire.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPcSheet(
+        isDiscovering: Boolean,
+        problem: String?,
+        onDismiss: () -> Unit,
+        onDiscover: () -> Unit,
+        onScanQr: () -> Unit,
+        onAddManually: () -> Unit
+) {
+        val view = LocalView.current
+        val motionScheme = MaterialTheme.motionScheme
+        val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
+        ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+                Column(
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .verticalScroll(rememberScrollState())
+                                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                        Text(
+                                stringResource(R.string.connection_add_pc),
+                                style = MaterialTheme.typography.titleLargeEmphasized
+                        )
+                        Text(
+                                stringResource(R.string.connection_auto_discover_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                                onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                        onDiscover()
+                                },
+                                enabled = !isDiscovering,
+                                modifier = Modifier.fillMaxWidth()
+                        ) {
+                                AnimatedContent(
+                                        targetState = isDiscovering,
+                                        transitionSpec = {
+                                                val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                                fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                                        },
+                                        label = "discoverButtonContent"
+                                ) { discovering ->
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (discovering) {
+                                                        RemexLoadingIndicator(
+                                                                modifier = Modifier.size(24.dp),
+                                                                color = MaterialTheme.colorScheme.onPrimary
                                                         )
-                                                        DropdownMenuItem(
-                                                                text = {
-                                                                        Text(
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_unpair
-                                                                                ),
-                                                                                color =
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .error
-                                                                        )
-                                                                },
-                                                                onClick = {
-                                                                        menuExpanded = false
-                                                                        onUnpair()
-                                                                }
-                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(stringResource(R.string.connection_searching))
                                                 } else {
-                                                        DropdownMenuItem(
-                                                                text = {
-                                                                        Text(
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_known_pc_forget
-                                                                                )
-                                                                        )
-                                                                },
-                                                                onClick = {
-                                                                        menuExpanded = false
-                                                                        onForget()
-                                                                }
-                                                        )
+                                                        Icon(Icons.Default.Search, contentDescription = null)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(stringResource(R.string.connection_discover_button))
                                                 }
                                         }
                                 }
                         }
-                },
-                colors =
-                        ListItemDefaults.colors(
-                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        // A search that found nothing says so here, in the sheet the person is
+                        // looking at, not only on the screen underneath it.
+                        if (problem != null && !isDiscovering) {
+                                Text(
+                                        problem,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.error
+                                )
+                        }
+                        FilledTonalButton(
+                                onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        onScanQr()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                        ) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_scan_qr_code))
+                        }
+                        OutlinedButton(
+                                onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                        onAddManually()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                        ) {
+                                Icon(Icons.Default.Edit, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_add_manually))
+                        }
+                }
+        }
+}
+
+/**
+ * One PC's details (RemEx-wqo7a.6): what the card says, plus everything that changes the PC. The
+ * actions are the Known PCs overflow's, unchanged: rename and unpair act on the paired machine, and
+ * an address whose PC is no longer paired anywhere offers "remove from list" instead, since unpair
+ * would have nothing to act on and the address would otherwise sit in the list forever.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PcDetailsSheet(
+        entry: KnownPcEntry,
+        status: YourPcStatus,
+        enabled: Boolean,
+        onDismiss: () -> Unit,
+        onConnect: () -> Unit,
+        onEdit: () -> Unit,
+        onRename: () -> Unit,
+        onUnpair: () -> Unit,
+        onForget: () -> Unit
+) {
+        val view = LocalView.current
+        val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
+        ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+                Column(
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .verticalScroll(rememberScrollState())
+                                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                        Text(entry.displayName, style = MaterialTheme.typography.titleLargeEmphasized)
+                        Text(
+                                "${entry.address}:${entry.port}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-        ) {
-                Text(displayName, style = MaterialTheme.typography.bodyLargeEmphasized)
+                        Text(
+                                lastConnectedText(entry),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        YourPcStatusLabel(status)
+                        Spacer(Modifier.height(8.dp))
+                        if (status != YourPcStatus.ConnectedNow) {
+                                Button(
+                                        onClick = {
+                                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                onConnect()
+                                        },
+                                        enabled = enabled,
+                                        modifier = Modifier.fillMaxWidth()
+                                ) {
+                                        Text(stringResource(R.string.button_connect))
+                                }
+                        }
+                        FilledTonalButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Edit, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_edit_details))
+                        }
+                        if (entry.knownHost != null) {
+                                OutlinedButton(onClick = onRename, modifier = Modifier.fillMaxWidth()) {
+                                        Text(stringResource(R.string.connection_known_pc_rename))
+                                }
+                                OutlinedButton(
+                                        onClick = onUnpair,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors =
+                                                ButtonDefaults.outlinedButtonColors(
+                                                        contentColor = MaterialTheme.colorScheme.error
+                                                )
+                                ) {
+                                        Text(stringResource(R.string.connection_unpair))
+                                }
+                        } else {
+                                OutlinedButton(onClick = onForget, modifier = Modifier.fillMaxWidth()) {
+                                        Text(stringResource(R.string.connection_known_pc_forget))
+                                }
+                        }
+                }
         }
 }
 
