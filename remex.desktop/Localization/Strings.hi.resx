@@ -130,16 +130,16 @@
     <value>⏻  कमांड</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>इस पीसी को लॉक, स्लीप, रीस्टार्ट और शट डाउन करें</value>
+    <value>इस पीसी को लॉक, रीस्टार्ट या बंद करें</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>सामान्य</value>
+    <value>मानक</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>जबरन (तत्काल)</value>
+    <value>जबरन — बिना सहेजा काम खो जाता है</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>पीसी लॉक करें</value>
+    <value>लॉक करें</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
     <value>साइन आउट</value>
@@ -157,13 +157,13 @@
     <value>हाइबरनेट</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>फोर्स शटडाउन</value>
+    <value>जबरन शटडाउन</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>फोर्स रीस्टार्ट</value>
+    <value>जबरन रीस्टार्ट</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>UEFI में रीबूट</value>
+    <value>UEFI में रीबूट करें</value>
   </data>
 
   

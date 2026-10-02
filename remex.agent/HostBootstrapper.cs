@@ -405,6 +405,10 @@ public static class HostBootstrapper
                 sp.GetRequiredService<PairedDeviceActivityStore>(),
                 sp.GetRequiredService<ClientSessionRegistry>(),
                 sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
+        // The PC Commands page hides the power actions this PC cannot do, from the same probe the
+        // phone reads in host_info (RemEx-kq10x.3).
+        builder.Services.AddSingleton<Remex.Desktop.Services.IHostPowerVerbSource>(
+            sp => new HostPowerVerbSource(sp.GetRequiredService<IHostCapabilitiesProvider>()));
         builder.Services.AddSingleton<TransferSessionManager>();
         // RESOLVED BY TransferSessionManager, which is the only production writer of
         // transfer_queue.json. Until that constructor parameter existed this registration had ZERO

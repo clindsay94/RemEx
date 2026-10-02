@@ -130,40 +130,40 @@
     <value>⏻  Komutlar</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Bu bilgisayarı kilitleyin, uyutun, yeniden başlatın ve kapatın</value>
+    <value>Bu bilgisayarı kilitleyin, yeniden başlatın veya kapatın</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>NORMAL</value>
+    <value>Standart</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>ZORLA (ANINDA)</value>
+    <value>Zorla — kaydedilmemiş çalışmalar kaybolur</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>PC'yi Kilitle</value>
+    <value>Kilitle</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>Oturumu Kapat</value>
+    <value>Oturumu kapat</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
     <value>Kapat</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>Yeniden Başlat</value>
+    <value>Yeniden başlat</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
     <value>Uyku</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>Hazırda Beklet</value>
+    <value>Hazırda beklet</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Zorla Kapat</value>
+    <value>Zorla kapat</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>Zorla Yeniden Başlat</value>
+    <value>Zorla yeniden başlat</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>UEFI'ye Yeniden Başlat</value>
+    <value>UEFI'ye yeniden başlat</value>
   </data>
 
   

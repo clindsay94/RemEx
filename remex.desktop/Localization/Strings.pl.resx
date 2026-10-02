@@ -130,16 +130,16 @@
     <value>⏻  Polecenia</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Zablokuj, uśpij, uruchom ponownie i wyłącz ten komputer</value>
+    <value>Zablokuj, uruchom ponownie lub wyłącz ten komputer</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>NORMALNE</value>
+    <value>Standardowe</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>WYMUSZONE (NATYCHMIASTOWE)</value>
+    <value>Wymuszone — niezapisana praca przepada</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Zablokuj PC</value>
+    <value>Zablokuj</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
     <value>Wyloguj</value>
@@ -163,7 +163,7 @@
     <value>Wymuś restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>Uruchom do UEFI</value>
+    <value>Restart do UEFI</value>
   </data>
 
   

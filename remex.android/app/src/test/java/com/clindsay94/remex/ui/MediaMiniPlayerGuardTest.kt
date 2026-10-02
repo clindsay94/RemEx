@@ -92,51 +92,52 @@ class MediaMiniPlayerGuardTest {
     }
 
     @Test
-    fun `the toolbar occlusion is computed, and no use site reads a bare constant`() {
+    fun `the bottom occlusion is computed, and no use site reads a bare constant`() {
         val text = remoteControlScreenSource()
 
-        // The bug this replaces: a bare 104.dp constant that only accounted for the toolbar's own
-        // footprint, so a docked mini-player could sit behind it (or the toolbar could sit behind
-        // the mini-player) with nothing ever recomputing the inset.
+        // The bug this replaced: a bare 104.dp constant that only accounted for the toolbar's own
+        // footprint, so a docked mini-player could sit behind it with nothing ever recomputing the
+        // inset. The floating toolbar itself is gone since RemEx-kq10x.3 (its actions are grid
+        // cards), so neither it nor its constant may come back.
         assertFalse(
                 "the old bare FloatingToolbarOcclusion constant must not be re-declared",
                 Regex("""val\s+FloatingToolbarOcclusion\s*=\s*\d+\.dp""").containsMatchIn(text)
         )
-        assertTrue(
-                "an occlusion must still be computed from the toolbar-only base",
-                Regex("""val\s+ToolbarOnlyOcclusion\s*=\s*\d+\.dp""").containsMatchIn(text)
+        assertFalse(
+                "the duplicate floating quick-actions toolbar must not come back (RemEx-kq10x.3)",
+                text.contains("HorizontalFloatingToolbar(") || Regex("""val\s+ToolbarOnlyOcclusion\b""").containsMatchIn(text)
         )
         assertTrue(
-                "rememberFloatingToolbarOcclusion must exist and take whether the mini-player shows",
-                text.contains("rememberFloatingToolbarOcclusion(miniPlayerShown)")
+                "rememberBottomChromeOcclusion must exist and take whether the mini-player shows",
+                text.contains("rememberBottomChromeOcclusion(miniPlayerShown)")
         )
 
         // The grid's bottom inset: must be the val this composable derived from
-        // rememberFloatingToolbarOcclusion, not a literal dp value.
+        // rememberBottomChromeOcclusion, not a literal dp value.
         assertTrue(
-                "the grid must first bind a val to rememberFloatingToolbarOcclusion(...)",
-                Regex("""val\s+toolbarOcclusion\s*=\s*rememberFloatingToolbarOcclusion""")
+                "the grid must first bind a val to rememberBottomChromeOcclusion(...)",
+                Regex("""val\s+bottomOcclusion\s*=\s*rememberBottomChromeOcclusion""")
                         .containsMatchIn(text)
         )
         assertTrue(
                 "the grid's contentPadding bottom must read that computed value",
-                Regex("""bottom\s*=\s*toolbarOcclusion\b""").containsMatchIn(text)
+                Regex("""bottom\s*=\s*bottomOcclusion\b""").containsMatchIn(text)
         )
 
         // The RemEx-tgl1 bring-into-view maths: CommandCard must take the SAME computed value as a
-        // parameter (not re-read a module constant), and the grid must pass its toolbarOcclusion
+        // parameter (not re-read a module constant), and the grid must pass its bottomOcclusion
         // through to it - that's what keeps the two call sites from drifting apart.
         assertTrue(
                 "CommandCard must accept the occlusion value as a parameter",
-                Regex("""toolbarOcclusion:\s*androidx\.compose\.ui\.unit\.Dp""").containsMatchIn(text)
+                Regex("""bottomOcclusion:\s*androidx\.compose\.ui\.unit\.Dp""").containsMatchIn(text)
         )
         assertTrue(
-                "CommandCard's toPx() line must read its own toolbarOcclusion parameter",
-                text.contains("toolbarOcclusion.toPx()")
+                "CommandCard's toPx() line must read its own bottomOcclusion parameter",
+                text.contains("bottomOcclusion.toPx()")
         )
         assertTrue(
                 "the grid's CommandCard call must forward the computed occlusion",
-                text.contains("toolbarOcclusion = toolbarOcclusion,")
+                text.contains("bottomOcclusion = bottomOcclusion,")
         )
     }
 
@@ -163,14 +164,14 @@ class MediaMiniPlayerGuardTest {
     fun `the media card no longer sits inside the command grid`() {
         val text = remoteControlScreenSource()
 
-        // Scoped to the grid body specifically (between LazyVerticalGrid( and the floating
-        // toolbar that follows it): MediaControlSection is still called from
+        // Scoped to the grid body specifically (between LazyVerticalGrid( and the docked
+        // mini-player that follows it): MediaControlSection is still called from
         // MediaNowPlayingSheet.kt, so a whole-file `!contains` would pass for the wrong reason if
         // this file ever imported it back in for some other purpose.
         val gridStart = text.indexOf("LazyVerticalGrid(")
-        val toolbarStart = text.indexOf("HorizontalFloatingToolbar(")
-        assertTrue("expected to find both the grid and the toolbar", gridStart >= 0 && toolbarStart > gridStart)
-        val gridBody = text.substring(gridStart, toolbarStart)
+        val miniPlayerStart = text.indexOf("MediaMiniPlayer(", startIndex = gridStart.coerceAtLeast(0))
+        assertTrue("expected to find both the grid and the mini-player", gridStart >= 0 && miniPlayerStart > gridStart)
+        val gridBody = text.substring(gridStart, miniPlayerStart)
 
         assertFalse(
                 "MediaControlSection must not be called from inside the command grid any more",

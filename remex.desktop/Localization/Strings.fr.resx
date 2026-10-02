@@ -130,22 +130,22 @@
     <value>⏻  Commandes</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Verrouiller, mettre en veille, redémarrer et éteindre ce PC</value>
+    <value>Verrouillez, redémarrez ou éteignez ce PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>NORMAL</value>
+    <value>Standard</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>FORCÉ (IMMÉDIAT)</value>
+    <value>Forcé — le travail non enregistré est perdu</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Verrouiller le PC</value>
+    <value>Verrouiller</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>Déconnexion</value>
+    <value>Se déconnecter</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>Éteindre</value>
+    <value>Arrêter</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
     <value>Redémarrer</value>

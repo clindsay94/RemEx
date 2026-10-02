@@ -741,6 +741,18 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                             RemoteDesktopCapabilityState().supportsInputSimulation
                     )
 
+    /**
+     * The power actions the PC says it can carry out (`routinePowerVerbs` in its host_info, probed
+     * once on the PC from logind / GetPwrCapabilities), or null when it does not say - an older PC,
+     * or nothing has arrived yet. The Commands grid hides what is missing and shows everything on
+     * null, so an older PC loses nothing (RemEx-kq10x.3). The routine editor reads the same field
+     * through the same parser, so the two screens cannot disagree about one PC.
+     */
+    val powerVerbs: StateFlow<List<String>?> =
+            RemexClientManager.hostCapabilities
+                    .map { com.clindsay94.remex.ui.routines.RoutinePowerVerbsCapability.parse(it) }
+                    .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     private fun sendInput(input: JSONObject) {
         // THE ONLY WAY INPUT LEAVES THIS CLASS, so gating here covers mouseMove, mouseClick,
         // mouseScroll, typeText, keyDown and keyUp at once. This screen needs no video stream, so it

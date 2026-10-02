@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 using Remex.Core.Guards;
 using Remex.Core.Models;
+using Remex.Core.Routines;
 using Remex.Core.Services.Network;
 using Remex.Core.Validation;
 
@@ -52,6 +53,41 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     [ObservableProperty]
     private string _wolStatusText = string.Empty;
 
+    // What this PC can actually do, from the host's capability probe; null shows every action
+    // (RemEx-kq10x.3). Re-read on connect because the embedded host publishes its container after
+    // it starts, and a page built first would otherwise keep null for the whole session.
+    private IReadOnlyCollection<string>? _powerVerbs;
+
+    private static readonly string[] PowerVisibilityProperties =
+    [
+        nameof(CanLock), nameof(CanSignOut), nameof(CanShutdown), nameof(CanRestart), nameof(CanSleep),
+        nameof(CanHibernate), nameof(CanForceShutdown), nameof(CanForceRestart), nameof(CanRestartToUefi),
+    ];
+
+    public bool CanLock => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.Lock);
+    public bool CanSignOut => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.SignOut);
+    public bool CanShutdown => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.Shutdown);
+    public bool CanRestart => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.Restart);
+    public bool CanSleep => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.Sleep);
+    public bool CanHibernate => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.Hibernate);
+    public bool CanForceShutdown => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.ForceShutdown);
+    public bool CanForceRestart => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.ForceRestart);
+    public bool CanRestartToUefi => HostPowerVerbs.IsOffered(_powerVerbs, RoutinePowerVerbs.RestartToUefi);
+
+    /// <summary>Re-reads which power actions this PC supports and updates the tiles' visibility.</summary>
+    public void RefreshPowerVerbs()
+    {
+        _powerVerbs = EmbeddedHostServiceLocator.TryResolve<IHostPowerVerbSource>()?.GetPowerVerbs();
+        foreach (var name in PowerVisibilityProperties)
+            OnPropertyChanged(name);
+    }
+
+    private void OnConnectionPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
+            RefreshPowerVerbs();
+    }
+
     public RemoteViewModel(
         ConnectionViewModel connection,
         ShellViewModel shell,
@@ -73,6 +109,9 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         // that lands while this page is cached refreshes what's shown instead of leaving the
         // pre-import snapshot in the boxes until the next full navigation away and back.
         _layoutService.ProfileReplaced += OnProfileReplaced;
+
+        Connection.PropertyChanged += OnConnectionPropertyChanged;
+        RefreshPowerVerbs();
 
         _ = LoadWolConfigAsync();
     }
@@ -290,5 +329,6 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     public void Dispose()
     {
         _layoutService.ProfileReplaced -= OnProfileReplaced;
+        Connection.PropertyChanged -= OnConnectionPropertyChanged;
     }
 }

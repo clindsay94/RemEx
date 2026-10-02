@@ -145,40 +145,41 @@
                 </StackPanel>
             </material:Card>
 
-            <!-- ═══ Graceful Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Graceful}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <!-- ═══ Standard (RemEx-kq10x.3: same groups, order and names as the phone's Commands screen;
+                 a tile hides when this PC's capability probe says it cannot do that action) ═══ -->
+            <TextBlock Text="{local:Localize Remote_Graceful}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="tile" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="tile" Command="{Binding LockPcCommand}" IsVisible="{Binding CanLock}" Margin="0,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Lock}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Lock" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="tile" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="tile" Command="{Binding SignOutPcCommand}" IsVisible="{Binding CanSignOut}" Margin="4,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_SignOut}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Logout" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="tile warning" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="tile warning" Command="{Binding ShutdownPcCommand}" IsVisible="{Binding CanShutdown}" Margin="4,0,0,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Shutdown}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Power" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="tile warning" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="tile warning" Command="{Binding RestartPcCommand}" IsVisible="{Binding CanRestart}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Restart}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Restart" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="tile" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="tile" Command="{Binding SleepPcCommand}" IsVisible="{Binding CanSleep}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Sleep}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Sleep" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="tile" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="tile" Command="{Binding HibernatePcCommand}" IsVisible="{Binding CanHibernate}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Hibernate}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Snowflake" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
@@ -186,22 +187,22 @@
                 </Button>
             </UniformGrid>
 
-            <!-- ═══ Forced Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Forced}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
+            <!-- ═══ Forced — unsaved work is lost ═══ -->
+            <TextBlock Text="{local:Localize Remote_Forced}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="tile danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="tile danger" Command="{Binding ForceShutdownPcCommand}" IsVisible="{Binding CanForceShutdown}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceShutdown}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="PowerPlugOff" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource SystemErrorBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="tile danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="tile danger" Command="{Binding ForceRestartCommand}" IsVisible="{Binding CanForceRestart}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceRestart}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="RestartAlert" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource SystemErrorBrush}"/>
                     </StackPanel>
                 </Button>
-                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="tile danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
+                <Button MinHeight="112" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="12,14" AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="tile danger" Command="{Binding RestartToUefiCommand}" IsVisible="{Binding CanRestartToUefi}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_RebootUefi}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <mi:MaterialIcon Kind="Cog" Width="32" Height="32" HorizontalAlignment="Center" Foreground="{DynamicResource SystemErrorBrush}"/>

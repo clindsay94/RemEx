@@ -182,6 +182,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **Commands look and read the same on the PC and the phone.** Both apps now show two groups in the same
+  order: Standard (Lock, Sign out, Shutdown, Restart, Sleep, Hibernate) and "Forced — unsaved work is lost"
+  (Force shutdown, Force restart, Reboot to UEFI), with the same names in all nine languages. Both apps hide
+  any action the PC says it cannot do, such as Hibernate when hibernation is turned off. On the phone, Wake
+  PC sits at the top, the actions are rounded cards you tap to run (the Forced ones in the warning colour),
+  and the group names are plain text instead of coloured bars. The floating button bar is gone: screenshot
+  and both clipboard buttons now have their own cards, and the media player stays docked at the bottom. The
+  optional wait before a shutdown or restart is explained on the field itself. (RemEx-kq10x.3)
 - **The PC and the phone now call every page by the same plain name.** The pages are Sensors, Commands,
   Apps, Processes and Files on both apps, and the phone's Remote Desktop page is now just Desktop. Each
   page's title matches its sidebar or tab label. The PC subtitles are short plain sentences such as "What's

@@ -88,7 +88,11 @@ class RemoteControlConfirmationTests {
     @Test
     fun `destructive commands confirm and reversible ones do not`() {
         val mustConfirm = listOf("SignOut", "Shutdown", "ForceShutdown", "Restart", "ForceRestart", "RestartToUefi")
-        val mustNotConfirm = listOf("WakeOnLan", "Lock", "Sleep", "Hibernate", "MonitorOff")
+        val mustNotConfirm = listOf(
+                "WakeOnLan", "Lock", "Sleep", "Hibernate", "MonitorOff",
+                // The former floating-toolbar actions, cards since RemEx-kq10x.3.
+                "Screenshot", "SendClipboard", "FetchClipboard"
+        )
 
         for (action in mustConfirm) {
             assertEquals(

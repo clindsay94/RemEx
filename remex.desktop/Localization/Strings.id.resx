@@ -130,16 +130,16 @@
     <value>⏻  Perintah</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Kunci, tidurkan, mulai ulang, dan matikan PC ini</value>
+    <value>Kunci, mulai ulang, atau matikan PC ini</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>NORMAL</value>
+    <value>Standar</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>PAKSA (LANGSUNG)</value>
+    <value>Paksa — pekerjaan yang belum disimpan akan hilang</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Kunci PC</value>
+    <value>Kunci</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
     <value>Keluar</value>
@@ -148,7 +148,7 @@
     <value>Matikan</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
-    <value>Restart</value>
+    <value>Mulai ulang</value>
   </data>
   <data name="Remote_Sleep" xml:space="preserve">
     <value>Tidur</value>
@@ -157,10 +157,10 @@
     <value>Hibernasi</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Paksa Matikan</value>
+    <value>Paksa matikan</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>Paksa Restart</value>
+    <value>Paksa mulai ulang</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>Reboot ke UEFI</value>

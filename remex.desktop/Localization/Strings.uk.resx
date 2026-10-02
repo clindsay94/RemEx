@@ -130,19 +130,19 @@
     <value>⏻  Команди</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Блокування, сон, перезапуск і вимкнення цього ПК</value>
+    <value>Заблокуйте, перезапустіть або вимкніть цей ПК</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>НОРМАЛЬНЕ</value>
+    <value>Стандартні</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>ПРИМУСОВЕ (НЕГАЙНО)</value>
+    <value>Примусові — незбережену роботу буде втрачено</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Заблокувати ПК</value>
+    <value>Заблокувати</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>Вихід</value>
+    <value>Вийти</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
     <value>Вимкнути</value>
@@ -154,16 +154,16 @@
     <value>Сон</value>
   </data>
   <data name="Remote_Hibernate" xml:space="preserve">
-    <value>Сплячий режим</value>
+    <value>Гібернація</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Примусове вимкнення</value>
+    <value>Примусово вимкнути</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>Примусове перезавантаження</value>
+    <value>Примусово перезавантажити</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
-    <value>Перезавантаження в UEFI</value>
+    <value>Перезавантажити в UEFI</value>
   </data>
 
   

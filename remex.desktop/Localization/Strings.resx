@@ -130,10 +130,10 @@
     <value>⏻  Commands</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Lock, sleep, restart and shut down this PC</value>
+    <value>Lock, restart or shut down this PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>GRACEFUL</value>
+    <value>Standard</value>
   </data>
   <data name="Remote_WakeTitle" xml:space="preserve">
     <value>Wake this PC from your phone</value>
@@ -154,13 +154,13 @@
     <value>To set it up: open the RemEx app on your phone, go to Settings → Wake-on-LAN, and enter the address above. Your phone can then wake this PC anytime it's on the same network.</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>FORCED (IMMEDIATE)</value>
+    <value>Forced — unsaved work is lost</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Lock PC</value>
+    <value>Lock</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>Sign Out</value>
+    <value>Sign out</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
     <value>Shutdown</value>
@@ -175,10 +175,10 @@
     <value>Hibernate</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Force Shutdown</value>
+    <value>Force shutdown</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>Force Restart</value>
+    <value>Force restart</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>Reboot to UEFI</value>

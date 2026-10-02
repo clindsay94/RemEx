@@ -9,11 +9,14 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -52,21 +55,17 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateDpAsState
 
-private enum class CommandCategory(@param:StringRes val labelRes: Int) {
-    SESSION(R.string.rc_category_session),
-    POWER(R.string.rc_category_power),
-    ENERGY(R.string.rc_category_energy)
-}
-
 /**
  * Whether an action discards the user's work, and therefore must be confirmed.
  *
  * This is the ONE place the question is answered. It used to be a hand-set Boolean on every card,
  * and the original values had been assigned by CATEGORY - every POWER card true, every SESSION and
- * ENERGY card false. Sign Out sits in SESSION beside Wake and Lock, so it inherited `false` by
+ * ENERGY card false. Sign Out sat in SESSION beside Wake and Lock, so it inherited `false` by
  * association and shipped a destructive action with no prompt (RemEx-awks). Nothing in the type
  * stopped the twelfth card repeating that, because the property that actually matters - does this
- * close programs or lose unsaved work? - was never expressed, only proxied.
+ * close programs or lose unsaved work? - was never expressed, only proxied. The groups changed again
+ * in RemEx-kq10x.3 (Sign out now sits in Standard beside Sleep), which is exactly why the answer must
+ * never be read off the group.
  *
  * The `else` branch confirms. A `when` over a wire string cannot be exhaustive, so the default has
  * to be the SAFE direction: an action nobody classified gets a prompt rather than running silently.
@@ -83,12 +82,17 @@ private fun actionDiscardsWork(action: String): Boolean = when (action) {
 
     // Reversible, and none of them closes a program or discards unsaved work. Wake and Lock change
     // nothing the user is holding; Sleep and Hibernate preserve session state by definition;
-    // MonitorOff only blanks the display.
+    // MonitorOff only blanks the display. A screenshot only reads the PC's screen, and the clipboard
+    // pair writes either the PC's clipboard or the phone's - the one thing a person restores by
+    // copying again (RemEx-hgqs).
     "WakeOnLan",
     "Lock",
     "Sleep",
     "Hibernate",
-    "MonitorOff" -> false
+    "MonitorOff",
+    "Screenshot",
+    "SendClipboard",
+    "FetchClipboard" -> false
 
     else -> true
 }
@@ -98,7 +102,6 @@ private data class RemoteCommandCard(
         @param:StringRes val titleRes: Int,
         val action: String,
         val icon: ImageVector,
-        val category: CommandCategory,
         /**
          * Optional short consequence shown only while the card is awaiting confirmation, for commands
          * whose effect is not obvious. Note the confirm face REPLACES the card title with a generic
@@ -111,7 +114,7 @@ private data class RemoteCommandCard(
          */
         @param:StringRes val warningRes: Int? = null,
         /**
-         * Whether the host honours a delay for this action. False hides the timer field in confirm
+         * Whether the host honours a delay for this action. False hides the wait field in confirm
          * mode, because offering one the host ignores is worse than offering none: the command would
          * run immediately and still report success.
          *
@@ -131,142 +134,147 @@ private data class RemoteCommandCard(
 }
 
 /**
- * Height the floating quick-actions toolbar occludes at the bottom of the command grid.
+ * How much of the bottom of the screen the docked [MediaMiniPlayer] occludes right now, animated as
+ * it appears and disappears above the nav bar.
  *
- * Shared by the grid's bottom [PaddingValues] and by the confirm-actions bring-into-view request
- * so the two cannot drift apart: a scroll that merely brings the Confirm/Cancel row's trailing
- * edge to the viewport bottom would park it *behind* the toolbar, which is the same
- * discoverability bug in a new place. (RemEx-tgl1.)
- *
- * ONLY the toolbar's own footprint. Since RemEx-vtorl.5 the docked mini-player can raise the
- * toolbar further still, so a bare constant is no longer the whole answer - see
- * [rememberFloatingToolbarOcclusion], which every use site now reads instead.
- */
-private val ToolbarOnlyOcclusion = 104.dp
-
-/**
- * How much of the bottom of the screen the floating toolbar stack occludes right now, animated
- * as the docked [MediaMiniPlayer] appears and disappears above the nav bar.
- *
- * Both former reads of the bare [ToolbarOnlyOcclusion] constant (the grid's bottom
- * [PaddingValues] and the RemEx-tgl1 bring-into-view maths) go through this instead, so a track
- * starting or stopping mid-session can never leave one of the two out of step with the other.
+ * The grid's bottom [PaddingValues] and the RemEx-tgl1 bring-into-view maths both read this one
+ * value, so a track starting or stopping mid-session can never leave one of the two out of step with
+ * the other. The floating quick-actions toolbar that used to sit above the mini-player is gone
+ * (RemEx-kq10x.3): every one of its actions is a card in the grid now, so only the bar remains.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun rememberFloatingToolbarOcclusion(miniPlayerShown: Boolean): Dp {
-    val target = ToolbarOnlyOcclusion + if (miniPlayerShown) MiniPlayerHeight else 0.dp
+private fun rememberBottomChromeOcclusion(miniPlayerShown: Boolean): Dp {
+    val target = if (miniPlayerShown) MiniPlayerHeight else 0.dp
     val animated by
             animateDpAsState(
                     targetValue = target,
                     animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    label = "floatingToolbarOcclusion"
+                    label = "bottomChromeOcclusion"
             )
-    // Plus the nav-bar inset: the toolbar and the mini-player both sit on navigationBarsPadding(),
-    // so they rise by that inset too. Without it the last tile and the Energy header stayed
-    // half-covered on three-button navigation (RemEx-wqo7a.1). ToolbarOnlyOcclusion already
-    // carries the breathing room, so no extra gap here.
+    // Plus the nav-bar inset: the mini-player sits on navigationBarsPadding(), so it rises by that
+    // inset too. Without it the last tile stayed half-covered on three-button navigation
+    // (RemEx-wqo7a.1). The default 16dp gap is the breathing room under the last row.
     return floatingChromeBottomPadding(
             floatingFootprint = animated,
-            navBarInset = navigationBarBottomInset(),
-            gap = 0.dp
+            navBarInset = navigationBarBottomInset()
     )
 }
 
+/**
+ * Every card the screen can draw, keyed by action. The ORDER and grouping are not here: they live in
+ * [CommandsLayout.groups], which the screen walks, so this list only says what each action looks like.
+ */
 private val remoteCommandCards =
         listOf(
                 RemoteCommandCard(
                         "wake",
                         R.string.rc_wake_pc,
                         "WakeOnLan",
-                        Icons.Default.Sensors,
-                        CommandCategory.SESSION
+                        Icons.Default.Sensors
                 ),
                 RemoteCommandCard(
                         "lock",
                         R.string.rc_lock_pc,
                         "Lock",
-                        Icons.Default.Lock,
-                        CommandCategory.SESSION
+                        Icons.Default.Lock
                 ),
                 // Signing out closes every open program on the PC and discards unsaved work, exactly
-                // like Shutdown - so it confirms, like Shutdown. It previously did not, because this
-                // flag had been set from the CATEGORY rather than from destructiveness, and Sign Out
-                // sits in SESSION beside Wake and Lock, which are both harmless. Category stays
-                // SESSION (that grouping is correct); only the confirmation changes. (RemEx-awks.)
+                // like Shutdown - so it confirms, like Shutdown. (RemEx-awks.)
                 RemoteCommandCard(
                         "logoff",
                         R.string.rc_logoff,
                         "SignOut",
                         Icons.AutoMirrored.Filled.Logout,
-                        CommandCategory.SESSION,
                         // The consequence a phone user cannot see: the PC stays ON but becomes
                         // unreachable, because remex.agent lives in the signed-in session and is
                         // started by a per-user logon task. Whoever taps this is by definition not
                         // sitting at the PC, so they need telling BEFORE, not after.
                         warningRes = R.string.rc_logoff_warning,
-                        // The host signs out immediately and cannot delay it, so do not offer a timer
-                        // the command will ignore while still reporting success. Only surfaced at all
-                        // because requiresConfirmation now shows the confirm face for this card.
+                        // The host signs out immediately and cannot delay it, so do not offer a wait
+                        // the command will ignore while still reporting success.
                         supportsDelay = false
                 ),
                 RemoteCommandCard(
                         "shutdown",
                         R.string.rc_shutdown,
                         "Shutdown",
-                        Icons.Default.PowerSettingsNew,
-                        CommandCategory.POWER
-                ),
-                RemoteCommandCard(
-                        "force_shutdown",
-                        R.string.rc_force_shutdown,
-                        "ForceShutdown",
-                        Icons.Default.PowerOff,
-                        CommandCategory.POWER
+                        Icons.Default.PowerSettingsNew
                 ),
                 RemoteCommandCard(
                         "restart",
                         R.string.rc_restart,
                         "Restart",
-                        Icons.Default.RestartAlt,
-                        CommandCategory.POWER
-                ),
-                RemoteCommandCard(
-                        "force_restart",
-                        R.string.rc_force_restart,
-                        "ForceRestart",
-                        Icons.Default.Warning,
-                        CommandCategory.POWER
-                ),
-                RemoteCommandCard(
-                        "uefi",
-                        R.string.rc_reboot_uefi,
-                        "RestartToUefi",
-                        Icons.Default.Refresh,
-                        CommandCategory.POWER
+                        Icons.Default.RestartAlt
                 ),
                 RemoteCommandCard(
                         "sleep",
                         R.string.rc_sleep,
                         "Sleep",
-                        Icons.Default.Bedtime,
-                        CommandCategory.ENERGY
+                        Icons.Default.Bedtime
                 ),
                 RemoteCommandCard(
                         "hibernate",
                         R.string.rc_hibernate,
                         "Hibernate",
-                        Icons.Default.Bedtime,
-                        CommandCategory.ENERGY
+                        Icons.Default.Bedtime
+                ),
+                RemoteCommandCard(
+                        "force_shutdown",
+                        R.string.rc_force_shutdown,
+                        "ForceShutdown",
+                        Icons.Default.PowerOff
+                ),
+                RemoteCommandCard(
+                        "force_restart",
+                        R.string.rc_force_restart,
+                        "ForceRestart",
+                        Icons.Default.Warning
+                ),
+                RemoteCommandCard(
+                        "uefi",
+                        R.string.rc_reboot_uefi,
+                        "RestartToUefi",
+                        Icons.Default.Refresh
                 ),
                 RemoteCommandCard(
                         "monitor_off",
                         R.string.rc_monitor_off,
                         "MonitorOff",
-                        Icons.Default.Monitor,
-                        CommandCategory.ENERGY
+                        Icons.Default.Monitor
+                ),
+                // ScreenshotMonitor, not Screenshot: the plain glyph is a phone, and this captures
+                // the PC's screen. Its own callback rather than onSendSystemCommand("SCREENSHOT", 0):
+                // that path reports the response's message field verbatim, and for a command dispatch
+                // that field is the native layer's untranslated "Command dispatched.". See
+                // RemoteControlViewModel.takeScreenshot.
+                RemoteCommandCard(
+                        "screenshot",
+                        R.string.action_take_screenshot,
+                        "Screenshot",
+                        Icons.Default.ScreenshotMonitor
+                ),
+                // THE CLIPBOARD PAIR IS CHOSEN TOGETHER (RemEx-hgqs). Direction is the ONLY thing
+                // distinguishing these two, so the glyphs must carry it - but Upload/Download already
+                // mean FILE TRANSFER in this app (FileManagerToolbar, FileManagerQueuePanel,
+                // FileTransferScreen). ContentPasteGo / ContentPaste keeps the clipboard metaphor and
+                // puts the direction on top of it. The refusals send can produce - nothing copied, too
+                // large - are decided on the phone before anything is sent.
+                RemoteCommandCard(
+                        "clipboard_send",
+                        R.string.clipboard_send_button,
+                        "SendClipboard",
+                        Icons.Default.ContentPasteGo
+                ),
+                RemoteCommandCard(
+                        "clipboard_fetch",
+                        R.string.clipboard_fetch_button,
+                        "FetchClipboard",
+                        Icons.Default.ContentPaste
                 )
         )
+
+private val remoteCommandCardsByAction = remoteCommandCards.associateBy { it.action }
 
 data class RemoteControlUiState(
         val commandStatus: String? = null,
@@ -291,7 +299,12 @@ data class RemoteControlUiState(
          */
         val playback: MediaPlaybackSnapshot = MediaPlaybackSnapshot.Unknown,
         /** The bitmap for [playback]'s current `artworkId`, or null. Drives [MediaMiniPlayer]/[MediaNowPlayingSheet]. */
-        val artwork: Bitmap? = null
+        val artwork: Bitmap? = null,
+        /**
+         * The power actions the PC says it can do, or null when it does not say. Actions it leaves
+         * out are hidden; null shows every action (RemEx-kq10x.3, [CommandsLayout.isOffered]).
+         */
+        val powerVerbs: List<String>? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -306,6 +319,7 @@ fun RemoteControlScreen(
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val supportsInputSimulation by
             viewModel.supportsInputSimulation.collectAsStateWithLifecycle()
+    val powerVerbs by viewModel.powerVerbs.collectAsStateWithLifecycle()
     // Straight off the manager, like isConnected above rather than through the view model: it is a
     // snapshot the manager already resets on connect and disconnect, and a pass-through flow would be
     // a second place for that lifetime rule to drift out of step (RemEx-xx6xf).
@@ -322,7 +336,8 @@ fun RemoteControlScreen(
                     isConnected = isConnected,
                     supportsInputSimulation = supportsInputSimulation,
                     playback = mediaState,
-                    artwork = mediaArtwork
+                    artwork = mediaArtwork,
+                    powerVerbs = powerVerbs
             )
 
     // "Your routines" (routines spec A14, R-UX-06): the connected PC's Tap Run routines.
@@ -389,16 +404,21 @@ fun RemoteControlScreenContent(
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
+        val visibleGroups = remember(uiState.powerVerbs) { CommandsLayout.visibleGroups(uiState.powerVerbs) }
+        // The last shared group still on screen. A PC that can do none of the Forced actions drops
+        // that group, and the routines must not vanish with it; Wake is always shown.
+        val routinesFollow =
+                visibleGroups.lastOrNull { (group, _) -> group == CommandGroup.FORCED || group == CommandGroup.STANDARD }
+                        ?.first ?: CommandGroup.WAKE
         val view = LocalView.current
 
         // UNKNOWN has no reading to dock a bar about (RemEx-nmvz6's reasoning applied to layout):
         // the whole stacking/occlusion story below is driven off this one flag rather than
-        // repeating the status check at each of its three use sites. NONE stays shown - it is
-        // the bar's only route to MediaNowPlayingSheet's volume/transport controls when nothing
-        // is playing (RemEx-vtorl.5 review round 2 - reverted the NONE hide).
+        // repeating the status check at each of its use sites. NONE stays shown - it is the bar's
+        // only route to MediaNowPlayingSheet's volume/transport controls when nothing is playing
+        // (RemEx-vtorl.5 review round 2 - reverted the NONE hide).
         val miniPlayerShown = uiState.playback.status != MediaPlaybackStatus.UNKNOWN
-        val toolbarOcclusion = rememberFloatingToolbarOcclusion(miniPlayerShown)
+        val bottomOcclusion = rememberBottomChromeOcclusion(miniPlayerShown)
         var sheetOpen by remember { mutableStateOf(false) }
 
       Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -406,60 +426,94 @@ fun RemoteControlScreenContent(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                // imePadding as well as the toolbar inset below: the delay field sits
-                // mid-grid, so without it the keyboard covers the row being typed into
-                // (RemEx-a9ci).
+                // imePadding as well as the bottom inset below: the wait field sits mid-grid, so
+                // without it the keyboard covers the row being typed into (RemEx-a9ci).
                 modifier = Modifier.fillMaxSize().imePadding(),
-                // Extra bottom inset so the floating toolbar (and, when docked, the mini-player
-                // beneath it) never cover the last row.
+                // Extra bottom inset so the docked mini-player never covers the last row.
                 contentPadding =
                         PaddingValues(
                                 start = 16.dp,
                                 top = 16.dp,
                                 end = 16.dp,
-                                bottom = toolbarOcclusion
+                                bottom = bottomOcclusion
                         )
         ) {
             item(span = { GridItemSpan(2) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                            text = stringResource(R.string.remote_control_section_header),
-                            style = MaterialTheme.typography.headlineSmallEmphasized
-                    )
-
-                    Text(
-                            text = stringResource(R.string.remote_control_description),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                Text(
+                        text = stringResource(R.string.remote_control_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // Media moved out of the grid onto the docked mini-player (RemEx-vtorl.5): it was the
             // only reversible, casually-used group here, which is exactly why it now lives where
             // the thumb always lands rather than scrolling away with the rest of the grid.
 
-            CommandCategory.entries.forEach { category ->
-                // "Your routines" sits directly above POWER, under the same banded header (spec
-                // A14), and is absent when the connected PC has no Tap Run routines.
-                if (category == CommandCategory.POWER && routines.isNotEmpty()) {
+            visibleGroups.forEach { (group, actions) ->
+                group.labelRes?.let { labelRes ->
+                    item(span = { GridItemSpan(2) }, key = "group-" + group.name) {
+                        CommandSectionLabel(stringResource(labelRes))
+                    }
+                }
+                val groupCards = actions.mapNotNull { remoteCommandCardsByAction[it] }
+                items(
+                        groupCards,
+                        key = { it.id },
+                        // Wake is alone at the top and the most likely first tap, so it spans the row.
+                        span = { GridItemSpan(if (group == CommandGroup.WAKE) 2 else 1) }
+                ) { cmdCard ->
+                    CommandCard(
+                            card = cmdCard,
+                            forced = group == CommandGroup.FORCED,
+                            isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
+                            timerText = timerInputs[cmdCard.id].orEmpty(),
+                            bottomOcclusion = bottomOcclusion,
+                            onTimerTextChanged = { timerInputs[cmdCard.id] = it },
+                            onPrimaryClick = {
+                                when {
+                                    cmdCard.action == "WakeOnLan" -> onWakePc()
+                                    cmdCard.action == "Screenshot" -> onTakeScreenshot()
+                                    cmdCard.action == "SendClipboard" -> onSendClipboard()
+                                    cmdCard.action == "FetchClipboard" -> onFetchClipboard()
+                                    cmdCard.requiresConfirmation ->
+                                            activeConfirmationId =
+                                                    if (activeConfirmationId == cmdCard.id) null
+                                                    else cmdCard.id
+                                    else -> onSendSystemCommand(cmdCard.action, 0)
+                                }
+                            },
+                            onConfirm = {
+                                val delay =
+                                        timerInputs[cmdCard.id]
+                                                .orEmpty()
+                                                .trim()
+                                                .toIntOrNull()
+                                                ?.coerceAtLeast(0)
+                                                ?: 0
+                                onSendSystemCommand(cmdCard.action, delay)
+                                activeConfirmationId = null
+                            },
+                            onCancel = {
+                                activeConfirmationId = null
+                                timerInputs[cmdCard.id] = ""
+                            },
+                            modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
+                    )
+                }
+
+                // "Your routines" (spec A14) follows the two groups the PC page shares, ahead of the
+                // phone-only extras, and is absent when the connected PC has no Tap Run routines.
+                if (group == routinesFollow && routines.isNotEmpty()) {
                     item(span = { GridItemSpan(2) }, key = "routines-header") {
-                        SectionHeader(
-                                label = stringResource(R.string.rc_section_your_routines),
-                                icon = com.clindsay94.remex.ui.routines.RoutineIcon,
-                                backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                topPadding = 16.dp
-                        )
+                        CommandSectionLabel(stringResource(R.string.rc_section_your_routines))
                     }
                     items(routines, key = { "routine-" + it.id }) { routine ->
                         val confirmId = "routine-" + routine.id
                         com.clindsay94.remex.ui.routines.RemoteRoutineCard(
                                 routine = routine,
                                 awaitingConfirmation = activeConfirmationId == confirmId,
-                                shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
+                                shape = MaterialTheme.shapes.large,
                                 onPrimaryClick = {
                                     view.hapticCommandSent()
                                     if (routine.destructive) {
@@ -481,145 +535,11 @@ fun RemoteControlScreenContent(
                         )
                     }
                 }
-                val categoryCards = cardsByCategory[category].orEmpty()
-                item(span = { GridItemSpan(2) }) {
-                    CommandCategoryHeader(
-                            label = stringResource(category.labelRes),
-                            category = category
-                    )
-                }
-                items(categoryCards, key = { it.id }) { cmdCard ->
-                    CommandCard(
-                            card = cmdCard,
-                            isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
-                            timerText = timerInputs[cmdCard.id].orEmpty(),
-                            toolbarOcclusion = toolbarOcclusion,
-                            shape =
-                                    com.clindsay94.remex.ui.theme.cardShape(
-                                            uiState.shapePreset,
-                                            uiState.cornerRadius
-                                    ),
-                            onTimerTextChanged = { timerInputs[cmdCard.id] = it },
-                            onPrimaryClick = {
-                                if (cmdCard.action == "WakeOnLan") {
-                                    onWakePc()
-                                } else if (cmdCard.requiresConfirmation) {
-                                    activeConfirmationId =
-                                            if (activeConfirmationId == cmdCard.id) null
-                                            else cmdCard.id
-                                } else {
-                                    onSendSystemCommand(cmdCard.action, 0)
-                                }
-                            },
-                            onConfirm = {
-                                val delay =
-                                        timerInputs[cmdCard.id]
-                                                .orEmpty()
-                                                .trim()
-                                                .toIntOrNull()
-                                                ?.coerceAtLeast(0)
-                                                ?: 0
-                                onSendSystemCommand(cmdCard.action, delay)
-                                activeConfirmationId = null
-                            },
-                            onCancel = {
-                                activeConfirmationId = null
-                                timerInputs[cmdCard.id] = ""
-                            },
-                            modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
-                    )
-                }
             }
         }
 
-        // The toolbar's own clearance above the nav bar / docked mini-player: 16.dp normally, plus
-        // the bar's height while it is docked so the two never overlap. Animated with the same
-        // spec as rememberFloatingToolbarOcclusion so both raises land in step.
-        val toolbarBottomPadding by
-                animateDpAsState(
-                        targetValue = 16.dp + if (miniPlayerShown) MiniPlayerHeight else 0.dp,
-                        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                        label = "toolbarBottomPadding"
-                )
-
-        // M3 Expressive: floating quick-actions for the most-used safe commands.
-        HorizontalFloatingToolbar(
-            expanded = true,
-            modifier = Modifier.align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = toolbarBottomPadding)
-        ) {
-            FilledTonalIconButton(onClick = {
-                view.hapticCommandSent()
-                onWakePc()
-            }) {
-                Icon(Icons.Default.Sensors, contentDescription = stringResource(R.string.rc_wake_pc))
-            }
-            IconButton(onClick = {
-                view.hapticCommandSent()
-                onSendSystemCommand("Lock", 0)
-            }) {
-                Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.rc_lock_pc))
-            }
-            IconButton(onClick = {
-                view.hapticCommandSent()
-                onSendSystemCommand("Sleep", 0)
-            }) {
-                Icon(Icons.Default.Bedtime, contentDescription = stringResource(R.string.rc_sleep))
-            }
-            // Safe like its neighbours - nothing is lost or interrupted on the PC - so it belongs on
-            // the quick-actions bar rather than behind a confirmation. ScreenshotMonitor, not
-            // Screenshot: the plain glyph is a phone, and this captures the PC's screen.
-            //
-            // Its own callback rather than onSendSystemCommand("SCREENSHOT", 0), which would also
-            // have worked: that path reports the response's message field verbatim, and for a command
-            // dispatch that field is the native layer's untranslated "Command dispatched.". See
-            // RemoteControlViewModel.takeScreenshot.
-            IconButton(onClick = {
-                view.hapticCommandSent()
-                onTakeScreenshot()
-            }) {
-                Icon(
-                        Icons.Default.ScreenshotMonitor,
-                        contentDescription = stringResource(R.string.action_take_screenshot)
-                )
-            }
-            // Safe like its neighbours: it writes the PC's clipboard, which is the one thing on the
-            // PC a person can restore by copying again. The refusals it can produce - nothing copied,
-            // too large - are decided on the phone before anything is sent, so this never dispatches
-            // a request the PC would only reject. (RemEx-hgqs.)
-            IconButton(onClick = {
-                view.hapticCommandSent()
-                onSendClipboard()
-            }) {
-                Icon(
-                        Icons.Default.ContentPasteGo,
-                        contentDescription = stringResource(R.string.clipboard_send_button)
-                )
-            }
-            // THE PAIR IS CHOSEN TOGETHER, which is the decision RemEx-hgqs deliberately left open
-            // rather than settling one button at a time. Direction is the ONLY thing distinguishing
-            // these two actions, so the glyphs must carry it - but Upload/Download were the wrong way
-            // to carry it here: this app already uses that exact pair for FILE TRANSFER
-            // (FileManagerToolbar, FileManagerQueuePanel, FileTransferScreen), and RemEx has both
-            // features, so an up arrow beside a down arrow in this bar reads as "send a file".
-            // ContentPasteGo / ContentPaste keeps the clipboard metaphor and puts the direction on
-            // top of it. Neither has an AutoMirrored variant; this app ships no RTL locale, so the
-            // arrow in ContentPasteGo stays put.
-            IconButton(onClick = {
-                view.hapticCommandSent()
-                onFetchClipboard()
-            }) {
-                Icon(
-                        Icons.Default.ContentPaste,
-                        contentDescription = stringResource(R.string.clipboard_fetch_button)
-                )
-            }
-        }
-
-        // Docked directly on the nav bar, same navigationBarsPadding() treatment as the toolbar
-        // above it (spec 4.1). AnimatedVisibility inside MediaMiniPlayer itself handles the
-        // UNKNOWN-status show/hide, so this call is unconditional.
+        // Docked directly on the nav bar (spec 4.1). AnimatedVisibility inside MediaMiniPlayer
+        // itself handles the UNKNOWN-status show/hide, so this call is unconditional.
         MediaMiniPlayer(
                 playback = uiState.playback,
                 artwork = uiState.artwork,
@@ -689,104 +609,56 @@ private fun CommandCardPreview() {
         Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CommandCard(
                 card = remoteCommandCards.first(),
+                forced = false,
                 isAwaitingConfirmation = false,
                 timerText = "",
-                shape = com.clindsay94.remex.ui.theme.cardShape(0f, 8),
                 onTimerTextChanged = {},
                 onPrimaryClick = {},
                 onConfirm = {},
-                onCancel = {}
+                onCancel = {},
+                modifier = Modifier.weight(1f)
+            )
+            CommandCard(
+                card = remoteCommandCardsByAction.getValue("ForceShutdown"),
+                forced = true,
+                isAwaitingConfirmation = false,
+                timerText = "",
+                onTimerTextChanged = {},
+                onPrimaryClick = {},
+                onConfirm = {},
+                onCancel = {},
+                modifier = Modifier.weight(1f)
             )
         }
     }
-}
-
-@Composable
-private fun CommandCategoryHeader(label: String, category: CommandCategory) {
-    val icon =
-            when (category) {
-                CommandCategory.SESSION -> Icons.Default.Sensors
-                CommandCategory.POWER -> Icons.Default.PowerSettingsNew
-                CommandCategory.ENERGY -> Icons.Default.Bedtime
-            }
-
-    val backgroundColor =
-            when (category) {
-                CommandCategory.SESSION -> MaterialTheme.colorScheme.primaryContainer
-                CommandCategory.POWER -> MaterialTheme.colorScheme.errorContainer
-                CommandCategory.ENERGY -> MaterialTheme.colorScheme.tertiaryContainer
-            }
-
-    val contentColor =
-            when (category) {
-                CommandCategory.SESSION -> MaterialTheme.colorScheme.onPrimaryContainer
-                CommandCategory.POWER -> MaterialTheme.colorScheme.onErrorContainer
-                CommandCategory.ENERGY -> MaterialTheme.colorScheme.onTertiaryContainer
-            }
-
-    SectionHeader(
-            label = label,
-            icon = icon,
-            backgroundColor = backgroundColor,
-            contentColor = contentColor,
-            // Media left the grid entirely (RemEx-vtorl.5, it now docks on the nav bar), so Session
-            // is the first band again - restore the zero-padding special case rather than leaving
-            // an extra 16dp gap under the intro text that no longer has a reason to be there.
-            topPadding = if (category == CommandCategory.SESSION) 0.dp else 16.dp
-    )
 }
 
 /**
- * The banded header used by every section of the command grid.
- *
- * Split out of [CommandCategoryHeader] so the media section (RemEx-hulc) can sit under the same
- * band without being forced into [CommandCategory] — media keys are not [RemoteCommandCard]s, they
- * never confirm and they take no delay, so joining that enum to borrow a header would have meant a
- * category the grid then has to special-case out of its own `forEach`.
+ * A group label: plain text in onSurfaceVariant, not a coloured band (android UI refresh spec,
+ * "Control > Commands"). The Forced group says what it costs in its own label, so it needs no colour
+ * here to warn; its cards carry the error roles instead.
  */
 @Composable
-private fun SectionHeader(
-        label: String,
-        icon: ImageVector,
-        backgroundColor: androidx.compose.ui.graphics.Color,
-        contentColor: androidx.compose.ui.graphics.Color,
-        topPadding: androidx.compose.ui.unit.Dp
-) {
-    Surface(
-            modifier = Modifier.fillMaxWidth().padding(top = topPadding),
-            color = backgroundColor,
-            shape = MaterialTheme.shapes.small,
-            tonalElevation = 2.dp
-    ) {
-        Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                    imageVector = icon,
-                    contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
-                    tint = contentColor,
-                    modifier = Modifier.size(20.dp)
-            )
-            Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleSmallEmphasized,
-                    color = contentColor
-            )
-        }
-    }
+private fun CommandSectionLabel(label: String) {
+    Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+    )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CommandCard(
         card: RemoteCommandCard,
+        /** A Forced-group card: errorContainer / onErrorContainer instead of the neutral surface roles. */
+        forced: Boolean,
         isAwaitingConfirmation: Boolean,
         timerText: String,
-        shape: androidx.compose.ui.graphics.Shape,
-        // Defaults to the toolbar-only footprint so CommandCardPreview keeps compiling without
-        // wiring up the animated value RemoteControlScreenContent computes for the real screen.
-        toolbarOcclusion: androidx.compose.ui.unit.Dp = ToolbarOnlyOcclusion,
+        // Defaults to no mini-player so CommandCardPreview keeps compiling without wiring up the
+        // animated value RemoteControlScreenContent computes for the real screen.
+        bottomOcclusion: androidx.compose.ui.unit.Dp = 16.dp,
         onTimerTextChanged: (String) -> Unit,
         onPrimaryClick: () -> Unit,
         onConfirm: () -> Unit,
@@ -818,19 +690,19 @@ private fun CommandCard(
     val scope = rememberCoroutineScope()
     val confirmActionsRequester = remember { BringIntoViewRequester() }
     var confirmActionsSize by remember { mutableStateOf(IntSize.Zero) }
-    val toolbarOcclusionPx = with(LocalDensity.current) { toolbarOcclusion.toPx() }
+    val bottomOcclusionPx = with(LocalDensity.current) { bottomOcclusion.toPx() }
 
     suspend fun revealConfirmActions() {
         val size = confirmActionsSize
         if (size == IntSize.Zero) return
         // Explicit rect extended below the row: the default request stops as soon as the trailing
-        // edge reaches the viewport bottom, which is exactly where the floating toolbar sits.
+        // edge reaches the viewport bottom, which is exactly where the docked mini-player sits.
         confirmActionsRequester.bringIntoView(
                 Rect(
                         left = 0f,
                         top = 0f,
                         right = size.width.toFloat(),
-                        bottom = size.height.toFloat() + toolbarOcclusionPx
+                        bottom = size.height.toFloat() + bottomOcclusionPx
                 )
         )
     }
@@ -839,34 +711,58 @@ private fun CommandCard(
         if (isAwaitingConfirmation) revealConfirmActions()
     }
 
-    Card(
-            // M3: animateContentSize replaces fixed height toggle for organic transitions
+    // Expressive shape morph on press: the rounded rectangle tightens its corners while held. The
+    // content keeps 16dp of padding against the largest radius, so no corner ever reaches the icon
+    // or the label - the hexagon tiles this replaces clipped both (RemEx-kq10x.3).
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val corner by
+            animateDpAsState(
+                    targetValue = if (pressed) 12.dp else 24.dp,
+                    animationSpec = motionScheme.fastSpatialSpec(),
+                    label = "commandCardCorner"
+            )
+    val containerColor =
+            if (forced) MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.surfaceContainerHigh
+    val contentColor =
+            if (forced) MaterialTheme.colorScheme.onErrorContainer
+            else MaterialTheme.colorScheme.onSurface
+
+    // The whole card is the button: tapping it runs the action, or arms the confirm face for one
+    // that loses work. While armed it stops being clickable, so a stray tap on the card's edge can
+    // neither cancel nor re-arm it - only the Confirm and Cancel buttons act.
+    Surface(
+            onClick = {
+                view.hapticCommandSent()
+                onPrimaryClick()
+            },
+            enabled = !isAwaitingConfirmation,
+            interactionSource = interactionSource,
+            shape = RoundedCornerShape(corner),
+            color = containerColor,
+            contentColor = contentColor,
             modifier =
                     modifier.fillMaxWidth()
+                            .heightIn(min = 96.dp)
                             .animateContentSize(
-                                    animationSpec =
-                                            MaterialTheme.motionScheme.fastSpatialSpec(),
+                                    animationSpec = motionScheme.fastSpatialSpec(),
                                     finishedListener = { _, _ ->
                                         if (isAwaitingConfirmation) {
                                             scope.launch { revealConfirmActions() }
                                         }
                                     }
-                            ),
-            shape = shape,
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                            )
     ) {
         Column(
-                modifier = Modifier.fillMaxSize().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                     imageVector = card.icon,
-                    contentDescription = localizedTitle,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    // Decorative: the label right under it says the same thing (RemEx-xqli).
+                    contentDescription = null
             )
             AnimatedContent(
                     targetState = isAwaitingConfirmation,
@@ -885,7 +781,8 @@ private fun CommandCard(
                                     if (awaitingConfirmation)
                                             stringResource(R.string.remote_control_confirm_choice)
                                     else localizedTitle,
-                            style = MaterialTheme.typography.titleSmallEmphasized
+                            style = MaterialTheme.typography.titleSmallEmphasized,
+                            textAlign = TextAlign.Center
                     )
 
                     if (awaitingConfirmation) {
@@ -899,18 +796,18 @@ private fun CommandCard(
                         DisposableEffect(Unit) { onDispose { confirmActionsSize = IntSize.Zero } }
 
                         // Consequence line, only for commands that declare one. Placed above the
-                        // timer field and the buttons so it is read before the destructive action is
-                        // reachable, not after it. Theme role rather than a literal colour, so it
-                        // survives monochrome and contrast 1.0. (RemEx-awks.)
+                        // wait field and the buttons so it is read before the destructive action is
+                        // reachable, not after it. LocalContentColor, so it reads on both the
+                        // neutral and the error container. (RemEx-awks.)
                         card.warningRes?.let { warningRes ->
                             Text(
                                     text = stringResource(warningRes),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
                             )
                         }
 
+                        // The optional wait before the PC acts, in plain words on the field itself.
                         if (card.supportsDelay) {
                             OutlinedTextField(
                                     value = timerText,
@@ -957,22 +854,9 @@ private fun CommandCard(
                                         view.hapticCommandFailed()
                                         onCancel()
                                     },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = contentColor),
                                     modifier = Modifier.weight(1f)
                             ) { Text(stringResource(R.string.button_cancel)) }
-                        }
-                    } else {
-                        // M3: FilledTonalButton for lower-emphasis non-destructive actions
-                        FilledTonalButton(
-                                onClick = {
-                                    view.hapticCommandSent()
-                                    onPrimaryClick()
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                    if (card.requiresConfirmation) stringResource(R.string.button_select)
-                                    else stringResource(R.string.button_run)
-                            )
                         }
                     }
                 }

@@ -130,19 +130,19 @@
     <value>⏻  Comandos</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>Bloquea, suspende, reinicia y apaga este PC</value>
+    <value>Bloquea, reinicia o apaga este PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
-    <value>NORMAL</value>
+    <value>Estándar</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
-    <value>FORZADO (INMEDIATO)</value>
+    <value>Forzado — se pierde el trabajo sin guardar</value>
   </data>
   <data name="Remote_Lock" xml:space="preserve">
-    <value>Bloquear PC</value>
+    <value>Bloquear</value>
   </data>
   <data name="Remote_SignOut" xml:space="preserve">
-    <value>Cerrar Sesión</value>
+    <value>Cerrar sesión</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
     <value>Apagar</value>
@@ -157,10 +157,10 @@
     <value>Hibernar</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Forzar Apagado</value>
+    <value>Forzar apagado</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
-    <value>Forzar Reinicio</value>
+    <value>Forzar reinicio</value>
   </data>
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>Reiniciar a UEFI</value>
