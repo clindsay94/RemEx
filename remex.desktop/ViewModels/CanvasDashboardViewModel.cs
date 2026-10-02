@@ -860,6 +860,47 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             home.RefreshPinnedSensors();
     }
 
+    /// <summary>
+    /// Raised on the UI thread after <see cref="ApplyHomePinChangeFromPeer"/> changed a pin, so a
+    /// view that lists pins (the Personalize sheet's Layout checklist) can rebuild (RemEx-wqo7a.5).
+    /// </summary>
+    public event Action? HomePinsChangedExternally;
+
+    /// <summary>
+    /// Applies a pin or unpin the phone asked for (RemEx-wqo7a.5). UI thread only.
+    /// </summary>
+    /// <returns>
+    /// False when the sensor has no card on the canvas: a staged-only or unknown sensor cannot be
+    /// pinned, because the live canvas is what <see cref="TriggerSave"/>'s merge treats as the truth
+    /// and a pin with no card behind it would be dropped by the next save.
+    /// </returns>
+    /// <remarks>
+    /// THROUGH <see cref="SetCardPinned"/>, NEVER THE PROFILE DIRECTLY, for that same reason: a pin
+    /// lasts only while the canvas card's <see cref="CanvasCardViewModel.IsPinnedToHome"/> says so.
+    /// An unpin clears every card for the sensor, not only the primary one, since any pinned card
+    /// left behind would pin it straight back on the next save.
+    /// </remarks>
+    public bool ApplyHomePinChangeFromPeer(string sensorName, bool pinned)
+    {
+        if (string.IsNullOrWhiteSpace(sensorName)) return false;
+
+        var card = GetPrimarySensorCard(sensorName);
+        if (card?.Sensor is null) return false;
+
+        if (!pinned)
+        {
+            foreach (var other in Cards.Where(c => c.CardType == "Sensor" && !ReferenceEquals(c, card)
+                         && string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase)))
+            {
+                other.IsPinnedToHome = false;
+            }
+        }
+
+        SetCardPinned(card, pinned);
+        HomePinsChangedExternally?.Invoke();
+        return true;
+    }
+
     // ═══════════════ Floating action bar (multi-select group ops) ═══════════════
 
     /// <summary>True while one or more cards are selected — drives the floating Pin/Remove/Done bar.</summary>

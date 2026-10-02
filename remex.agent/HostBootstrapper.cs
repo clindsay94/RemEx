@@ -369,6 +369,12 @@ public static class HostBootstrapper
                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<
                     Remex.Agent.Services.Theme.PhoneThemeSnapshotStore>>()));
 
+        // The PC Home's pinned sensors, shared by PingPongHandler (phones) and the desktop's
+        // HomePinsBridge (via App.EmbeddedHostServices) - same arrangement as the store above, and
+        // in memory only: the durable list is the desktop's own profile file (RemEx-wqo7a.5).
+        builder.Services.AddSingleton<Remex.Core.Services.Home.IHomePinnedSensorsStore>(
+            sp => new Remex.Agent.Services.Home.HomePinnedSensorsStore(sp.GetRequiredService<TimeProvider>()));
+
         // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
         // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
         // name the host's types without a project-reference cycle.
@@ -682,7 +688,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Media.IMediaSessionMonitor>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>(),
-                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>());
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Home.IHomePinnedSensorsStore>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

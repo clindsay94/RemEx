@@ -194,6 +194,8 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsRoutines = true,
             RoutineSchemaVersion = Remex.Core.Routines.RoutineSchema.CurrentVersion,
             RoutinePowerVerbs = Routines.RoutinePowerVerbProbe.Probe(),
+            // PingPongHandler handles home_pins_change and sends home_pins_sync (RemEx-wqo7a.5).
+            SupportsHomePinsSync = true,
         };
     }
 

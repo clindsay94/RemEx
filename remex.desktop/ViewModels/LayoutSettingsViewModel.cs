@@ -65,6 +65,12 @@ public sealed partial class LayoutSettingsViewModel : ObservableObject
         _layoutService = layoutService;
         _canvas = canvas;
         _home = home;
+
+        // A pin the phone changed (RemEx-wqo7a.5) has to show in this checklist too. Never
+        // unsubscribed, and that is fine: ShellViewModel builds this VM once and the canvas lives
+        // exactly as long as the shell does.
+        if (_canvas is not null)
+            _canvas.HomePinsChangedExternally += RefreshSensors;
     }
 
     /// <summary>Loads current values from the persisted profile. Does not queue a save.</summary>

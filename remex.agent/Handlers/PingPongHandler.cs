@@ -6,10 +6,12 @@ using System.Text.RegularExpressions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Home;
 using Remex.Core.Services.Theme;
 using Remex.Core.Validation;
 using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
+using Remex.Agent.Services.Home;
 using Remex.Agent.Services.Telemetry;
 using Remex.Agent.Services.Security;
 
@@ -47,7 +49,10 @@ public sealed class PingPongHandler(
     Remex.Agent.Services.Routines.RoutineStepRequestHandler? routineStepHandler = null,
     // PC-run routines (RemEx-pp0rt.9): routines_sync, routine_run_request, and the host-run half of
     // routine_cancel. Optional and last for the same reason as the executor above.
-    Remex.Agent.Services.Routines.RoutineHostMessageHandler? routineHost = null) : IDisposable
+    Remex.Agent.Services.Routines.RoutineHostMessageHandler? routineHost = null,
+    // The PC Home's pinned sensors (RemEx-wqo7a.5): home_pins_sync out to each authenticated phone,
+    // home_pins_change in. Optional and last for the same reason; null means neither happens.
+    IHomePinnedSensorsStore? homePinsStore = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -117,6 +122,10 @@ public sealed class PingPongHandler(
         // verifies but carries no name. So the name is held here across the two and only written once
         // the handshake has proved itself.
         string? reportedDeviceName = null;
+
+        // Tells this phone the PC Home's pinned sensors once it has authenticated (RemEx-wqo7a.5).
+        // Null until then, and always null for loopback: the PC's own UI reads the list in-process.
+        HomePinsSessionLink? homePinsLink = null;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -612,6 +621,31 @@ public sealed class PingPongHandler(
 
                         break;
 
+                    // ── Home pinned sensors (RemEx-wqo7a.5) ──
+                    // One phone-requested pin or unpin. Pairing-gated by RequiresPairing's default; loopback
+                    // is refused too, because the PC's own UI changes pins in-process and never sends this.
+                    // Nothing is decided here: the store hands the request to the desktop, which applies it
+                    // through the canvas card and answers by publishing, so the phone hears back through
+                    // home_pins_sync rather than a reply to this message. Invalid input is dropped with a
+                    // warning and no reply, and the session carries on.
+                    case MessageTypes.HomePinsChange:
+                        if (homePinsStore is null || isLoopback || !identityProven)
+                        {
+                            logger.LogWarning(
+                                "Ignored home_pins_change: pinned-sensor sync is not available on this connection.");
+                        }
+                        else if (!HomePinsValidation.IsValidChange(message.HomePinChange))
+                        {
+                            logger.LogWarning(
+                                "Ignored malformed home_pins_change from {ClientId}.", connectionClientId);
+                        }
+                        else
+                        {
+                            homePinsStore.RequestFromPhone(message.HomePinChange!, connectionClientId ?? string.Empty);
+                        }
+
+                        break;
+
                     // ── 3.0 Routines: PC-run routines (RemEx-pp0rt.9, spec §7.3.1, §7.3.8, §7.4.2) ──
                     // Pairing-gated by RequiresPairing's default and scoped to a PROVEN identity, exactly
                     // like the step request below: the owner is the client this connection proved it is,
@@ -873,6 +907,10 @@ public sealed class PingPongHandler(
                             sessionRegistry.MarkAuthenticated(session, identityProven: !string.IsNullOrWhiteSpace(connectionClientId));
                             logger.LogInformation("Pairing verified — connection authenticated.");
                             RecordDeviceConnectedActivity(message.PairingRequest?.ClientName, connectionClientId);
+
+                            // After pairing_complete has gone out, so the phone already knows it is
+                            // paired by the time the list arrives.
+                            homePinsLink = await AttachHomePinsAsync(homePinsLink, webSocket, isLoopback, ct);
                         }
                         break;
 
@@ -949,6 +987,9 @@ public sealed class PingPongHandler(
                                     ReconnectResult = new ReconnectResult { Success = true },
                                 },
                                 ct);
+
+                            // After the ack, for the same reason as the pairing path above.
+                            homePinsLink = await AttachHomePinsAsync(homePinsLink, webSocket, isLoopback, ct);
                         }
                         else
                         {
@@ -1111,6 +1152,9 @@ public sealed class PingPongHandler(
         }
         finally
         {
+            // First, so no pinned-sensor send starts on a socket that is about to close.
+            homePinsLink?.Dispose();
+
             // THE DEPARTURE, recorded from the one place every exit path passes through (RemEx-2xjv).
             // Anywhere else and a feed that shows arrivals but not departures reads as though every
             // phone that ever connected is still attached — and the reason is what tells a flapping
@@ -1427,6 +1471,27 @@ public sealed class PingPongHandler(
         CommandSuccess = success,
         CommandMessage = msg,
     };
+
+    /// <summary>
+    /// Starts telling this connection the PC Home's pinned sensors (RemEx-wqo7a.5), once: called at
+    /// both authentication points, and a second call on the same connection keeps the first link.
+    /// </summary>
+    /// <remarks>
+    /// Never for loopback, which is the PC's own UI and reads the list in-process. Awaits the first
+    /// send, so the phone has the list before this connection's next message is read.
+    /// </remarks>
+    private async Task<HomePinsSessionLink?> AttachHomePinsAsync(
+        HomePinsSessionLink? existing, WebSocket webSocket, bool isLoopback, CancellationToken ct)
+    {
+        if (existing is not null || isLoopback || homePinsStore is null)
+        {
+            return existing;
+        }
+
+        var link = new HomePinsSessionLink(homePinsStore, webSocket, logger, ct);
+        await link.AttachAsync();
+        return link;
+    }
 
     private static long _lastDeviceConnectedTicks;
 
