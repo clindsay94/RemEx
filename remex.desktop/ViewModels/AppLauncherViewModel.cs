@@ -103,11 +103,32 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         bool changed;
         if (normalized.Any(e => !e.IconUpgradeUnfixable && NeedsSharperIcon(e.IconBase64)))
         {
+            // RemEx-qs5aa: the extraction runs off the UI thread, and while it does a host sync
+            // (LauncherEntriesReceived) or an offline drop can change Launchers. Snapshot what was
+            // there and what was loaded, so the result can be merged into newer state instead of
+            // replacing it with this stale local list (and then saving that over the newer state).
+            var launchersBefore = Launchers;
+            var itemsBefore = launchersBefore.ToArray();
+            var loaded = normalized.ToArray();
+
             (upgraded, changed) = await Task.Run(() =>
             {
                 var result = UpgradeLowResolutionIcons(normalized, out var didChange).ToList();
                 return (result, didChange);
             });
+
+            var current = Launchers;
+            if (!ReferenceEquals(current, launchersBefore) || !current.SequenceEqual(itemsBefore))
+            {
+                Launchers = new ObservableCollection<AppEntry>(
+                    MergeUpgradedIcons(current.ToList(), loaded, upgraded, out changed));
+                if (changed)
+                {
+                    await SaveLaunchersAsync();
+                }
+
+                return;
+            }
         }
         else
         {
@@ -121,6 +142,48 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         {
             await SaveLaunchersAsync();
         }
+    }
+
+    /// <summary>
+    /// Applies an icon upgrade computed from <paramref name="loaded"/> to <paramref name="current"/>, the
+    /// newer list that replaced it while the extraction ran (RemEx-qs5aa). Current entries win: only an
+    /// entry with the same Id, the same target and still the same icon it was loaded with takes the
+    /// upgraded icon (and its unfixable verdict). Entries that are gone stay gone; new ones are untouched.
+    /// </summary>
+    /// <param name="loaded">The entries as loaded, before the upgrade (the upgrade mutates its list in place).</param>
+    /// <param name="upgraded">The upgrade's result, index-aligned with <paramref name="loaded"/>.</param>
+    internal static List<AppEntry> MergeUpgradedIcons(
+        IReadOnlyList<AppEntry> current, IReadOnlyList<AppEntry> loaded, IReadOnlyList<AppEntry> upgraded, out bool changed)
+    {
+        var updates = new Dictionary<Guid, (AppEntry Loaded, AppEntry Upgraded)>();
+        for (var i = 0; i < loaded.Count && i < upgraded.Count; i++)
+        {
+            if (!Equals(loaded[i], upgraded[i]))
+                updates.TryAdd(loaded[i].Id, (loaded[i], upgraded[i]));
+        }
+
+        changed = false;
+        var merged = new List<AppEntry>(current.Count);
+        foreach (var entry in current)
+        {
+            if (updates.TryGetValue(entry.Id, out var update)
+                && string.Equals(entry.TargetPath, update.Loaded.TargetPath, StringComparison.Ordinal)
+                && string.Equals(entry.IconBase64, update.Loaded.IconBase64, StringComparison.Ordinal))
+            {
+                merged.Add(entry with
+                {
+                    IconBase64 = update.Upgraded.IconBase64,
+                    IconUpgradeUnfixable = update.Upgraded.IconUpgradeUnfixable,
+                });
+                changed = true;
+            }
+            else
+            {
+                merged.Add(entry);
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>
