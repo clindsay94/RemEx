@@ -84,7 +84,7 @@
     <value>Sensörler</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Başlatıcı</value>
+    <value>Uygulamalar</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Ayarlar</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻ PC UZAKTAN</value>
+    <value>⏻  Komutlar</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>GÜÇ &amp; SİSTEM KONTROLLERİ</value>
+    <value>Bu bilgisayarı kilitleyin, uyutun, yeniden başlatın ve kapatın</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -171,7 +171,7 @@
     <value>AYARLAR</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Komuta Merkezi</value>
+    <value>← Ana Sayfa</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Değişiklikleri Kaydet</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Sensör Çalışma Alanını açın, bir kartı sağ tıklayın ve Ana Sayfaya sabitleyin.</value>
+    <value>Sensörler'i açın, bir karta sağ tıklayın ve Ana Sayfa'ya sabitleyin.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤ GÖREV YÖNETİCİSİ</value>
+    <value>▤  İşlemler</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>SÜREÇ GEZGİNİ</value>
+    <value>Bu bilgisayarda neler çalışıyor</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Ada veya PID'e göre ara...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈ UYGULAMA BAŞLATICISI</value>
+    <value>◈  Uygulamalar</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>UZAKTAN UYGULAMA KONTROLÜ</value>
+    <value>Telefonunuzun başlatabileceği programlar</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Program Ekle</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>SENSÖR ÇALIŞMA ALANI</value>
+    <value>Sensörler</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Bağlantı</value>
@@ -415,7 +415,7 @@
     <value>Uygulamalar</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Kısayol seçmek için Uygulama Başlatıcı'ya uygulama ekleyin.</value>
+    <value>Kısayol seçmek için Uygulamalar sayfasında uygulama ekleyin.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Parlaklık Gücü</value>
@@ -747,13 +747,13 @@ RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı 
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Uygulama Başlatıcı Kurulumu</value>
+    <value>Uygulamaları Ayarlama</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>Uygulama Başlatıcı, bilgisayarınızdaki programları telefonunuzdan başlatmanızı sağlar. Uygulamalar önce burada yapılandırılmalıdır.</value>
+    <value>Uygulamalar sayfası, telefonunuzdan bilgisayarınızdaki programları başlatmanızı sağlar. Önce onları buraya ekleyin.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Başlatıcı sayfasına gidin (kenar çubuğu)
+    <value>1. Uygulamalar sayfasına gidin (kenar çubuğu)
 2. '+ Program Ekle' düğmesine tıklayın
 3. .exe dosyasına veya kısayola göz atın
 4. Android uygulamanızdan başlatın!</value>
@@ -796,10 +796,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Yazmak yok, IP adresi yok — sadece tarayın ve başlayın. Bağlantı bilgileri kaydedilir, bu yüzden yalnızca bir kez taramanız yeterlidir.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Dosya Aktarımı &amp; Paylaşılan Klasörler</value>
+    <value>Dosyalar ve Paylaşılan Klasörler</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Dosya Aktarımı yalnızca Your PCunuzun paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için masaüstü hosttaki Ayarlar'dan yapılandırın.</value>
+    <value>Dosyalar yalnızca bu bilgisayarın paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için bunları bu bilgisayardaki Ayarlar'dan yapılandırın.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. PC'nizde Ayarlar → Paylaşılan Klasörler'i açın.
@@ -813,7 +813,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Hazırsınız!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Ana Sayfa, Sensörler, Uzaktan Kumanda, Uygulama Başlatıcı, Görev Yöneticisi ve Uzak Masaüstü arasında gezinmek için kenar çubuğunu kullanın.</value>
+    <value>Ana Sayfa, Sensörler, Komutlar, Uygulamalar, İşlemler, Dosyalar, Rutinler ve Hakkında arasında geçiş yapmak için kenar çubuğunu kullanın.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Temanızı, bağlantınızı, yayın kalitesini özelleştirmek ve Ana Sayfa'ya sensör sabitlemek için Ayarlar'ı (⚙) açın.</value>
@@ -910,7 +910,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>PAYLAŞILAN KLASÖRLER</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Bu PC'deki hangi klasörlerin Dosya Aktarımı'nda görüneceğini seçin. Salt okunur klasörler gezinmeye ve indirmeye izin verir; yazılabilir klasörler ise telefonunuzdan yükleme de kabul eder.</value>
+    <value>Bu bilgisayardaki hangi klasörlerin Dosyalar'da görüneceğini seçin. Salt okunur klasörlerde gezinip indirme yapılabilir, yazılabilir klasörler ise telefonunuzdan yüklenen dosyaları da kabul eder.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Klasör Ekle</value>
@@ -948,10 +948,10 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>DOSYA AKTARIMI</value>
+    <value>Dosyalar</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>PAYLAŞILAN KLASÖRLER · DOSYA SEÇ · İNDİRME KONUMU</value>
+    <value>Telefonunuzun göz atabileceği ve dosya gönderebileceği klasörler</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Paylaşılan Klasör</value>
@@ -1251,16 +1251,16 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Komut Paleti</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+K tuşlarına basın.</value>
+    <value>Ekranlara atlamak, hızlı eylemleri tetiklemek ve RemEx'te anında arama yapmak için Ctrl+K'ye basın.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Sözlük: Uygulama Başlatıcı</value>
+    <value>Sözlük: Uygulamalar</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Bilgisayarda seçtiğiniz uygulamaları ve betikleri çalıştırın. Girişleri bilgisayarda bir kez ayarlayın, sonra RemEx'ten uzaktan başlatın.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Sözlük: Görev Yöneticisi</value>
+    <value>Sözlük: İşlemler</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Bilgisayarda çalışan işlemleri inceleyin, kullanıma göre sıralayın ve takılan görevleri yerinizden kalkmadan sonlandırın.</value>
@@ -1272,7 +1272,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sensörleri sabitleyerek, kartları yeniden boyutlandırarak ve serbest tuvalde düzenleyerek canlı bir telemetri duvarı oluşturun.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Sözlük: Dosya Aktarımı</value>
+    <value>Sözlük: Dosyalar</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Yalnızca PC'nin paylaştığı klasörlere göz atın, yazılabilir konumlara yükleme yapın ve SHA-256 doğrulamasıyla dosya indirin.</value>
@@ -1326,7 +1326,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>Hakkında</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Dosyaları nasıl aktarırım?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Kenar çubuğundan veya Komut Paleti'nden Dosya Aktarımı'nı açın. Yalnızca bilgisayarın paylaştığı klasörleri görürsünüz: yazılabilir klasörler yükleme kabul eder, salt okunur klasörlerden ise yalnızca indirme yapılabilir.</value>
+    <value>Dosyalar'ı kenar çubuğundan veya komut paletinden açın. Yalnızca bilgisayarın paylaştığı klasörleri görürsünüz; yazılabilir klasörler yükleme kabul eder, salt okunur klasörler yalnızca indirme içindir.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Bilgisayarımı uzaktan kilitleyebilir miyim?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Evet. Bilgisayarda Uzaktan Kontrol ekranını veya Komut Paleti'ni kullanın ya da Android'de tek dokunuşla erişim için Bilgisayarı Kilitle Hızlı Ayarlar kutucuğunu ekleyin.</value>
+    <value>Evet. Bilgisayarda Komutlar sayfasını veya komut paletini kullanın ya da tek dokunuşla erişim için Android'de Hızlı Ayarlar'a Bilgisayarı Kilitle kutucuğunu ekleyin.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Uzaktan erişim için Tailscale'i nasıl kurarım?</value>
@@ -1681,19 +1681,19 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Sensör Tuvali</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Uzaktan Kontrol</value>
+    <value>Komutlar</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Uygulama Başlatıcı</value>
+    <value>Uygulamalar</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Görev Yöneticisi</value>
+    <value>İşlemler</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Uzak Masaüstü</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Dosya Aktarımı</value>
+    <value>Dosyalar</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Ayarlar</value>
@@ -1846,28 +1846,28 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Taşı</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// AKTİF_SENSÖRLER</value>
+    <value>Etkin sensörler</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>ÇALIŞMA_ALANINI_AÇ</value>
+    <value>Sensörleri aç</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Henüz sabitlenmiş sensör yok</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>SENSÖRLERİ BAŞLAT</value>
+    <value>Sensörleri aç</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// YÖNERGELER</value>
+    <value>Kısayollar</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>BAĞLANTI_DURUMU</value>
+    <value>Durum</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>BAĞLANTIYI BAŞLAT</value>
+    <value>Bağlan</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>BAĞLANTIYI KES</value>
+    <value>Bağlantıyı Kes</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Uzaktan Çalıştırma / Canlı Telemetri</value>
@@ -1990,7 +1990,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>automatic network discovery kullanarak ağınızdaki yerel aktif RemEx sunucularını otomatik olarak bul</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Sunucu bilgisayarı ile olan aktif oturum bağlantısını sonlandır</value>
+    <value>Bu bilgisayarla bağlantıyı kes</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Sensör karolarının tuval üzerinde hizalanması için kılavuzları etkinleştir</value>
@@ -2447,7 +2447,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Bağlantı</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>HOST BAĞLANTISI</value>
+    <value>Telefonunuzun bu bilgisayara nasıl ulaştığı</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Host adresi</value>
@@ -2597,7 +2597,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>İçerik Yazı Tipi</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Metin gövdesi ve içeriği için yazı tipi — açıklamalar, etiketler ve sensör çalışma alanı. Sabit genişlikli veri okuyucuları monospace yazı tipini korur.</value>
+    <value>Gövde ve içerik metni için yazı tipi — açıklamalar, etiketler ve Sensörler sayfası. Sabit genişlikli veri göstergeleri eş aralıklı yazı tiplerini korur.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Bu yazı tipi bu bilgisayarda yüklenemedi ve yüklü olmayabilir: {0}. Bunun yerine varsayılan yazı tipi kullanılıyor.</value>
@@ -2663,7 +2663,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Sensörler</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// SON_AKTİVİTE</value>
+    <value>Son etkinlik</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Açılır menüleri kapat</value>
@@ -2723,7 +2723,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Hatalar ve Uyarılar</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Dosya Aktarımı</value>
+    <value>Dosya aktarımları</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Giriş ve Komutlar</value>
@@ -3391,7 +3391,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>Adres</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Sunucu bağlantısı</value>
+    <value>Bağlantı</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Gecikme</value>

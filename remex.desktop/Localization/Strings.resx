@@ -84,7 +84,7 @@
     <value>Sensors</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Launcher</value>
+    <value>Apps</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Settings</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  PC REMOTE</value>
+    <value>⏻  Commands</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>POWER &amp; SYSTEM CONTROLS</value>
+    <value>Lock, sleep, restart and shut down this PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>GRACEFUL</value>
@@ -189,7 +189,7 @@
     <value>SETTINGS</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Command Center</value>
+    <value>← Home</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Save Changes</value>
@@ -227,15 +227,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Open the Sensor Workspace, right-click a card, and pin it to Home.</value>
+    <value>Open Sensors, right-click a card, and pin it to Home.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  TASK MANAGER</value>
+    <value>▤  Processes</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>PROCESS EXPLORER</value>
+    <value>What's running on this PC</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Search by name or PID...</value>
@@ -255,10 +255,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  APP LAUNCHER</value>
+    <value>◈  Apps</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>REMOTE APPLICATION CONTROL</value>
+    <value>Programs your phone can start</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Add Program</value>
@@ -312,7 +312,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>SENSOR WORKSPACE</value>
+    <value>Sensors</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Connection</value>
@@ -436,7 +436,7 @@
     <value>Apps</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Add apps in the App Launcher to pick shortcuts.</value>
+    <value>Add apps on the Apps page to pick shortcuts.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Glow Strength</value>
@@ -457,7 +457,7 @@
     <value>Content Font</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Font for body and content text — descriptions, labels, and the sensor workspace. Fixed-width data readouts keep their monospace font.</value>
+    <value>Font for body and content text — descriptions, labels, and the Sensors page. Fixed-width data readouts keep their monospace font.</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>UI Size</value>
@@ -789,13 +789,13 @@ RemEx runs on this PC and your phone connects to it. Every connection is protect
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>App Launcher Setup</value>
+    <value>Setting Up Apps</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>The App Launcher lets you start programs on your PC from your phone. Apps must be configured here first.</value>
+    <value>The Apps page lets you start programs on your PC from your phone. Add them here first.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
+    <value>1. Open the Apps page (sidebar)
 2. Click '+ Add Program'
 3. Browse to the .exe or shortcut
 4. Launch from your Android app!</value>
@@ -838,10 +838,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>File Transfer &amp; Shared Folders</value>
+    <value>Files &amp; Shared Folders</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>File Transfer only shows the folders your Your PC has shared. Configure them from Settings on the desktop PC so your phone sees the right locations.</value>
+    <value>Files only shows the folders this PC has shared. Set them up in Settings on this PC so your phone sees the right places.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Open Settings → Shared Folders on the Your PC.
@@ -855,7 +855,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>You're All Set!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Use the sidebar to jump between Home, Sensor Workspace, Remote Control, App Launcher, Task Manager, File Transfer, Remote Desktop, and About.</value>
+    <value>Use the sidebar to jump between Home, Sensors, Commands, Apps, Processes, Files, Routines, and About.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Open Settings (⚙) to adjust language, theme, connection defaults, shared folders, stream quality, and pinned sensors.</value>
@@ -952,7 +952,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHARED FOLDERS</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Choose which folders on this PC appear in File Transfer. Read-only folders allow browsing and downloads, while writable folders also accept uploads from your phone.</value>
+    <value>Choose which folders on this PC appear in Files. Read-only folders allow browsing and downloads, while writable folders also accept uploads from your phone.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Add Folder</value>
@@ -990,10 +990,10 @@ Linux: ip addr  or  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>FILE TRANSFER</value>
+    <value>Files</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>PC SHARED FOLDERS · PICK A FILE TO SEND · CHOOSE WHERE DOWNLOADS SAVE</value>
+    <value>Folders your phone can browse and send to</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Shared Folder</value>
@@ -1293,16 +1293,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: Command Palette</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+K to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Press Ctrl+K to jump to screens, trigger quick actions, and search RemEx instantly.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>Glossary: Apps</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>Glossary: Processes</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
@@ -1314,7 +1314,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>Glossary: Files</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
@@ -1368,7 +1368,7 @@ You can see them, switch them off and check their history on the Routines page.<
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About RemEx</value>
+    <value>About</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>SECURE REMOTE PC CONTROL</value>
@@ -1561,13 +1561,13 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>How do I transfer files?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Open File Transfer from the sidebar or command palette. You'll only see the folders the PC has shared, and writable roots accept uploads while read-only roots stay download-only.</value>
+    <value>Open Files from the sidebar or command palette. You'll only see the folders the PC has shared, and writable roots accept uploads while read-only roots stay download-only.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Can I lock my PC remotely?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes. Use the Remote Control screen or command palette on desktop, or add the Lock PC Quick Settings tile on Android for one-tap access.</value>
+    <value>Yes. Use the Commands page or command palette on desktop, or add the Lock PC Quick Settings tile on Android for one-tap access.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>How do I set up Tailscale for remote access?</value>
@@ -1732,7 +1732,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Remote Desktop</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>File Transfer</value>
+    <value>File transfers</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Input &amp; Commands</value>
@@ -1780,19 +1780,19 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Sensor Canvas</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Remote Control</value>
+    <value>Commands</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>App Launcher</value>
+    <value>Apps</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Task Manager</value>
+    <value>Processes</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Remote Desktop</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>File Transfer</value>
+    <value>Files</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Settings</value>
@@ -1945,19 +1945,19 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Move</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// ACTIVE_SENSORS</value>
+    <value>Active sensors</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>OPEN_WORKSPACE</value>
+    <value>Open Sensors</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>No pinned sensors yet</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>INITIALIZE SENSORS</value>
+    <value>Open Sensors</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// DIRECTIVES</value>
+    <value>Shortcuts</value>
   </data>
   <data name="Home_StatCpu" xml:space="preserve">
     <value>CPU</value>
@@ -1969,7 +1969,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>UPTIME</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// RECENT_ACTIVITY</value>
+    <value>Recent activity</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
     <value>CLEAR</value>
@@ -1999,13 +1999,13 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Phone connected</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>LINK_STATUS</value>
+    <value>Status</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>INITIALIZE LINK</value>
+    <value>Connect</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>TERMINATE LINK</value>
+    <value>Disconnect</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Remote Execution / Live Telemetry</value>
@@ -2188,7 +2188,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Automatically discover local active RemEx hosts on your network using automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Terminate active session connection to Your PC</value>
+    <value>Disconnect from this PC</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Enable alignment guides so sensor tiles snap to standard increments on placement canvas</value>
@@ -2737,7 +2737,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Connection</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>HOST LINK</value>
+    <value>How your phone reaches this PC</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Host address</value>
@@ -3393,7 +3393,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Address</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Host link</value>
+    <value>Connection</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Latency</value>

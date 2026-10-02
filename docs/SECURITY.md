@@ -54,7 +54,7 @@ If you're still running 1.x, upgrade to 2.0 immediately.
 
 ### Linux Elevation (`pkexec`)
 
-On Linux, the Task Manager uses `pkexec` to attempt process termination if the host service is not running with sufficient privileges. This will trigger a system-native authentication prompt on the host machine.
+On Linux, the Processes page uses `pkexec` to attempt process termination if the host service is not running with sufficient privileges. This will trigger a system-native authentication prompt on the host machine.
 
 ### Environment Security
 

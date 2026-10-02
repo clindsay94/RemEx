@@ -182,6 +182,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **The PC and the phone now call every page by the same plain name.** The pages are Sensors, Commands,
+  Apps, Processes and Files on both apps, and the phone's Remote Desktop page is now just Desktop. Each
+  page's title matches its sidebar or tab label. The PC subtitles are short plain sentences such as "What's
+  running on this PC". The old terminal-style labels on the PC Home page (TERMINATE LINK, LINK_STATUS,
+  // ACTIVE_SENSORS) now read Disconnect, Status and Active sensors. The window title is now just "RemEx",
+  and the phone's Log Off button now says Sign Out, like the PC. The tutorials, FAQ answers, tooltips and
+  command palette use the new names too, in all nine languages. (RemEx-kq10x.1)
 - **The dashboard's Sync button is gone, along with the host's extra copy of your layout.** The button pulled a
   second copy of the dashboard layout that the PC kept in `host_dashboard_layout.json`, but only this PC ever
   wrote that copy, so at best it matched your own layout and at worst it was an older one. Your layout still

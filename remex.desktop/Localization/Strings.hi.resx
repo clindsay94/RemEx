@@ -84,7 +84,7 @@
     <value>सेंसर</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>लॉन्चर</value>
+    <value>ऐप्स</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>सेटिंग्स</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻ पीसी रिमोट</value>
+    <value>⏻  कमांड</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>पावर &amp; सिस्टम नियंत्रण</value>
+    <value>इस पीसी को लॉक, स्लीप, रीस्टार्ट और शट डाउन करें</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>सामान्य</value>
@@ -171,7 +171,7 @@
     <value>सेटिंग्स</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← कमांड सेंटर</value>
+    <value>← होम</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>बदलाव सहेजें</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>सेंसर वर्कस्पेस खोलें, कार्ड पर राइट-क्लिक करें, और होम पर पिन करें।</value>
+    <value>सेंसर खोलें, किसी कार्ड पर राइट-क्लिक करें और उसे होम पर पिन करें।</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤ टास्क मैनेजर</value>
+    <value>▤  प्रक्रियाएँ</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>प्रोसेस एक्सप्लोरर</value>
+    <value>इस पीसी पर क्या चल रहा है</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>नाम या PID से खोजें...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈ ऐप लॉन्चर</value>
+    <value>◈  ऐप्स</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>रिमोट एप्लिकेशन नियंत्रण</value>
+    <value>प्रोग्राम जिन्हें आपका फ़ोन शुरू कर सकता है</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ प्रोग्राम जोड़ें</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>सेंसर वर्कस्पेस</value>
+    <value>सेंसर</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>कनेक्शन</value>
@@ -415,7 +415,7 @@
     <value>ऐप्स</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>शॉर्टकट चुनने के लिए ऐप लॉन्चर में ऐप्स जोड़ें।</value>
+    <value>शॉर्टकट चुनने के लिए ऐप्स पेज पर ऐप्स जोड़ें।</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>ग्लो शक्ति</value>
@@ -747,13 +747,13 @@ RemEx इस पीसी पर चलता है और आपका फ़�
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>ऐप लॉन्चर सेटअप</value>
+    <value>ऐप्स सेट अप करना</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>ऐप लॉन्चर आपको अपने फोन से अपने पीसी पर प्रोग्राम शुरू करने देता है। ऐप्स को पहले यहां कॉन्फ़िगर किया जाना चाहिए।</value>
+    <value>ऐप्स पेज से आप अपने फ़ोन से अपने पीसी पर प्रोग्राम शुरू कर सकते हैं। पहले उन्हें यहाँ जोड़ें।</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. लॉन्चर पेज पर जाएँ (साइडबार)
+    <value>1. ऐप्स पेज पर जाएँ (साइडबार)
 2. '+ प्रोग्राम जोड़ें' पर क्लिक करें
 3. .exe या शॉर्टकट चुनें
 4. अपने Android ऐप से चलाएँ!</value>
@@ -796,10 +796,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>कुछ टाइप करने या IP पता डालने की ज़रूरत नहीं — बस स्कैन करें और चल पड़ें। कनेक्शन विवरण सहेजे जाते हैं, इसलिए आपको केवल एक बार स्कैन करना होगा।</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>फ़ाइल स्थानांतरण और साझा फ़ोल्डर</value>
+    <value>फ़ाइलें और साझा फ़ोल्डर</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>फ़ाइल स्थानांतरण केवल वे फ़ोल्डर दिखाता है जो आपके PC होस्ट ने साझा किए हैं। डेस्कटॉप होस्ट पर सेटिंग्स से इन्हें कॉन्फ़िगर करें ताकि आपका फ़ोन सही स्थान देख सके।</value>
+    <value>फ़ाइलें केवल वही फ़ोल्डर दिखाता है जिन्हें इस पीसी ने साझा किया है। उन्हें इस पीसी की सेटिंग्स में सेट करें ताकि आपका फ़ोन सही जगहें देखे।</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. अपने PC पर सेटिंग्स → साझा फ़ोल्डर खोलें।
@@ -813,7 +813,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>आप तैयार हैं!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>होम, सेंसर, रिमोट कंट्रोल, ऐप लॉन्चर, टास्क मैनेजर और रिमोट डेस्कटॉप के बीच नेविगेट करने के लिए साइडबार का उपयोग करें।</value>
+    <value>होम, सेंसर, कमांड, ऐप्स, प्रक्रियाएँ, फ़ाइलें, रूटीन और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें।</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>अपनी थीम, कनेक्शन, स्ट्रीम गुणवत्ता अनुकूलित करने और होम पर सेंसर पिन करने के लिए सेटिंग्स (⚙) खोलें।</value>
@@ -910,7 +910,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>साझा फ़ोल्डर</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>चुनें कि इस PC की कौन सी फ़ोल्डर फ़ाइल स्थानांतरण में दिखाई दें। केवल पढ़ने योग्य फ़ोल्डर ब्राउज़िंग और डाउनलोड की अनुमति देते हैं, जबकि लिखने योग्य फ़ोल्डर आपके फ़ोन से अपलोड भी स्वीकार करते हैं।</value>
+    <value>चुनें कि इस पीसी के कौन-से फ़ोल्डर फ़ाइलें में दिखें। केवल-पढ़ने वाले फ़ोल्डर ब्राउज़ करने और डाउनलोड की अनुमति देते हैं, जबकि लिखने योग्य फ़ोल्डर आपके फ़ोन से अपलोड भी स्वीकार करते हैं।</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ फ़ोल्डर जोड़ें</value>
@@ -948,10 +948,10 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>फ़ाइल स्थानांतरण</value>
+    <value>फ़ाइलें</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>साझा फ़ोल्डर · फ़ाइल चुनें · डाउनलोड गंतव्य</value>
+    <value>फ़ोल्डर जिन्हें आपका फ़ोन ब्राउज़ कर सकता है और जिनमें फ़ाइलें भेज सकता है</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>साझा फ़ोल्डर</value>
@@ -1251,16 +1251,16 @@ Linux: ip addr  या  hostname -I</value>
     <value>शब्दावली: कमांड पैलेट</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>स्क्रीन के बीच जाने, त्वरित क्रियाएँ चलाने और कमांड सेंटर में तुरंत खोजने के लिए Ctrl+K दबाएँ।</value>
+    <value>स्क्रीन पर जाने, त्वरित क्रियाएँ चलाने और RemEx में तुरंत खोजने के लिए Ctrl+K दबाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>शब्दावली: ऐप लॉन्चर</value>
+    <value>शब्दावली: ऐप्स</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>PC पर चुनी हुई ऐप्स और स्क्रिप्ट चलाएँ। प्रविष्टियाँ PC पर एक बार सेट करें, फिर उन्हें RemEx से दूर से शुरू करें।</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>शब्दावली: टास्क मैनेजर</value>
+    <value>शब्दावली: प्रक्रियाएँ</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>PC पर चल रही प्रक्रियाएँ देखें, उपयोग के अनुसार क्रमबद्ध करें और अटके हुए कार्य अपनी कुर्सी से उठे बिना बंद करें।</value>
@@ -1272,7 +1272,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>सेंसर पिन करके, कार्ड का आकार बदलकर और उन्हें मुक्त कैनवास पर व्यवस्थित करके एक लाइव टेलीमेट्री वॉल बनाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>शब्दावली: फ़ाइल स्थानांतरण</value>
+    <value>शब्दावली: फ़ाइलें</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>केवल उन फ़ोल्डर को ब्राउज़ करें जिन्हें PC ने साझा किया है, लिखने योग्य स्थानों में अपलोड करें, और SHA-256 सत्यापन के साथ फ़ाइलें डाउनलोड करें।</value>
@@ -1326,7 +1326,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>के बारे में</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Linux: ip addr  या  hostname -I</value>
     <value>मैं फ़ाइलें कैसे स्थानांतरित करूँ?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>साइडबार या कमांड पैलेट से फ़ाइल स्थानांतरण खोलें। आपको केवल वे फ़ोल्डर दिखेंगे जिन्हें पीसी ने साझा किया है: जिनमें लिखने की अनुमति है वे अपलोड स्वीकार करते हैं, और केवल-पढ़ने वाले फ़ोल्डर से सिर्फ़ डाउनलोड किया जा सकता है।</value>
+    <value>साइडबार या कमांड पैलेट से फ़ाइलें खोलें। आपको केवल वही फ़ोल्डर दिखेंगे जिन्हें पीसी ने साझा किया है; लिखने योग्य फ़ोल्डर अपलोड स्वीकार करते हैं और केवल-पढ़ने वाले फ़ोल्डर सिर्फ़ डाउनलोड के लिए हैं।</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>क्या मैं अपने पीसी को दूर से लॉक कर सकता हूँ?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>हाँ। पीसी पर रिमोट कंट्रोल स्क्रीन या कमांड पैलेट का उपयोग करें, या Android पर एक ही टैप में लॉक करने के लिए पीसी लॉक करें क्विक सेटिंग्स टाइल जोड़ें।</value>
+    <value>हाँ। पीसी पर कमांड पेज या कमांड पैलेट का उपयोग करें, या एक टैप में पहुँच के लिए Android पर Lock PC क्विक सेटिंग्स टाइल जोड़ें।</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>रिमोट एक्सेस के लिए मैं Tailscale कैसे सेटअप करूँ?</value>
@@ -1681,19 +1681,19 @@ Linux: ip addr  या  hostname -I</value>
     <value>सेंसर कैनवास</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>रिमोट कंट्रोल</value>
+    <value>कमांड</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>ऐप लांचर</value>
+    <value>ऐप्स</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>कार्य प्रबंधक</value>
+    <value>प्रक्रियाएँ</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>रिमोट डेस्कटॉप</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>फाइल ट्रांसफर</value>
+    <value>फ़ाइलें</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>सेटिंग्स</value>
@@ -1846,28 +1846,28 @@ Linux: ip addr  या  hostname -I</value>
     <value>स्थानांतरित करें</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// सक्रिय_सेंसर</value>
+    <value>सक्रिय सेंसर</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>कार्यस्थान_खोलें</value>
+    <value>सेंसर खोलें</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>अभी तक कोई पिन किए गए सेंसर नहीं</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>सेंसर प्रारंभ करें</value>
+    <value>सेंसर खोलें</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// निर्देश</value>
+    <value>शॉर्टकट</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>लिंक_स्थिति</value>
+    <value>स्थिति</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>लिंक प्रारंभ करें</value>
+    <value>कनेक्ट करें</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>लिंक समाप्त करें</value>
+    <value>डिसकनेक्ट</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>रेमेक्स - रिमोट निष्पादन / लाइव टेलीमेट्री</value>
@@ -1990,7 +1990,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>automatic network discovery का उपयोग करके अपने नेटवर्क पर स्थानीय सक्रिय रेमेक्स होस्ट को स्वचालित रूप से खोजें</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>होस्ट पीसी के लिए सक्रिय सत्र कनेक्शन समाप्त करें</value>
+    <value>इस पीसी से डिसकनेक्ट करें</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>संरेखण मार्गदर्शिकाएँ सक्षम करें ताकि सेंसर टाइलें प्लेसमेंट कैनवास पर मानक वेतन वृद्धि में स्नैप हो सकें</value>
@@ -2443,7 +2443,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>कनेक्शन</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>होस्ट लिंक</value>
+    <value>आपका फ़ोन इस पीसी तक कैसे पहुँचता है</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>होस्ट पता</value>
@@ -2569,7 +2569,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>सामग्री फ़ॉन्ट</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>बॉडी और सामग्री पाठ के लिए फ़ॉन्ट — विवरण, लेबल, और सेंसर कार्यक्षेत्र।</value>
+    <value>मुख्य और सामग्री टेक्स्ट के लिए फ़ॉन्ट — विवरण, लेबल और सेंसर पेज। स्थिर-चौड़ाई वाले डेटा रीडआउट अपना मोनोस्पेस फ़ॉन्ट रखते हैं।</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>UI आकार</value>
@@ -2617,7 +2617,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>रिमोट डेस्कटॉप</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>फ़ाइल स्थानांतरण</value>
+    <value>फ़ाइल ट्रांसफ़र</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>इनपुट &amp; कमांड</value>
@@ -2647,7 +2647,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>अपटाइम</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// हाल की गतिविधि</value>
+    <value>हाल की गतिविधि</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
     <value>साफ़ करें</value>
@@ -3387,7 +3387,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>पता</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>होस्ट लिंक</value>
+    <value>कनेक्शन</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>विलंबता</value>

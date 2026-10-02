@@ -84,7 +84,7 @@
     <value>Czujniki</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Program uruchamiający</value>
+    <value>Aplikacje</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Ustawienia</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  ZDALNE PC</value>
+    <value>⏻  Polecenia</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>STEROWANIE ZASILANIEM &amp; SYSTEMEM</value>
+    <value>Zablokuj, uśpij, uruchom ponownie i wyłącz ten komputer</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMALNE</value>
@@ -171,7 +171,7 @@
     <value>USTAWIENIA</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Centrum Dowodzenia</value>
+    <value>← Główna</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Zapisz zmiany</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Otwórz obszar czujników, kliknij prawym przyciskiem kartę i przypnij do strony głównej.</value>
+    <value>Otwórz Czujniki, kliknij kartę prawym przyciskiem i przypnij ją do strony Główna.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  MENEDŻER ZADAŃ</value>
+    <value>▤  Procesy</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>EKSPLORATOR PROCESÓW</value>
+    <value>Co działa na tym komputerze</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Szukaj po nazwie lub PID...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  LAUNCHER APLIKACJI</value>
+    <value>◈  Aplikacje</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>ZDALNE STEROWANIE APLIKACJAMI</value>
+    <value>Programy, które telefon może uruchomić</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Dodaj program</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>OBSZAR CZUJNIKÓW</value>
+    <value>Czujniki</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Połączenie</value>
@@ -696,13 +696,13 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Konfiguracja Launchera aplikacji</value>
+    <value>Konfiguracja Aplikacji</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>Launcher aplikacji pozwala uruchamiać programy na komputerze z telefonu. Aplikacje muszą być najpierw tutaj skonfigurowane.</value>
+    <value>Strona Aplikacje pozwala uruchamiać programy na komputerze z telefonu. Najpierw dodaj je tutaj.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Przejdź do strony Menu programów (pasek boczny)
+    <value>1. Przejdź do strony Aplikacje (pasek boczny)
 2. Kliknij „+ Dodaj program”
 3. Wskaż plik .exe lub skrót
 4. Uruchom go z aplikacji na Androida!</value>
@@ -729,10 +729,10 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
 
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Transfer plików i foldery udostępnione</value>
+    <value>Pliki i foldery udostępnione</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Transfer plików wyświetla tylko foldery udostępnione przez hosta PC. Skonfiguruj je w Ustawieniach na hoście, aby telefon widział właściwe lokalizacje.</value>
+    <value>Pliki pokazują tylko foldery udostępnione przez ten komputer. Skonfiguruj je w Ustawieniach na tym komputerze, aby telefon widział właściwe miejsca.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Otwórz Ustawienia → Udostępnione foldery na PC.
@@ -746,7 +746,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Gotowe!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Użyj paska bocznego, aby nawigować między Stroną główną, Czujnikami, Zdalnym sterowaniem, Uruchamiaczem aplikacji, Menedżerem zadań i Zdalnym pulpitem.</value>
+    <value>Używaj paska bocznego, aby przechodzić między stronami Główna, Czujniki, Polecenia, Aplikacje, Procesy, Pliki, Rutyny i O programie.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Otwórz Ustawienia (⚙), aby dostosować motyw, połączenie, jakość transmisji i przypiąć czujniki do strony głównej.</value>
@@ -843,7 +843,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>FOLDERY UDOSTĘPNIONE</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Wybierz, które foldery na tym PC mają być widoczne w Transferze plików. Foldery tylko do odczytu umożliwiają przeglądanie i pobieranie, a foldery zapisywalne przyjmują też przesyłki z telefonu.</value>
+    <value>Wybierz, które foldery tego komputera mają być widoczne w Plikach. Foldery tylko do odczytu można przeglądać i pobierać z nich pliki, a foldery z prawem zapisu przyjmują też pliki wysłane z telefonu.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Dodaj folder</value>
@@ -881,10 +881,10 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>TRANSFER PLIKÓW</value>
+    <value>Pliki</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>FOLDERY UDOSTĘPNIONE · WYBIERZ PLIK · CEL POBRANIA</value>
+    <value>Foldery, które telefon może przeglądać i do których może wysyłać pliki</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Folder udostępniony</value>
@@ -1185,7 +1185,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>O programie</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1276,10 +1276,10 @@ Linux: ip addr  lub  hostname -I</value>
 • Nie musisz konfigurować przechwytywania ekranu. RemEx automatycznie wybiera najszybszą metodę obsługiwaną przez Twój komputer.</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Otwórz Transfer plików z paska bocznego lub Palety poleceń. Zobaczysz tylko foldery udostępnione przez komputer: te z prawem zapisu przyjmują przesyłane pliki, a foldery tylko do odczytu pozwalają jedynie na pobieranie.</value>
+    <value>Otwórz Pliki z paska bocznego lub palety poleceń. Zobaczysz tylko foldery udostępnione przez komputer: do folderów z prawem zapisu można wysyłać pliki, a z folderów tylko do odczytu można je tylko pobierać.</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Tak. Użyj ekranu Zdalne sterowanie lub Palety poleceń na komputerze albo dodaj kafelek Szybkich ustawień Zablokuj komputer w Androidzie, aby zrobić to jednym dotknięciem.</value>
+    <value>Tak. Użyj strony Polecenia lub palety poleceń na komputerze albo dodaj kafelek Zablokuj PC w Szybkich ustawieniach Androida, aby mieć dostęp jednym dotknięciem.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Jak skonfigurować Tailscale do zdalnego dostępu?</value>
@@ -1435,19 +1435,19 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Obszar sensorów</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Zdalne sterowanie</value>
+    <value>Polecenia</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Uruchamianie aplikacji</value>
+    <value>Aplikacje</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Menedżer zadań</value>
+    <value>Procesy</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Pulpit zdalny</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Transfer plików</value>
+    <value>Pliki</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Ustawienia</value>
@@ -1600,28 +1600,28 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Przenieś</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// AKTYWNE_SENSORY</value>
+    <value>Aktywne czujniki</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>OTWÓRZ_OBSZAR</value>
+    <value>Otwórz Czujniki</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Brak przypiętych czujników</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>INICJUJ SENSORY</value>
+    <value>Otwórz Czujniki</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// DYREKTYWY</value>
+    <value>Skróty</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>STATUS_POŁĄCZENIA</value>
+    <value>Stan</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>INICJUJ POŁĄCZENIE</value>
+    <value>Połącz</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>ZAKOŃCZ POŁĄCZENIE</value>
+    <value>Rozłącz</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Zdalne uruchamianie / Telemetria na żywo</value>
@@ -1744,7 +1744,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Automatycznie wykrywaj aktywne hosty w sieci lokalnej przy użyciu automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Zakończ aktywne połączenie sesji z komputerem hosta</value>
+    <value>Rozłącz z tym komputerem</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Włącz przyciąganie do siatki, aby sensory wyrównywały się do standardowych przyrostów</value>
@@ -2198,7 +2198,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Połączenie</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>ŁĄCZE Z HOSTEM</value>
+    <value>Jak telefon łączy się z tym komputerem</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Adres hosta</value>
@@ -2312,7 +2312,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Aplikacje</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Dodaj aplikacje w Launcherze aplikacji, aby wybrać skróty.</value>
+    <value>Dodaj aplikacje na stronie Aplikacje, aby wybrać skróty.</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
     <value>Dynamiczny</value>
@@ -2445,16 +2445,16 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Słownik: Paleta poleceń</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Naciśnij Ctrl+K, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
+    <value>Naciśnij Ctrl+K, aby przechodzić do ekranów, uruchamiać szybkie akcje i od razu przeszukiwać RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Słownik: Launcher aplikacji</value>
+    <value>Słownik: Aplikacje</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Uruchamiaj wyselekcjonowane aplikacje i skrypty na komputerze. Skonfiguruj wpisy raz na komputerze, a następnie uruchamiaj je zdalnie z RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Słownik: Menedżer zadań</value>
+    <value>Słownik: Procesy</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Sprawdzaj uruchomione procesy komputera, sortuj po użyciu i kończ utknięte zadania bez wstawania z kanapy.</value>
@@ -2466,7 +2466,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Zbuduj żywą ścianę telemetrii, przypinając czujniki, zmieniając rozmiar kart i rozmieszczając je na wolnej kanwie.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Słownik: Transfer plików</value>
+    <value>Słownik: Pliki</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Przeglądaj tylko foldery, które PC udostępnił, przesyłaj do lokalizacji z możliwością zapisu i pobierz pliki z weryfikacją SHA-256.</value>
@@ -2594,7 +2594,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Czcionka treści</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Czcionka tekstu treści — opisy, etykiety i obszar czujników. Odczyty danych o stałej szerokości zachowują swoją czcionkę monospace.</value>
+    <value>Czcionka tekstu głównego i treści — opisy, etykiety i strona Czujniki. Odczyty danych o stałej szerokości zachowują czcionkę o stałej szerokości.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Nie udało się wczytać tej czcionki na tym komputerze — może nie być zainstalowana: {0}. Zamiast niej używana jest czcionka domyślna.</value>
@@ -2660,7 +2660,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Czujniki</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// OSTATNIA_AKTYWNOŚĆ</value>
+    <value>Ostatnia aktywność</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Zamknij okienka</value>
@@ -2720,7 +2720,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Błędy i ostrzeżenia</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Transfer plików</value>
+    <value>Przesyłanie plików</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Wejście i polecenia</value>
@@ -3388,7 +3388,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Adres</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Połączenie z hostem</value>
+    <value>Połączenie</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Opóźnienie</value>

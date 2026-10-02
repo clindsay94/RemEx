@@ -84,7 +84,7 @@
     <value>Capteurs</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Lanceur</value>
+    <value>Applications</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Paramètres</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  PC À DISTANCE</value>
+    <value>⏻  Commandes</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>COMMANDES D'ALIMENTATION ET SYSTÈME</value>
+    <value>Verrouiller, mettre en veille, redémarrer et éteindre ce PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -171,7 +171,7 @@
     <value>PARAMÈTRES</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Centre de commande</value>
+    <value>← Accueil</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Enregistrer les modifications</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Ouvrez l'espace capteurs, faites un clic droit sur une carte et épinglez-la à l'accueil.</value>
+    <value>Ouvrez Capteurs, faites un clic droit sur une carte et épinglez-la à l'Accueil.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  GESTIONNAIRE DE TÂCHES</value>
+    <value>▤  Processus</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>EXPLORATEUR DE PROCESSUS</value>
+    <value>Ce qui tourne sur ce PC</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Rechercher par nom ou PID...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  LANCEUR D'APPS</value>
+    <value>◈  Applications</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>CONTRÔLE DES APPLICATIONS À DISTANCE</value>
+    <value>Programmes que votre téléphone peut lancer</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Ajouter un programme</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>ESPACE CAPTEURS</value>
+    <value>Capteurs</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Connexion</value>
@@ -415,7 +415,7 @@
     <value>Applications</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Ajoutez des applications dans le lanceur d'applications pour choisir des raccourcis.</value>
+    <value>Ajoutez des applications dans la page Applications pour choisir des raccourcis.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensité de la lueur</value>
@@ -747,13 +747,13 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Configuration du lanceur d'apps</value>
+    <value>Configurer les Applications</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>Le lanceur d'apps vous permet de démarrer des programmes sur votre PC depuis votre téléphone. Les apps doivent être configurées ici d'abord.</value>
+    <value>La page Applications vous permet de lancer des programmes de votre PC depuis votre téléphone. Ajoutez-les d'abord ici.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Ouvrez la page Lanceur (barre latérale)
+    <value>1. Ouvrez la page Applications (barre latérale)
 2. Cliquez sur « + Ajouter un programme »
 3. Sélectionnez le .exe ou le raccourci
 4. Lancez-le depuis votre application Android !</value>
@@ -796,10 +796,10 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Pas de saisie, pas d'adresses IP — scannez et c'est parti. Les détails de connexion sont sauvegardés afin que vous n'ayez à scanner qu'une seule fois.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Transfert de fichiers et dossiers partagés</value>
+    <value>Fichiers et dossiers partagés</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Le transfert de fichiers n'affiche que les dossiers que votre PC hôte a partagés. Configurez-les depuis Paramètres sur l'hôte de bureau pour que votre téléphone voie les bons emplacements.</value>
+    <value>Fichiers n'affiche que les dossiers partagés par ce PC. Configurez-les dans les Paramètres de ce PC pour que votre téléphone voie les bons emplacements.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Ouvrez Paramètres → Dossiers partagés sur votre PC.
@@ -813,7 +813,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Vous êtes prêt !</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Utilisez la barre latérale pour naviguer entre Accueil, Capteurs, Contrôle à distance, Lanceur d'applications, Gestionnaire de tâches et Bureau à distance.</value>
+    <value>Utilisez la barre latérale pour naviguer entre Accueil, Capteurs, Commandes, Applications, Processus, Fichiers, Routines et À propos.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Ouvrez Paramètres (⚙) pour personnaliser votre thème, connexion, qualité de flux et épingler des capteurs sur l'accueil.</value>
@@ -910,7 +910,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>DOSSIERS PARTAGÉS</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Choisissez quels dossiers de ce PC apparaissent dans le Transfert de fichiers. Les dossiers en lecture seule permettent de parcourir et télécharger, tandis que les dossiers modifiables acceptent aussi les envois depuis votre téléphone.</value>
+    <value>Choisissez quels dossiers de ce PC apparaissent dans Fichiers. Les dossiers en lecture seule permettent de parcourir et de télécharger, tandis que les dossiers modifiables acceptent aussi les envois depuis votre téléphone.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Ajouter un dossier</value>
@@ -948,10 +948,10 @@ Linux : ip addr  ou  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>TRANSFERT DE FICHIERS</value>
+    <value>Fichiers</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>DOSSIERS PARTAGÉS · SÉLECTIONNER UN FICHIER · DESTINATION DE TÉLÉCHARGEMENT</value>
+    <value>Dossiers que votre téléphone peut parcourir et où il peut envoyer des fichiers</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Dossier partagé</value>
@@ -1251,16 +1251,16 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Glossaire : Palette de commandes</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Appuyez sur Ctrl+K pour naviguer entre les écrans, déclencher des actions rapides et rechercher dans le centre de commandes.</value>
+    <value>Appuyez sur Ctrl+K pour accéder aux écrans, déclencher des actions rapides et rechercher dans RemEx instantanément.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossaire : Lanceur d'applications</value>
+    <value>Glossaire : Applications</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Lancez des applications et des scripts sur l'hôte. Configurez les entrées une fois sur le PC, puis démarrez-les à distance depuis RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossaire : Gestionnaire des tâches</value>
+    <value>Glossaire : Processus</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Inspectez les processus en cours sur l'hôte, triez par utilisation et terminez les tâches bloquées sans quitter votre siège.</value>
@@ -1272,7 +1272,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Construisez un mur de télémétrie en direct en épinglant des capteurs, en redimensionnant les cartes et en les arrangeant sur le canevas libre.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossaire : Transfert de fichiers</value>
+    <value>Glossaire : Fichiers</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Parcourez uniquement les dossiers que l'hôte a partagés, téléversez dans les emplacements accessibles en écriture et téléchargez des fichiers avec vérification SHA-256.</value>
@@ -1326,7 +1326,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>À propos</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Comment transférer des fichiers ?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Ouvrez Transfert de fichiers depuis la barre latérale ou la Palette de Commandes. Vous ne verrez que les dossiers partagés par le PC : ceux autorisant l'écriture acceptent les envois, tandis que ceux en lecture seule ne permettent que les téléchargements.</value>
+    <value>Ouvrez Fichiers depuis la barre latérale ou la palette de commandes. Vous ne verrez que les dossiers partagés par le PC : les dossiers modifiables acceptent les envois, ceux en lecture seule ne permettent que le téléchargement.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Puis-je verrouiller mon PC à distance ?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Oui. Utilisez l'écran Contrôle à Distance ou la Palette de Commandes sur le PC, ou ajoutez la tuile de Réglages rapides Verrouiller le PC sur Android pour un accès en un seul appui.</value>
+    <value>Oui. Utilisez la page Commandes ou la palette de commandes sur le PC, ou ajoutez la tuile Verrouiller le PC aux Réglages rapides d'Android pour y accéder d'un seul geste.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Comment configurer Tailscale pour un accès à distance ?</value>
@@ -1681,19 +1681,19 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Canevas de Capteurs</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Contrôle à Distance</value>
+    <value>Commandes</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Lanceur d'Applications</value>
+    <value>Applications</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Gestionnaire de Tâches</value>
+    <value>Processus</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Bureau à Distance</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Transfert de Fichiers</value>
+    <value>Fichiers</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Paramètres</value>
@@ -1846,28 +1846,28 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Déplacer</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// CAPTEURS_ACTIFS</value>
+    <value>Capteurs actifs</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>OUVRIR_ESPACE</value>
+    <value>Ouvrir Capteurs</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Aucun capteur épinglé pour le moment</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>INITIALISER CAPTEURS</value>
+    <value>Ouvrir Capteurs</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// DIRECTIVES</value>
+    <value>Raccourcis</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>STATUT_LIAISON</value>
+    <value>État</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>INITIALISER LIAISON</value>
+    <value>Connecter</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>TERMINER LIAISON</value>
+    <value>Déconnecter</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Exécution à Distance / Télémétrie en Direct</value>
@@ -1990,7 +1990,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Découvrir automatiquement les hôtes actifs sur le réseau local via automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Mettre fin à la connexion de la session active avec le PC hôte</value>
+    <value>Se déconnecter de ce PC</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Activer les guides d'alignement pour aligner les capteurs sur le canevas</value>
@@ -2443,7 +2443,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Connexion</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>LIAISON HÔTE</value>
+    <value>Comment votre téléphone joint ce PC</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Adresse de l'hôte</value>
@@ -2593,7 +2593,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Fonte du contenu</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Fonte pour le texte du corps et du contenu — descriptions, étiquettes et l'espace de travail des capteurs. Les données à largeur fixe gardent leur fonte monospace.</value>
+    <value>Police du texte principal et du contenu — descriptions, libellés et la page Capteurs. Les relevés de données à chasse fixe gardent leur police monospace.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Cette fonte n'a pas pu être chargée sur ce PC et peut ne pas être installée : {0}. La fonte par défaut est utilisée à la place.</value>
@@ -2659,7 +2659,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Capteurs</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// ACTIVITÉ_RÉCENTE</value>
+    <value>Activité récente</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Fermer les pop-ups</value>
@@ -2719,7 +2719,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Erreurs et avertissements</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Transfert de fichiers</value>
+    <value>Transferts de fichiers</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Entrée et commandes</value>
@@ -3387,7 +3387,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Adresse</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Liaison hôte</value>
+    <value>Connexion</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Latence</value>

@@ -84,7 +84,7 @@
     <value>Sensores</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Iniciador</value>
+    <value>Aplicativos</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Configurações</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻ PC REMOTO</value>
+    <value>⏻  Comandos</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>CONTROLES DE ENERGIA &amp; SISTEMA</value>
+    <value>Bloqueie, suspenda, reinicie e desligue este PC</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -171,7 +171,7 @@
     <value>CONFIGURAÇÕES</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Centro de Comando</value>
+    <value>← Início</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Salvar Alterações</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Abra a Área de Sensores, clique com o botão direito em um cartão e fixe na tela inicial.</value>
+    <value>Abra Sensores, clique com o botão direito em um card e fixe-o no Início.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤ GERENCIADOR DE TAREFAS</value>
+    <value>▤  Processos</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>EXPLORADOR DE PROCESSOS</value>
+    <value>O que está rodando neste PC</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Pesquisar por nome ou PID...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈ LAUNCHER DE APPS</value>
+    <value>◈  Aplicativos</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>CONTROLE DE APLICATIVOS REMOTOS</value>
+    <value>Programas que seu celular pode abrir</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Adicionar Programa</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>ÁREA DE SENSORES</value>
+    <value>Sensores</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Conexão</value>
@@ -415,7 +415,7 @@
     <value>Aplicativos</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Adicione aplicativos no Launcher de Aplicativos para escolher atalhos.</value>
+    <value>Adicione aplicativos na página Aplicativos para escolher atalhos.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidade do Brilho</value>
@@ -747,13 +747,13 @@ O RemEx roda neste PC e o seu celular se conecta a ele. Toda conexão é protegi
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Configuração do Launcher de Apps</value>
+    <value>Configurar Aplicativos</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>O Launcher de Apps permite iniciar programas no seu PC pelo seu telefone. Os aplicativos devem ser configurados aqui primeiro.</value>
+    <value>A página Aplicativos permite abrir programas do seu PC pelo celular. Adicione-os aqui primeiro.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Vá para a página do Lançador (barra lateral)
+    <value>1. Vá para a página Aplicativos (barra lateral)
 2. Clique em '+ Adicionar programa'
 3. Localize o .exe ou o atalho
 4. Abra pelo seu aplicativo Android!</value>
@@ -796,10 +796,10 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Sem digitação, sem endereços IP — é só escanear e pronto. Os dados de conexão ficam salvos, então você só precisa escanear uma vez.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Transferência de Arquivos &amp; Pastas Compartilhadas</value>
+    <value>Arquivos e pastas compartilhadas</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>A Transferência de Arquivos mostra apenas as pastas que o PC do seu PC compartilhou. Configure-as em Configurações no PC para que seu celular veja os locais corretos.</value>
+    <value>Arquivos mostra apenas as pastas que este PC compartilhou. Configure-as nas Configurações deste PC para que seu celular veja os locais certos.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Abra Configurações → Pastas Compartilhadas no seu PC.
@@ -813,7 +813,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Você está pronto!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Use a barra lateral para navegar entre Início, Sensores, Controle Remoto, Lançador de Aplicativos, Gerenciador de Tarefas e Área de Trabalho Remota.</value>
+    <value>Use a barra lateral para alternar entre Início, Sensores, Comandos, Aplicativos, Processos, Arquivos, Rotinas e Sobre.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Abra Configurações (⚙) para personalizar seu tema, conexão, qualidade de transmissão e fixar sensores na tela inicial.</value>
@@ -910,7 +910,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>PASTAS COMPARTILHADAS</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Escolha quais pastas deste PC aparecem na Transferência de Arquivos. Pastas somente leitura permitem navegação e downloads, enquanto pastas graváveis também aceitam uploads do seu celular.</value>
+    <value>Escolha quais pastas deste PC aparecem em Arquivos. Pastas somente leitura permitem navegar e baixar, enquanto pastas graváveis também aceitam envios do seu celular.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Adicionar Pasta</value>
@@ -948,10 +948,10 @@ Linux: ip addr  ou  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>TRANSFERÊNCIA DE ARQUIVOS</value>
+    <value>Arquivos</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>PASTAS COMPARTILHADAS · SELECIONE UM ARQUIVO · DESTINO DOS DOWNLOADS</value>
+    <value>Pastas que seu celular pode explorar e para onde pode enviar arquivos</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Pasta compartilhada</value>
@@ -1251,16 +1251,16 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Glossário: Paleta de comandos</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Pressione Ctrl+K para ir a telas, executar ações rápidas e pesquisar na central de comando instantaneamente.</value>
+    <value>Pressione Ctrl+K para ir a telas, acionar ações rápidas e pesquisar no RemEx na hora.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossário: Lançador de aplicativos</value>
+    <value>Glossário: Aplicativos</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Abra aplicativos e scripts selecionados no PC. Configure as entradas uma vez no PC e depois inicie-as remotamente pelo RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossário: Gerenciador de tarefas</value>
+    <value>Glossário: Processos</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Veja os processos em execução no PC, ordene por uso e encerre tarefas travadas sem sair da cadeira.</value>
@@ -1272,7 +1272,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Monte um painel de telemetria ao vivo fixando sensores, redimensionando cartões e organizando-os no painel livre.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossário: Transferência de arquivos</value>
+    <value>Glossário: Arquivos</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Navegue apenas pelas pastas que o PC compartilhou, envie arquivos para locais graváveis e baixe arquivos com verificação SHA-256.</value>
@@ -1326,7 +1326,7 @@ Na página Rotinas você pode vê-las, desativá-las e conferir o histórico del
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>Sobre</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Na página Rotinas você pode vê-las, desativá-las e conferir o histórico del
     <value>Como transfiro arquivos?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Abra a Transferência de Arquivos pela barra lateral ou pela Paleta de Comandos. Você verá apenas as pastas que o PC compartilhou: as que permitem gravação aceitam envios, e as somente leitura permitem apenas downloads.</value>
+    <value>Abra Arquivos pela barra lateral ou pela paleta de comandos. Você só verá as pastas que o PC compartilhou: pastas graváveis aceitam envios e pastas somente leitura servem apenas para download.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Posso bloquear meu PC remotamente?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Sim. Use a tela Controle Remoto ou a Paleta de Comandos no PC, ou adicione o bloco de Configurações Rápidas Bloquear PC no Android para acesso com um toque.</value>
+    <value>Sim. Use a página Comandos ou a paleta de comandos no PC, ou adicione o bloco Bloquear PC às Configurações rápidas do Android para acesso com um toque.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Como configurar o Tailscale para acesso remoto?</value>
@@ -1681,19 +1681,19 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Tela de Sensores</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Controle Remoto</value>
+    <value>Comandos</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Lançador de Apps</value>
+    <value>Aplicativos</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Gerenciador de Tarefas</value>
+    <value>Processos</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Área de Trabalho Remota</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Transferência de Arquivos</value>
+    <value>Arquivos</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Configurações</value>
@@ -1846,28 +1846,28 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Mover</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// SENSORES_ATIVOS</value>
+    <value>Sensores ativos</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>ABRIR_ESPAÇO</value>
+    <value>Abrir Sensores</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Nenhum sensor fixado ainda</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>INICIALIZAR SENSORES</value>
+    <value>Abrir Sensores</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// DIRETIVAS</value>
+    <value>Atalhos</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>STATUS_DA_CONEXÃO</value>
+    <value>Status</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>INICIALIZAR CONEXÃO</value>
+    <value>Conectar</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>ENCERRAR CONEXÃO</value>
+    <value>Desconectar</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Execução Remota / Telemetria em Tempo Real</value>
@@ -1990,7 +1990,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Descobrir automaticamente hosts ativos na rede local usando automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Encerrar a conexão da sessão ativa com o Your PC</value>
+    <value>Desconectar deste PC</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Ativar guias de alinhamento para que os sensores se ajustem à grade</value>
@@ -2443,7 +2443,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Conexão</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>LINK DO HOST</value>
+    <value>Como seu celular chega a este PC</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Endereço do host</value>
@@ -2593,7 +2593,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Fonte de Conteúdo</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Fonte para texto de corpo e conteúdo — descrições, rótulos e área de sensores. Leituras de dados de largura fixa mantêm sua fonte monoespacial.</value>
+    <value>Fonte para o texto do corpo e do conteúdo — descrições, rótulos e a página Sensores. Leituras de dados de largura fixa mantêm a fonte monoespaçada.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Esta fonte não pôde ser carregada neste PC e pode não estar instalada: {0}. A fonte padrão está sendo usada.</value>
@@ -2659,7 +2659,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Sensores</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// ATIVIDADE_RECENTE</value>
+    <value>Atividade recente</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Fechar pop-ups</value>
@@ -2719,7 +2719,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Erros &amp; Avisos</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Transferência de Arquivos</value>
+    <value>Transferências de arquivos</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Entrada &amp; Comandos</value>
@@ -3387,7 +3387,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
     <value>Endereço</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Link do host</value>
+    <value>Conexão</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Latência</value>

@@ -84,7 +84,7 @@
     <value>Датчики</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Запуск</value>
+    <value>Застосунки</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Налаштування</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻ ПУЛЬТ ПК</value>
+    <value>⏻  Команди</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>КЕРУВАННЯ ЖИВЛЕННЯМ &amp; СИСТЕМОЮ</value>
+    <value>Блокування, сон, перезапуск і вимкнення цього ПК</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>НОРМАЛЬНЕ</value>
@@ -171,7 +171,7 @@
     <value>НАЛАШТУВАННЯ</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Командний центр</value>
+    <value>← Головна</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Зберегти зміни</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Відкрийте простір датчиків, клацніть правою кнопкою мишки на картці та закріпіть на головній.</value>
+    <value>Відкрийте Датчики, клацніть картку правою кнопкою й закріпіть її на Головній.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤ ДИСПЕТЧЕР ЗАВДАНЬ</value>
+    <value>▤  Процеси</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>ПРОВІДНИК ПРОЦЕСІВ</value>
+    <value>Що працює на цьому ПК</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Пошук за назвою або PID...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈ ЗАПУСК ПРОГРАМ</value>
+    <value>◈  Застосунки</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>ДИСТАНЦІЙНЕ КЕРУВАННЯ ПРОГРАМАМИ</value>
+    <value>Програми, які може запустити ваш телефон</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Додати програму</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>ПРОСТІР ДАТЧИКІВ</value>
+    <value>Датчики</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Підключення</value>
@@ -415,7 +415,7 @@
     <value>Застосунки</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Додайте застосунки в Засобі запуску застосунків, щоб вибрати ярлики.</value>
+    <value>Додайте застосунки на сторінці Застосунки, щоб вибрати ярлики.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Сила свічення</value>
@@ -747,13 +747,13 @@ RemEx працює на цьому ПК, а телефон підключаєт�
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Налаштування запуску програм</value>
+    <value>Налаштування Застосунків</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>Запуск програм дозволяє запускати програми на вашому ПК з телефону. Додатки спершу потрібно налаштувати тут.</value>
+    <value>Сторінка Застосунки дає змогу запускати програми на ПК з телефона. Спершу додайте їх тут.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Перейдіть на сторінку Запуску програм (бічна панель)
+    <value>1. Перейдіть на сторінку Застосунки (бічна панель)
 2. Натисніть «+ Додати програму»
 3. Виберіть файл .exe або ярлик
 4. Запускайте зі свого застосунку Android!</value>
@@ -796,10 +796,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Жодного набору тексту, жодних IP-адрес — просто відскануйте та користуйтеся. Дані з'єднання зберігаються, тож сканувати потрібно лише раз.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Передача файлів і спільні папки</value>
+    <value>Файли та спільні папки</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Передача файлів показує лише папки, якими поділився ваш PC-хост. Налаштуйте їх у Налаштуваннях на хості, щоб телефон бачив правильні розташування.</value>
+    <value>Файли показують лише папки, якими поділився цей ПК. Налаштуйте їх у Налаштуваннях на цьому ПК, щоб телефон бачив потрібні місця.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Відкрийте Налаштування → Спільні папки на вашому PC.
@@ -813,7 +813,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Ви готові!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Використовуйте бічну панель для навігації між Головною, Датчиками, Дистанційним керуванням, Лаунчером додатків, Диспетчером задач та Віддаленим робочим столом.</value>
+    <value>Використовуйте бічну панель, щоб переходити між сторінками Головна, Датчики, Команди, Застосунки, Процеси, Файли, Рутини та Про програму.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Відкрийте Налаштування (⚙), щоб налаштувати тему, з'єднання, якість потоку та закріпити датчики на Головній.</value>
@@ -910,7 +910,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>СПІЛЬНІ ПАПКИ</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Виберіть, які папки цього ПК відображаються у Передачі файлів. Папки лише для читання дозволяють перегляд та завантаження, тоді як папки з доступом для запису приймають вивантаження з телефону.</value>
+    <value>Виберіть, які папки цього ПК відображатимуться у Файлах. Папки лише для читання дозволяють переглядати й завантажувати, а папки з правом запису також приймають файли з телефона.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Додати папку</value>
@@ -948,10 +948,10 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>ПЕРЕДАЧА ФАЙЛІВ</value>
+    <value>Файли</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>СПІЛЬНІ ПАПКИ · ВИБЕРІТЬ ФАЙЛ · МІСЦЕ ЗБЕРЕЖЕННЯ</value>
+    <value>Папки, які ваш телефон може переглядати й куди може надсилати файли</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Спільна папка</value>
@@ -1251,16 +1251,16 @@ Linux: ip addr  або  hostname -I</value>
     <value>Глосарій: Палітра команд</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Натисніть Ctrl+K, щоб перейти до екранів, виконати швидкі дії та миттєво шукати в центрі команд.</value>
+    <value>Натисніть Ctrl+K, щоб переходити між екранами, запускати швидкі дії та миттєво шукати в RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Глосарій: Запуск програм</value>
+    <value>Глосарій: Застосунки</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Запускайте вибрані програми та скрипти на комп'ютері. Налаштуйте записи один раз на комп'ютері, а потім запускайте їх віддалено з RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Глосарій: Диспетчер завдань</value>
+    <value>Глосарій: Процеси</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Переглядайте процеси, що виконуються на комп'ютері, сортуйте їх за навантаженням і завершуйте завислі завдання, не встаючи з крісла.</value>
@@ -1272,7 +1272,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Створіть стіну живої телеметрії, закріплюючи датчики, змінюючи розмір карток і розташовуючи їх на вільному полотні.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Глосарій: Передавання файлів</value>
+    <value>Глосарій: Файли</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Переглядайте лише папки, якими поділився PC, вивантажуйте у папки з доступом для запису та завантажуйте файли з перевіркою SHA-256.</value>
@@ -1326,7 +1326,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>Про програму</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Linux: ip addr  або  hostname -I</value>
     <value>Як передавати файли?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Відкрийте Передачу файлів на бічній панелі або через Палітру команд. Ви побачите лише теки, які надав ПК: до тек із правом запису можна вивантажувати файли, а з тек лише для читання — тільки завантажувати їх.</value>
+    <value>Відкрийте Файли з бічної панелі або палітри команд. Ви побачите лише папки, якими поділився ПК: папки з правом запису приймають вивантаження, а папки лише для читання доступні тільки для завантаження.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Чи можу я заблокувати ПК дистанційно?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Так. Скористайтеся екраном Дистанційне керування або Палітрою команд на ПК, або додайте плитку швидких налаштувань Блокувати ПК на Android для доступу одним дотиком.</value>
+    <value>Так. Скористайтеся сторінкою Команди або палітрою команд на ПК чи додайте плитку Заблокувати ПК у Швидкі налаштування Android для доступу одним дотиком.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Як налаштувати Tailscale для віддаленого доступу?</value>
@@ -1681,19 +1681,19 @@ Linux: ip addr  або  hostname -I</value>
     <value>Полотно сенсорів</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Дистанційне керування</value>
+    <value>Команди</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Запуск додатків</value>
+    <value>Застосунки</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Диспетчер завдань</value>
+    <value>Процеси</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Віддалений робочий стіл</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Передача файлів</value>
+    <value>Файли</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Налаштування</value>
@@ -1846,28 +1846,28 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перемістити</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// АКТИВНІ_СЕНСОРИ</value>
+    <value>Активні датчики</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>ВІДКРИТИ_РОБОЧУ_ЗОНУ</value>
+    <value>Відкрити Датчики</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Немає закріплених датчиків</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>ІНІЦІАЛІЗУВАТИ СЕНСОРИ</value>
+    <value>Відкрити Датчики</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// ДИРЕКТИВИ</value>
+    <value>Ярлики</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>СТАТУС_ЗВ'ЯЗКУ</value>
+    <value>Стан</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>ІНІЦІАЛІЗУВАТИ ЗВ'ЯЗОК</value>
+    <value>Підключити</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>РОЗІРВАТИ ЗВ'ЯЗОК</value>
+    <value>Відключити</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Віддалене виконання / Жива телеметрія</value>
@@ -1990,7 +1990,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Автоматично знаходити активні хости в локальній мережі за допомогою automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Розірвати активне з'єднання сесії з хост-ПК</value>
+    <value>Відключитися від цього ПК</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Увімкнути напрямні вирівнювання для прив'язки сенсорів до сітки</value>
@@ -2444,7 +2444,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Підключення</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>ЗВ'ЯЗОК ІЗ ХОСТОМ</value>
+    <value>Як ваш телефон під'єднується до цього ПК</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Адреса хоста</value>
@@ -2594,7 +2594,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Шрифт вмісту</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Шрифт для основного тексту та вмісту — описів, підписів і простору датчиків. Дані з фіксованою шириною зберігають моноширинний шрифт.</value>
+    <value>Шрифт основного тексту та вмісту — описи, підписи та сторінка Датчики. Показники даних фіксованої ширини зберігають моноширинний шрифт.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Цей шрифт не вдалося завантажити на цьому ПК — можливо, він не встановлений: {0}. Натомість використовується стандартний шрифт.</value>
@@ -2660,7 +2660,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Датчики</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// ОСТАННЯ_АКТИВНІСТЬ</value>
+    <value>Остання активність</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Закрити спливаючі вікна</value>
@@ -2720,7 +2720,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Помилки та попередження</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Передача файлів</value>
+    <value>Передавання файлів</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Введення та команди</value>
@@ -3388,7 +3388,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Адреса</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>З'єднання з хостом</value>
+    <value>Підключення</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Затримка</value>

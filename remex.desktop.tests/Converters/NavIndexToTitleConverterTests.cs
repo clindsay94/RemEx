@@ -52,7 +52,7 @@ public class NavIndexToTitleConverterTests : IDisposable
     [InlineData(0, "Home")]
     [InlineData(1, "Sensors")]
     [InlineData(2, "Commands")]
-    [InlineData(3, "Launcher")]
+    [InlineData(3, "Apps")]
     [InlineData(4, "Processes")]
     [InlineData(5, "Remote Desktop")]
     [InlineData(6, "About")]

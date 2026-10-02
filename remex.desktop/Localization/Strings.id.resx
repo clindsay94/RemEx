@@ -84,7 +84,7 @@
     <value>Sensor</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Peluncur</value>
+    <value>Aplikasi</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Pengaturan</value>
@@ -127,10 +127,10 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻ PC JARAK JAUH</value>
+    <value>⏻  Perintah</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
-    <value>KONTROL DAYA &amp; SISTEM</value>
+    <value>Kunci, tidurkan, mulai ulang, dan matikan PC ini</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -171,7 +171,7 @@
     <value>PENGATURAN</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Pusat Komando</value>
+    <value>← Beranda</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Simpan Perubahan</value>
@@ -209,15 +209,15 @@
 
   
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
-    <value>Buka Ruang Kerja Sensor, klik kanan kartu, dan sematkan ke Beranda.</value>
+    <value>Buka Sensor, klik kanan sebuah kartu, lalu sematkan ke Beranda.</value>
   </data>
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤ PENGELOLA TUGAS</value>
+    <value>▤  Proses</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
-    <value>PENJELAJAH PROSES</value>
+    <value>Apa yang berjalan di PC ini</value>
   </data>
   <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
     <value>Cari berdasarkan nama atau PID...</value>
@@ -237,10 +237,10 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈ PELUNCUR APLIKASI</value>
+    <value>◈  Aplikasi</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
-    <value>KONTROL APLIKASI JARAK JAUH</value>
+    <value>Program yang bisa dijalankan dari ponsel Anda</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
     <value>+ Tambah Program</value>
@@ -294,7 +294,7 @@
 
   
   <data name="Canvas_Header" xml:space="preserve">
-    <value>RUANG KERJA SENSOR</value>
+    <value>Sensor</value>
   </data>
   <data name="Canvas_Connection" xml:space="preserve">
     <value>Koneksi</value>
@@ -415,7 +415,7 @@
     <value>Aplikasi</value>
   </data>
   <data name="Custom_FlyoutApps_None" xml:space="preserve">
-    <value>Tambahkan aplikasi di Peluncur Aplikasi untuk memilih pintasan.</value>
+    <value>Tambahkan aplikasi di halaman Aplikasi untuk memilih pintasan.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Kekuatan Cahaya</value>
@@ -747,13 +747,13 @@ RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilin
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Pengaturan Peluncur Aplikasi</value>
+    <value>Menyiapkan Aplikasi</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>Peluncur Aplikasi memungkinkan Anda memulai program di PC dari ponsel Anda. Aplikasi harus dikonfigurasi di sini terlebih dahulu.</value>
+    <value>Halaman Aplikasi memungkinkan Anda menjalankan program di PC dari ponsel. Tambahkan dulu di sini.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Buka halaman Peluncur (bilah sisi)
+    <value>1. Buka halaman Aplikasi (bilah sisi)
 2. Klik '+ Tambah Program'
 3. Telusuri ke file .exe atau pintasan
 4. Jalankan dari aplikasi Android Anda!</value>
@@ -796,10 +796,10 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Tanpa mengetik, tanpa alamat IP — cukup pindai dan mulai. Detail koneksi disimpan sehingga Anda hanya perlu memindai sekali.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Transfer File &amp; Folder Bersama</value>
+    <value>File &amp; Folder Bersama</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Transfer File hanya menampilkan folder yang telah dibagikan oleh Your PC Anda. Konfigurasikan dari Pengaturan di PC desktop agar ponsel Anda melihat lokasi yang tepat.</value>
+    <value>File hanya menampilkan folder yang dibagikan PC ini. Atur di Pengaturan pada PC ini agar ponsel Anda melihat lokasi yang tepat.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
     <value>1. Buka Pengaturan → Folder Bersama di PC Anda.
@@ -813,7 +813,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Anda Siap!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Gunakan bilah sisi untuk menavigasi antara Beranda, Sensor, Kontrol Jarak Jauh, Peluncur Aplikasi, Pengelola Tugas, dan Desktop Jarak Jauh.</value>
+    <value>Gunakan bilah samping untuk berpindah antara Beranda, Sensor, Perintah, Aplikasi, Proses, File, Rutinitas, dan Tentang.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Buka Pengaturan (⚙) untuk menyesuaikan tema, koneksi, kualitas streaming, dan menyematkan sensor ke Beranda.</value>
@@ -910,7 +910,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>FOLDER BERSAMA</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
-    <value>Pilih folder mana di PC ini yang muncul di Transfer File. Folder hanya-baca memungkinkan penjelajahan dan unduhan, sedangkan folder yang dapat ditulis juga menerima unggahan dari ponsel Anda.</value>
+    <value>Pilih folder mana di PC ini yang muncul di File. Folder hanya-baca bisa dijelajahi dan diunduh, sedangkan folder yang dapat ditulisi juga menerima unggahan dari ponsel Anda.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Tambah Folder</value>
@@ -948,10 +948,10 @@ Linux: ip addr  atau  hostname -I</value>
 
   
   <data name="FileTransfer_Header" xml:space="preserve">
-    <value>TRANSFER FILE</value>
+    <value>File</value>
   </data>
   <data name="FileTransfer_Subheader" xml:space="preserve">
-    <value>FOLDER BERSAMA · PILIH FILE · LOKASI UNDUHAN</value>
+    <value>Folder yang bisa dijelajahi dan dikirimi file dari ponsel Anda</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
     <value>Folder Bersama</value>
@@ -1251,16 +1251,16 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Glosarium: Palet Perintah</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Tekan Ctrl+K untuk berpindah layar, memicu tindakan cepat, dan mencari di pusat komando secara instan.</value>
+    <value>Tekan Ctrl+K untuk berpindah layar, menjalankan aksi cepat, dan mencari di RemEx secara instan.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glosarium: Peluncur Aplikasi</value>
+    <value>Glosarium: Aplikasi</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
     <value>Luncurkan aplikasi dan skrip yang dikurasi di PC. Konfigurasikan entri sekali di PC, lalu jalankan dari jarak jauh melalui RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glosarium: Task Manager</value>
+    <value>Glosarium: Proses</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
     <value>Periksa proses yang berjalan di PC, urutkan berdasarkan penggunaan, dan akhiri tugas yang macet tanpa meninggalkan kursi Anda.</value>
@@ -1272,7 +1272,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Buat dinding telemetri langsung dengan menyematkan sensor, mengubah ukuran kartu, dan mengaturnya di kanvas bebas.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glosarium: Transfer File</value>
+    <value>Glosarium: File</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Telusuri hanya folder yang dibagikan PC, upload ke lokasi yang dapat ditulis, dan unduh file dengan verifikasi SHA-256.</value>
@@ -1326,7 +1326,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
 
   
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>Tentang</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
@@ -1519,13 +1519,13 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Bagaimana cara mentransfer file?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Buka Transfer File dari bilah sisi atau Palet Perintah. Anda hanya akan melihat folder yang dibagikan oleh PC: folder yang dapat ditulis menerima unggahan, sedangkan folder hanya-baca hanya mengizinkan unduhan.</value>
+    <value>Buka File dari bilah samping atau palet perintah. Anda hanya akan melihat folder yang dibagikan PC; folder yang dapat ditulisi menerima unggahan, sedangkan folder hanya-baca hanya untuk unduhan.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Bisakah saya mengunci PC dari jarak jauh?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Ya. Gunakan layar Kontrol Jarak Jauh atau Palet Perintah di PC, atau tambahkan tile Pengaturan Cepat Kunci PC di Android untuk akses sekali sentuh.</value>
+    <value>Ya. Gunakan halaman Perintah atau palet perintah di PC, atau tambahkan ubin Kunci PC di Setelan Cepat Android untuk akses sekali ketuk.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Bagaimana cara mengatur Tailscale untuk akses jarak jauh?</value>
@@ -1681,19 +1681,19 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Kanvas Sensor</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
-    <value>Kontrol Jarak Jauh</value>
+    <value>Perintah</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Peluncur Aplikasi</value>
+    <value>Aplikasi</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
-    <value>Pengelola Tugas</value>
+    <value>Proses</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
     <value>Desktop Jarak Jauh</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
-    <value>Transfer File</value>
+    <value>File</value>
   </data>
   <data name="Palette_Settings" xml:space="preserve">
     <value>Pengaturan</value>
@@ -1846,28 +1846,28 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Pindahkan</value>
   </data>
   <data name="Home_ActiveSensors" xml:space="preserve">
-    <value>// SENSOR_AKTIF</value>
+    <value>Sensor aktif</value>
   </data>
   <data name="Home_OpenWorkspace" xml:space="preserve">
-    <value>BUKA_RUANG_KERJA</value>
+    <value>Buka Sensor</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
     <value>Belum ada sensor yang disematkan</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
-    <value>INISIALISASI SENSOR</value>
+    <value>Buka Sensor</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
-    <value>// DIREKTIF</value>
+    <value>Pintasan</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
-    <value>STATUS_SAMBUNGAN</value>
+    <value>Status</value>
   </data>
   <data name="Home_InitializeLink" xml:space="preserve">
-    <value>INISIALISASI SAMBUNGAN</value>
+    <value>Hubungkan</value>
   </data>
   <data name="Home_TerminateLink" xml:space="preserve">
-    <value>PUTUSKAN SAMBUNGAN</value>
+    <value>Putuskan</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Eksekusi Jarak Jauh / Telemetri Langsung</value>
@@ -1990,7 +1990,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Temukan PC aktif di jaringan lokal secara otomatis menggunakan automatic network discovery</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Putuskan sambungan sesi aktif ke Your PC</value>
+    <value>Putuskan koneksi dari PC ini</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Aktifkan panduan perataan agar ubin sensor sejajar dengan kisi-kisi</value>
@@ -2443,7 +2443,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Koneksi</value>
   </data>
   <data name="Conn_Subheader" xml:space="preserve">
-    <value>TAUTAN HOST</value>
+    <value>Cara ponsel Anda menjangkau PC ini</value>
   </data>
   <data name="Conn_HostAddress" xml:space="preserve">
     <value>Alamat host</value>
@@ -2553,7 +2553,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Font Konten</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
-    <value>Font untuk teks isi dan konten — deskripsi, label, dan ruang kerja sensor. Pembacaan data lebar tetap mempertahankan font monospasi.</value>
+    <value>Font untuk teks isi dan konten — deskripsi, label, dan halaman Sensor. Pembacaan data lebar tetap tetap memakai font monospace.</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
     <value>Ukuran UI</value>
@@ -2620,7 +2620,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Desktop Jarak Jauh</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
-    <value>Transfer File</value>
+    <value>Transfer file</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
     <value>Input &amp; Perintah</value>
@@ -2650,7 +2650,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>WAKTU AKTIF</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
-    <value>// AKTIVITAS_TERBARU</value>
+    <value>Aktivitas terbaru</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
     <value>HAPUS</value>
@@ -3390,7 +3390,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
     <value>Alamat</value>
   </data>
   <data name="Shell_StatusFlyoutHostLink" xml:space="preserve">
-    <value>Tautan host</value>
+    <value>Koneksi</value>
   </data>
   <data name="Shell_StatusFlyoutLatency" xml:space="preserve">
     <value>Latensi</value>
