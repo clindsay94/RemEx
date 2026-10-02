@@ -55,14 +55,14 @@
 
                     <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Custom_TextSensorBackdropTip}">
                         <TextBlock Text="{local:Localize Custom_TextSensorBackdrop}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SensorTitleBackdrop}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Right" AutomationProperties.Name="{local:Localize Custom_TextSensorBackdrop}"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SensorTitleBackdrop}" HorizontalAlignment="Right" AutomationProperties.Name="{local:Localize Custom_TextSensorBackdrop}"/>
                     </Grid>
 
                     <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
                     <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_TextShadowTip}">
                         <TextBlock Text="{local:Localize Custom_TextShadow}" VerticalAlignment="Center"/>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding TextShadowEnabled}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left" AutomationProperties.Name="{local:Localize Custom_TextShadow}"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding TextShadowEnabled}" HorizontalAlignment="Left" AutomationProperties.Name="{local:Localize Custom_TextShadow}"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,2*" IsEnabled="{Binding TextShadowEnabled}">
                         <TextBlock Text="{local:Localize Custom_TextShadowStrength}" VerticalAlignment="Center" Margin="16,0,0,0"/>

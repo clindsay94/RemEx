@@ -727,6 +727,19 @@
             <Setter Property="assists:ToggleSwitchAssist.SwitchThumbOffBackground" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
 
+        <!-- NO TEXT ON THE THUMB. Material's template puts OnContent and OffContent INSIDE the 20 px
+             thumb (PART_ThumbContentContainer, meant for a tiny icon), not beside the switch the way
+             Fluent does. Material nulls OffContent by default and keeps the On presenter hidden, but
+             any switch that was given OffContent text drew that word over the knob while off (seen
+             on Personalize > Layout > Reduced motion). Every row already names its switch, and the
+             track and thumb colour show the state, so the thumb's content is hidden once here for
+             every switch, On included. Material only sets IsVisible on the two presenters INSIDE
+             this panel, one from a ^:checked activator; hiding the panel itself sidesteps that
+             priority fight (bd memories material-avalonia-activated-setters-outrank-plain-overrides). -->
+        <Style Selector="ToggleSwitch /template/ Panel#PART_ThumbContentContainer">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+
         <!-- CheckBox and RadioButton share SelectionControlAssist, so they share a rule.
              InnerForeground is the checked glyph, the hover halo and the ripple; Foreground is
              the label. RadioButton has no instances in the app today and is here anyway: it is
