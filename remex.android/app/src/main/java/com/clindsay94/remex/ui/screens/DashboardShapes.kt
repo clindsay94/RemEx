@@ -1,43 +1,14 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import android.view.HapticFeedbackConstants
-import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.CardShapes
-import com.clindsay94.remex.ui.theme.cardShape
 
 /**
  * Category-driven card shapes (locked decision #5). Resolution order at render is:
  * per-card/group override -> legacy coarse class preset -> built-in per-category default.
  * Kept as the single shape authority so the layout envelope, migration and picker never diverge.
+ *
+ * The Sensors grid (RemEx-wqo7a.7) draws one tile shape for every card, so it resolves with the
+ * per-card override set aside; the override is still stored and still read by a downgraded APK.
  */
 object DashboardShapes {
     const val SHAPE_PRESET_INHERIT = -1f // "no explicit shape - resolve from category default"
@@ -119,86 +90,5 @@ object DashboardShapes {
         if (classOverride != SHAPE_PRESET_INHERIT) return classOverride
 
         return defaultShapeFor(category)
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ShapePickerSheet(
-    cornerRadiusDp: Int,
-    onDismiss: () -> Unit,
-    onPick: (Float) -> Unit
-) {
-    val view = LocalView.current
-    val sheetState = rememberBottomSheetState(SheetValue.Hidden)
-
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Text(
-            stringResource(R.string.shape_picker_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            textAlign = TextAlign.Start
-        )
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(72.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
-        ) {
-            item {
-                ShapePickerCell(
-                    label = stringResource(R.string.personalization_shape_auto),
-                    shapeIndex = null,
-                    cornerRadiusDp = cornerRadiusDp
-                ) {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                    onPick(DashboardShapes.SHAPE_PRESET_INHERIT)
-                }
-            }
-            // Only the content-safe shapes (RemEx-kq10x.5) - see CardShapes.
-            items(CardShapes.options) { index ->
-                ShapePickerCell(
-                    label = stringResource(CardShapes.nameRes(index)),
-                    shapeIndex = index,
-                    cornerRadiusDp = cornerRadiusDp
-                ) {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                    onPick(index)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ShapePickerCell(
-    label: String,
-    shapeIndex: Float?,
-    cornerRadiusDp: Int,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            val shape = if (shapeIndex == null) CircleShape else cardShape(shapeIndex, cornerRadiusDp)
-            Box(
-                modifier = Modifier.size(44.dp)
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }

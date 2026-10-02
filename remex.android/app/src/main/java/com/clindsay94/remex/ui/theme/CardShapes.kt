@@ -39,6 +39,12 @@ object CardShapes {
     /** Inner padding of every card. Constant now that no card shape intrudes on its content. */
     const val INNER_PADDING_DP = 8
 
+    /**
+     * The gap between cards, in dp: between Home's cards and between Sensors grid cells, so the two
+     * screens share one rhythm (RemEx-wqo7a.7).
+     */
+    const val CARD_SPACING_DP = 12
+
     /** Any stored or animated shape value, resolved to one of [options]. Never throws. */
     fun sanitize(index: Float): Float {
         if (index.isNaN() || index.isInfinite()) return ROUNDED_RECTANGLE

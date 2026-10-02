@@ -99,27 +99,17 @@ class PerfP3B5SourceShapeTest {
     }
 
     @Test
-    fun `P3-20 the coach overlay's selection-ring alpha is read inside graphicsLayer, not fed into border()`() {
+    fun `P3-20 the coach overlay never feeds an animated value into border()`() {
+        // The group-select and action-bar demos this guarded went with the free-form canvas
+        // (RemEx-wqo7a.8); the rule still holds for every ring the remaining demos draw: an
+        // animated alpha or scale is read inside graphicsLayer, never passed to .border(), whose
+        // arguments are evaluated at composition time and would recompose every frame.
         val src = source("ui/screens/DashboardCoachOverlay.kt")
-        assertFalse("an Animatable's .value must not be passed straight into .border()'s color " +
-            "(that argument is evaluated at composition time, forcing a recompose every frame)",
-            src.contains(".copy(alpha = selected)") || src.contains(".copy(alpha = sel.value)"))
-
-        val cardStart = src.indexOf("private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(")
-        assertTrue("MiniSelectCard not found", cardStart >= 0)
-        val cardSignatureEnd = src.indexOf(") {", cardStart)
-        val signature = src.substring(cardStart, cardSignatureEnd)
-        assertTrue("MiniSelectCard must take the raw Animatables, not their dereferenced .value, " +
-            "so its caller's composition body never reads a per-frame value",
-            signature.contains("selected: Animatable<Float") &&
-                signature.contains("lift: Animatable<Float") &&
-                signature.contains("dragFraction: Animatable<Float"))
-
-        val groupSelectStart = src.indexOf("private fun GroupSelectDemo(")
-        assertTrue("GroupSelectDemo not found", groupSelectStart >= 0)
-        val groupSelectBody = src.substring(groupSelectStart, src.indexOf("\n}", groupSelectStart))
-        assertFalse("GroupSelectDemo's own body must not dereference the Animatables it hands to MiniSelectCard",
-            Regex("""MiniSelectCard\([^)]*\.value""").containsMatchIn(groupSelectBody))
+        val borders = Regex("""\.border\([^)]*\)""").findAll(src).map { it.value }.toList()
+        assertTrue("expected the coach overlay to draw at least one ring with .border()", borders.isNotEmpty())
+        assertFalse("an Animatable's .value must not be passed straight into .border() " +
+            "(that argument is evaluated at composition time, forcing a recompose every frame): $borders",
+            borders.any { it.contains(".value") })
     }
 
     @Test

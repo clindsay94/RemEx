@@ -905,6 +905,27 @@ class SettingsManager(val context: Context) {
                 }
         }
 
+        // ── Home pinned sensors, one cache per PC (RemEx-wqo7a.6) ─────────────────
+        // Keyed by HostIdentity like the known-host keys above; the key scheme and the JSON live in
+        // HomePins so they are testable without DataStore.
+
+        private fun homePinsKey(identity: String) = stringPreferencesKey(HomePins.cacheKeyName(identity))
+
+        /** The last pinned-sensor list seen for this PC, or null when there is none or it is unreadable. */
+        suspend fun loadHomePinsCache(identity: String): HomePinsCache? {
+                if (identity.isBlank()) return null
+                return HomePins.decodeCache(context.dataStore.data.first()[homePinsKey(identity)])
+        }
+
+        /** Skips the write when nothing changed, so a repeated sync does not re-emit every collector. */
+        suspend fun saveHomePinsCache(identity: String, cache: HomePinsCache) {
+                if (identity.isBlank()) return
+                val encoded = HomePins.encodeCache(cache)
+                context.dataStore.edit { prefs ->
+                        if (prefs[homePinsKey(identity)] != encoded) prefs[homePinsKey(identity)] = encoded
+                }
+        }
+
         /**
          * Moves a PC's remembered details onto the identity it has after a certificate change
          * (RemEx-bye7).

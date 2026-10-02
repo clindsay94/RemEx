@@ -14,6 +14,10 @@ import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Base64
 import android.util.Log
+import com.clindsay94.remex.data.HomePinsCache
+import com.clindsay94.remex.data.HomePinsRepository
+import com.clindsay94.remex.data.HomePinsState
+import com.clindsay94.remex.data.HomePinsStore
 import com.clindsay94.remex.data.MediaArtworkCache
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaSeekReconciler
@@ -448,6 +452,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // connection, keyed off authenticatedConnection for the same reason as theme_sync above
         // (routines_sync is pairing-gated host-side). IO: its sends are blocking JNI calls.
         managerScope.launch(Dispatchers.IO) { Routines.syncClient(appContext).run() }
+
+        startHomePinsSync(appContext, settings)
 
         startTelemetryBackgroundPause(appContext)
         val reconnectAllowed = startReconnectGateSignals(appContext)
@@ -937,6 +943,80 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _homePinsMessages =
             MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val homePinsMessages = _homePinsMessages.asSharedFlow()
+
+    /**
+     * The connected PC's Home pinned sensors (RemEx-wqo7a.6), fed from [homePinsMessages],
+     * [hostInfoForConnection] and the connection flows by [startHomePinsSync]. One instance for the
+     * whole app, because Home and the Sensors edit mode must show the same list.
+     */
+    private val homePinsRepository =
+            HomePinsRepository(
+                    send = { json ->
+                        RemexCoreClient.SendMessage(json).onFailure {
+                            Log.w("RemexManager", "Sending a pinned-sensor change failed", it)
+                        }
+                    },
+                    isAuthenticated = { _isAuthenticated.value },
+            )
+
+    val homePins: StateFlow<HomePinsState> = homePinsRepository.state
+
+    /**
+     * Pins or unpins one sensor on the connected PC's Home. Off the main thread because the send is
+     * a blocking JNI call; see [HomePinsRepository.setPinned] for when nothing happens.
+     */
+    fun setHomePin(sensorName: String, pinned: Boolean) {
+        managerScope.launch(Dispatchers.IO) { homePinsRepository.setPinned(sensorName, pinned) }
+    }
+
+    /**
+     * Wires [homePinsRepository] to the connection (RemEx-wqo7a.6). Four collectors on IO (the
+     * cache is DataStore and the pin lookup is disk), each handing the repository one kind of event;
+     * the repository serialises them and handles their ordering itself.
+     *
+     * [connectedHost], not [authenticatedConnection], names the PC: it is set before the host can
+     * send anything, so the cache is loaded before the first sync is likely to land. Sends still wait
+     * for the authenticated edge inside the repository.
+     */
+    private fun startHomePinsSync(appContext: Context, settings: SettingsManager) {
+        homePinsRepository.attachStore(
+                object : HomePinsStore {
+                    override suspend fun load(identity: String) = settings.loadHomePinsCache(identity)
+
+                    override suspend fun save(identity: String, cache: HomePinsCache) =
+                            settings.saveHomePinsCache(identity, cache)
+                }
+        )
+        managerScope.launch(Dispatchers.IO) {
+            connectedHost.collect { connection ->
+                if (connection == null) {
+                    homePinsRepository.onDisconnected()
+                } else {
+                    val identity =
+                            runCatching {
+                                        com.clindsay94.remex.security.HostIdentity.keyFor(
+                                                com.clindsay94.remex.security.PinnedHostStore.getPin(appContext, connection.host)
+                                        )
+                                    }
+                                    .getOrNull()
+                    homePinsRepository.onConnected(connection.epoch, identity)
+                }
+            }
+        }
+        managerScope.launch(Dispatchers.IO) {
+            hostInfoForConnection.collect { info ->
+                if (info != null) homePinsRepository.onHostInfo(info.connection.epoch, info.json)
+            }
+        }
+        managerScope.launch(Dispatchers.IO) {
+            homePinsMessages.collect { json -> homePinsRepository.onSyncMessage(json) }
+        }
+        managerScope.launch(Dispatchers.IO) {
+            authenticatedConnection.collect { connection ->
+                if (connection != null) homePinsRepository.onAuthenticated()
+            }
+        }
+    }
 
     /**
      * Smoothed round-trip time to the PC in milliseconds, or null before the first pong (RemEx-93n2).

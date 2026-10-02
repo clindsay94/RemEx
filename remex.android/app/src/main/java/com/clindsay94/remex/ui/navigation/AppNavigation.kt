@@ -182,10 +182,11 @@ fun AppNavigation() {
                                 dashboardScreenContent = { onNav, isVisible ->
                                         DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
                                 },
-                                homeScreenContent = { onNav, onOpenSensors ->
+                                homeScreenContent = { onNav, onOpenDestination ->
                                         HomeScreen(
                                                 onNavigateToConnection = onNav,
-                                                onOpenSensors = onOpenSensors,
+                                                onOpenDestination = onOpenDestination,
+                                                connectionViewModel = connectionViewModel,
                                         )
                                 },
                                 desktopScreenContent = { mode, onModeChange, onStartStream, onNav ->
@@ -499,7 +500,7 @@ private fun AppNavigationContent(
                                         onDesktopModeChange = { desktopMode = it },
                                         controlSegment = controlSegment,
                                         onControlSegmentChange = { controlSegment = it },
-                                        onOpenSensors = { navigateTo(Screen.Dashboard) },
+                                        onOpenDestination = { onNavItemClick(it) },
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         // Always the hoisted pager, even while a no-chrome route
@@ -796,7 +797,7 @@ private fun AppNavigationContent(
                                         onDesktopModeChange = { desktopMode = it },
                                         controlSegment = controlSegment,
                                         onControlSegmentChange = { controlSegment = it },
-                                        onOpenSensors = { navigateTo(Screen.Dashboard) },
+                                        onOpenDestination = { onNavItemClick(it) },
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         // Always the hoisted pager, even while a no-chrome route
@@ -920,7 +921,7 @@ private fun RemexNavHost(
         onDesktopModeChange: (DesktopMode) -> Unit,
         controlSegment: ControlSegment,
         onControlSegmentChange: (ControlSegment) -> Unit,
-        onOpenSensors: () -> Unit,
+        onOpenDestination: (NavDestination) -> Unit,
         onNavigateToConnection: () -> Unit,
         onSelectPrimaryPage: (Int) -> Unit,
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
@@ -1035,7 +1036,7 @@ private fun RemexNavHost(
                                         onDesktopModeChange = onDesktopModeChange,
                                         controlSegment = controlSegment,
                                         onControlSegmentChange = onControlSegmentChange,
-                                        onOpenSensors = onOpenSensors,
+                                        onOpenDestination = onOpenDestination,
                                         onStartStream = onStartStream,
                                         onNavigateToConnection = onNavigateToConnection,
                                         modifier = Modifier.fillMaxSize(),
@@ -1043,7 +1044,7 @@ private fun RemexNavHost(
                         } else {
                                 // No pager here (single-pane fallback) - Home is the only content
                                 // on screen.
-                                homeScreenContent({ onNavigateToConnection() }, onOpenSensors)
+                                homeScreenContent({ onNavigateToConnection() }, onOpenDestination)
                         }
                 }
 
@@ -1199,7 +1200,7 @@ private fun PrimaryDestinationsPager(
         onDesktopModeChange: (DesktopMode) -> Unit,
         controlSegment: ControlSegment,
         onControlSegmentChange: (ControlSegment) -> Unit,
-        onOpenSensors: () -> Unit,
+        onOpenDestination: (NavDestination) -> Unit,
         onStartStream: () -> Unit,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
@@ -1229,7 +1230,7 @@ private fun PrimaryDestinationsPager(
                 fun renderPage(destination: PrimaryDestination): Unit =
                         when (destination) {
                                 Screen.Home ->
-                                        homeScreenContent({ onNavigateToConnection() }, onOpenSensors)
+                                        homeScreenContent({ onNavigateToConnection() }, onOpenDestination)
                                 Screen.Desktop ->
                                         desktopScreenContent(
                                                 desktopMode,
@@ -1252,8 +1253,8 @@ private fun PrimaryDestinationsPager(
         }
 }
 
-/** Home tab: (onNavigateToConnection, onOpenSensors). */
-private typealias HomeScreenContent = @Composable (() -> Unit, () -> Unit) -> Unit
+/** Home tab: (onNavigateToConnection, onOpenDestination). Home opens Sensors, Desktop, Files and Routines. */
+private typealias HomeScreenContent = @Composable (() -> Unit, (NavDestination) -> Unit) -> Unit
 
 /** Desktop tab: (mode, onModeChange, onStartStream, onNavigateToConnection). */
 private typealias DesktopScreenContent =

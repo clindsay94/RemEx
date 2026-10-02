@@ -45,7 +45,8 @@ class RemoteControlConfirmationTests {
     /** The two explicit arms of `actionDiscardsWork`, as (action -> confirms) pairs. */
     private val classified: Map<String, Boolean> by lazy {
         val body = Regex(
-                        """private fun actionDiscardsWork\(action: String\): Boolean = when \(action\) \{(.*?)\n\}""",
+                        // internal since Home's Lock and Sleep read the same policy (RemEx-wqo7a.6).
+                        """(?:private|internal) fun actionDiscardsWork\(action: String\): Boolean = when \(action\) \{(.*?)\n\}""",
                         RegexOption.DOT_MATCHES_ALL
                 )
                 .find(source)

@@ -13,6 +13,23 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **The phone's Home tab is filled in.** The PC card shows your PC's name, whether it's online, how
+  long it has been up, and Lock and Sleep (Sleep only when the PC can do it; Wake when it's off).
+  Below it are your pinned sensors, an Open Sensors card, shortcuts to Desktop, Files and Routines, and
+  a short recent-activity list (last routine run, last connection).
+- **Pinned sensors are the same list on the PC and the phone.** Pin or unpin a sensor on either one
+  and the other follows within a couple of seconds; the PC keeps the list, so it survives restarts.
+  With an older PC the phone keeps its own list and says so in the pin sheet. New
+  `home_pins_sync` / `home_pins_change` messages, documented in `docs/API_CONTRACTS.md` section 9;
+  pairing and the message envelope are unchanged. (RemEx-wqo7a.5)
+- **The phone's Sensors page is a tidy grid.** Cards line up in two columns (four on tablets) at
+  three sizes. Press and hold a card to edit: move, resize, remove, add cards, or pin one to Home, with
+  undo. Outside edit mode there are no handles or buttons on top of your sensors. Your saved layout
+  moves onto the grid once, without losing any sensor card; the old PC Status and Wake cards are gone
+  from the canvas because Home has them now. (RemEx-wqo7a.5)
+- A "Big value" sensor view on the PC: just the reading, large and centred, like the phone's.
+  (RemEx-hc15q)
+
 - The PC tutorial has a Routines page, just before the last one. It explains that routines are made on
   the phone, that the ones starting on the PC run there even when the phone is away, and that anything
   that shuts down, restarts, signs out, sleeps or hibernates the PC gets a 15 second countdown first.
@@ -197,6 +214,29 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   default scheme as the PC (the BaseDarkGlass preset: seed #6C4CFF, Tonal Spot, dark, normal
   contrast) instead of wallpaper colours. Colours you have already chosen are kept. The defaults live
   in one place, `ThemeDefaults`, and every fallback reads from it. (RemEx-wqo7a.3)
+
+- **A new PC install also starts on the RemEx colours**, the same seed and vibrancy as the phone
+  (#6C4CFF at chroma 78.9), instead of the Windows accent colour. Saved profiles keep their colour
+  source. The record defaults for absent keys are now pinned by tests against the reader that actually
+  loads profiles. (RemEx-pp4cm, RemEx-rpvde)
+
+- The Windows install is about 2.4 MB smaller: the PDB symbol reader DLL, which only reads the debug
+  symbols Release builds don't ship, is no longer published. (RemEx-pp4cm)
+
+- **PC Settings no longer has a connection-address box.** The PC app is the host; the address box,
+  Discover, Save & Reconnect and the "Pair with PC" dialog were left over from when it could also act
+  as a client, and Discover could point it at another PC on the network. The PC's own UI now refuses
+  any address but its own. The standalone pairing-PIN poll and the "auto-accept incoming files" switch,
+  which did nothing since RemEx-e11w, are gone too. (RemEx-pp4cm, RemEx-f2dwg, RemEx-bezf)
+- PC labels and help speak plainly: section titles and headers are sentence case without symbol
+  prefixes, the tutorial and FAQ point to Personalize and the sidebar where things live now, "Tonal
+  Spot" is translated, and sensor views use the same names as on the phone. `docs/FILE_SHARING.md`
+  and the README match the app. (RemEx-pp4cm)
+- Reduced motion on the PC starts out matching your computer's own animation setting (Windows, and
+  KDE/GNOME on Linux) until you change it in Personalize. (RemEx-pp4cm)
+- The PC loads only the font files it uses at startup instead of every bundled font twice, and a theme
+  change that doesn't change any text settings no longer redraws all text. (RemEx-pp4cm, RemEx-hwarp)
+- File Transfer status messages on the PC switch language straight away. (RemEx-pp4cm)
 
 - **The phone's splash plays every time you open the app.** It used to play once per process, so
   closing the app and opening it again while Android still had it cached skipped straight past it.
@@ -400,6 +440,19 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   file. (RemEx-t9vg4)
 
 ### Fixed
+
+- **Downloading a folder from inside a shared folder no longer skips files or stops early.** Big
+  folders come in pages, and every page after the first went wrong for anything below the top level:
+  it either repeated the first page until the size limit or quietly ended with files missing while
+  reporting success. The paging cursor is now documented in `docs/API_CONTRACTS.md`. (RemEx-pp4cm)
+- Forgetting a phone while one of its routines is starting no longer leaves that run behind in the
+  PC's routine history, and a run whose first save fails no longer reads as "already running"
+  forever. On Linux, a slow D-Bus connect that times out no longer leaves a connection open.
+  (RemEx-pp4cm)
+- The PC's activity feed no longer shows "disconnected" for a device that never signed in, such as a
+  phone that was removed and tried to reconnect. (RemEx-pp4cm)
+- App icons that sharpen after the App Launcher loads no longer undo a launcher you added, moved or
+  removed at the same moment. (RemEx-qs5aa)
 
 - PC tidy-ups. Long sensor card titles now wrap to a second line before they get cut off, on the
   Sensors page and in the tray popup. In the sidebar only the page you're on is highlighted. In

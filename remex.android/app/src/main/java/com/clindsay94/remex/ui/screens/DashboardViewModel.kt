@@ -5,18 +5,19 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.HomePinsState
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.screens.sensors.CardSpan
+import com.clindsay94.remex.ui.screens.sensors.SensorGridMigration
+import com.clindsay94.remex.ui.screens.sensors.SensorLayout
+import com.clindsay94.remex.ui.screens.sensors.SensorLayoutCodec
+import com.clindsay94.remex.ui.screens.sensors.SensorLayoutEditor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import com.clindsay94.remex.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -27,6 +28,11 @@ import kotlin.math.roundToInt
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import com.clindsay94.remex.ui.telemetry.MetricUnits
 
+/**
+ * What a saved card is. Only [TELEMETRY] cards live on the Sensors grid; [PC_STATUS] and
+ * [WAKE_ON_LAN] are the free-form canvas's old cards, read only so the grid migration can drop them
+ * (Home owns both since RemEx-wqo7a.7).
+ */
 enum class HomeCardType { PC_STATUS, TELEMETRY, WAKE_ON_LAN }
 
 enum class TelemetryDisplayMode {
@@ -59,18 +65,20 @@ data class TelemetrySensor(
     val group: String = ""
 )
 
+/**
+ * One Sensors grid card (RemEx-wqo7a.7). Its place is its position in the layout's card list and
+ * its size is [span]; the free-form x/y/width/height and the position-anchor `pinned` flag went with
+ * the canvas. [shapePreset] is still stored, so a downgrade keeps the user's choice, but the grid
+ * draws every card in the same tile shape.
+ */
 data class HomeCardState(
     val id: String,
     val title: String,
     val type: HomeCardType,
     val sensorId: String? = null,
-    val xDp: Float = 12f,
-    val yDp: Float = 12f,
-    val widthDp: Float = 160f,
-    val heightDp: Float = 140f,
+    val span: CardSpan = CardSpan.ONE_BY_ONE,
     val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.AUTO,
     val secondarySensorId: String? = null,
-    val pinned: Boolean = false,
     val shapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
     val customTitle: String? = null,
     val showValueOverlay: Boolean = false
@@ -304,10 +312,18 @@ fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySens
     SensorIndex(sensors).select(cardId)
 
 /**
- * Number of sequential Home Base coach-mark hints (RemEx-km0i.10). Single source of truth shared by
- * [DashboardViewModel]'s advance logic and [DashboardCoachOverlay].
+ * Number of sequential Sensors coach-mark hints (RemEx-km0i.10, reduced to the grid's three in
+ * RemEx-wqo7a.8). Single source of truth shared by [DashboardViewModel]'s advance logic and
+ * [DashboardCoachOverlay].
  */
-const val DASHBOARD_COACH_HINT_COUNT = 6
+const val DASHBOARD_COACH_HINT_COUNT = 3
+
+/** The curated cards a fresh install starts with, in grid order. */
+private val DEFAULT_CARD_IDS =
+    listOf(
+        "sensor:cpu", "sensor:gpu", "sensor:ram",
+        "sensor:ramtotal", "sensor:cputemp", "sensor:gputemp", "sensor:nettotal"
+    )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -319,101 +335,60 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _telemetryState = MutableStateFlow(TelemetryState())
     val telemetryState: StateFlow<TelemetryState> = _telemetryState.asStateFlow()
 
-    private val _wakeStatus = MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val wakeStatus = _wakeStatus.asSharedFlow()
-
     private val _telemetrySensors = MutableStateFlow<List<TelemetrySensor>>(emptyList())
     val telemetrySensors: StateFlow<List<TelemetrySensor>> = _telemetrySensors.asStateFlow()
 
     private val _telemetryHistory = MutableStateFlow<Map<String, List<Float>>>(emptyMap())
     val telemetryHistory: StateFlow<Map<String, List<Float>>> = _telemetryHistory.asStateFlow()
 
-    private val _homeCards = MutableStateFlow(defaultCards())
-    val homeCards: StateFlow<List<HomeCardState>> = _homeCards.asStateFlow()
-
-    private val _enabledCardIds = MutableStateFlow(
-        setOf(
-            "pc_status", "wake_pc",
-            "sensor:cpu", "sensor:gpu", "sensor:ram",
-            "sensor:ramtotal", "sensor:cputemp", "sensor:gputemp", "sensor:nettotal"
+    // ── The grid and its edit mode (RemEx-wqo7a.7 / .8) ─────────────────────────
+    private val editor =
+        SensorLayoutEditor(
+            initial = SensorLayout(defaultCards(), DEFAULT_CARD_IDS.toSet()),
+            onCommitted = { persistHomeLayout(it) },
         )
-    )
-    val enabledCardIds: StateFlow<Set<String>> = _enabledCardIds.asStateFlow()
 
-    // ── Undo / redo history for canvas edits ────────────────────────────────────
-    private data class LayoutSnapshot(val cards: List<HomeCardState>, val enabled: Set<String>)
-    private val undoStack = ArrayDeque<LayoutSnapshot>()
-    private val redoStack = ArrayDeque<LayoutSnapshot>()
-    private val maxHistory = 30
+    /** The grid's cards in order, and which are shown. */
+    val layout: StateFlow<SensorLayout> = editor.layout
+    val editMode: StateFlow<Boolean> = editor.editMode
+    val draggingCardId: StateFlow<String?> = editor.draggingId
+    val canUndo: StateFlow<Boolean> = editor.canUndo
+    val canRedo: StateFlow<Boolean> = editor.canRedo
 
-    private val _canUndo = MutableStateFlow(false)
-    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
-    private val _canRedo = MutableStateFlow(false)
-    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
+    /** The connected PC's Home pins; edit mode's Pin to Home reads and writes this. */
+    val homePins: StateFlow<HomePinsState> = RemexClientManager.homePins
 
-    private fun snapshot() = LayoutSnapshot(_homeCards.value, _enabledCardIds.value)
-
-    /** Capture the current layout before a mutating interaction (drag, resize, toggle, …). */
-    fun beginInteraction() {
-        undoStack.addLast(snapshot())
-        if (undoStack.size > maxHistory) undoStack.removeFirst()
-        redoStack.clear()
-        _canUndo.value = true
-        _canRedo.value = false
+    fun enterEditMode() {
+        // A hint showing over a card the user is about to drag would sit on top of the drag.
+        _coachStep.value = -1
+        editor.enterEditMode()
     }
 
-    fun undo() {
-        if (undoStack.isEmpty()) return
-        redoStack.addLast(snapshot())
-        val s = undoStack.removeLast()
-        _homeCards.value = s.cards
-        _enabledCardIds.value = s.enabled
-        _canUndo.value = undoStack.isNotEmpty()
-        _canRedo.value = true
-        persistHomeLayout()
-    }
+    fun exitEditMode() = editor.exitEditMode()
 
-    fun redo() {
-        if (redoStack.isEmpty()) return
-        undoStack.addLast(snapshot())
-        val s = redoStack.removeLast()
-        _homeCards.value = s.cards
-        _enabledCardIds.value = s.enabled
-        _canRedo.value = redoStack.isNotEmpty()
-        _canUndo.value = true
-        persistHomeLayout()
-    }
+    fun beginCardDrag(cardId: String): Boolean = editor.beginDrag(cardId)
 
-    /** Toggle a card's pinned state — position-anchored + resize-locked, but still liftable/selectable. */
-    fun togglePin(cardId: String) {
-        _homeCards.update { cards ->
-            cards.map { if (it.id == cardId) it.copy(pinned = !it.pinned) else it }
-        }
-        persistHomeLayout()
-    }
+    fun dragCardTo(toIndex: Int) = editor.dragTo(toIndex)
 
-    /** Remove every card from the canvas (undoable). */
-    fun clearAllCards() {
-        beginInteraction()
-        _enabledCardIds.value = emptySet()
-        persistHomeLayout()
-    }
+    fun endCardDrag() = editor.endDrag()
 
-    // ── Two-layer touch model (transient, never persisted) ────────────────────
-    // NORMAL: quick drag pans the canvas. Hold 0.5s -> haptic -> the card is "picked up":
-    //   - drag it     -> transient MOVE (draggingCardId); release drops it -> NORMAL.
-    //   - release still-> SELECT the card (selectedCardIds); tap more cards -> group; the
-    //                     Pin/Reshape/Remove action bar shows for as long as a selection exists.
-    // selectionActive is derived by the UI as selectedCardIds.isNotEmpty().
-    private val _draggingCardId = MutableStateFlow<String?>(null)
-    val draggingCardId: StateFlow<String?> = _draggingCardId.asStateFlow()
-    private val _selectedCardIds = MutableStateFlow<Set<String>>(emptySet())
-    val selectedCardIds: StateFlow<Set<String>> = _selectedCardIds.asStateFlow()
+    fun moveCard(cardId: String, toIndex: Int) = editor.moveCard(cardId, toIndex)
 
-    // ── Home Base coach marks (RemEx-km0i.10) ──
-    // -1 = hidden; 0..DASHBOARD_COACH_HINT_COUNT-1 = the sequential hints. The overlay is additionally
-    // render-gated by the UI on drag/selection/sheet state (locked decision #7), so the step persists
-    // underneath a transient suppression rather than being torn down and lost.
+    fun cycleCardSpan(cardId: String) = editor.cycleSpan(cardId)
+
+    fun removeCard(cardId: String) = editor.removeCard(cardId)
+
+    fun clearAllCards() = editor.clearAll()
+
+    fun undo() = editor.undo()
+
+    fun redo() = editor.redo()
+
+    /** Pins or unpins a sensor on the PC's Home (or the phone's own list for an older PC). */
+    fun setHomePin(sensorName: String, pinned: Boolean) = RemexClientManager.setHomePin(sensorName, pinned)
+
+    // ── Coach marks (RemEx-km0i.10) ──
+    // -1 = hidden; 0..DASHBOARD_COACH_HINT_COUNT-1 = the sequential hints. Never shown in edit mode.
     private val _coachStep = MutableStateFlow(-1)
     val coachStep: StateFlow<Int> = _coachStep.asStateFlow()
 
@@ -429,105 +404,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { settingsManager.markDashboardCoachSeen() }
     }
 
-    /** Replay from the first hint. Ignored while a card is lifted or a group is selected. */
+    /** Replay from the first hint. Ignored in edit mode. */
     fun replayCoach() {
-        if (_draggingCardId.value != null || _selectedCardIds.value.isNotEmpty()) return
+        if (editor.editMode.value) return
         _coachStep.value = 0
     }
 
-    /** First visit only: auto-show unless already seen (and not mid-gesture). Called once from init. */
+    /** First visit only: auto-show unless already seen. Called once from init. */
     private fun maybeAutoShowCoach() {
         viewModelScope.launch {
-            if (!settingsManager.dashboardCoachSeenFlow.first() &&
-                _draggingCardId.value == null &&
-                _selectedCardIds.value.isEmpty()
-            ) {
+            if (!settingsManager.dashboardCoachSeenFlow.first() && !editor.editMode.value) {
                 _coachStep.value = 0
             }
         }
-    }
-
-    /** Card picked up and dragged (not selection) - one undo snapshot for the whole move. */
-    fun beginCardDrag(cardId: String) {
-        beginInteraction()
-        _draggingCardId.value = cardId
-    }
-
-    /** Per-frame delta while a single picked-up card is being dragged (pinned cards resist). */
-    fun dragCardBy(deltaXDp: Float, deltaYDp: Float) {
-        val id = _draggingCardId.value ?: return
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id == id && !card.pinned) {
-                    card.copy(
-                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
-                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
-                    )
-                } else {
-                    card
-                }
-            }
-        }
-    }
-
-    /** Finger lifted after a MOVE - drop the card and return to NORMAL. */
-    fun endCardDrag() {
-        _draggingCardId.value = null
-        persistHomeLayout()
-    }
-
-    /** Held-then-released-in-place - select just this card (enters selection mode + shows bar). */
-    fun selectCard(cardId: String) {
-        _draggingCardId.value = null
-        _selectedCardIds.value = setOf(cardId)
-    }
-
-    /** Tap a card while selectionActive - add/remove it from the group. */
-    fun toggleCardInSelection(cardId: String) {
-        _selectedCardIds.value = FileManagerLogic.toggleSelection(_selectedCardIds.value, cardId)
-    }
-
-    /** Exit selection entirely - back to NORMAL. */
-    fun clearSelection() {
-        _selectedCardIds.value = emptySet()
-    }
-
-    /**
-     * Moves every non-pinned selected card by the same delta - group move while in selection mode.
-     * No beginInteraction()/persist here; the screen owns that lifecycle (drag start/end).
-     */
-    fun moveSelection(deltaXDp: Float, deltaYDp: Float) {
-        val ids = _selectedCardIds.value
-        if (ids.isEmpty()) return
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id in ids && !card.pinned) {
-                    card.copy(
-                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
-                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
-                    )
-                } else {
-                    card
-                }
-            }
-        }
-    }
-
-    /** Action-bar Pin - all-pinned unpins all, otherwise pins all (one undo step). */
-    fun togglePinSelection() {
-        beginInteraction()
-        val ids = _selectedCardIds.value
-        val allPinned = _homeCards.value.filter { it.id in ids }.all { it.pinned }
-        _homeCards.update { cards -> cards.map { if (it.id in ids) it.copy(pinned = !allPinned) else it } }
-        persistHomeLayout()
-    }
-
-    /** Action-bar Remove - disables the selected cards (geometry kept, reversible via undo). */
-    fun removeSelection() {
-        beginInteraction()
-        _enabledCardIds.update { it - _selectedCardIds.value }
-        persistHomeLayout()
-        clearSelection()
     }
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
@@ -542,20 +431,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val telemetryCardShapePreset = settingsManager.telemetryCardShapePresetFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardShapes.SHAPE_PRESET_INHERIT)
 
-    val appLauncherCardShapePreset = settingsManager.appLauncherCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
-
-    val taskManagerCardShapePreset = settingsManager.taskManagerCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
-
-    val remoteDesktopCardShapePreset = settingsManager.remoteDesktopCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
-
-    val remoteControlCardShapePreset = settingsManager.remoteControlCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
-
-    val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+    /** Per-category card-shape overrides; absent entries mean inherit (RemEx-mycn). */
+    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
 
     // P1-16: mirrors TaskManagerViewModel.setAutoRefreshEnabled's role - a screen-driven flag, not a
     // repeatOnLifecycle inside the VM (a VM has no Lifecycle to key one on).
@@ -572,6 +449,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             _telemetryHistory.value = emptyMap()
         }
         _isDashboardVisible.value = visible
+        // Leaving the screen ends edit mode, so coming back never lands in it unannounced.
+        if (!visible) editor.exitEditMode()
     }
 
     init {
@@ -595,16 +474,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 if (!_isDashboardVisible.value) return@collect
                 // PARSED OFF THE MAIN THREAD, IN ONE PASS (RemEx-cite). Every tick this deserialises
                 // the whole sensor payload and derives everything the screen needs from it, at 1 Hz,
-                // for as many sensors as the PC reports. It used to walk the array four times - once
-                // per headline percentage and once for the cards - and all of it used to run on Main.
-                // Sub-millisecond per tick either way, which is why the bead calls it hygiene rather
-                // than jank; it is also work with no reason to be on the UI thread.
-                //
-                // ONLY THE DERIVATION MOVES. The three state applications below stay exactly where
-                // they were: _telemetryState and _telemetrySensors are StateFlows and safe from any
-                // thread, but updateTelemetryHistory and ensureDefaultCardsExist mutate view-model
-                // state whose threading this change is not in a position to re-reason about. Moving
-                // the pure part is the whole of the win here.
+                // for as many sensors as the PC reports. Only the derivation moves; the state
+                // applications below stay on the collector's thread.
                 val derived =
                     withContext(Dispatchers.Default) {
                         runCatching {
@@ -626,439 +497,115 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun wakePc() {
-        viewModelScope.launch {
-            try {
-                if (RemexCoreClient.isLibraryLoaded) {
-                    val mac = settingsManager.macAddressFlow.first()
-                    val broadcast = settingsManager.broadcastIpFlow.first()
-                    if (mac.isNotEmpty()) {
-                        // Report the *actual* native result rather than optimistically saying "sent"
-                        // (mirrors RemoteControlViewModel.wakePc): the WakePc JNI call returns a JSON
-                        // envelope with a success flag, so a failed send surfaces as a failure.
-                        // (RemEx-nbfb.)
-                        //
-                        // TRUE OF THE SEND ONLY SINCE RemEx-52n0, THOUGH IT WAS WRITTEN AS IF ALREADY
-                        // TRUE. The native export used to fire the send into a discarded task and
-                        // hard-code success, so no failure of the SEND could ever reach this branch —
-                        // it was correct code reading a flag the packet never influenced. It could
-                        // still be entered by the native library failing to load or the JNI call
-                        // throwing, which is why the path was never dead, only uninformed.
-                        val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
-                        val success = try {
-                            JSONObject(responseJson).optBoolean("success", false)
-                        } catch (e: Exception) {
-                            false
-                        }
-                        if (success) {
-                            Log.d("DashboardVM", "Wake-on-LAN packet sent to $mac via $broadcast:9")
-                            _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_sent))
-                        } else {
-                            Log.w("DashboardVM", "Wake-on-LAN not confirmed by native layer for $mac")
-                            _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_failed))
-                        }
-                    } else {
-                        Log.w("DashboardVM", "Cannot send Wake-on-LAN: MAC address not configured")
-                        _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_mac_not_configured))
-                    }
-                } else {
-                    Log.w("DashboardVM", "Cannot send Wake-on-LAN: RemexCoreClient library not loaded")
-                    _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_lib_not_loaded))
-                }
-            } catch (e: Throwable) {
-                Log.e("DashboardVM", "Failed to send Wake-on-LAN packet", e)
-                _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_failed))
-            }
-        }
-    }
-
-    fun toggleConnection() {
-        RemexClientManager.toggleConnection()
-    }
-
+    /**
+     * Adds or removes a card from the Add-card list (edit mode only). A card that has never existed
+     * is built from the reporting sensor with that id.
+     */
     fun setCardEnabled(cardId: String, enabled: Boolean) {
-        beginInteraction()
-        if (enabled) {
-            _enabledCardIds.update { it + cardId }
-            ensureCardExists(cardId)
-        } else {
-            _enabledCardIds.update { it - cardId }
-        }
-        persistHomeLayout()
+        editor.setCardShown(cardId, enabled) { newCardFor(cardId) }
     }
 
-    fun resizeCard(cardId: String, deltaWidthDp: Float, deltaHeightDp: Float) {
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id == cardId) {
-                    card.copy(
-                        widthDp = (card.widthDp + deltaWidthDp).coerceIn(140f, 600f),
-                        heightDp = (card.heightDp + deltaHeightDp).coerceIn(120f, 500f)
-                    )
-                } else {
-                    card
-                }
-            }
-        }
-    }
-
-    /** Direct setter replacing blind cycling - one beginInteraction()/persist per pick. */
+    /** Direct setter replacing blind cycling - one undo step and one save per pick. */
     fun setTelemetryDisplayMode(cardId: String, mode: TelemetryDisplayMode, secondarySensorId: String? = null) {
-        beginInteraction()
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id == cardId && card.type == HomeCardType.TELEMETRY) {
-                    card.copy(displayMode = mode, secondarySensorId = secondarySensorId ?: card.secondarySensorId)
-                } else {
-                    card
-                }
-            }
+        editor.updateCard(cardId) { card ->
+            if (card.type != HomeCardType.TELEMETRY) card
+            else card.copy(displayMode = mode, secondarySensorId = secondarySensorId ?: card.secondarySensorId)
         }
-        persistHomeLayout()
-    }
-
-    /** Per-card shape override (the shape picker's single-card write path). */
-    fun setCardShape(cardId: String, shapeIndex: Float) {
-        beginInteraction()
-        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(shapePreset = shapeIndex) else it } }
-        persistHomeLayout()
-    }
-
-    /** Group-reshape write path - ONE undo snapshot for the whole selection. */
-    fun setGroupShape(cardIds: Set<String>, shapeIndex: Float) {
-        beginInteraction()
-        _homeCards.update { cards -> cards.map { if (it.id in cardIds) it.copy(shapePreset = shapeIndex) else it } }
-        persistHomeLayout()
     }
 
     /** Blank/null clears the override - the card falls back to its original [HomeCardState.title]. */
     fun setCardCustomTitle(cardId: String, title: String?) {
-        beginInteraction()
         val normalized = title?.takeIf { it.isNotBlank() }
-        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(customTitle = normalized) else it } }
-        persistHomeLayout()
+        editor.updateCard(cardId) { it.copy(customTitle = normalized) }
     }
 
     fun setCardValueOverlay(cardId: String, enabled: Boolean) {
-        beginInteraction()
-        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(showValueOverlay = enabled) else it } }
-        persistHomeLayout()
+        editor.updateCard(cardId) { it.copy(showValueOverlay = enabled) }
     }
 
-    fun saveCardLayout() {
-        persistHomeLayout()
-    }
-
-    fun placeCardAt(cardId: String, xDp: Float, yDp: Float) {
-        beginInteraction()
-        _enabledCardIds.update { it + cardId }
-        ensureCardExists(cardId)
-
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id == cardId) {
-                    card.copy(
-                        xDp = xDp.coerceAtLeast(0f),
-                        yDp = yDp.coerceAtLeast(0f)
-                    )
-                } else {
-                    card
-                }
-            }
-        }
-
-        persistHomeLayout()
-    }
-
+    /** The default cards fill in as their sensors start reporting; no undo step, like the canvas. */
     private fun ensureDefaultCardsExist(sensors: List<TelemetrySensor>) {
-        val telemetryDefaults = listOf(
-            "sensor:cpu", "sensor:gpu", "sensor:ram",
-            "sensor:ramtotal", "sensor:cputemp", "sensor:gputemp", "sensor:nettotal"
-        )
-        telemetryDefaults.forEach { requiredId ->
-            if (sensors.any { it.id == requiredId } && _enabledCardIds.value.contains(requiredId)) {
-                ensureCardExists(requiredId)
+        val enabled = editor.layout.value.enabled
+        DEFAULT_CARD_IDS.forEach { requiredId ->
+            if (requiredId in enabled && sensors.any { it.id == requiredId }) {
+                newCardFor(requiredId)?.let(editor::addIfMissing)
             }
         }
     }
 
-    private fun ensureCardExists(cardId: String) {
-        if (_homeCards.value.any { it.id == cardId }) {
-            return
-        }
-
-        val nextOffset = (_homeCards.value.size * 18).toFloat()
-        val card = when (cardId) {
-            "pc_status" -> {
-                HomeCardState(
-                    id = "pc_status",
-                    title = "PC Status",
-                    type = HomeCardType.PC_STATUS,
-                    xDp = 12f + nextOffset,
-                    yDp = 12f + nextOffset,
-                    widthDp = 220f,
-                    heightDp = 140f
-                )
-            }
-            "wake_pc" -> {
-                HomeCardState(
-                    id = "wake_pc",
-                    title = "Wake PC",
-                    type = HomeCardType.WAKE_ON_LAN,
-                    xDp = 12f + nextOffset,
-                    yDp = 12f + nextOffset,
-                    widthDp = 160f,
-                    heightDp = 140f
-                )
-            }
-            else -> {
-                val sensor = selectSensor(cardId, _telemetrySensors.value)
-                    ?: return
-
-                HomeCardState(
-                    id = cardId,
-                    title = sensor.name,
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = sensor.id,
-                    xDp = 12f + nextOffset,
-                    yDp = 12f + nextOffset,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                )
-            }
-        }
-
-        _homeCards.update { it + card }
+    private fun newCardFor(cardId: String): HomeCardState? {
+        val sensor = selectSensor(cardId, _telemetrySensors.value) ?: return null
+        return HomeCardState(
+            id = cardId,
+            title = sensor.name,
+            type = HomeCardType.TELEMETRY,
+            sensorId = sensor.id,
+            displayMode = TelemetryDisplayMode.AUTO
+        )
     }
 
     private fun updateTelemetryHistory(sensors: List<TelemetrySensor>) {
         _telemetryHistory.update { current -> pruneAndAppendTelemetryHistory(current, sensors) }
     }
 
+    /**
+     * Reads the saved grid, migrating a free-form canvas save (schema 0/1) once and writing the
+     * result straight back, so the migration never runs twice and an older save is never left
+     * behind for the next read (RemEx-wqo7a.7).
+     */
     private fun loadSavedHomeLayout() {
         viewModelScope.launch {
             val savedLayout = settingsManager.homeLayoutJsonFlow.first()
             val enabledCardsJson = settingsManager.homeEnabledCardsJsonFlow.first()
 
-            if (enabledCardsJson.isNotBlank()) {
-                val enabled = mutableSetOf<String>()
-                val array = JSONArray(enabledCardsJson)
-                for (i in 0 until array.length()) {
-                    val id = array.optString(i)
-                    if (id.isNotBlank()) {
-                        enabled += id
-                    }
-                }
-                if (enabled.isNotEmpty()) {
-                    _enabledCardIds.value = enabled
-                }
-            }
+            val savedEnabled =
+                runCatching {
+                    val array = JSONArray(enabledCardsJson)
+                    (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.toSet()
+                }.getOrNull().orEmpty()
+            val enabled = SensorGridMigration.migrateEnabled(savedEnabled)
 
-            if (savedLayout.isBlank()) {
-                return@launch
-            }
+            val decoded =
+                if (savedLayout.isBlank()) null
+                else runCatching { SensorLayoutCodec.decode(savedLayout) }
+                    .onFailure { Log.w("DashboardVM", "Saved Sensors layout is unreadable; using the defaults", it) }
+                    .getOrNull()
+            val cards = decoded?.let(SensorLayoutCodec::toCards).orEmpty()
 
-            // Envelope-detecting reader: pre-2.0 saves are a bare array (schemaVersion 0);
-            // 2.0+ saves are `{ "schemaVersion": 1, "cards": [...] }`.
-            val trimmed = savedLayout.trimStart()
-            val array = if (trimmed.startsWith("[")) {
-                JSONArray(savedLayout)
-            } else {
-                JSONObject(savedLayout).optJSONArray("cards") ?: JSONArray()
-            }
-
-            val cards = mutableListOf<HomeCardState>()
-            for (i in 0 until array.length()) {
-                val obj = array.optJSONObject(i) ?: continue
-                val type = when (obj.optString("type")) {
-                    "PC_STATUS" -> HomeCardType.PC_STATUS
-                    "WAKE_ON_LAN" -> HomeCardType.WAKE_ON_LAN
-                    else -> HomeCardType.TELEMETRY
-                }
-                // Backward-compat migration: legacy GAUGE/CIRCLE_GAUGE map onto their visually
-                // closest 2.0 replacement; anything unrecognized (including absent) becomes AUTO.
-                val mode = when (obj.optString("displayMode")) {
-                    "VALUE" -> TelemetryDisplayMode.VALUE
-                    "VALUE_SPARK" -> TelemetryDisplayMode.VALUE_SPARK
-                    "GAUGE", "RING_GAUGE" -> TelemetryDisplayMode.RING_GAUGE
-                    "CIRCLE_GAUGE", "ARC_GAUGE" -> TelemetryDisplayMode.ARC_GAUGE
-                    "LINE" -> TelemetryDisplayMode.LINE
-                    "AREA" -> TelemetryDisplayMode.AREA
-                    "BAR" -> TelemetryDisplayMode.BAR
-                    "HUE_PULSE" -> TelemetryDisplayMode.HUE_PULSE
-                    "LED_METER" -> TelemetryDisplayMode.LED_METER
-                    "DUAL_METRIC" -> TelemetryDisplayMode.DUAL_METRIC
-                    else -> TelemetryDisplayMode.AUTO
-                }
-
-                val id = obj.optString("id")
-                if (id.isBlank()) continue
-
-                cards += HomeCardState(
-                    id = id,
-                    title = obj.optString("title").ifBlank { id },
-                    type = type,
-                    sensorId = obj.optString("sensorId").takeIf { it.isNotBlank() },
-                    xDp = obj.optDouble("xDp", 12.0).toFloat(),
-                    yDp = obj.optDouble("yDp", 12.0).toFloat(),
-                    widthDp = obj.optDouble("widthDp", 160.0).toFloat(),
-                    heightDp = obj.optDouble("heightDp", 140.0).toFloat(),
-                    displayMode = mode,
-                    secondarySensorId = obj.optString("secondarySensorId").takeIf { it.isNotBlank() },
-                    pinned = obj.optBoolean("pinned", false),
-                    shapePreset = obj.optDouble("shapePreset", DashboardShapes.SHAPE_PRESET_INHERIT.toDouble()).toFloat(),
-                    customTitle = obj.optString("customTitle").takeIf { it.isNotBlank() },
-                    showValueOverlay = obj.optBoolean("showValueOverlay", false)
+            if (cards.isEmpty() && enabled.isEmpty()) return@launch
+            val layout =
+                SensorLayout(
+                    cards = cards.ifEmpty { editor.layout.value.cards },
+                    enabled = if (savedEnabled.isEmpty()) editor.layout.value.enabled else enabled
                 )
-            }
-
-            if (cards.isNotEmpty()) {
-                _homeCards.value = cards
-            }
+            editor.load(layout)
+            val needsRewrite =
+                (decoded != null && decoded.schemaVersion < SensorLayoutCodec.SCHEMA_VERSION) || enabled != savedEnabled
+            if (needsRewrite) persistHomeLayout(layout)
         }
     }
 
-    private fun persistHomeLayout() {
+    private fun persistHomeLayout(layout: SensorLayout) {
         viewModelScope.launch {
-            val layoutArray = JSONArray()
-            _homeCards.value.forEach { card ->
-                val obj = JSONObject().apply {
-                    put("id", card.id)
-                    put("title", card.title)
-                    put("type", card.type.name)
-                    put("sensorId", card.sensorId)
-                    put("xDp", card.xDp)
-                    put("yDp", card.yDp)
-                    put("widthDp", card.widthDp)
-                    put("heightDp", card.heightDp)
-                    put("displayMode", card.displayMode.name)
-                    put("secondarySensorId", card.secondarySensorId)
-                    put("pinned", card.pinned)
-                    put("shapePreset", card.shapePreset)
-                    put("customTitle", card.customTitle)
-                    put("showValueOverlay", card.showValueOverlay)
-                }
-                layoutArray.put(obj)
-            }
-
-            val envelope = JSONObject().apply {
-                put("schemaVersion", LAYOUT_SCHEMA_VERSION)
-                put("cards", layoutArray)
-            }
-
             val enabledArray = JSONArray()
-            _enabledCardIds.value.forEach { enabledArray.put(it) }
-
-            settingsManager.saveHomeLayout(envelope.toString())
+            layout.enabled.forEach { enabledArray.put(it) }
+            settingsManager.saveHomeLayout(SensorLayoutCodec.encode(layout.cards))
             settingsManager.saveHomeEnabledCards(enabledArray.toString())
         }
     }
 
     private companion object {
-        const val LAYOUT_SCHEMA_VERSION = 1
-
         fun defaultCards(): List<HomeCardState> {
-            return listOf(
+            val titles = listOf("CPU", "GPU", "RAM", "RAM Total", "CPU Temp", "GPU Temp", "Network")
+            return DEFAULT_CARD_IDS.zip(titles) { id, title ->
                 HomeCardState(
-                    id = "pc_status",
-                    title = "PC Status",
-                    type = HomeCardType.PC_STATUS,
-                    xDp = 12f,
-                    yDp = 12f,
-                    widthDp = 220f,
-                    heightDp = 140f
-                ),
-                HomeCardState(
-                    id = "wake_pc",
-                    title = "Wake PC",
-                    type = HomeCardType.WAKE_ON_LAN,
-                    xDp = 244f,
-                    yDp = 12f,
-                    widthDp = 160f,
-                    heightDp = 140f
-                ),
-                HomeCardState(
-                    id = "sensor:cpu",
-                    title = "CPU",
+                    id = id,
+                    title = title,
                     type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:cpu",
-                    xDp = 20f,
-                    yDp = 168f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:gpu",
-                    title = "GPU",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:gpu",
-                    xDp = 200f,
-                    yDp = 168f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:ram",
-                    title = "RAM",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:ram",
-                    xDp = 20f,
-                    yDp = 326f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:ramtotal",
-                    title = "RAM Total",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:ramtotal",
-                    xDp = 200f,
-                    yDp = 326f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:cputemp",
-                    title = "CPU Temp",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:cputemp",
-                    xDp = 20f,
-                    yDp = 484f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:gputemp",
-                    title = "GPU Temp",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:gputemp",
-                    xDp = 200f,
-                    yDp = 484f,
-                    widthDp = 170f,
-                    heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AUTO
-                ),
-                HomeCardState(
-                    id = "sensor:nettotal",
-                    title = "Network",
-                    type = HomeCardType.TELEMETRY,
-                    sensorId = "sensor:nettotal",
-                    xDp = 20f,
-                    yDp = 642f,
-                    widthDp = 170f,
-                    heightDp = 150f,
+                    sensorId = id,
                     displayMode = TelemetryDisplayMode.AUTO
                 )
-            )
+            }
         }
     }
-
-    /** Per-category card-shape overrides; absent entries mean inherit (RemEx-mycn). */
-    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
 }

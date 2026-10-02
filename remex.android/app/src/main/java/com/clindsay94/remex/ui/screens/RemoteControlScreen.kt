@@ -58,7 +58,8 @@ import androidx.compose.animation.core.animateDpAsState
 /**
  * Whether an action discards the user's work, and therefore must be confirmed.
  *
- * This is the ONE place the question is answered. It used to be a hand-set Boolean on every card,
+ * This is the ONE place the question is answered, for the Commands grid and for Home's Lock and Sleep
+ * buttons alike (RemEx-wqo7a.6), which is why it is internal. It used to be a hand-set Boolean on every card,
  * and the original values had been assigned by CATEGORY - every POWER card true, every SESSION and
  * ENERGY card false. Sign Out sat in SESSION beside Wake and Lock, so it inherited `false` by
  * association and shipped a destructive action with no prompt (RemEx-awks). Nothing in the type
@@ -72,7 +73,7 @@ import androidx.compose.animation.core.animateDpAsState
  * RemoteControlConfirmationTests then fails if any card actually relies on that default, so the
  * fallback is a safety net rather than a place for cards to quietly accumulate.
  */
-private fun actionDiscardsWork(action: String): Boolean = when (action) {
+internal fun actionDiscardsWork(action: String): Boolean = when (action) {
     "SignOut",
     "Shutdown",
     "ForceShutdown",

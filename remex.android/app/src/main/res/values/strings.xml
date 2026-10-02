@@ -39,7 +39,6 @@
     
     <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
     <string name="button_connect">Connect</string>
-    <string name="button_reconnect">Reconnect</string>
     <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
     <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
     <string name="button_setup_connection">Set up connection</string>
@@ -52,7 +51,6 @@
     <string name="cd_refresh">Refresh</string>
     <string name="cd_phone">Phone</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_resize_cards">Resize cards</string>
 
     
     <string name="tutorial_skip">Skip</string>
@@ -271,57 +269,28 @@
 
     
     <string name="screen_dashboard_title">Sensors</string>
-    <string name="dashboard_menu_reset_zoom">Reset zoom</string>
-    <string name="dashboard_menu_customize_cards">Customize cards</string>
-    <string name="dashboard_menu_lock_layout">Lock layout</string>
-    <string name="dashboard_menu_unlock_layout">Unlock layout</string>
     <string name="dashboard_menu_clear_cards">Clear all cards</string>
-    <string name="dashboard_menu_options">Canvas options</string>
     <!-- Home Base first-run coach marks (RemEx-km0i.10) -->
     <string name="coach_title">Getting around</string>
-    <string name="coach_hold_body">Hold a card to pick it up, then drag to move it.</string>
-    <string name="coach_menu_body">Customize cards, undo, or reset from the menu up here.</string>
-    <string name="coach_add_body">Add more sensor cards with the + button.</string>
+    <string name="coach_hold_body">Press and hold a card to edit.</string>
+    <string name="coach_menu_body">Edit the layout from the menu up here.</string>
     <string name="coach_view_body">Tap the grid icon on a card to change how it looks.</string>
-    <string name="coach_group_body">Hold a card, then tap others to move them as a group.</string>
-    <string name="coach_select_body">Hold a card to select it — a bar appears to reshape, pin, or remove it (or a whole group).</string>
     <string name="coach_next">Next</string>
     <string name="coach_got_it">Got it</string>
     <string name="coach_skip">Skip</string>
     <string name="coach_replay">Show tips</string>
     <string name="dashboard_menu_undo">Undo</string>
     <string name="dashboard_menu_redo">Redo</string>
-    <string name="dashboard_pin_card">Pin card</string>
-    <string name="dashboard_unpin_card">Unpin card</string>
     <string name="dashboard_custom_title_label">Card title</string>
     <string name="dashboard_custom_title_hint">Leave blank to use the sensor name</string>
     <string name="dashboard_show_value_overlay">Show live value</string>
-    <plurals name="dashboard_selection_count">
-        <item quantity="one">%1$d selected</item>
-        <item quantity="other">%1$d selected</item>
-    </plurals>
-    <string name="cd_dashboard_pin_selection">Pin selected cards</string>
-    <string name="cd_dashboard_unpin_selection">Unpin selected cards</string>
-    <string name="cd_dashboard_remove_selection">Remove selected cards</string>
-    <string name="cd_dashboard_reshape_selection">Change shape of selected cards</string>
-    <string name="cd_dashboard_exit_selection">Exit selection</string>
-    <string name="dashboard_pc_status">PC Status</string>
-    <string name="dashboard_pc_status_subtitle">Connection status orb</string>
     <string name="dashboard_wake_pc">Wake PC</string>
-    <string name="dashboard_wake_pc_subtitle">Send WOL wake signal</string>
     <string name="dashboard_telemetry_fallback">Telemetry</string>
-    <string name="dashboard_card_drawer_title">Card Drawer</string>
-    <string name="dashboard_card_drawer_hint">Check to place card, uncheck to remove, or drag a card out onto canvas.</string>
-    <string name="dashboard_drop_to_place">Drop to place %1$s</string>
-    <string name="dashboard_host_online">PC ONLINE</string>
-    <string name="dashboard_connecting">CONNECTING…</string>
-    <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
-    <string name="dashboard_connection_card_action">connect to your PC</string>
-    <string name="dashboard_wake_pc_button">WAKE PC</string>
+    <string name="dashboard_card_drawer_title">Add cards</string>
+    <string name="dashboard_card_drawer_hint">Tick a sensor to add its card. Untick it to take the card away.</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
     <string name="cd_open_view_picker">Choose display view</string>
     <string name="dashboard_view_picker_title">Choose a view</string>
-    <string name="shape_picker_title">Choose a shape</string>
     <string name="dashboard_view_auto">Auto</string>
     <string name="dashboard_view_big_value">Big value</string>
     <string name="dashboard_view_value_spark">Value + sparkline</string>
@@ -1636,5 +1605,43 @@
     <string name="desktop_trackpad_subtitle">Use your phone as your PC\'s mouse</string>
     <string name="desktop_stream_hint">The stream opens full screen. Press Back to come back here.</string>
     <string name="home_open_sensors_title">Open %1$s</string>
-    <string name="home_open_sensors_body">Every live reading from your PC on one canvas</string>
+    <string name="home_open_sensors_body">Every live reading from your PC</string>
+    <!-- Home content, pinned sensors and the Sensors grid (RemEx-wqo7a.6-.8). -->
+    <string name="home_pc_online">Online</string>
+    <string name="home_pc_offline">Offline</string>
+    <string name="home_pc_connecting">Connecting…</string>
+    <string name="home_pc_uptime">Up %1$dd %2$dh %3$dm</string>
+    <string name="home_connect_body_none">Pair this phone with your PC to see it here.</string>
+    <string name="home_connect_other">Other PCs</string>
+    <string name="home_pinned_title">Pinned sensors</string>
+    <string name="home_pinned_edit">Edit</string>
+    <string name="home_pinned_empty">Nothing pinned yet. Tap Edit to choose the readings you want here.</string>
+    <string name="home_pinned_waiting">Your pinned sensors show up here once your PC is connected.</string>
+    <string name="home_pinned_none_reporting">None of your pinned sensors are reporting right now.</string>
+    <string name="home_pin_sheet_title">Pinned sensors</string>
+    <string name="home_pin_sheet_body_synced">This is the same list as your PC\'s Home. A change here shows up there too.</string>
+    <string name="home_pin_sheet_body_local">Your PC has an older RemEx, so this list is kept on this phone.</string>
+    <string name="home_pin_sheet_not_reporting">Not reporting right now</string>
+    <string name="home_pin_sheet_empty">No sensors to pin yet. They show up here once your PC sends readings.</string>
+    <string name="home_shortcuts_title">Shortcuts</string>
+    <string name="home_recent_title">Recent activity</string>
+    <string name="home_recent_status_ran">Finished</string>
+    <string name="home_recent_status_connected">Connected</string>
+    <string name="home_recent_detail">%1$s · %2$s</string>
+    <string name="dashboard_menu_edit">Edit layout</string>
+    <string name="dashboard_edit_banner">Hold a card and drag it to move it. Tap Done when you\'re finished.</string>
+    <string name="dashboard_empty_grid">No cards here yet. Choose Edit layout from the menu, then Add cards.</string>
+    <string name="dashboard_empty_grid_edit">No cards here yet. Tap Add cards to put sensors on this page.</string>
+    <string name="dashboard_offline_body">Readings show up here once your PC is connected.</string>
+    <string name="dashboard_add_cards">Add cards</string>
+    <string name="dashboard_card_drawer_empty">No sensors yet. They show up here once your PC sends readings.</string>
+    <string name="dashboard_pin_to_home">Pin to Home</string>
+    <string name="dashboard_unpin_from_home">Unpin from Home</string>
+    <string name="dashboard_pinned_to_home">Pinned to Home</string>
+    <string name="dashboard_pin_unavailable">To pin this to Home, add its card to the Sensors page on your PC first.</string>
+    <string name="dashboard_resize_card">Change size</string>
+    <string name="dashboard_remove_card">Remove card</string>
+    <string name="dashboard_card_removed">Card removed</string>
+    <string name="dashboard_move_earlier">Move earlier</string>
+    <string name="dashboard_move_later">Move later</string>
 </resources>

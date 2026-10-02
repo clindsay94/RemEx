@@ -16,10 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -35,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -49,22 +45,22 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * First-run coaching for Home Base (RemEx-km0i.10). Android-native and motion-first: the star is an
- * animated hold-to-lift demonstration (the one gesture with no visual affordance), followed by two
- * light directional callouts pulsing directly over the real ⋮ menu and + button.
+ * First-run coaching for the Sensors grid (RemEx-km0i.10, cut to the grid's three hints in
+ * RemEx-wqo7a.8). Android-native and motion-first: an animated press-and-hold demonstration (the one
+ * gesture with no visual affordance: it opens edit mode), a pulsing callout over the real ⋮ menu
+ * (Edit layout lives there too), and the view-picker demo.
  *
  * Physics comes from the M3 **Expressive** [MotionScheme] spring tokens — bouncy `spatial` specs for
- * anything that moves or scales, gentler `effects` specs for alpha/scrim. The looping demo is driven
+ * anything that moves or scales, gentler `effects` specs for alpha/scrim. The looping demos are driven
  * by [Animatable]s in a coroutine so each phase is a real spring, and the "finger returns + card pops"
  * phases run in parallel via [coroutineScope] so they land together.
  *
- * Purely presentational: the caller owns visibility/step state, the suppression guards, and supplies
- * the live on-screen positions of the ⋮ menu / + button (captured via onGloballyPositioned) so the
- * pointers land on the real controls regardless of device insets.
+ * Purely presentational: the caller owns visibility/step state and the suppression guard (never in
+ * edit mode), and supplies the live on-screen position of the ⋮ menu (captured via
+ * onGloballyPositioned) so the pointer lands on the real control regardless of device insets.
  *
  * @param step 0..[DASHBOARD_COACH_HINT_COUNT]-1 — which hint to render.
  * @param menuAnchor root-space center of the ⋮ menu button (Offset.Zero until laid out).
- * @param addAnchor root-space center of the + button (Offset.Zero until laid out).
  * @param onAdvance advance to the next hint (the last step's button finishes + persists).
  * @param onDismiss skip the whole sequence now.
  */
@@ -72,7 +68,6 @@ import kotlin.math.roundToInt
 fun DashboardCoachOverlay(
     step: Int,
     menuAnchor: Offset,
-    addAnchor: Offset,
     onAdvance: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -83,36 +78,29 @@ fun DashboardCoachOverlay(
         modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.62f))
-            // Swallow all touches so the canvas underneath can't be interacted with mid-hint; a scrim
+            // Swallow all touches so the grid underneath can't be interacted with mid-hint; a scrim
             // tap intentionally does NOT dismiss (avoids losing the tutorial to a stray tap).
             .pointerInput(Unit) { detectTapGestures {} },
     ) {
         when (step) {
             0 -> HoldToLiftDemo(Modifier.align(Alignment.Center))
             1 -> DirectionalPointer(anchor = menuAnchor, haloSize = 48.dp)
-            2 -> DirectionalPointer(anchor = addAnchor, haloSize = 84.dp)
-            3 -> ViewPickerDemo(Modifier.align(Alignment.Center))
-            4 -> GroupSelectDemo(Modifier.align(Alignment.Center))
-            5 -> SelectActionBarDemo(Modifier.align(Alignment.Center))
+            2 -> ViewPickerDemo(Modifier.align(Alignment.Center))
         }
 
         CoachPanel(
             body = when (step) {
                 0 -> stringResource(R.string.coach_hold_body)
                 1 -> stringResource(R.string.coach_menu_body)
-                2 -> stringResource(R.string.coach_add_body)
-                3 -> stringResource(R.string.coach_view_body)
-                4 -> stringResource(R.string.coach_group_body)
-                else -> stringResource(R.string.coach_select_body)
+                else -> stringResource(R.string.coach_view_body)
             },
             isLast = isLast,
             onAdvance = onAdvance,
             onDismiss = onDismiss,
-            // Place each caption near what its hint points at: step 0 just below the centred animation,
-            // step 1 up by the ⋮ menu, step 2 low but lifted clear of the + FAB.
+            // Place each caption near what its hint points at: the animated demos just below their
+            // centred animation, the menu hint up by the ⋮ menu.
             modifier = when (step) {
                 1 -> Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 64.dp)
-                2 -> Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
                 else -> Modifier.align(Alignment.Center).offset(y = 162.dp)  // centred animated demos
             }.padding(horizontal = 20.dp, vertical = 28.dp),
         )
@@ -120,9 +108,10 @@ fun DashboardCoachOverlay(
 }
 
 /**
- * Animated hold-to-lift demonstration. The finger rests **on** the card but slightly enlarged, then
+ * Animated press-and-hold demonstration. The finger rests **on** the card but slightly enlarged, then
  * **shrinks to "grab"** it (with a ripple bloom), then **returns to normal size as the card expands
  * simultaneously** (the lift), then both **drag** sideways — looped forever with expressive springs.
+ * Holding a card is what opens edit mode, and the same hold-and-drag moves it there.
  */
 @Composable
 private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
@@ -302,263 +291,8 @@ private fun ViewPickerDemo(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Animated multi-select demonstration: a finger taps two sample cards (each springs to a selected
- * highlight), then the whole group lifts and drags together — teaching group selection + move.
- */
-@Composable
-private fun GroupSelectDemo(modifier: Modifier = Modifier) {
-    val motion = MaterialTheme.motionScheme
-    val fingerX = remember { Animatable(0f) }        // 0 over card A → 1 over card B
-    val fingerScale = remember { Animatable(1.1f) }
-    val selA = remember { Animatable(0f) }           // selection highlight per card
-    val selB = remember { Animatable(0f) }
-    val lift = remember { Animatable(0f) }           // group lift (scale + elevation)
-    val dragX = remember { Animatable(0f) }          // group drag
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            fingerX.snapTo(0f); fingerScale.snapTo(1.1f)
-            selA.snapTo(0f); selB.snapTo(0f); lift.snapTo(0f); dragX.snapTo(0f)
-            delay(460)
-            // Tap card A → select.
-            fingerScale.animateTo(0.74f, motion.defaultSpatialSpec())
-            coroutineScope {
-                launch { fingerScale.animateTo(1.1f, motion.fastSpatialSpec()) }
-                launch { selA.animateTo(1f, motion.fastSpatialSpec()) }
-            }
-            delay(130)
-            fingerX.animateTo(1f, motion.defaultSpatialSpec())   // slide to card B
-            // Tap card B → select.
-            fingerScale.animateTo(0.74f, motion.defaultSpatialSpec())
-            coroutineScope {
-                launch { fingerScale.animateTo(1.1f, motion.fastSpatialSpec()) }
-                launch { selB.animateTo(1f, motion.fastSpatialSpec()) }
-            }
-            delay(160)
-            // Lift the group and drag both together.
-            lift.animateTo(1f, motion.fastSpatialSpec())
-            dragX.animateTo(1f, motion.defaultSpatialSpec())
-            delay(480)
-            coroutineScope {
-                launch { lift.animateTo(0f, motion.defaultSpatialSpec()) }
-                launch { dragX.animateTo(0f, motion.defaultSpatialSpec()) }
-                launch { selA.animateTo(0f, motion.defaultEffectsSpec()) }
-                launch { selB.animateTo(0f, motion.defaultEffectsSpec()) }
-            }
-            delay(360)
-        }
-    }
-
-    Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
-        val cardW = 62.dp
-        val cardH = 56.dp
-        val halfSpread = 39.dp    // distance of each card's centre from box centre
-        val groupDrag = 24.dp
-
-        // Card A (left) and Card B (right) — both ride the shared lift + drag; each shows its own
-        // selection ring fading in. The Animatables are passed through (not `.value`, P3-20) so
-        // this composable's own body never reads a per-frame value — only the graphicsLayer
-        // lambdas inside MiniSelectCard do, which redraw without recomposing.
-        MiniSelectCard(cardW, cardH, -halfSpread, selA, lift, dragX, groupDrag)
-        MiniSelectCard(cardW, cardH, halfSpread, selB, lift, dragX, groupDrag)
-
-        // The finger, sliding from card A to card B and tapping each.
-        Icon(
-            imageVector = Icons.Filled.TouchApp,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(40.dp)
-                .graphicsLayer {
-                    val spread = halfSpread.toPx()
-                    translationX = (-spread + fingerX.value * 2f * spread) + dragX.value * groupDrag.toPx()
-                    translationY = 6.dp.toPx()
-                    scaleX = fingerScale.value; scaleY = fingerScale.value
-                },
-        )
-    }
-}
-
-/** One selectable mini-card for [GroupSelectDemo]: positioned by [centreOffsetX] from the box centre,
- *  scaling with the shared [lift], sliding with the shared [dragFraction], and fading in a selection
- *  ring by [selected] (0..1).
- *
- *  P3-20: [selected]/[lift]/[dragFraction] are the raw [Animatable]s, not `.value` — a `Modifier`
- *  chain's arguments (e.g. `border`'s `color`) are evaluated at composition time, so feeding an
- *  Animatable's `.value` straight into `.border()` recomposed this whole card every animation
- *  frame. The selection ring is now its own layer whose `graphicsLayer { alpha = ... }` reads
- *  [selected] at draw time instead, leaving the base card's Modifier chain untouched by it. */
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
-    width: androidx.compose.ui.unit.Dp,
-    height: androidx.compose.ui.unit.Dp,
-    centreOffsetX: androidx.compose.ui.unit.Dp,
-    selected: Animatable<Float, *>,
-    lift: Animatable<Float, *>,
-    dragFraction: Animatable<Float, *>,
-    dragDistance: androidx.compose.ui.unit.Dp,
-) {
-    val cardShape = MaterialTheme.shapes.large
-    Box(
-        Modifier
-            .align(Alignment.Center)
-            .offset(x = centreOffsetX)
-            .size(width, height)
-    ) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .graphicsLayer {
-                    val s = 1f + lift.value * 0.12f
-                    scaleX = s; scaleY = s
-                    translationX = dragFraction.value * dragDistance.toPx()
-                    shadowElevation = lift.value * 20f
-                    shape = cardShape
-                    clip = true
-                }
-                .background(MaterialTheme.colorScheme.primaryContainer, cardShape),
-        )
-        Box(
-            Modifier
-                .matchParentSize()
-                .graphicsLayer {
-                    val s = 1f + lift.value * 0.12f
-                    scaleX = s; scaleY = s
-                    translationX = dragFraction.value * dragDistance.toPx()
-                    alpha = selected.value
-                    shape = cardShape
-                    clip = true
-                }
-                .border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = cardShape),
-        )
-    }
-}
-
-/**
- * Animated select-to-act demonstration: a finger holds a card until it selects (highlight ring), then
- * the action bar pops up with reshape / pin / remove — the other branch of the hold gesture (hold +
- * release → select, vs. hold + drag → move).
- */
-@Composable
-private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
-    val motion = MaterialTheme.motionScheme
-    val fingerScale = remember { Animatable(1.15f) }
-    val sel = remember { Animatable(0f) }        // card selection highlight
-    val barPop = remember { Animatable(0f) }     // action bar reveal
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            fingerScale.snapTo(1.15f); sel.snapTo(0f); barPop.snapTo(0f)
-            delay(520)
-            fingerScale.animateTo(0.76f, motion.defaultSpatialSpec())   // press and hold
-            coroutineScope {
-                launch { fingerScale.animateTo(1.05f, motion.fastSpatialSpec()) }
-                launch { sel.animateTo(1f, motion.fastSpatialSpec()) }   // card selects
-            }
-            delay(90)
-            barPop.animateTo(1f, motion.fastSpatialSpec())              // action bar appears
-            delay(1050)
-            coroutineScope {
-                launch { sel.animateTo(0f, motion.defaultEffectsSpec()) }
-                launch { barPop.animateTo(0f, motion.defaultSpatialSpec()) }
-                launch { fingerScale.animateTo(1.15f, motion.defaultSpatialSpec()) }
-            }
-            delay(400)
-        }
-    }
-
-    Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
-        // Selected sample card (upper). The selection ring is a separate layer so its animated
-        // alpha (`sel.value`) is only read inside a graphicsLayer lambda (draw time), not fed into
-        // `.border()`'s `color` argument, which would evaluate at composition time and recompose
-        // this whole card every animation frame (P3-20).
-        val selectedCardShape = MaterialTheme.shapes.large
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .offset(y = (-42).dp)
-                .size(120.dp, 74.dp)
-        ) {
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        val s = 1f + sel.value * 0.06f
-                        scaleX = s; scaleY = s
-                        shape = selectedCardShape
-                        clip = true
-                    }
-                    .background(MaterialTheme.colorScheme.primaryContainer, selectedCardShape),
-            )
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        val s = 1f + sel.value * 0.06f
-                        scaleX = s; scaleY = s
-                        alpha = sel.value
-                        shape = selectedCardShape
-                        clip = true
-                    }
-                    .border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = selectedCardShape),
-            )
-        }
-
-        // Finger holding the card.
-        Icon(
-            imageVector = Icons.Filled.TouchApp,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (-30).dp)
-                .size(40.dp)
-                .graphicsLayer { scaleX = fingerScale.value; scaleY = fingerScale.value },
-        )
-
-        // The action bar that appears on select: reshape / pin / remove.
-        Row(
-            Modifier
-                .align(Alignment.Center)
-                .offset(y = 40.dp)
-                .graphicsLayer {
-                    val s = barPop.value
-                    scaleX = s; scaleY = s
-                    alpha = s
-                    transformOrigin = TransformOrigin(0.5f, 0f)
-                }
-                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraLarge)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ActionDot(Icons.Filled.Category)   // reshape
-            ActionDot(Icons.Filled.PushPin)    // pin
-            ActionDot(Icons.Filled.Delete)     // remove
-        }
-    }
-}
-
-/** One round action-bar button used by [SelectActionBarDemo]. */
-@Composable
-private fun ActionDot(icon: ImageVector) {
-    Box(
-        Modifier.size(30.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(18.dp),
-        )
-    }
-}
-
-/** A softly pulsing icon centred on a real control (the ⋮ menu or the + button) via its captured
- *  root-space position, so it lands correctly on any device. Renders nothing until the anchor is set. */
+/** A softly pulsing ring centred on a real control (the ⋮ menu) via its captured root-space
+ *  position, so it lands correctly on any device. Renders nothing until the anchor is set. */
 @Composable
 private fun DirectionalPointer(
     anchor: Offset,
@@ -574,9 +308,8 @@ private fun DirectionalPointer(
             pulse.animateTo(0f, motion.slowSpatialSpec())
         }
     }
-    // A hollow pulsing ring centred on the control, sized to encircle it — so the real ⋮ / + shows
-    // through the middle, highlighted rather than covered (the FAB is large, so a filled disc buried
-    // it). haloSize is chosen per-target to clear the control.
+    // A hollow pulsing ring centred on the control, sized to encircle it — so the real ⋮ shows
+    // through the middle, highlighted rather than covered.
     Box(
         modifier = modifier
             .offset {
