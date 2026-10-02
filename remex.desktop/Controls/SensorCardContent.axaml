@@ -46,10 +46,12 @@
                      the title when "Backdrop behind titles" is on: a SIBLING in a Panel, never a wrapper
                      (hiding a wrapper hides the title), with a negative margin so the plate breathes past the
                      glyph box without moving the text. The Panel is Left-aligned in the star column so the
-                     title still trims. -->
+                     title still trims. A long name wraps to a second line before it ellipsises
+                     (RemEx-kq10x.2, the phone launcher's policy): "Average Effective Clock" used to cut
+                     to "Average Effective Clo…" on a 212px flyout card. -->
                 <Panel Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center">
                     <Border IsVisible="{DynamicResource Typo.Sensor.TitleBackdrop}" CornerRadius="6" Margin="-5,-1" Classes="card-pill"/>
-                    <TextBlock Text="{Binding DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="sensor-title" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding DisplayName, FallbackValue=Sensor}" Theme="{StaticResource SensorTitleTextBlock}" Classes="sensor-title" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                 </Panel>
             </Grid>
             <!-- ═══ Alert bell (RemEx-8wpvr.4) ═══ chrome-less, 20x20; a plain Button so its own

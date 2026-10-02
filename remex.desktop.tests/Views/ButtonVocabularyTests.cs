@@ -427,7 +427,9 @@ public class ButtonVocabularyTests
             ["Command=\"{Binding DismissConnectionBannerCommand}\""] = "ShellView connection banner dismiss — icon-button.compact's zero Padding doesn't fit this text-free chip; CornerRadius=6 matches the row",
             ["Command=\"{Binding DismissLayoutLoadWarningCommand}\""] = "ShellView layout-warning dismiss — same icon-button exception as the connection banner dismiss",
             ["Command=\"{Binding ConfirmCustomAccentCommand}\""] = "PersonalizationPanelView Apply — same compact action-row CornerRadius=6 exception",
-            ["Command=\"{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}\""] = "SettingsView paired-device rename — same compact-row CornerRadius=6 exception, smaller row-level Padding",
+            ["Command=\"{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}\""] = "SettingsView paired-device rename Save — same compact-row CornerRadius=6 exception, smaller row-level Padding",
+            ["Command=\"{Binding BeginRenameCommand}\""] = "SettingsView paired-device Rename (opens the inline editor, RemEx-kq10x.2) — same compact-row CornerRadius=6 exception",
+            ["Command=\"{Binding CancelRenameCommand}\""] = "SettingsView paired-device rename Cancel (RemEx-kq10x.2) — same compact-row CornerRadius=6 exception",
             ["Command=\"{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).UnpairDeviceCommand}\""] = "SettingsView paired-device unpair — same compact-row CornerRadius=6 exception",
 
             // ── Close/dismiss buttons whose Padding intentionally isn't icon-button's zero ──

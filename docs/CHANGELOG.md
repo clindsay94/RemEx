@@ -352,6 +352,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- PC tidy-ups. Long sensor card titles now wrap to a second line before they get cut off, on the
+  Sensors page and in the tray popup. In the sidebar only the page you're on is highlighted. In
+  Settings > Paired devices each phone shows its name with Rename and Unpair buttons; Rename turns
+  the name into a text box (Enter or Save keeps it, Esc or Cancel puts it back), and Unpair no longer
+  disappears when renaming isn't available. (RemEx-kq10x.2)
 - Six layout fixes in the Android app. Remote Mouse now follows the dark theme instead of showing a
   light background with black icons. The Remote Desktop header now matches Task Manager and the
   Dashboard: its buttons sit on the top row and "Remote Desktop" gets its own full-width line below,

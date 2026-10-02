@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -378,7 +378,31 @@
                                                  whole-app presence here would light every row at once. -->
                                             <Ellipse AutomationProperties.Name="{Binding StatusAccessibleName}" Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,14,0" Classes="status-dot" Classes.connected="{Binding IsOnline}"/>
                                             <StackPanel Grid.Column="1" Spacing="4">
-                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <!-- RENAME IS DISPLAY ONLY and never reaches the pairing
+                                                     registry (RemEx-4gbp2). At rest the row shows the name;
+                                                     Rename swaps this line for the field (RemEx-kq10x.2), so
+                                                     there is no permanent text box on every row. Enter or Save
+                                                     applies (the list rebuilds, which ends the edit), Esc or
+                                                     Cancel reverts. Blank still means "fall back to the device
+                                                     id", which the hint under the field says. -->
+                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsEditing}"/>
+                                                <StackPanel Spacing="8" IsVisible="{Binding IsEditing}" PropertyChanged="OnPairedDeviceRenameEditorPropertyChanged">
+                                                    <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" MaxWidth="320" HorizontalAlignment="Left" MinWidth="220" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_PairedDeviceNewName}" AutomationProperties.Name="{local:Localize Settings_PairedDeviceNewName}">
+                                                        <TextBox.KeyBindings>
+                                                            <KeyBinding Gesture="Enter" Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}" CommandParameter="{Binding}"/>
+                                                            <KeyBinding Gesture="Escape" Command="{Binding CancelRenameCommand}"/>
+                                                        </TextBox.KeyBindings>
+                                                    </TextBox>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <Button Classes="secondary" Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}" CommandParameter="{Binding}" Padding="14,6" CornerRadius="6" Cursor="Hand" AutomationProperties.Name="{local:Localize Btn_Save}">
+                                                            <TextBlock Text="{local:Localize Btn_Save}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                                        </Button>
+                                                        <Button Classes="tertiary" Command="{Binding CancelRenameCommand}" Padding="14,6" CornerRadius="6" Cursor="Hand" AutomationProperties.Name="{local:Localize Btn_Cancel}">
+                                                            <TextBlock Text="{local:Localize Btn_Cancel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Spacing="16">
                                                     <TextBlock Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}">
                                                         <Run Text="{local:Localize Settings_PairedDeviceFirstPaired}"/><Run Text=": "/><Run Text="{Binding FirstPairedText}"/>
@@ -388,17 +412,15 @@
                                                     </TextBlock>
                                                 </StackPanel>
 
-                                                <!-- RENAME IS DISPLAY ONLY and never reaches the pairing
-                                                     registry (RemEx-4gbp2). The field starts EMPTY rather than
-                                                     pre-filled, so a half-typed name cannot end up labelling a
-                                                     row, and clearing it is a deliberate act — blank means
-                                                     "fall back to the device id", which the hint says. -->
-                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}">
-                                                    <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize Settings_PairedDeviceNewName}" AutomationProperties.Name="{local:Localize Settings_PairedDeviceNewName}"/>
+                                                <!-- Rename and Unpair sit side by side at rest. The panel is
+                                                     hidden while editing (Save/Cancel take over) and Rename
+                                                     carries its own gate, so Unpair no longer disappears just
+                                                     because the rename service is missing. -->
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding !IsEditing}">
                                                     <Button
                                                             Classes="secondary"
-                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"
-                                                            CommandParameter="{Binding}"
+                                                            Command="{Binding BeginRenameCommand}"
+                                                            IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"
                                                             Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,6" CornerRadius="6" Cursor="Hand"
                                                             AutomationProperties.Name="{local:Localize Settings_PairedDeviceRename}">
                                                         <TextBlock Text="{local:Localize Settings_PairedDeviceRename}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
@@ -420,7 +442,6 @@
                                                         <TextBlock Text="{local:Localize Confirm_Unpair_Btn}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
                                                     </Button>
                                                 </StackPanel>
-                                                <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>

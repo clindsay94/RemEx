@@ -155,4 +155,28 @@ public partial class SettingsView : UserControl
             return await topLevel.StorageProvider.OpenFilePickerAsync(options);
         };
     }
+
+    /// <summary>
+    /// Puts the caret in a paired device's rename field the moment Rename reveals it
+    /// (RemEx-kq10x.2), with the current text selected so typing replaces it.
+    /// </summary>
+    /// <remarks>
+    /// Posted rather than called inline: IsVisible flips before the field has been measured and
+    /// arranged, and a control that has not been laid out yet refuses focus.
+    /// </remarks>
+    private void OnPairedDeviceRenameEditorPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != IsVisibleProperty || e.NewValue is not true || sender is not Panel editor)
+            return;
+
+        var box = editor.Children.OfType<TextBox>().FirstOrDefault();
+        if (box is null)
+            return;
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (box.IsEffectivelyVisible && box.Focus())
+                box.SelectAll();
+        });
+    }
 }

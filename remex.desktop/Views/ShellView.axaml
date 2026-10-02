@@ -84,6 +84,17 @@
         <Style Selector="ListBoxItem.nav-item:pointerover">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
+        <!-- RemEx-kq10x.2: only the active destination carries a filled indicator (M3 navigation
+             drawer); every other item is transparent and answers hover/press through Material's own
+             PART_HoverEffect state layer. Connor's 2026-10-01 screenshot showed EVERY item filled, so
+             the resting state is pinned here rather than left to whatever the base theme supplies.
+             :not(:selected) on purpose (bd memory material-avalonia-activated-setters-outrank-plain-
+             overrides): an activated selector applies at StyleTrigger priority, so it ties with any
+             activated Background setter in Material's ListBoxItem theme and then wins on order,
+             where a plain "ListBoxItem.nav-item" setter would silently lose. -->
+        <Style Selector="ListBoxItem.nav-item:not(:selected)">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
         <!-- :selected IS the active destination - Avalonia's own pseudo-class, driven by
              IsSelected, not a hand-rolled bool class. The accent tint here composes with Material's
              own :selected state layer (ListBoxItem.axaml's PART_HoverEffect, Opacity 0.12) rather

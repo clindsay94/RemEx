@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
@@ -64,6 +65,37 @@ public sealed partial class PairedDeviceItem : ObservableObject
     /// </remarks>
     [ObservableProperty]
     private string _statusAccessibleName = string.Empty;
+
+    /// <summary>
+    /// Whether the row's name line is currently swapped for the rename field (RemEx-kq10x.2).
+    /// </summary>
+    /// <remarks>
+    /// THE FIELD IS NOT PERMANENT. A row at rest shows the name, the two dates and the Rename and
+    /// Unpair buttons; Rename swaps the name line for the field, Save (or Enter) applies it through
+    /// <see cref="SettingsViewModel.ApplyPairedDeviceRenameCommand"/>, which rebuilds every row and so
+    /// ends the edit, and Cancel (or Esc) puts the field back exactly as it was.
+    /// </remarks>
+    [ObservableProperty]
+    private bool _isEditing;
+
+    // What PendingName held when the edit began, so Cancel reverts rather than clears.
+    private string _pendingNameBeforeEdit = string.Empty;
+
+    /// <summary>Starts editing this row's name.</summary>
+    [RelayCommand]
+    private void BeginRename()
+    {
+        _pendingNameBeforeEdit = PendingName;
+        IsEditing = true;
+    }
+
+    /// <summary>Abandons the edit and restores the field to what it held before.</summary>
+    [RelayCommand]
+    private void CancelRename()
+    {
+        PendingName = _pendingNameBeforeEdit;
+        IsEditing = false;
+    }
 }
 
 /// <summary>
