@@ -755,8 +755,8 @@ Linux: ip addr  o  hostname -I</value>
     <value>La forma más rápida de conectar tu teléfono es escanear un código QR. El PC genera un código de emparejamiento que contiene todo lo que necesita tu aplicación móvil.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Abre Ajustes → Conexión en el PC
-2. Haz clic en "Mostrar código QR"
+    <value>1. Abre Configuración → Conexión en el PC
+2. Haz clic en "Vincular un teléfono" para mostrar el código QR
 3. Abre la aplicación móvil RemEx
 4. Toca el icono del escáner QR en la pantalla de conexión
 5. Apunta la cámara al código: ¡se conectará automáticamente!</value>

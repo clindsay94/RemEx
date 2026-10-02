@@ -33,8 +33,7 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowAllSensors}"
                           IsEnabled="{Binding SameUnitToggleEnabled}"
-                          AutomationProperties.Name="{local:Localize CopyAlert_ShowAll}"
-                          OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}"/>
+                          AutomationProperties.Name="{local:Localize CopyAlert_ShowAll}"/>
         </Grid>
 
         <!-- Candidate list. Virtualising (ListBox's default ItemsPanel is a VirtualizingStackPanel) -

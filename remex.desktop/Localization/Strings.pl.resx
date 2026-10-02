@@ -2268,7 +2268,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
     <value>1. Otwórz Ustawienia → Połączenie na PC
-2. Kliknij "Pokaż kod QR"
+2. Kliknij "Sparuj telefon", aby wyświetlić kod QR
 3. Otwórz aplikację RemEx
 4. Dotknij ikony skanera QR na ekranie połączenia
 5. Skieruj kamerę na kod — połączysz się automatycznie!</value>

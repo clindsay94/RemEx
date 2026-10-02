@@ -751,7 +751,7 @@ Linux: ip addr  atau  hostname -I</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
     <value>1. Buka Pengaturan → Koneksi di PC
-2. Klik "Tampilkan Kode QR"
+2. Klik "Pasangkan ponsel" untuk menampilkan kode QR
 3. Buka aplikasi seluler RemEx
 4. Ketuk ikon pemindai QR di layar koneksi
 5. Arahkan kamera ke kode — sambungan terjadi otomatis!</value>

@@ -123,7 +123,7 @@
                         <TextBlock Text="{local:Localize Custom_ContrastLevel}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="-1" Maximum="1" SmallChange="0.1" LargeChange="0.25" Value="{Binding ThemeContrast}" Width="160" TickFrequency="0.1" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_ContrastLevel}"/>
+                                <Slider Minimum="-1" Maximum="1" SmallChange="0.1" LargeChange="0.25" Value="{Binding ThemeContrast}" ValueChanged="OnContrastValueChanged" Width="160" TickFrequency="0.1" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_ContrastLevel}"/>
                                 <Grid ColumnDefinitions="*,*" Width="160">
                                     <TextBlock Text="{local:Localize Custom_ContrastSofter}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="{local:Localize Custom_ContrastSharper}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>

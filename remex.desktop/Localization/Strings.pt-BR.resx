@@ -751,7 +751,7 @@ Linux: ip addr  ou  hostname -I</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
     <value>1. Abra Configurações → Conexão no PC
-2. Clique em "Mostrar código QR"
+2. Clique em "Emparelhar um telefone" para mostrar o código QR
 3. Abra o aplicativo móvel RemEx
 4. Toque no ícone do leitor de QR na tela de conexão
 5. Aponte a câmera para o código — a conexão é automática!</value>
