@@ -42,22 +42,36 @@ labels always shown:
 
 | Slot | Label | Contains |
 |---|---|---|
-| 1 | Sensors | The dashboard (renamed from "RemEx Home Base") |
+| 1 | Home | New overview screen, the phone counterpart of the PC's Home (Connor, 2026-10-02) |
 | 2 | Desktop | Remote Desktop (stream). Remote Mouse becomes a mode inside it ("Trackpad only") rather than its own screen |
 | 3 | Apps | App Launcher |
 | 4 | Control | Segmented toggle at the top: **Commands** (session, power, energy, media) / **Processes** (Task Manager) |
-| 5 | More | Files, Routines, Connection, Settings, Help |
+| 5 | More | Sensors (full canvas), Files, Routines, Connection, Settings, Help |
 
-Routines also gets an entry point from Sensors (a compact "Routines" row in the hero card's overflow or a
-"Next routine" chip when one is scheduled), so the 3.0 headline is one tap from home.
+The full Sensors canvas is one tap from Home (the "Open Sensors" card) and is also listed in More.
+Routines also gets an entry point from Home (a "Next routine" chip when one is scheduled), so the 3.0
+headline is one tap away.
 
 ## Screens
 
-### Sensors (dashboard)
-- **Hero card** at the top: PC name (machine name since RemEx-odqj5), online/offline status chip,
-  uptime, and Wake / Lock / Sleep as tonal buttons. This is the one place an expressive shape is allowed
-  (e.g. a soft cookie-shape status badge behind the PC icon).
-- **Sensor grid** below: uniform rounded-rectangle cards on surfaceContainer, label top-left, value large
+### Home (new)
+The phone's version of the PC Home: what's going on with my PC, at a glance. Not the canvas.
+- **PC card** at the top: PC name (machine name since RemEx-odqj5), online/offline status chip, uptime,
+  and Wake / Lock / Sleep as tonal buttons (Sleep hidden when the PC reports it can't, same rule as
+  Commands). This is the one place an expressive shape is allowed (e.g. a soft cookie-shape status badge
+  behind the PC icon). When disconnected it becomes the connect card (known PCs, Connect, Wake).
+- **Pinned sensors:** a compact row/grid of the sensors pinned for the Home screen. Same list as the PC
+  Home's "Pinned sensors" (Personalize > Layout), synced, so both Homes show the same readings; editable
+  from the phone too.
+- **Open Sensors** card into the full canvas (with a live mini-preview if cheap).
+- **Shortcuts:** Desktop, Files, Routines (with the "Next routine" chip), as a short row of tonal tiles.
+- **Recent activity** (optional, if the data already exists on the phone): last routine run, last file
+  transfer, last connection change. Plain words, newest first, at most a handful of rows.
+- Matches the PC Home's sections where they exist so the two read as the same screen.
+
+### Sensors (full canvas; reached from Home and More)
+- No hero card here any more (Home has it). The canvas is just sensors.
+- **Sensor grid:** uniform rounded-rectangle cards on surfaceContainer, label top-left, value large
   in primary, the existing gauge/sparkline styles inside. Sizes stay user-chosen (1×1, 2×1, 2×2) but on a
   real grid so edges align.
 - **Edit mode** (long-press or overflow → Edit): shows pin, resize and remove on each card plus the
@@ -108,10 +122,13 @@ These survive the redesign, so fixing them now is not wasted:
 
 ## Phasing
 
-1. Bug batch.
-2. Navigation (five destinations, labels, Control's segmented toggle, Remote Mouse as a Desktop mode).
-3. Sensors (hero card, aligned grid, edit mode).
-4. Apps + Control restyle.
+1. Bug batch. (done, 5abae8d9 + 90817d53)
+2. Navigation (five destinations incl. Home, labels, Control's segmented toggle, Remote Mouse as a
+   Desktop mode, Sensors moves into More). Home can land as a simple placeholder of PC card + Open
+   Sensors here so the nav is real; phase 3 fills it.
+3. Home (PC card, pinned sensors synced with the PC Home, Open Sensors, shortcuts, recent activity) +
+   Sensors canvas (aligned grid, edit mode).
+4. Apps + Control restyle. (Commands restyle done in cohesion phase 3, b514d644.)
 5. Connection restructure + Files hidden-items toggle.
 6. Motion pass across all destinations.
 
