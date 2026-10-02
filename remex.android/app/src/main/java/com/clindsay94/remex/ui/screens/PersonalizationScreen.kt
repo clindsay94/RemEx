@@ -47,6 +47,7 @@ import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.data.ThemeDefaults
 import com.clindsay94.remex.data.SplashStyles
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -647,7 +648,7 @@ fun PersonalizationScreenContent(
                                                     baseHct.tone
                                             )
                                         } catch (e: Exception) {
-                                            Hct.fromInt(0xFF6750A4.toInt())
+                                            Hct.fromInt(ThemeDefaults.THEME_SEED_ARGB)
                                         }
                                     }
 
@@ -1205,12 +1206,12 @@ private fun PersonalizationScreenPreview() {
     RemExTheme {
         PersonalizationScreenContent(
             settings = SettingsManager.PersonalizationPreferences(
-                themeMode = "system",
-                themePalette = "default",
-                themeStyle = "tonal_spot",
-                themeSeedColor = "#6750A4",
-                themeSeedChroma = 48.0f,
-                themeContrast = 0.0f,
+                themeMode = ThemeDefaults.THEME_MODE,
+                themePalette = ThemeDefaults.THEME_PALETTE,
+                themeStyle = ThemeDefaults.THEME_STYLE,
+                themeSeedColor = ThemeDefaults.THEME_SEED_COLOR,
+                themeSeedChroma = ThemeDefaults.THEME_SEED_CHROMA,
+                themeContrast = ThemeDefaults.THEME_CONTRAST,
                 fontFamily = "default",
                 fontScale = 1.0f,
                 cardCornerRadius = 12,

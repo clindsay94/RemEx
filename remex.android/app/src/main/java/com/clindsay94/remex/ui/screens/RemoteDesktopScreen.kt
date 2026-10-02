@@ -98,7 +98,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TAG = "RemoteDesktopScreen"
 
@@ -220,6 +222,9 @@ internal fun shouldOfferStartAction(
     hasError: Boolean
 ): Boolean = !isStreaming && (supportsRemoteDesktop || hasError)
 
+/** How long an open-and-start waits for the host to say it can stream (RemEx-wqo7a.2). */
+private const val OPEN_START_CAPABILITY_WAIT_MS = 3_000L
+
 /** The FPS pill's inset from the top edge when no control row shares that edge. */
 private val FpsPillEdgePadding = 12.dp
 
@@ -340,7 +345,14 @@ private fun SettingsPair(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
+fun RemoteDesktopScreen(
+        viewModel: RemoteDesktopViewModel = viewModel(),
+        /**
+         * Start the stream as soon as this screen opens: true when the Desktop tab's "Start
+         * streaming" opened it (RemEx-wqo7a.2), so the user is not asked to press Start twice.
+         */
+        startStreamingOnOpen: Boolean = false,
+) {
         val currentBitmap by viewModel.currentBitmap.collectAsStateWithLifecycle()
         val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
         val capabilityState by viewModel.capabilityState.collectAsStateWithLifecycle()
@@ -394,6 +406,26 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         // Drop the landscape request if the stream never came up (connection/host error).
         LaunchedEffect(desktopError) {
                 if (desktopError != null) streamRequested = false
+        }
+
+        // The Desktop tab's "Start streaming" (RemEx-wqo7a.2). Once per visit, not per composition:
+        // saveable, so the rotation this screen itself asks for when a stream starts, or a stop
+        // followed by a rotation, never starts a stream again. It waits briefly for the host's
+        // capabilities, which a freshly created view model may not have yet; a host that cannot
+        // stream is left on the stopped screen, which explains why and offers Start itself. This
+        // calls exactly what that Start button calls, so nothing about the stream changes.
+        var openStartConsumed by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(startStreamingOnOpen) {
+                if (!startStreamingOnOpen || openStartConsumed) return@LaunchedEffect
+                val canStream =
+                        withTimeoutOrNull(OPEN_START_CAPABILITY_WAIT_MS) {
+                                viewModel.capabilityState.first { it.supportsRemoteDesktop }
+                        } != null
+                openStartConsumed = true
+                if (canStream && !viewModel.isStreaming.value) {
+                        streamRequested = true
+                        viewModel.startStreaming()
+                }
         }
 
         val uiState =

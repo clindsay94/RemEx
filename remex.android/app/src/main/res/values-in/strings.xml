@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">Apakah Anda yakin ingin menghentikan %1$s (PID: %2$d)?</string>
     <string name="button_kill">Hentikan</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">Mouse Jarak Jauh</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Klik Kiri</string>
     <string name="remote_mouse_right_click">Klik Kanan</string>
@@ -1524,4 +1523,13 @@
     <string name="screen_routines_subtitle">Rutinitas berjalan di PC ini meski ponsel Anda tidak ada</string>
     <string name="screen_settings_subtitle">Atur cara kerja RemEx</string>
     <string name="screen_remote_desktop_subtitle">Lihat dan kendalikan layar PC Anda</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Beranda</string>
+    <string name="screen_home_subtitle">Sekilas tentang PC Anda</string>
+    <string name="nav_control_label">Kontrol</string>
+    <string name="desktop_mode_stream">Streaming</string>
+    <string name="desktop_trackpad_subtitle">Gunakan ponsel Anda sebagai mouse PC</string>
+    <string name="desktop_stream_hint">Streaming terbuka dalam layar penuh. Tekan Kembali untuk kembali ke sini.</string>
+    <string name="home_open_sensors_title">Buka %1$s</string>
+    <string name="home_open_sensors_body">Semua pembacaan langsung PC Anda dalam satu kanvas</string>
 </resources>

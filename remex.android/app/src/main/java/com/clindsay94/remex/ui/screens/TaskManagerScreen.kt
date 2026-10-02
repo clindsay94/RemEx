@@ -56,6 +56,7 @@ fun TaskManagerScreen(
         onNavigateToConnection: () -> Unit = {},
         isVisible: Boolean = true,
         viewModel: TaskManagerViewModel = viewModel(),
+        headerAccessory: @Composable () -> Unit = {},
 ) {
     val processes by viewModel.processes.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
@@ -96,7 +97,8 @@ fun TaskManagerScreen(
             onKillProcess = { viewModel.killProcess(it) },
             onClearKillError = { viewModel.clearKillError() },
             onClearLoadError = { viewModel.clearLoadError() },
-            onNavigateToConnection = onNavigateToConnection
+            onNavigateToConnection = onNavigateToConnection,
+            headerAccessory = headerAccessory
     )
 }
 
@@ -125,6 +127,11 @@ fun TaskManagerScreenContent(
         loadError: String? = null,
         onClearKillError: () -> Unit = {},
         onClearLoadError: () -> Unit = {},
+        /**
+         * Shown directly under the header, inside the top bar slot so the content pads below it:
+         * the Control tab's Commands | Processes switch (RemEx-wqo7a.2). Empty by default.
+         */
+        headerAccessory: @Composable () -> Unit = {},
 ) {
     val view = LocalView.current
     val motionScheme = MaterialTheme.motionScheme
@@ -142,26 +149,29 @@ fun TaskManagerScreenContent(
     Scaffold(
             modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                RemexFlexibleTopBar(
-                        title = stringResource(R.string.screen_task_manager_title),
-                        subtitle = stringResource(R.string.screen_task_manager_subtitle),
-                        scrollBehavior = scrollBehavior,
-                        actions = {
-                            IconButton(
-                                    onClick = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                        )
-                                        onRefreshProcesses()
-                                    }
-                            ) {
-                                Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = stringResource(R.string.cd_refresh)
-                                )
+                Column {
+                    RemexFlexibleTopBar(
+                            title = stringResource(R.string.screen_task_manager_title),
+                            subtitle = stringResource(R.string.screen_task_manager_subtitle),
+                            scrollBehavior = scrollBehavior,
+                            actions = {
+                                IconButton(
+                                        onClick = {
+                                            view.performHapticFeedback(
+                                                    HapticFeedbackConstants.KEYBOARD_TAP
+                                            )
+                                            onRefreshProcesses()
+                                        }
+                                ) {
+                                    Icon(
+                                            Icons.Default.Refresh,
+                                            contentDescription = stringResource(R.string.cd_refresh)
+                                    )
+                                }
                             }
-                        }
-                )
+                    )
+                    headerAccessory()
+                }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->

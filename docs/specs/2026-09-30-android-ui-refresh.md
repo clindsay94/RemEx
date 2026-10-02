@@ -125,7 +125,10 @@ These survive the redesign, so fixing them now is not wasted:
 1. Bug batch. (done, 5abae8d9 + 90817d53)
 2. Navigation (five destinations incl. Home, labels, Control's segmented toggle, Remote Mouse as a
    Desktop mode, Sensors moves into More). Home can land as a simple placeholder of PC card + Open
-   Sensors here so the nav is real; phase 3 fills it.
+   Sensors here so the nav is real; phase 3 fills it. (done, RemEx-wqo7a.2: Desktop's Stream mode
+   opens the existing full-screen stream route rather than putting the stream in the pager; tab
+   swipes are off while Trackpad is showing. First-run colours = the PC's BaseDarkGlass default,
+   RemEx-wqo7a.3.)
 3. Home (PC card, pinned sensors synced with the PC Home, Open Sensors, shortcuts, recent activity) +
    Sensors canvas (aligned grid, edit mode).
 4. Apps + Control restyle. (Commands restyle done in cohesion phase 3, b514d644.)

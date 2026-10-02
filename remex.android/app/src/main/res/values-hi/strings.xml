@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">क्या आप वाकई %1$s (PID: %2$d) को समाप्त करना चाहते हैं?</string>
     <string name="button_kill">बंद करें</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">रिमोट माउस</string>
     <string name="remote_mouse_trackpad_label">ट्रैकपैड</string>
     <string name="remote_mouse_left_click">लेफ्ट क्लिक</string>
     <string name="remote_mouse_right_click">राइट क्लिक</string>
@@ -1529,4 +1528,13 @@
     <string name="screen_routines_subtitle">ये इस PC पर तब भी चलते हैं जब आपका फ़ोन दूर हो</string>
     <string name="screen_settings_subtitle">चुनें कि RemEx कैसे काम करे</string>
     <string name="screen_remote_desktop_subtitle">अपने पीसी की स्क्रीन देखें और नियंत्रित करें</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">होम</string>
+    <string name="screen_home_subtitle">आपका पीसी एक नज़र में</string>
+    <string name="nav_control_label">नियंत्रण</string>
+    <string name="desktop_mode_stream">स्ट्रीम</string>
+    <string name="desktop_trackpad_subtitle">अपने फ़ोन को पीसी के माउस की तरह इस्तेमाल करें</string>
+    <string name="desktop_stream_hint">स्ट्रीम पूरी स्क्रीन पर खुलती है। यहाँ लौटने के लिए वापस दबाएँ।</string>
+    <string name="home_open_sensors_title">%1$s खोलें</string>
+    <string name="home_open_sensors_body">आपके पीसी की हर लाइव रीडिंग एक ही कैनवास पर</string>
 </resources>

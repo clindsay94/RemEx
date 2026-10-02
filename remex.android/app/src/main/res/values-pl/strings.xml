@@ -66,7 +66,6 @@
     <string name="task_manager_kill_message">Czy na pewno chcesz zakończyć %1$s (PID: %2$d)?</string>
     <string name="button_kill">Zakończ</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">Zdalna mysz</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Lewy klik</string>
     <string name="remote_mouse_right_click">Prawy klik</string>
@@ -1555,4 +1554,13 @@
     <string name="screen_routines_subtitle">Działają na tym komputerze, nawet gdy telefonu nie ma w pobliżu</string>
     <string name="screen_settings_subtitle">Wybierz, jak działa RemEx</string>
     <string name="screen_remote_desktop_subtitle">Podgląd i sterowanie ekranem komputera</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Start</string>
+    <string name="screen_home_subtitle">Twój komputer w skrócie</string>
+    <string name="nav_control_label">Sterowanie</string>
+    <string name="desktop_mode_stream">Strumień</string>
+    <string name="desktop_trackpad_subtitle">Używaj telefonu jako myszy komputera</string>
+    <string name="desktop_stream_hint">Strumień otwiera się na pełnym ekranie. Naciśnij Wstecz, aby tu wrócić.</string>
+    <string name="home_open_sensors_title">Otwórz: %1$s</string>
+    <string name="home_open_sensors_body">Wszystkie odczyty na żywo z komputera w jednym miejscu</string>
 </resources>

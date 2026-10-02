@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">%1$s (PID: %2$d) işlemini sonlandırmak istediğinizden emin misiniz?</string>
     <string name="button_kill">Sonlandır</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">Uzak Fare</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Sol Tık</string>
     <string name="remote_mouse_right_click">Sağ Tık</string>
@@ -1531,4 +1530,13 @@
     <string name="screen_routines_subtitle">Telefonunuz yakında olmasa da bu bilgisayarda çalışır</string>
     <string name="screen_settings_subtitle">RemEx\'in nasıl çalışacağını seçin</string>
     <string name="screen_remote_desktop_subtitle">Bilgisayarınızın ekranını görün ve yönetin</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Ana Sayfa</string>
+    <string name="screen_home_subtitle">Bilgisayarınıza genel bakış</string>
+    <string name="nav_control_label">Kontrol</string>
+    <string name="desktop_mode_stream">Akış</string>
+    <string name="desktop_trackpad_subtitle">Telefonunuzu bilgisayarın faresi olarak kullanın</string>
+    <string name="desktop_stream_hint">Akış tam ekran açılır. Buraya dönmek için Geri tuşuna basın.</string>
+    <string name="home_open_sensors_title">%1$s ekranını aç</string>
+    <string name="home_open_sensors_body">Bilgisayarınızdan tüm canlı ölçümler tek bir tuvalde</string>
 </resources>

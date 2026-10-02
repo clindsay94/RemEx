@@ -70,6 +70,8 @@ both); PC App Launcher and Sensors rounded-rectangle cards; PC per-sensor accent
 5. Card anatomy + phone sensor accents; Processes row parity.
 6. PC Personalize entry point.
 
+All six landed by 2026-10-02 (RemEx-kq10x.1 to .6; phase 6 in d10827e6).
+
 Android refresh phases (nav, Sensors, Apps/Control, Connection/Files, motion) continue in parallel and
 adopt decisions 1–7 as they go.
 

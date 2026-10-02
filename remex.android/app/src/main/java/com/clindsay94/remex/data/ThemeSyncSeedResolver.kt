@@ -12,8 +12,11 @@ import com.google.android.material.color.utilities.Hct
 
 private const val TAG = "ThemeSyncSeedResolver"
 
-/** Stored-seed fallback when a "#RRGGBB" cannot be parsed — the same literal Theme.kt falls back to. */
-private const val FallbackSeedHex = "#6750A4"
+/**
+ * Stored-seed fallback when a "#RRGGBB" cannot be parsed — the same seed Theme.kt falls back to,
+ * both read from [ThemeDefaults] (RemEx-wqo7a.3).
+ */
+private const val FallbackSeedHex = ThemeDefaults.THEME_SEED_COLOR
 
 /**
  * `Theme.kt`'s `BrandSeed` (`Color(0xFFFFB63D)`), masked to `#RRGGBB`. Not imported directly:
@@ -41,9 +44,11 @@ private const val BrandSeedHex = "#FFB63D"
  *    was not showing. Carried inside the resolved seed rather than as a new wire field, so the
  *    payload shape stays exactly what the contract already specifies.
  * 3. Otherwise (`"default"` palette, dynamic off) → `Theme.kt`'s static `BrandSeed`
- *    (Theme.kt:68,75-77), NOT the stored seed — a fresh install or a device with dynamic color
- *    turned off paints `DarkColorScheme`/`LightColorScheme`, both seeded from `BrandSeed`, and the
- *    stored seed value in that state describes a custom palette the phone is not using.
+ *    (Theme.kt:68,75-77), NOT the stored seed — a device on the `"default"` palette with dynamic
+ *    color turned off paints `DarkColorScheme`/`LightColorScheme`, both seeded from `BrandSeed`, and
+ *    the stored seed value in that state describes a custom palette the phone is not using. (A fresh
+ *    install no longer lands here: it starts on the `"custom"` palette with the RemEx default seed,
+ *    case 2, see [ThemeDefaults].)
  *
  * No `@RequiresApi`/SDK_INT guard: minSdk is 34, so
  * [androidx.compose.material3.dynamicLightColorScheme] and its dark counterpart — API 31+ — are

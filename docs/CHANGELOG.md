@@ -182,6 +182,30 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- **The phone app has five tabs: Home, Desktop, Apps, Control and More.** Labels are one word and
+  always shown. Home is new: for now it has the PC card (online status, or Connect and Wake when the
+  PC is offline) and an Open Sensors card, with more to come. The Sensors canvas moved into More and
+  is one tap from Home. Desktop has a Stream | Trackpad switch: Stream shows "Start streaming", which
+  opens the stream full screen and starts it, and Back comes back to the tab. Remote Mouse is now
+  Desktop's Trackpad mode rather than its own screen, and tab swipes are off while it is showing so
+  every drag moves the pointer. Control has a Commands | Processes switch at the top and remembers
+  the last one you picked. More lists Routines first, then Sensors, Files, Connection, Settings and
+  FAQ. Personalization and About left More because Settings already opens both. Tablets keep the
+  side rail with the same destinations. New text is in all nine languages. (RemEx-wqo7a.2)
+
+- **A new phone starts on the RemEx colours.** With nothing saved yet, the phone now uses the same
+  default scheme as the PC (the BaseDarkGlass preset: seed #6C4CFF, Tonal Spot, dark, normal
+  contrast) instead of wallpaper colours. Colours you have already chosen are kept. The defaults live
+  in one place, `ThemeDefaults`, and every fallback reads from it. (RemEx-wqo7a.3)
+
+- **The phone's splash plays every time you open the app.** It used to play once per process, so
+  closing the app and opening it again while Android still had it cached skipped straight past it.
+  Rebuilding the screen (for example after a settings change) still doesn't replay it. (RemEx-wqo7a.4)
+
+- **Personalize moved to the bottom of the PC sidebar**, just above the connection chip, instead of
+  a floating palette button in the corner of every page. Ctrl+, and the command palette still open it,
+  and pop-up messages now sit in the freed corner. (RemEx-kq10x.6)
+
 - **Cards look the same on the PC and the phone.** Phone tiles now default to a rounded rectangle
   with the PC's 16dp corner radius, a tonal fill and a thin outline. The tile-shape setting stays,
   but it only offers shapes that can't cut off a card's text: rounded rectangle and cut corner. A

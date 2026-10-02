@@ -103,24 +103,23 @@ import com.clindsay94.remex.ui.screens.FileTransferScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.ConnectionStatusChip
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
+import com.clindsay94.remex.ui.screens.ControlTabScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
+import com.clindsay94.remex.ui.screens.DesktopTabScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
-import com.clindsay94.remex.ui.screens.PersonalizationScreen
+import com.clindsay94.remex.ui.screens.HomeScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
-import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
-import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.SettingsScreen
 import com.clindsay94.remex.ui.screens.ShareDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
-import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
 import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
- * The route owner for the four primary pager tabs — typed like every other destination
+ * The route owner for the four primary pager tabs (Home, Desktop, Apps, Control) — typed like every other destination
  * (RemEx-mt43). Private because it is an implementation detail of this shell: the tabs inside it
  * are pager pages, not navigation destinations.
  */
@@ -183,19 +182,29 @@ fun AppNavigation() {
                                 dashboardScreenContent = { onNav, isVisible ->
                                         DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
                                 },
-                                remoteControlScreenContent = { onNav ->
-                                        RemoteControlScreen(onNavigateToConnection = onNav)
+                                homeScreenContent = { onNav, onOpenSensors ->
+                                        HomeScreen(
+                                                onNavigateToConnection = onNav,
+                                                onOpenSensors = onOpenSensors,
+                                        )
                                 },
-                                remoteMouseScreenContent = { onNav ->
-                                        RemoteMouseScreen(onNavigateToConnection = onNav)
+                                desktopScreenContent = { mode, onModeChange, onStartStream, onNav ->
+                                        DesktopTabScreen(
+                                                mode = mode,
+                                                onModeChange = onModeChange,
+                                                onStartStream = onStartStream,
+                                                onNavigateToConnection = onNav,
+                                        )
                                 },
                                 appLauncherScreenContent = { onNav ->
                                         AppLauncherScreen(onNavigateToConnection = onNav)
                                 },
-                                taskManagerScreenContent = { onNav, isVisible ->
-                                        TaskManagerScreen(
-                                                onNavigateToConnection = onNav,
+                                controlScreenContent = { segment, onSegmentChange, isVisible, onNav ->
+                                        ControlTabScreen(
+                                                segment = segment,
+                                                onSegmentChange = onSegmentChange,
                                                 isVisible = isVisible,
+                                                onNavigateToConnection = onNav,
                                         )
                                 },
                                 connectionScreenContent = { onQr ->
@@ -230,12 +239,10 @@ private fun AppNavigationContent(
         liveHandshake: LiveHandshakeController? = null,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
-        remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-        remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        homeScreenContent: HomeScreenContent,
+        desktopScreenContent: DesktopScreenContent,
         appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-        taskManagerScreenContent:
-                @Composable
-                (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
+        controlScreenContent: ControlScreenContent,
         connectionScreenContent: @Composable (onNavigateToQrScanner: () -> Unit) -> Unit,
         showRoutinesBadge: Boolean = false,
 ) {
@@ -271,6 +278,10 @@ private fun AppNavigationContent(
         // re-create route-scoped ViewModels during tab changes.
         val pagerState = rememberPagerState(pageCount = { navItems.size })
         var selectedPrimaryIndex by rememberSaveable { mutableIntStateOf(0) }
+        // The Desktop tab's mode and the Control tab's segment live here, above the pager, so a
+        // page the pager disposes comes back as the user left it (RemEx-wqo7a.2).
+        var desktopMode by rememberSaveable { mutableStateOf(DesktopMode.Stream) }
+        var controlSegment by rememberSaveable { mutableStateOf(ControlSegment.Commands) }
 
         val view = LocalView.current
         val scope = rememberCoroutineScope()
@@ -479,14 +490,22 @@ private fun AppNavigationContent(
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
-                                        remoteControlScreenContent = remoteControlScreenContent,
-                                        remoteMouseScreenContent = remoteMouseScreenContent,
+                                        homeScreenContent = homeScreenContent,
+                                        desktopScreenContent = desktopScreenContent,
                                         appLauncherScreenContent = appLauncherScreenContent,
-                                        taskManagerScreenContent = taskManagerScreenContent,
+                                        controlScreenContent = controlScreenContent,
                                         connectionScreenContent = connectionScreenContent,
+                                        desktopMode = desktopMode,
+                                        onDesktopModeChange = { desktopMode = it },
+                                        controlSegment = controlSegment,
+                                        onControlSegmentChange = { controlSegment = it },
+                                        onOpenSensors = { navigateTo(Screen.Dashboard) },
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
-                                        pagerState = if (showNav) pagerState else null,
+                                        // Always the hoisted pager, even while a no-chrome route
+                                        // (the stream) covers it: nulling it mid-exit swapped the
+                                        // fading Desktop tab for Home and flashed it.
+                                        pagerState = pagerState,
                                         onLiveHandshakeStart = liveHandshake?.let { it::start },
                                         modifier = Modifier.fillMaxSize(),
                                 )
@@ -509,7 +528,7 @@ private fun AppNavigationContent(
                                                 fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
                                 NavigationBar {
-                                        // Primary 4 nav items
+                                        // The four primary tabs: Home, Desktop, Apps, Control
                                         navItems.forEachIndexed { index, screen ->
                                                 val isSelected =
                                                         isAtPrimary && selectedPrimaryIndex == index
@@ -522,7 +541,7 @@ private fun AppNavigationContent(
                                                                 // (RemEx-pgzk). The TalkBack stateDescription
                                                                 // applies only while the badge shows (8d9k).
                                                                 val showDisconnectedBadge =
-                                                                        screen == Screen.Dashboard && !isConnected
+                                                                        screen == Screen.Home && !isConnected
                                                                 val disconnectedLabel =
                                                                         stringResource(
                                                                                 R.string.status_disconnected
@@ -574,9 +593,9 @@ private fun AppNavigationContent(
                                                                         )
                                                                 )
                                                         },
-                                                        alwaysShowLabel =
-                                                                false, // M3: label only on selected
-                                                        // item
+                                                        // One-word labels, always shown
+                                                        // (refresh spec, Navigation).
+                                                        alwaysShowLabel = true,
                                                         )
                                         }
 
@@ -610,7 +629,7 @@ private fun AppNavigationContent(
                                                                 )
                                                         )
                                                 },
-                                                alwaysShowLabel = false,
+                                                alwaysShowLabel = true,
                                         )
                                 }
                         }
@@ -665,7 +684,7 @@ private fun AppNavigationContent(
                                                                 // (RemEx-pgzk). The TalkBack stateDescription
                                                                 // applies only while the badge shows (8d9k).
                                                                 val showDisconnectedBadge =
-                                                                        screen == Screen.Dashboard && !isConnected
+                                                                        screen == Screen.Home && !isConnected
                                                                 val disconnectedLabel =
                                                                         stringResource(
                                                                                 R.string.status_disconnected
@@ -717,7 +736,7 @@ private fun AppNavigationContent(
                                                                         )
                                                                 )
                                                         },
-                                                        alwaysShowLabel = false,
+                                                        alwaysShowLabel = true,
                                                 )
                                         }
 
@@ -753,7 +772,7 @@ private fun AppNavigationContent(
                                                                         )
                                                                 )
                                                         },
-                                                        alwaysShowLabel = false,
+                                                        alwaysShowLabel = true,
                                                 )
                                         }
 
@@ -768,14 +787,22 @@ private fun AppNavigationContent(
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
-                                        remoteControlScreenContent = remoteControlScreenContent,
-                                        remoteMouseScreenContent = remoteMouseScreenContent,
+                                        homeScreenContent = homeScreenContent,
+                                        desktopScreenContent = desktopScreenContent,
                                         appLauncherScreenContent = appLauncherScreenContent,
-                                        taskManagerScreenContent = taskManagerScreenContent,
+                                        controlScreenContent = controlScreenContent,
                                         connectionScreenContent = connectionScreenContent,
+                                        desktopMode = desktopMode,
+                                        onDesktopModeChange = { desktopMode = it },
+                                        controlSegment = controlSegment,
+                                        onControlSegmentChange = { controlSegment = it },
+                                        onOpenSensors = { navigateTo(Screen.Dashboard) },
                                         onNavigateToConnection = { navigateToConnection() },
                                         onSelectPrimaryPage = { selectedPrimaryIndex = it },
-                                        pagerState = if (showNav) pagerState else null,
+                                        // Always the hoisted pager, even while a no-chrome route
+                                        // (the stream) covers it: nulling it mid-exit swapped the
+                                        // fading Desktop tab for Home and flashed it.
+                                        pagerState = pagerState,
                                         onLiveHandshakeStart = liveHandshake?.let { it::start },
                                         modifier = Modifier.fillMaxSize(),
                                 )
@@ -876,23 +903,6 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
-/**
- * Per-process "has the brand splash already played" flag (perf audit P1-9, ui-10). The splash is
- * a deliberate, tap-skippable ~3s brand moment on a genuine cold start — that policy is untouched
- * here. What this fixes is a warm start: MainActivity destroyed without saved state and relaunched
- * while the process is still alive (e.g. removed from recents, or finished, with the process cached)
- * — NOT rotation, which this app blocks from recreating the Activity at all (see MainActivity's
- * `android:configChanges` in AndroidManifest.xml), and not the other config-change recreations
- * `rememberNavController` already survives (Splash is long popped off the back stack by then).
- * NavHost always starts at [Screen.Splash] (see the composable below), and until now nothing
- * remembered that the splash had already run in this process, so a warm start paid the full
- * multi-second choreography again. Resets naturally on process death, which is exactly the "cold
- * start" case this must not affect.
- */
-private object SplashGate {
-        var shown = false
-}
-
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RemexNavHost(
@@ -901,11 +911,16 @@ private fun RemexNavHost(
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
-        remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
-        remoteMouseScreenContent: @Composable (() -> Unit) -> Unit,
+        homeScreenContent: HomeScreenContent,
+        desktopScreenContent: DesktopScreenContent,
         appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
-        taskManagerScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
+        controlScreenContent: ControlScreenContent,
         connectionScreenContent: @Composable (() -> Unit) -> Unit,
+        desktopMode: DesktopMode,
+        onDesktopModeChange: (DesktopMode) -> Unit,
+        controlSegment: ControlSegment,
+        onControlSegmentChange: (ControlSegment) -> Unit,
+        onOpenSensors: () -> Unit,
         onNavigateToConnection: () -> Unit,
         onSelectPrimaryPage: (Int) -> Unit,
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
@@ -923,9 +938,11 @@ private fun RemexNavHost(
         val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         NavHost(
                 navController = navController,
-                // Always start at splash. On a genuine cold start it plays in full; on an
-                // in-process Activity recreation (SplashGate.shown already true) the composable
-                // below skips straight onward instead of replaying it (RemEx-4j8ls P1-9).
+                // Always start at splash, and it plays on every fresh open of the app, including
+                // a relaunch while Android still has the process cached (Connor, 2026-10-02; this
+                // reverses the per-process skip from RemEx-4j8ls P1-9, which read as "the splash
+                // sometimes doesn't play"). A config-change recreation never replays it: the
+                // restored back stack is already past Splash, so this composable isn't reached.
                 startDestination = Screen.Splash,
                 modifier = modifier,
                 // M3 Expressive: container-transform-style enter (grow + fade in)
@@ -968,31 +985,20 @@ private fun RemexNavHost(
                                         launchSingleTop = true
                                 }
                         }
-                        // Snapshotted once per entry, not read live: SplashScreen's onFinished flips
-                        // SplashGate.shown to true while this entry is still composed (mid fadeOut),
-                        // and re-reading the mutable global on a recomposition during that exit would
-                        // flip this branch and re-run goPastSplash() a second time mid-animation.
-                        val skipSplash = remember { SplashGate.shown }
-                        if (skipSplash) {
-                                // In-process recreation: the brand moment already played this
-                                // process, skip straight onward instead of replaying it.
-                                LaunchedEffect(Unit) { goPastSplash() }
-                        } else if (splashStyle == SplashStyles.LiveHandshake && onLiveHandshakeStart != null) {
+                        if (splashStyle == SplashStyles.LiveHandshake && onLiveHandshakeStart != null) {
                                 // Live Handshake plays as an overlay above the app (RemEx-8g6n0):
-                                // move on at once, like the warm path, so the destination composes
-                                // underneath and is what the portal opens into.
+                                // move on at once so the destination composes underneath and is
+                                // what the portal opens into.
                                 LaunchedEffect(Unit) {
-                                        SplashGate.shown = true
                                         onLiveHandshakeStart()
                                         goPastSplash()
                                 }
                         } else {
+                                // A repeated onFinished is harmless: goPastSplash navigates with
+                                // launchSingleTop and pops Splash inclusively.
                                 SplashScreen(
                                         splashStyle = splashStyle,
-                                        onFinished = {
-                                                SplashGate.shown = true
-                                                goPastSplash()
-                                        },
+                                        onFinished = { goPastSplash() },
                                 )
                         }
                 }
@@ -1013,21 +1019,38 @@ private fun RemexNavHost(
                 }
 
                 composable<PrimaryNav> {
+                        // "Start streaming" on the Desktop tab: the full-screen stream route on top
+                        // of the tabs, so Back comes straight back to Desktop (RemEx-wqo7a.2).
+                        val onStartStream: () -> Unit = {
+                                navController.navigate(Screen.RemoteDesktop) { launchSingleTop = true }
+                        }
                         if (pagerState != null) {
                                 PrimaryDestinationsPager(
                                         pagerState = pagerState,
-                                        dashboardScreenContent = dashboardScreenContent,
-                                        remoteControlScreenContent = remoteControlScreenContent,
+                                        homeScreenContent = homeScreenContent,
+                                        desktopScreenContent = desktopScreenContent,
                                         appLauncherScreenContent = appLauncherScreenContent,
-                                        taskManagerScreenContent = taskManagerScreenContent,
+                                        controlScreenContent = controlScreenContent,
+                                        desktopMode = desktopMode,
+                                        onDesktopModeChange = onDesktopModeChange,
+                                        controlSegment = controlSegment,
+                                        onControlSegmentChange = onControlSegmentChange,
+                                        onOpenSensors = onOpenSensors,
+                                        onStartStream = onStartStream,
                                         onNavigateToConnection = onNavigateToConnection,
                                         modifier = Modifier.fillMaxSize(),
                                 )
                         } else {
-                                // No pager here (single-pane fallback) - dashboard is the only content
-                                // on screen, so it is always visible.
-                                dashboardScreenContent({ onNavigateToConnection() }, true)
+                                // No pager here (single-pane fallback) - Home is the only content
+                                // on screen.
+                                homeScreenContent({ onNavigateToConnection() }, onOpenSensors)
                         }
+                }
+
+                // The full Sensors canvas: its own route now that Home is the first tab. Always
+                // visible while it is the current route, so it always parses telemetry here.
+                composable<Screen.Dashboard> {
+                        dashboardScreenContent({ onNavigateToConnection() }, true)
                 }
 
                 composable<Screen.Connection> {
@@ -1086,19 +1109,17 @@ private fun RemexNavHost(
                         )
                 }
 
-                composable<Screen.RemoteMouse> {
-                        remoteMouseScreenContent { onNavigateToConnection() }
-                }
-
                 composable<Screen.RemoteDesktop>(
                         // Full-screen immersive — pure crossfade, no spatial motion
                         enterTransition = { fadeIn(enterFadeSpec) },
                         exitTransition = { fadeOut(exitFadeSpec) },
                         popEnterTransition = { fadeIn(enterFadeSpec) },
                         popExitTransition = { fadeOut(exitFadeSpec) },
-                ) { RemoteDesktopScreen() }
-
-                composable<Screen.Personalization> { PersonalizationScreen() }
+                ) {
+                        // Opened only by the Desktop tab's "Start streaming", so it starts the
+                        // stream itself rather than asking for Start a second time (RemEx-wqo7a.2).
+                        RemoteDesktopScreen(startStreamingOnOpen = true)
+                }
 
                 composable<Screen.Settings> {
                         SettingsScreen(
@@ -1170,10 +1191,16 @@ private fun NewBadgedIcon(show: Boolean, imageVector: androidx.compose.ui.graphi
 @Composable
 private fun PrimaryDestinationsPager(
         pagerState: androidx.compose.foundation.pager.PagerState,
-        dashboardScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
-        remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
+        homeScreenContent: HomeScreenContent,
+        desktopScreenContent: DesktopScreenContent,
         appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
-        taskManagerScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
+        controlScreenContent: ControlScreenContent,
+        desktopMode: DesktopMode,
+        onDesktopModeChange: (DesktopMode) -> Unit,
+        controlSegment: ControlSegment,
+        onControlSegmentChange: (ControlSegment) -> Unit,
+        onOpenSensors: () -> Unit,
+        onStartStream: () -> Unit,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
 ) {
@@ -1181,7 +1208,15 @@ private fun PrimaryDestinationsPager(
                 state = pagerState,
                 modifier = modifier,
                 beyondViewportPageCount = 0,
-                userScrollEnabled = true,
+                // No tab swipe while the Desktop tab is in Trackpad mode: every drag there is meant
+                // for the PC's pointer (RemEx-wqo7a.2). Keyed on the SETTLED page, so a swipe that
+                // is on its way into Desktop is never cut off halfway; the tabs still change from
+                // the navigation bar, which scrolls the pager programmatically.
+                userScrollEnabled =
+                        !pagerTrackpadOwnsSwipes(
+                                settledDestination = navItems[pagerState.settledPage],
+                                desktopMode = desktopMode,
+                        ),
         ) { page ->
                 // Expression-bodied local fun, not a 'when' statement: a 'when' whose result is
                 // discarded (the old shape here) is *not* required to be exhaustive by the Kotlin
@@ -1193,26 +1228,50 @@ private fun PrimaryDestinationsPager(
                 @Composable
                 fun renderPage(destination: PrimaryDestination): Unit =
                         when (destination) {
-                                Screen.Dashboard ->
-                                        dashboardScreenContent(
+                                Screen.Home ->
+                                        homeScreenContent({ onNavigateToConnection() }, onOpenSensors)
+                                Screen.Desktop ->
+                                        desktopScreenContent(
+                                                desktopMode,
+                                                onDesktopModeChange,
+                                                onStartStream,
                                                 { onNavigateToConnection() },
-                                                page == pagerState.currentPage &&
-                                                        !pagerState.isScrollInProgress,
                                         )
-                                Screen.RemoteControl ->
-                                        remoteControlScreenContent { onNavigateToConnection() }
                                 Screen.AppLauncher ->
                                         appLauncherScreenContent { onNavigateToConnection() }
-                                Screen.TaskManager ->
-                                        taskManagerScreenContent(
-                                                { onNavigateToConnection() },
+                                Screen.Control ->
+                                        controlScreenContent(
+                                                controlSegment,
+                                                onControlSegmentChange,
                                                 page == pagerState.currentPage &&
                                                         !pagerState.isScrollInProgress,
+                                                { onNavigateToConnection() },
                                         )
                         }
                 renderPage(navItems[page])
         }
 }
+
+/** Home tab: (onNavigateToConnection, onOpenSensors). */
+private typealias HomeScreenContent = @Composable (() -> Unit, () -> Unit) -> Unit
+
+/** Desktop tab: (mode, onModeChange, onStartStream, onNavigateToConnection). */
+private typealias DesktopScreenContent =
+        @Composable (DesktopMode, (DesktopMode) -> Unit, () -> Unit, () -> Unit) -> Unit
+
+/** Control tab: (segment, onSegmentChange, isVisible, onNavigateToConnection). */
+private typealias ControlScreenContent =
+        @Composable (ControlSegment, (ControlSegment) -> Unit, Boolean, () -> Unit) -> Unit
+
+/**
+ * Whether the trackpad, not the pager, owns horizontal drags (RemEx-wqo7a.2): only while the
+ * pager has settled on the Desktop tab and that tab is in Trackpad mode. Stream mode has no
+ * gestures of its own (the stream is a separate full-screen route), so it keeps tab swipes.
+ */
+internal fun pagerTrackpadOwnsSwipes(
+        settledDestination: PrimaryDestination,
+        desktopMode: DesktopMode,
+): Boolean = settledDestination == Screen.Desktop && desktopMode == DesktopMode.Trackpad
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
@@ -1227,10 +1286,10 @@ private fun AppNavigationPreview() {
                         splashStyle = SplashStyles.Default,
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
-                        remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
-                        remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
+                        homeScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
+                        desktopScreenContent = { _, _, _, _ -> Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-                        taskManagerScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
+                        controlScreenContent = { _, _, _, _ -> Box(Modifier.fillMaxSize()) },
                         connectionScreenContent = { Box(Modifier.fillMaxSize()) },
                 )
         }
@@ -1247,10 +1306,10 @@ private fun AppNavigationDisconnectedPreview() {
                         splashStyle = SplashStyles.Default,
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
-                        remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
-                        remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
+                        homeScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
+                        desktopScreenContent = { _, _, _, _ -> Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-                        taskManagerScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
+                        controlScreenContent = { _, _, _, _ -> Box(Modifier.fillMaxSize()) },
                         connectionScreenContent = { Box(Modifier.fillMaxSize()) },
                 )
         }

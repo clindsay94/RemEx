@@ -171,6 +171,50 @@ class SettingsManager(val context: Context) {
                  * Sentinel value indicating the host address has not been configured by the user.
                  */
                 const val DEFAULT_HOST_PLACEHOLDER = ""
+
+                /**
+                 * One DataStore snapshot read as [PersonalizationPreferences]: a stored value wins, and a
+                 * missing one falls back to the same default the data class carries (ThemeDefaults for the
+                 * colours, RemEx-wqo7a.3). A phone that has saved its personalization before (a stored
+                 * palette) fills its gaps from [ThemeDefaults.Legacy] instead, so an upgrade never changes
+                 * colours the user already had. Pure, so both reads are unit-testable without a Context.
+                 */
+                internal fun personalizationFrom(preferences: Preferences): PersonalizationPreferences {
+                        val savedBefore = preferences[THEME_PALETTE_KEY] != null
+                        return PersonalizationPreferences(
+                                        themeMode = preferences[THEME_MODE_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.THEME_MODE else ThemeDefaults.THEME_MODE,
+                                        themePalette = preferences[THEME_PALETTE_KEY] ?: ThemeDefaults.THEME_PALETTE,
+                                        themeStyle = preferences[THEME_STYLE_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.THEME_STYLE else ThemeDefaults.THEME_STYLE,
+                                        themeSeedColor = preferences[THEME_SEED_COLOR_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.THEME_SEED_COLOR else ThemeDefaults.THEME_SEED_COLOR,
+                                        themeSeedChroma = preferences[THEME_SEED_CHROMA_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.THEME_SEED_CHROMA else ThemeDefaults.THEME_SEED_CHROMA,
+                                        themeContrast = preferences[THEME_CONTRAST_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.THEME_CONTRAST else ThemeDefaults.THEME_CONTRAST,
+                                        dynamicColor = preferences[DYNAMIC_COLOR_KEY]
+                                                ?: if (savedBefore) ThemeDefaults.Legacy.DYNAMIC_COLOR else ThemeDefaults.DYNAMIC_COLOR,
+                                        fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
+                                        fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
+                                        cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: CardShapes.DEFAULT_CORNER_RADIUS_DP,
+                                        cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
+                                        pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        telemetryCardShapePreset =
+                                                preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        appLauncherCardShapePreset =
+                                                preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        taskManagerCardShapePreset =
+                                                preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                        splashStyle = SplashStyles.effective(
+                                                preferences[SPLASH_STYLE_KEY],
+                                                preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
+                                        )
+                                )
+                }
         }
 
         data class ConnectionPreferences(
@@ -196,13 +240,14 @@ class SettingsManager(val context: Context) {
         )
 
         data class PersonalizationPreferences(
-                val themeMode: String = "system",
-                val themePalette: String = "default",
-                val themeStyle: String = "tonal_spot",
-                val themeSeedColor: String = "#6750A4", // Default M3 Purple
-                val themeSeedChroma: Float = 48.0f,
-                val themeContrast: Float = 0.0f,
-                val dynamicColor: Boolean = true,
+                // First-run colours are the RemEx default scheme; see ThemeDefaults (RemEx-wqo7a.3).
+                val themeMode: String = ThemeDefaults.THEME_MODE,
+                val themePalette: String = ThemeDefaults.THEME_PALETTE,
+                val themeStyle: String = ThemeDefaults.THEME_STYLE,
+                val themeSeedColor: String = ThemeDefaults.THEME_SEED_COLOR,
+                val themeSeedChroma: Float = ThemeDefaults.THEME_SEED_CHROMA,
+                val themeContrast: Float = ThemeDefaults.THEME_CONTRAST,
+                val dynamicColor: Boolean = ThemeDefaults.DYNAMIC_COLOR,
                 val fontFamily: String = "default",
                 val fontScale: Float = 1.0f,
                 val cardCornerRadius: Int = CardShapes.DEFAULT_CORNER_RADIUS_DP,
@@ -334,17 +379,17 @@ class SettingsManager(val context: Context) {
 
         val themeModeFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        preferences[THEME_MODE_KEY] ?: "system"
+                        preferences[THEME_MODE_KEY] ?: ThemeDefaults.THEME_MODE
                 }
 
         val themePaletteFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        preferences[THEME_PALETTE_KEY] ?: "default"
+                        preferences[THEME_PALETTE_KEY] ?: ThemeDefaults.THEME_PALETTE
                 }
 
         val themeSeedColorFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4"
+                        preferences[THEME_SEED_COLOR_KEY] ?: ThemeDefaults.THEME_SEED_COLOR
                 }
 
         val fontScaleFlow: Flow<Float> =
@@ -427,35 +472,7 @@ class SettingsManager(val context: Context) {
                 }
 
         val personalizationPreferencesFlow: Flow<PersonalizationPreferences> =
-                context.dataStore.data.map { preferences ->
-                        PersonalizationPreferences(
-                                themeMode = preferences[THEME_MODE_KEY] ?: "system",
-                                themePalette = preferences[THEME_PALETTE_KEY] ?: "default",
-                                themeStyle = preferences[THEME_STYLE_KEY] ?: "tonal_spot",
-                                themeSeedColor = preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4",
-                                themeSeedChroma = preferences[THEME_SEED_CHROMA_KEY] ?: 48.0f,
-                                themeContrast = preferences[THEME_CONTRAST_KEY] ?: 0.0f,
-                                dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true,
-                                fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
-                                fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
-                                cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: CardShapes.DEFAULT_CORNER_RADIUS_DP,
-                                cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
-                                pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                telemetryCardShapePreset =
-                                        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                appLauncherCardShapePreset =
-                                        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                taskManagerCardShapePreset =
-                                        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                splashStyle = SplashStyles.effective(
-                                        preferences[SPLASH_STYLE_KEY],
-                                        preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
-                                )
-                        )
-                }
+                context.dataStore.data.map { preferences -> personalizationFrom(preferences) }
 
         suspend fun saveConnectionSettings(
                 host: String,

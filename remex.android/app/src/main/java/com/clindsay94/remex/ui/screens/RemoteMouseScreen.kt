@@ -50,7 +50,6 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.theme.cardShape
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
@@ -122,7 +121,8 @@ fun RemoteMouseScreenContent(
             color = MaterialTheme.colorScheme.background
     ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        RemexFlexibleTopBar(title = stringResource(R.string.screen_remote_mouse_title))
+        // No header of its own: this is the Desktop tab's Trackpad mode, under that tab's header
+        // and Stream | Trackpad switch (RemEx-wqo7a.2).
         Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)

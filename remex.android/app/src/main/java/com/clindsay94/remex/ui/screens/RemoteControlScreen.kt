@@ -311,7 +311,8 @@ data class RemoteControlUiState(
 @Composable
 fun RemoteControlScreen(
         onNavigateToConnection: () -> Unit = {},
-        viewModel: RemoteControlViewModel = viewModel()
+        viewModel: RemoteControlViewModel = viewModel(),
+        headerAccessory: @Composable () -> Unit = {},
 ) {
     val commandStatus by viewModel.commandStatus.collectAsStateWithLifecycle()
     val shapePreset by viewModel.remoteControlCardShapePreset.collectAsStateWithLifecycle()
@@ -359,7 +360,8 @@ fun RemoteControlScreen(
             onFetchClipboard = { viewModel.fetchClipboardFromPc() },
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onSeek = RemexClientManager::seekMedia,
-            onClearCommandStatus = { viewModel.clearCommandStatus() }
+            onClearCommandStatus = { viewModel.clearCommandStatus() },
+            headerAccessory = headerAccessory
     )
 }
 
@@ -377,7 +379,12 @@ fun RemoteControlScreenContent(
         onSeek: (Long) -> Unit = {},
         onClearCommandStatus: () -> Unit,
         routines: List<com.clindsay94.remex.ui.routines.RemoteRoutine> = emptyList(),
-        onRunRoutine: (String) -> Unit = {}
+        onRunRoutine: (String) -> Unit = {},
+        /**
+         * Shown directly under the header, inside the top bar slot so the content pads below it:
+         * the Control tab's Commands | Processes switch (RemEx-wqo7a.2). Empty by default.
+         */
+        headerAccessory: @Composable () -> Unit = {}
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
@@ -397,11 +404,14 @@ fun RemoteControlScreenContent(
     Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                RemexFlexibleTopBar(
-                        title = stringResource(R.string.screen_remote_control_title),
-                        subtitle = stringResource(R.string.screen_remote_control_subtitle),
-                        scrollBehavior = scrollBehavior
-                )
+                Column {
+                    RemexFlexibleTopBar(
+                            title = stringResource(R.string.screen_remote_control_title),
+                            subtitle = stringResource(R.string.screen_remote_control_subtitle),
+                            scrollBehavior = scrollBehavior
+                    )
+                    headerAccessory()
+                }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->

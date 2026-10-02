@@ -1701,7 +1701,7 @@ private fun DashboardScreenPreview() {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ConnectionOrbCard(
+internal fun ConnectionOrbCard(
         isConnected: Boolean,
         isConnecting: Boolean,
         shapePreset: Float,
@@ -1884,7 +1884,7 @@ private fun ConnectionOrbCard(
 }
 
 @Composable
-private fun WakeOnLanCard(onWake: () -> Unit) {
+internal fun WakeOnLanCard(onWake: () -> Unit) {
         val view = LocalView.current
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 FilledTonalButton(

@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">Tem certeza que deseja encerrar %1$s (PID: %2$d)?</string>
     <string name="button_kill">Finalizar</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">Mouse Remoto</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Clique Esquerdo</string>
     <string name="remote_mouse_right_click">Clique Direito</string>
@@ -1529,4 +1528,13 @@
     <string name="screen_routines_subtitle">Elas rodam neste PC mesmo quando o celular está longe</string>
     <string name="screen_settings_subtitle">Escolha como o RemEx funciona</string>
     <string name="screen_remote_desktop_subtitle">Veja e controle a tela do seu PC</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Início</string>
+    <string name="screen_home_subtitle">Seu PC em resumo</string>
+    <string name="nav_control_label">Controle</string>
+    <string name="desktop_mode_stream">Transmitir</string>
+    <string name="desktop_trackpad_subtitle">Use o celular como mouse do PC</string>
+    <string name="desktop_stream_hint">A transmissão abre em tela cheia. Toque em Voltar para retornar aqui.</string>
+    <string name="home_open_sensors_title">Abrir %1$s</string>
+    <string name="home_open_sensors_body">Todas as leituras ao vivo do seu PC em uma só tela</string>
 </resources>

@@ -4,16 +4,14 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Launch
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Mouse
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.clindsay94.remex.R
 import kotlinx.serialization.Serializable
@@ -29,8 +27,8 @@ import kotlinx.serialization.Serializable
  * comparisons; nothing persisted them, so nothing needed a compatibility path.)
  *
  * A plain [Screen] carries no label or icon, because most destinations need neither: Splash,
- * Connection, Tutorial, QrScanner and ShareDiagnostics are reached programmatically and never
- * appear in a navigation surface. That is not the same as being untitled — they render their own
+ * Tutorial, QrScanner, ShareDiagnostics, RemoteDesktop, Personalization and About are reached
+ * programmatically and never appear in a navigation surface. That is not the same as being untitled — they render their own
  * headings — they just have no navigation item to feed (RemEx-5reo).
  *
  * Pairing is [PairingRoute] below rather than an object here: it is the one destination that
@@ -38,8 +36,6 @@ import kotlinx.serialization.Serializable
  */
 sealed class Screen {
     @Serializable data object Splash : Screen()
-
-    @Serializable data object Connection : Screen()
 
     @Serializable data object Tutorial : Screen()
 
@@ -54,23 +50,42 @@ sealed class Screen {
      */
     @Serializable data object ShareDiagnostics : Screen()
 
+    /**
+     * The full-screen stream (RemEx-wqo7a.2). Not a pager page and not in any navigation surface:
+     * the Desktop tab's "Start streaming" opens it on top of the tabs, and Back returns there. It
+     * stays its own route so the stream keeps the screen, the SurfaceView and the gestures to
+     * itself, with no pager swipe or navigation bar around it (docs/REGRESSION-GUARDS.md, remote
+     * desktop UI).
+     */
+    @Serializable data object RemoteDesktop : Screen()
+
+    /**
+     * Reached from Settings → Help → About, so it no longer has a More entry (RemEx-wqo7a.2).
+     * Personalization went the same way and has no route of its own any more: Settings shows it
+     * as its Personalization category.
+     */
+    @Serializable data object About : Screen()
+
     // ── Destinations that appear in a navigation surface ──────────────────────
+
+    /**
+     * Home (refresh spec, Navigation slot 1): the PC at a glance. Phase 2 lands the PC card and
+     * the Open Sensors card; phase 3 fills in the rest (RemEx-wqo7a.2).
+     */
     @Serializable
-    data object Dashboard : PrimaryDestination() {
-        override val titleRes = R.string.screen_dashboard_title
-        override val icon = Icons.Default.Dashboard
+    data object Home : PrimaryDestination() {
+        override val titleRes = R.string.screen_home_title
+        override val icon = Icons.Default.Home
     }
 
+    /**
+     * Desktop: a Stream | Trackpad page. Stream opens [RemoteDesktop]; Trackpad is the old Remote
+     * Mouse screen, now a mode of this tab rather than a destination of its own.
+     */
     @Serializable
-    data object RemoteControl : PrimaryDestination() {
-        override val titleRes = R.string.screen_remote_control_title
-        override val icon = Icons.Default.TouchApp
-    }
-
-    @Serializable
-    data object RemoteMouse : NavDestination() {
-        override val titleRes = R.string.screen_remote_mouse_title
-        override val icon = Icons.Default.Mouse
+    data object Desktop : PrimaryDestination() {
+        override val titleRes = R.string.screen_remote_desktop_title
+        override val icon = Icons.Default.Computer
     }
 
     @Serializable
@@ -79,22 +94,24 @@ sealed class Screen {
         override val icon = Icons.AutoMirrored.Filled.Launch
     }
 
+    /** Control: a Commands | Processes segmented page (see [ControlSegment]). */
     @Serializable
-    data object TaskManager : PrimaryDestination() {
-        override val titleRes = R.string.screen_task_manager_title
-        override val icon = Icons.AutoMirrored.Filled.List
+    data object Control : PrimaryDestination() {
+        override val titleRes = R.string.nav_control_label
+        override val icon = Icons.Default.TouchApp
+    }
+
+    /** The full Sensors canvas. Reached from Home's Open Sensors card and from More. */
+    @Serializable
+    data object Dashboard : NavDestination() {
+        override val titleRes = R.string.screen_dashboard_title
+        override val icon = Icons.Default.Dashboard
     }
 
     @Serializable
-    data object RemoteDesktop : NavDestination() {
-        override val titleRes = R.string.screen_remote_desktop_title
-        override val icon = Icons.Default.Computer
-    }
-
-    @Serializable
-    data object Personalization : NavDestination() {
-        override val titleRes = R.string.screen_personalization_title
-        override val icon = Icons.Default.Palette
+    data object Connection : NavDestination() {
+        override val titleRes = R.string.screen_connection_title
+        override val icon = Icons.Default.Wifi
     }
 
     @Serializable
@@ -110,12 +127,6 @@ sealed class Screen {
     }
 
     @Serializable
-    data object About : NavDestination() {
-        override val titleRes = R.string.screen_about_title
-        override val icon = Icons.Default.Info
-    }
-
-    @Serializable
     data object FileTransfer : NavDestination() {
         override val titleRes = R.string.screen_file_transfer_title
         override val icon = Icons.Default.FolderOpen
@@ -123,7 +134,7 @@ sealed class Screen {
 
     /**
      * Routines (RemEx 3.0, routines spec 1.2 and 2.1). First in [moreItems], never a fifth primary:
-     * the bar already holds four primaries plus More. The list, gallery, editor, history and run
+     * the bar already holds four primaries plus More (Home, Desktop, Apps, Control). The list, gallery, editor, history and run
      * detail all live under this one destination as panes of a list-detail scaffold (see
      * `ui/routines/RoutinesScreen.kt`), so a phone gets one pane at a time and a tablet two.
      */
@@ -185,10 +196,10 @@ sealed class PrimaryDestination : NavDestination()
  */
 val navItems: List<PrimaryDestination> =
         listOf(
-                Screen.Dashboard,
-                Screen.RemoteControl,
+                Screen.Home,
+                Screen.Desktop,
                 Screen.AppLauncher,
-                Screen.TaskManager,
+                Screen.Control,
         )
 
 /**
@@ -199,14 +210,32 @@ val moreItems =
         listOf<NavDestination>(
                 // First on purpose (routines spec 1.2, R-UX-01; NavRoutesRoutinesPlacementTest).
                 Screen.Routines,
+                // The full Sensors canvas, also one tap from Home's Open Sensors card.
+                Screen.Dashboard,
                 Screen.FileTransfer,
-                Screen.RemoteDesktop,
-                Screen.RemoteMouse,
+                Screen.Connection,
                 Screen.Settings,
-                Screen.Personalization,
                 Screen.Faq,
-                Screen.About,
+                // Personalization and About are not here: Settings already links to both
+                // (its Personalization category and Help → About).
         )
+
+/**
+ * The two halves of the Control tab (refresh spec, Control). Order is the segmented button order.
+ * Each segment's page title is its own screen title, so the header reads "Commands" or "Processes"
+ * while the tab itself is labelled "Control" (cohesion spec decision 1).
+ */
+enum class ControlSegment(@get:StringRes val titleRes: Int) {
+        Commands(R.string.screen_remote_control_title),
+        Processes(R.string.screen_task_manager_title),
+}
+
+/** The two modes of the Desktop tab. Order is the segmented button order. */
+enum class DesktopMode(@get:StringRes val labelRes: Int) {
+        Stream(R.string.desktop_mode_stream),
+        // The same word the trackpad surface itself shows.
+        Trackpad(R.string.remote_mouse_trackpad_label),
+}
 
 /**
  * The pairing destination, a data class because it is the only route that carries arguments

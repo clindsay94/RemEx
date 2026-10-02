@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.theme
 
+import com.clindsay94.remex.data.ThemeDefaults
 import android.annotation.SuppressLint
 import android.app.UiModeManager
 import android.content.Context
@@ -554,7 +555,7 @@ internal fun rememberPaletteColorScheme(
                     customPaletteScheme(baseArgb, themeSeedChroma, darkTheme, themeStyle, themeContrast)
                 } else {
                     colorSchemeFromSeed(
-                        Color(0xFF6750A4),
+                        Color(ThemeDefaults.THEME_SEED_ARGB),
                         darkTheme,
                         themeStyle,
                         themeContrast.toDouble()
@@ -580,15 +581,16 @@ internal fun rememberPaletteColorScheme(
 @SuppressLint("RestrictedApi")
 @Composable
 fun RemExTheme(
-    themeMode: String = "system",
-    themePalette: String = "default",
-    themeStyle: String = "tonal_spot",
-    themeSeedColor: String = "#6750A4",
-    themeSeedChroma: Float = 48.0f,
-    themeContrast: Float = 0.0f,
+    // First-run colours: the RemEx default scheme, from the one constants site (RemEx-wqo7a.3).
+    themeMode: String = ThemeDefaults.THEME_MODE,
+    themePalette: String = ThemeDefaults.THEME_PALETTE,
+    themeStyle: String = ThemeDefaults.THEME_STYLE,
+    themeSeedColor: String = ThemeDefaults.THEME_SEED_COLOR,
+    themeSeedChroma: Float = ThemeDefaults.THEME_SEED_CHROMA,
+    themeContrast: Float = ThemeDefaults.THEME_CONTRAST,
     fontFamilyKey: String = "default",
     fontScale: Float = 1.0f,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = ThemeDefaults.DYNAMIC_COLOR,
     content: @Composable () -> Unit
 ) {
     val darkTheme = isDarkThemeFor(themeMode)

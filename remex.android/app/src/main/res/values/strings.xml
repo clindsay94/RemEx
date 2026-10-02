@@ -149,7 +149,6 @@
     <string name="task_manager_pid_label">PID: %1$d</string>
 
     
-    <string name="screen_remote_mouse_title">Remote Mouse</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Left Click</string>
     <string name="remote_mouse_right_click">Right Click</string>
@@ -1629,4 +1628,13 @@
     <string name="screen_routines_subtitle">They run on this PC even when your phone is away</string>
     <string name="screen_settings_subtitle">Choose how RemEx works</string>
     <string name="screen_remote_desktop_subtitle">See and control your PC\'s screen</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Home</string>
+    <string name="screen_home_subtitle">Your PC at a glance</string>
+    <string name="nav_control_label">Control</string>
+    <string name="desktop_mode_stream">Stream</string>
+    <string name="desktop_trackpad_subtitle">Use your phone as your PC\'s mouse</string>
+    <string name="desktop_stream_hint">The stream opens full screen. Press Back to come back here.</string>
+    <string name="home_open_sensors_title">Open %1$s</string>
+    <string name="home_open_sensors_body">Every live reading from your PC on one canvas</string>
 </resources>

@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">Voulez-vous vraiment terminer %1$s (PID : %2$d) ?</string>
     <string name="button_kill">Terminer</string>
     <string name="task_manager_pid_label">PID : %1$d</string>
-    <string name="screen_remote_mouse_title">Souris à Distance</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Clic Gauche</string>
     <string name="remote_mouse_right_click">Clic Droit</string>
@@ -1529,4 +1528,13 @@
     <string name="screen_routines_subtitle">Elles s\'exécutent sur ce PC même quand votre téléphone est absent</string>
     <string name="screen_settings_subtitle">Choisissez le fonctionnement de RemEx</string>
     <string name="screen_remote_desktop_subtitle">Voyez et contrôlez l\'écran de votre PC</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Accueil</string>
+    <string name="screen_home_subtitle">Votre PC en un coup d\'œil</string>
+    <string name="nav_control_label">Contrôle</string>
+    <string name="desktop_mode_stream">Flux</string>
+    <string name="desktop_trackpad_subtitle">Utilisez votre téléphone comme souris du PC</string>
+    <string name="desktop_stream_hint">Le flux s\'ouvre en plein écran. Appuyez sur Retour pour revenir ici.</string>
+    <string name="home_open_sensors_title">Ouvrir %1$s</string>
+    <string name="home_open_sensors_body">Toutes les mesures en direct de votre PC sur un seul canevas</string>
 </resources>

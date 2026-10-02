@@ -75,7 +75,6 @@
     <string name="task_manager_kill_message">¿Estás seguro de que quieres finalizar %1$s (PID: %2$d)?</string>
     <string name="button_kill">Finalizar</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="screen_remote_mouse_title">Ratón Remoto</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Click Izquierdo</string>
     <string name="remote_mouse_right_click">Click Derecho</string>
@@ -1529,4 +1528,13 @@
     <string name="screen_routines_subtitle">Se ejecutan en este PC aunque el teléfono no esté cerca</string>
     <string name="screen_settings_subtitle">Elige cómo funciona RemEx</string>
     <string name="screen_remote_desktop_subtitle">Ve y controla la pantalla de tu PC</string>
+    <!-- Phase 2 navigation: Home, Desktop modes, Control (RemEx-wqo7a.2) -->
+    <string name="screen_home_title">Inicio</string>
+    <string name="screen_home_subtitle">Tu PC de un vistazo</string>
+    <string name="nav_control_label">Control</string>
+    <string name="desktop_mode_stream">Transmitir</string>
+    <string name="desktop_trackpad_subtitle">Usa tu teléfono como ratón del PC</string>
+    <string name="desktop_stream_hint">La transmisión se abre a pantalla completa. Pulsa Atrás para volver aquí.</string>
+    <string name="home_open_sensors_title">Abrir %1$s</string>
+    <string name="home_open_sensors_body">Todas las lecturas en directo de tu PC en un solo lienzo</string>
 </resources>
