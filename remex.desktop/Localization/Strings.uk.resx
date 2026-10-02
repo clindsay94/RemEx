@@ -1541,7 +1541,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Зменшений рух</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Зводить анімації до мінімуму. Сторінки змінюються без ковзання, а декоративний рух зупиняється.</value>
+    <value>Зводить анімації до мінімуму. Сторінки змінюються без ковзання, а декоративний рух зупиняється. Спочатку відповідає налаштуванню анімації вашого комп’ютера.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Увімк.</value>

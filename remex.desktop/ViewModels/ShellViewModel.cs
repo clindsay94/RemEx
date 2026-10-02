@@ -646,10 +646,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isReducedMotion;
 
+    private readonly Func<bool?> _osPrefersReducedMotion;
+
     partial void OnIsReducedMotionChanged(bool value)
     {
         var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
-        var updated = current with { IsReducedMotion = value };
+        // IsReducedMotionSet: from here on the switch is the user's choice and the OS no longer
+        // decides (sweep D8).
+        var updated = current with { IsReducedMotion = value, IsReducedMotionSet = true };
         _layoutService.RequestSave(updated);
         OnPropertyChanged(nameof(SuppressPaletteTransitions));
         OnPropertyChanged(nameof(ShowPresencePulse));
@@ -978,8 +982,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// invoker. It must still serialize, as <see cref="FileTransferQueue"/>'s constructor explains
     /// (RemEx-ostqe).
     /// </param>
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null)
+    /// <param name="osPrefersReducedMotion">
+    /// Reads the operating system's animation setting (sweep D8). App passes
+    /// <see cref="SystemMotionPreference.TryGetOsPrefersReducedMotion"/>; null means "do not consult the
+    /// OS", which keeps every test that builds a shell independent of the machine running it.
+    /// </param>
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null, Action<Action>? transferQueuePost = null, Func<bool?>? osPrefersReducedMotion = null)
     {
+        _osPrefersReducedMotion = osPrefersReducedMotion ?? (static () => null);
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
         Connection = Guard.NotNull(connectionViewModel);
@@ -1004,9 +1014,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         }
 
 
-        // Load reduced-motion preference
-        if (_layoutService.CurrentProfile is { } profile)
-            _isReducedMotion = profile.IsReducedMotion;
+        // Load reduced-motion preference: the user's stored choice, or the OS setting until they make
+        // one (sweep D8). Seeded into the field, not the property, so following the OS writes nothing
+        // back: an OS-derived value is not a choice and must not become one by being saved.
+        var storedProfile = _layoutService.CurrentProfile;
+        var hasChoice = storedProfile is not null && (storedProfile.IsReducedMotionSet || storedProfile.IsReducedMotion);
+        _isReducedMotion = SystemMotionPreference.Resolve(
+            storedProfile?.IsReducedMotion ?? false,
+            storedProfile?.IsReducedMotionSet ?? false,
+            hasChoice ? null : _osPrefersReducedMotion());
 
         // Surface any layout load failure to the user via a dismissible banner.
         if (!string.IsNullOrEmpty(_layoutService.LoadFailureWarning))

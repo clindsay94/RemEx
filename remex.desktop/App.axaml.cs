@@ -100,7 +100,10 @@ public partial class App : Application
         collection.AddTransient<AddProgramViewModel>();
         collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<HomeViewModel>();
-        collection.AddSingleton<ShellViewModel>();
+        // The OS animation probe is passed explicitly (sweep D8): a bare Func<bool?> is not something
+        // to register container-wide, and the shell is the one place that reads it.
+        collection.AddSingleton<ShellViewModel>(sp => ActivatorUtilities.CreateInstance<ShellViewModel>(
+            sp, (Func<bool?>)SystemMotionPreference.TryGetOsPrefersReducedMotion));
         // Singleton: the tray flyout window is created once and reused, and its tile list is
         // rebuilt in place as phone presence changes rather than per show.
         collection.AddSingleton<TrayFlyoutViewModel>();

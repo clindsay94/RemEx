@@ -1301,7 +1301,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Ograniczony ruch</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Ogranicza animacje do minimum. Strony zmieniają się bez przesuwania, a ruch dekoracyjny zostaje zatrzymany.</value>
+    <value>Ogranicza animacje do minimum. Strony zmieniają się bez przesuwania, a ruch dekoracyjny zostaje zatrzymany. Na początku działa tak jak ustawienie animacji w Twoim komputerze.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Włączone</value>

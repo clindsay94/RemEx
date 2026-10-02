@@ -1546,7 +1546,7 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>Movimiento reducido</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Reduce las animaciones al mínimo. Las páginas cambian sin deslizarse y el movimiento decorativo se detiene.</value>
+    <value>Reduce las animaciones al mínimo. Las páginas cambian sin deslizarse y el movimiento decorativo se detiene. Al principio sigue el ajuste de animaciones de tu equipo.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Activado</value>

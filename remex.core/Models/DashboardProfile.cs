@@ -122,6 +122,17 @@ public record DashboardProfile
     public bool IsReducedMotion { get; init; }
 
     /// <summary>
+    /// True once the user has flipped the Reduced motion switch, so <see cref="IsReducedMotion"/> is
+    /// their choice. Until then the PC follows the operating system's animation setting (sweep D8).
+    /// </summary>
+    /// <remarks>
+    /// A separate flag rather than a nullable <see cref="IsReducedMotion"/> so profiles written before
+    /// it existed still read: absent means false, and a stored <c>IsReducedMotion = true</c> is still
+    /// honoured as a choice because the switch used to default to off.
+    /// </remarks>
+    public bool IsReducedMotionSet { get; init; }
+
+    /// <summary>
     /// When true, closing the main window (the X button) hides it to the system tray
     /// and keeps the app running. When false, the X button exits the app entirely.
     /// Defaults to true to preserve the classic tray-resident behavior.

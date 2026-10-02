@@ -1583,7 +1583,7 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Reduced motion</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Keep animations to a minimum. Pages change without sliding and decorative movement stops.</value>
+    <value>Keep animations to a minimum. Pages change without sliding and decorative movement stops. Starts out matching your computer's own animation setting.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>On</value>

@@ -1541,7 +1541,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Azaltılmış hareket</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Animasyonları en aza indirir. Sayfalar kaymadan değişir ve dekoratif hareket durur.</value>
+    <value>Animasyonları en aza indirir. Sayfalar kaymadan değişir ve dekoratif hareket durur. Başlangıçta bilgisayarınızın kendi animasyon ayarına uyar.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Açık</value>

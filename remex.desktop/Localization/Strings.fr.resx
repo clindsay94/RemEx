@@ -1541,7 +1541,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Mouvement réduit</value>
   </data>
   <data name="Custom_ReducedMotionDesc" xml:space="preserve">
-    <value>Limite les animations au minimum. Les pages changent sans glisser et les mouvements décoratifs s&apos;arrêtent.</value>
+    <value>Limite les animations au minimum. Les pages changent sans glisser et les mouvements décoratifs s'arrêtent. Suit d'abord le réglage d'animation de votre ordinateur.</value>
   </data>
   <data name="Common_On" xml:space="preserve">
     <value>Activé</value>
