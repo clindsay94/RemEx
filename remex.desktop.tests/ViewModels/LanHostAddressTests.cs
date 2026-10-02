@@ -41,8 +41,7 @@ public class LanHostAddressTests : IDisposable
 
     public LanHostAddressTests()
     {
-        _viewModel = new ConnectionViewModel(
-            new Mock<IMdnsDiscoveryService>().Object, null, new Mock<ILogger<ConnectionViewModel>>().Object);
+        _viewModel = new ConnectionViewModel(new Mock<ILogger<ConnectionViewModel>>().Object);
     }
 
     public void Dispose() => _viewModel.Dispose();

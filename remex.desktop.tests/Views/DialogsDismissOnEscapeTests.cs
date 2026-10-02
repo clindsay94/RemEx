@@ -42,7 +42,8 @@ public class DialogsDismissOnEscapeTests
 
     public static TheoryData<string> Dialogs =>
     [
-        "PairingDialog", "SetAlertDialog", "SecondMetricDialog",
+        // PairingDialog was on this list until sweep D1 deleted it (this PC never pairs with a PC).
+        "SetAlertDialog", "SecondMetricDialog",
     ];
 
     [Theory]

@@ -8,11 +8,16 @@ namespace Remex.Desktop.ViewModels;
 
 /// <summary>
 /// View-model for the file-sharing consent prompt (plan §2). The serving PC raises this when a paired
-/// device asks for sensitive access (full-device browse or an incoming file push). Mirrors the
-/// <see cref="PairingDialogViewModel"/> pattern: the dialog awaits <see cref="ResultTask"/> and closes
-/// with the user's decision; the caller relays that decision to
-/// <see cref="IFileTrustService.ResolveConsent"/>.
+/// phone asks to browse every drive. The dialog awaits <see cref="ResultTask"/> and closes with the
+/// user's decision; the caller relays that decision to <see cref="IFileTrustService.ResolveConsent"/>.
 /// </summary>
+/// <remarks>
+/// FULL BROWSE IS THE ONLY KIND THE PC ASKS ABOUT (RemEx-bezf). The incoming-push prompt was deleted
+/// with RemEx-e11w (a phone pushing to a shared writable folder IS the consent), and its title/message
+/// branch here, its two strings and the per-device "auto-accept incoming" toggle in Settings went with
+/// it, because a control that does nothing still reads like protection. The phone keeps its own
+/// incoming-push consent for files the PC sends to it; that is a different prompt on a different device.
+/// </remarks>
 public partial class FileConsentDialogViewModel : ObservableObject
 {
     private readonly TaskCompletionSource<FileConsentDecision> _tcs =
@@ -21,16 +26,16 @@ public partial class FileConsentDialogViewModel : ObservableObject
     /// <summary>Completes with the user's decision (or a clean deny if the window is dismissed).</summary>
     public Task<FileConsentDecision> ResultTask => _tcs.Task;
 
-    /// <summary>The consent kind ("full_browse" | "incoming_push") — carried so the caller can log/route.</summary>
+    /// <summary>The consent kind as the host sent it — carried so the caller can log/route.</summary>
     public string Kind { get; }
 
-    /// <summary>Human-readable detail supplied by the requester (file names / total size).</summary>
+    /// <summary>Human-readable detail supplied by the requester.</summary>
     public string? Detail { get; }
 
-    /// <summary>Localized title, chosen by <see cref="Kind"/>.</summary>
+    /// <summary>Localized title (full-device browse is the only prompt the PC raises).</summary>
     public string Title { get; }
 
-    /// <summary>Localized explanatory body, chosen by <see cref="Kind"/>.</summary>
+    /// <summary>Localized explanatory body.</summary>
     public string Message { get; }
 
     /// <summary>When true, persist the grant so future requests of this kind auto-accept.</summary>
@@ -46,13 +51,8 @@ public partial class FileConsentDialogViewModel : ObservableObject
         Kind = request.Kind;
         Detail = request.Detail;
 
-        var isFullBrowse = string.Equals(request.Kind, FileConsentKinds.FullBrowse, StringComparison.Ordinal);
-        Title = isFullBrowse
-            ? LocalizationService.Instance["FileConsent_FullBrowseTitle"]
-            : LocalizationService.Instance["FileConsent_IncomingPushTitle"];
-        Message = isFullBrowse
-            ? LocalizationService.Instance["FileConsent_FullBrowseMessage"]
-            : LocalizationService.Instance["FileConsent_IncomingPushMessage"];
+        Title = LocalizationService.Instance["FileConsent_FullBrowseTitle"];
+        Message = LocalizationService.Instance["FileConsent_FullBrowseMessage"];
     }
 
     [RelayCommand]

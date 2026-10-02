@@ -46,7 +46,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     private CancellationTokenSource? _receiveCts;
     private CancellationTokenSource? _reconnectCts;
     private bool _userDisconnected;
-    private bool _isPairedWithCurrentHost;
     private string? _cachedLocalIpv4;
 
     // Snapshot of pinned host SPKI hashes captured immediately before each WebSocket connect
@@ -239,7 +238,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         HasActivePairingPin && !PairingPinCountdown.ShouldDisplayPin(PairingPinCountdownStatus.State);
 
     private DispatcherTimer? _pairingExpiryTimer;
-    private DispatcherTimer? _standalonePairingPinPollingTimer;
 
     /// <summary>
     /// LAN address phones on the same network should use to reach this PC's host.
@@ -288,27 +286,22 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     partial void OnHostAddressChanged(string value) => OnPropertyChanged(nameof(LanHostAddress));
 
     private IPairingService? _pairingService;
-    private IPairingPinQueryService? _standalonePairingPinQueryService;
 
     /// <summary>
-    /// Whether either pairing path has been wired up, which is what gates the button.
+    /// Whether the embedded host's pairing service has been wired up, which is what gates the button.
     /// </summary>
     /// <remarks>
     /// **THE PAIRING BUTTON USED TO BE HIDDEN WHENEVER <c>IsConnected</c> WAS TRUE, WHICH IS ALMOST
     /// ALWAYS (RemEx-f66j, item 4).** That flag is the desktop's own WebSocket to its embedded host —
     /// up essentially always, per RemEx-porg — so "show the pairing PIN" vanished for most users most
-    /// of the time. It was not merely inverted, it was the wrong property: <c>RevealPairingPinAsync</c>
-    /// goes to <c>IPairingService</c> in-process, or to <c>IPairingPinQueryService</c> over IPC, and
-    /// neither one touches that socket. Worse, on the reading where the gate looked deliberate — show
-    /// it only while disconnected — the button appeared exactly when the services behind it were least
-    /// likely to be attached.
+    /// of the time. It was the wrong property: <c>RevealPairingPinAsync</c> goes to
+    /// <c>IPairingService</c> in-process and never touches that socket.
     /// <para>
-    /// BE PRECISE ABOUT WHAT THIS PROVES, because an overclaim here is how the last gate drifted
-    /// (review). It says a service object was attached — NOT that a PIN can actually be produced. On
-    /// Windows <c>IPairingPinQueryService</c> is an unconditional DI singleton, so the attach always
-    /// runs and this is effectively always true; if no host is behind it, the command fails and says
-    /// so via <c>Status_FailedGeneratePin</c>. That is the right trade for this button: one that
-    /// explains itself beats one that is not there, which is the entire bug being fixed.
+    /// True only after <see cref="AttachEmbeddedPairingService"/>. There used to be a second,
+    /// "standalone" path (an IPC PIN query plus a 2-second poll) that also set this, but RemEx 2.0
+    /// runs the host in-process, so without an embedded host that path could only fail every tick
+    /// while this flag offered a button that could never work (RemEx-f2dwg). If the host did not
+    /// start, the button stays hidden instead.
     /// </para>
     /// </remarks>
     [ObservableProperty]
@@ -321,7 +314,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     public void AttachEmbeddedPairingService(IPairingService service)
     {
         Guard.NotNull(service);
-        StopStandalonePairingPinPolling();
         _pairingService = service;
         CanRevealPairingPin = true;
         service.PinDisplayed += (pin, expires) =>
@@ -348,72 +340,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         else
         {
             ClearActivePairingPin();
-        }
-    }
-
-    public void AttachStandalonePairingPinQueryService(IPairingPinQueryService service)
-    {
-        Guard.NotNull(service);
-        _standalonePairingPinQueryService = service;
-        CanRevealPairingPin = true;
-    }
-
-    public void StartStandalonePairingPinPolling()
-    {
-        if (_standalonePairingPinQueryService is null || _standalonePairingPinPollingTimer is not null)
-        {
-            return;
-        }
-
-        _standalonePairingPinPollingTimer = new DispatcherTimer(
-            TimeSpan.FromSeconds(2),
-            DispatcherPriority.Background,
-            async (_, _) => await RefreshStandalonePairingPinAsync());
-        _standalonePairingPinPollingTimer.Start();
-    }
-
-    public async Task RefreshStandalonePairingPinAsync()
-    {
-        if (_standalonePairingPinQueryService is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var activePin = await _standalonePairingPinQueryService.GetActivePairingPinAsync();
-            var applySnapshot = () =>
-            {
-                if (activePin is not null)
-                {
-                    if (ActivePairingPin != activePin.Pin || ActivePairingExpiresAt != DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs))
-                    {
-                        ActivePairingPin = activePin.Pin;
-                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
-                        ShowPairingPin = true;
-                        StartPairingExpiryTimer();
-                    }
-                    return;
-                }
-
-                if (HasActivePairingPin && (_pairingService is null || !_pairingService.IsPairingActive))
-                {
-                    ClearActivePairingPin();
-                }
-            };
-
-            if (Application.Current is null || Dispatcher.UIThread.CheckAccess())
-            {
-                applySnapshot();
-            }
-            else
-            {
-                await Dispatcher.UIThread.InvokeAsync(applySnapshot);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Standalone pairing PIN refresh failed.");
         }
     }
 
@@ -510,12 +436,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         _pairingExpiryTimer = null;
     }
 
-    private void StopStandalonePairingPinPolling()
-    {
-        _standalonePairingPinPollingTimer?.Stop();
-        _standalonePairingPinPollingTimer = null;
-    }
-
     [RelayCommand]
     private void ShowPairingPinPanel() => ShowPairingPin = HasActivePairingPin;
 
@@ -539,30 +459,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                 AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePin"]);
             }
         }
-        // 2. If standalone host query service is active, request it over IPC
-        else if (_standalonePairingPinQueryService is not null)
-        {
-            try
-            {
-                var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
-                if (activePin is not null)
-                {
-                    ActivePairingPin = activePin.Pin;
-                    ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
-                    ShowPairingPin = true;
-                    StartPairingExpiryTimer();
-                }
-                else
-                {
-                    AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to start standalone pairing session.");
-                AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
-            }
-        }
         else
         {
             AnnouncePairingProblem(LocalizationService.Instance["Status_PairingServiceUnavailable"]);
@@ -575,25 +471,15 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
-    /// <summary>Hosts discovered via mDNS; populated after <see cref="DiscoverHostsCommand"/> completes.</summary>
-    public ObservableCollection<string> DiscoveredHosts { get; } = new();
-
-    /// <summary>Recently used connection addresses (most-recent first, max 10).</summary>
-    public ObservableCollection<Remex.Core.Models.ConnectionProfile> ConnectionHistory { get; } = new();
-
-    private readonly IMdnsDiscoveryService? _discoveryService;
-    private readonly Remex.Desktop.Services.DashboardLayoutService? _layoutService;
     private readonly ILogger<ConnectionViewModel> _logger;
 
-    public ConnectionViewModel() : this(null, null, null) { }
+    public ConnectionViewModel() : this(null) { }
 
-    public ConnectionViewModel(
-        IMdnsDiscoveryService? discoveryService,
-        Remex.Desktop.Services.DashboardLayoutService? layoutService,
-        ILogger<ConnectionViewModel>? logger = null)
+    // No mDNS discovery service and no address history any more (sweep D1): this socket only reaches
+    // this PC's own host, so there is nothing on the network for it to find and only one address it
+    // could ever remember. Phones discover PCs; PCs do not discover PCs.
+    public ConnectionViewModel(ILogger<ConnectionViewModel>? logger)
     {
-        _discoveryService = discoveryService;
-        _layoutService = layoutService;
         _logger = logger ?? NullLogger<ConnectionViewModel>.Instance;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
@@ -628,45 +514,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     : LocalizationService.Instance["Status_Disconnected"];
             });
         }
-    }
-
-    [RelayCommand]
-    private async Task DiscoverHostsAsync()
-    {
-        if (_discoveryService == null)
-        {
-            StatusText = LocalizationService.Instance["Status_DiscoveryUnavailable"];
-            return;
-        }
-
-        StatusText = LocalizationService.Instance["Status_SearchingHosts"];
-        var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
-        var defaultAddress = $"wss://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            DiscoveredHosts.Clear();
-            foreach (var host in foundHosts)
-                DiscoveredHosts.Add(host);
-
-            if (foundHosts.Any())
-            {
-                var firstHost = foundHosts.First();
-                if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
-                {
-                    HostAddress = firstHost;
-                    StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
-                }
-                else
-                {
-                    StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
-                }
-            }
-            else
-            {
-                StatusText = LocalizationService.Instance["Status_NoHostsFound"];
-            }
-        });
     }
 
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
@@ -906,31 +753,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
     private bool CanConnect() => !IsConnected && !IsConnecting;
 
-    private void SaveConnectionToHistory()
-    {
-        const int MaxHistoryEntries = 10;
-        var address = HostAddress;
-
-        var existing = ConnectionHistory.FirstOrDefault(h => h.HostAddress == address);
-        if (existing != null)
-            ConnectionHistory.Remove(existing);
-
-        ConnectionHistory.Insert(0, new Remex.Core.Models.ConnectionProfile
-        {
-            Name = address,
-            HostAddress = address,
-            LastConnected = DateTime.Now
-        });
-
-        while (ConnectionHistory.Count > MaxHistoryEntries)
-            ConnectionHistory.RemoveAt(ConnectionHistory.Count - 1);
-
-        if (_layoutService != null)
-        {
-            var profile = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
-            _layoutService.RequestSave(profile with { ConnectionHistory = ConnectionHistory.ToList() });
-        }
-    }
     private bool CanDisconnect() => IsConnected || IsConnecting;
 
     public System.Net.WebSockets.WebSocket? GetWebSocket() => _webSocket;
@@ -1104,6 +926,17 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             return;
         }
 
+        // THIS SOCKET ONLY EVER REACHES THIS PC'S OWN HOST (hard rule 1, sweep D1). The phone is the
+        // only network client; this connection is local UI plumbing. It used to accept any address,
+        // and a non-loopback one opened a "pair with PC" dialog that made this app a client of
+        // another PC. The Settings address box and Discover button that fed it are gone; this guard
+        // covers an address stored by an older version or typed into a box that still exists.
+        if (IsAnotherMachine(HostAddress))
+        {
+            StatusText = LocalizationService.Instance["Status_OwnHostOnly"];
+            return;
+        }
+
         _userDisconnected = false;
         IsConnecting = true;
         HostCapabilities = null;
@@ -1122,52 +955,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
 
-            // Loopback connections target the in-process embedded host on the same machine.
-            // Pairing exists to bootstrap trust with a *remote* host, so it adds no security
-            // here — and would prompt the user for a PIN their own desktop generated.
-            if (IsLoopbackHost(uri))
-                _isPairedWithCurrentHost = true;
-
+            // No pairing step: the guard above means this is always this PC's own in-process host,
+            // and pairing exists to bootstrap trust with a phone, not with yourself.
             UseInProcessTelemetryIfLocal(uri);
-
-            if (!_isPairedWithCurrentHost)
-            {
-                StatusText = LocalizationService.Instance["Status_Pairing"];
-                var certStore = App.Services.GetRequiredService<Remex.Desktop.Services.Security.PinnedCertStore>();
-                var pairingClient = new Remex.Core.Native.PairingClient(_webSocket, null);
-
-                var response = await pairingClient.StartPairingAsync(Environment.MachineName, "2.0.0", linkedCts.Token);
-                if (response == null)
-                {
-                    StatusText = LocalizationService.Instance["Status_PairingFailed"];
-                    Cleanup();
-                    return;
-                }
-
-                var pairingResult = await PairWithDialogAsync(pairingClient, response, linkedCts.Token);
-                switch (pairingResult)
-                {
-                    case Remex.Desktop.ViewModels.PairingDialogResult.Failed:
-                        StatusText = LocalizationService.Instance["Status_PairingFailed"];
-                        Cleanup();
-                        return;
-                    case Remex.Desktop.ViewModels.PairingDialogResult.Cancelled:
-                        StatusText = LocalizationService.Instance["Status_PairingCancelled"];
-                        Cleanup();
-                        return;
-                }
-
-                // Pairing successful, save the SPKI hash!
-                await certStore.SetPinAsync(response.HostId, response.CertificateSpkiHashBase64);
-                _isPairedWithCurrentHost = true;
-            }
 
             IsConnected = true;
             IsConnecting = false;
             StatusText = LocalizationService.Instance["Status_Connected"];
             LatencyText = "—";
-
-            SaveConnectionToHistory();
 
             // Start background receive loop.
             _ = ReceiveLoopAsync(_receiveCts.Token);
@@ -1458,6 +1253,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         {
             while (!ct.IsCancellationRequested && !IsConnected)
             {
+                // Same rule as ConnectAsync: retrying an address on another machine forever would be
+                // the PC-side client this app no longer has, just running in the background.
+                if (IsAnotherMachine(HostAddress))
+                {
+                    Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_OwnHostOnly"]);
+                    break;
+                }
+
                 Dispatcher.UIThread.Post(() => StatusText = string.Format(LocalizationService.Instance["Status_ReconnectingFormat"], delay));
                 await Task.Delay(TimeSpan.FromSeconds(delay), ct);
                 if (ct.IsCancellationRequested) break;
@@ -1472,9 +1275,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     connectCts.CancelAfter(TimeSpan.FromSeconds(10));
                     await ws.ConnectAsync(uri, connectCts.Token);
-
-                    if (IsLoopbackHost(uri))
-                        _isPairedWithCurrentHost = true;
 
                     UseInProcessTelemetryIfLocal(uri);
 
@@ -1680,32 +1480,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePin"]);
                 }
             }
-            else if (_standalonePairingPinQueryService is not null)
-            {
-                try
-                {
-                    var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
-                    if (activePin is not null)
-                    {
-                        pairingPin = activePin.Pin;
-                        ActivePairingPin = activePin.Pin;
-                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
-                        StartPairingExpiryTimer();
-                        RevealPinAlongsideTheCode();
-                    }
-                    else
-                    {
-                        // The null return had no else at all (review): the host answered "no pin" and
-                        // the surface said nothing while drawing a dead code anyway.
-                        announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to start standalone pairing session for QR code.");
-                    announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
-                }
-            }
 
             // NO PIN, NO CODE — AND CHECKED HERE, BEFORE ANYTHING ELSE CAN FAIL (review). Sitting
             // lower down it was still correct about not drawing a dead code, but the address and
@@ -1717,9 +1491,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             // part. The branches above have already said why there is no PIN.
             if (pairingPin is null)
             {
-                // Covers the branch nothing else does: neither service attached, or one attached and
-                // returning a null pin. Whatever the reason, the user pressed a button and must not
-                // be met with silence.
+                // Covers the branch nothing else does: no pairing service attached (the embedded host
+                // did not start). Whatever the reason, the user pressed a button and must not be met
+                // with silence.
                 if (!announced)
                     AnnouncePairingProblem(LocalizationService.Instance["Status_PairingServiceUnavailable"]);
                 ShowQrCode = false;
@@ -1829,8 +1603,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// </summary>
     /// <remarks>
     /// Extracted and made <c>internal</c> so it can be tested directly. The QR path is where this
-    /// defect actually shipped — <c>GenerateQrCodeCommand</c> is bound in ConnectionView and
-    /// SettingsView — but its only output is a rendered QR bitmap, so asserting on the substituted
+    /// defect actually shipped — <c>GenerateQrCodeCommand</c> is bound in SettingsView (and was in
+    /// ConnectionView before sweep D1 deleted it) — but its only output is a rendered QR bitmap, so asserting on the substituted
     /// host through the command would mean decoding a PNG and standing up an Avalonia render stack.
     /// A named function is both cheaper to test and clearer about what the step is for.
     ///
@@ -1853,6 +1627,19 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// </remarks>
     internal static bool IsLoopbackHost(Uri uri) =>
         uri.Host is "localhost" or "127.0.0.1" or "::1";
+
+    /// <summary>
+    /// True when <paramref name="address"/> parses and names a machine other than this one.
+    /// </summary>
+    /// <remarks>
+    /// The gate that keeps this connection local plumbing (sweep D1, hard rule 1). It uses the broad
+    /// <see cref="IsLoopbackAddress"/> on purpose: <c>[::1]</c> and <c>127.0.0.2</c> are this machine,
+    /// and refusing them would be wrong. It grants nothing; the narrower <see cref="IsLoopbackHost"/>
+    /// still decides trust-on-first-use. An unparseable address returns false so the existing
+    /// validation and <see cref="UriFormatException"/> handling keep reporting it as malformed.
+    /// </remarks>
+    internal static bool IsAnotherMachine(string? address) =>
+        Uri.TryCreate(address, UriKind.Absolute, out var uri) && !IsLoopbackAddress(uri);
 
     /// <summary>
     /// True when this URI addresses this machine over loopback — the SAME set the host recognises
@@ -1990,11 +1777,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         var accepted = CertificatePinPolicy.IsCertificateAcceptable(
             hashBase64, pins, _allowFirstTimeTrustForCurrentConnect);
 
-        // The pairing-state update stays at the call site on purpose. A pure predicate that also
-        // mutated this flag is how the two validators drifted; only a MATCHED PIN counts as paired,
-        // so accepting on an empty store (trust-on-first-use) deliberately leaves it false.
-        _isPairedWithCurrentHost = CertificatePinPolicy.IsPairedHost(accepted, pins);
-
         if (pins is null)
         {
             // ConnectAsync must populate the snapshot before invoking ConnectAsync on the socket.
@@ -2070,44 +1852,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         return socket;
     }
 
-    /// <summary>
-    /// Opens the pairing dialog and hands it the local delegate that verifies a PIN, then awaits its
-    /// <see cref="Remex.Desktop.ViewModels.PairingDialogViewModel.ResultTask"/> (RemEx-x6a70.1). The
-    /// dialog owns the whole verify/retry loop now — this method only reports the final true/false.
-    /// </summary>
-    private async Task<Remex.Desktop.ViewModels.PairingDialogResult> PairWithDialogAsync(
-        Remex.Core.Native.PairingClient pairingClient,
-        Remex.Core.Models.PairingResponse response,
-        CancellationToken cancellationToken)
-    {
-        var result = Remex.Desktop.ViewModels.PairingDialogResult.Cancelled;
-        await Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            var dialog = new Remex.Desktop.Views.PairingDialog
-            {
-                DataContext = new Remex.Desktop.ViewModels.PairingDialogViewModel(
-                    (pin, ct) => pairingClient.CompletePairingAsync(pin, response, ct),
-                    cancellationToken)
-            };
-
-            var shell = App.Services.GetService<Remex.Desktop.ViewModels.ShellViewModel>(); // optional service
-            if (shell != null && App.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                if (desktop.MainWindow != null)
-                {
-                    result = await dialog.ShowDialog<Remex.Desktop.ViewModels.PairingDialogResult>(desktop.MainWindow);
-                    return;
-                }
-            }
-            // Fallback when no owner window is available — a single-view (non-window) lifetime, a
-            // null ShellViewModel, or (since P1-29) a `--minimized` logon start whose MainWindow was
-            // deferred and never constructed here. Genuinely reachable now, not just theoretical: a
-            // pairing request that arrives before anything has called BringMainWindowToFront() hits
-            // this branch and reports pairing as cancelled rather than surfacing a window itself.
-        });
-        return result;
-    }
-
     public void Dispose()
     {
         // Not covered by Cleanup(): Dispose deliberately does a subset of it and never calls it. The
@@ -2117,7 +1861,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         CancelAndDispose(ref _receiveCts);
         CancelAndDispose(ref _reconnectCts);
-        StopStandalonePairingPinPolling();
         DisposeWebSocket(ref _webSocket);
     }
 }

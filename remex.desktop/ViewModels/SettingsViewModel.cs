@@ -32,9 +32,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private DashboardProfile _profile = new();
 
     [ObservableProperty]
-    private string _hostAddress = "wss://localhost:5005/ws";
-
-    [ObservableProperty]
     private string _language = "en";
 
     /// <summary>
@@ -638,7 +635,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            HostAddress = _profile.HostAddress;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             IsCloseToTrayEnabled = _profile.CloseToTray;
             IsCheckForUpdatesEnabled = _profile.CheckForUpdatesAutomatically;
@@ -685,11 +681,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;
             UpdateHostCapabilitySummary();
-
-            // Seed connection history from the persisted profile
-            _connection.ConnectionHistory.Clear();
-            foreach (var entry in _profile.ConnectionHistory ?? Enumerable.Empty<ConnectionProfile>())
-                _connection.ConnectionHistory.Add(entry);
         });
 
         await LoadSharedRootsAsync();
@@ -713,42 +704,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Change handlers ═══════════════
 
-    partial void OnHostAddressChanged(string value)
-    {
-        // Push the value to the live ConnectionViewModel.
-        _connection.HostAddress = value;
-        Save();
-    }
-
     partial void OnLanguageChanged(string value)
     {
         Services.LocalizationService.Instance.SetCulture(value);
         Save();
-    }
-
-    [ObservableProperty]
-    private bool _isDiscovering;
-
-    /// <summary>Hosts found by the last mDNS discovery run; bound to the host picker ComboBox.</summary>
-    public System.Collections.ObjectModel.ObservableCollection<string> DiscoveredHosts => _connection.DiscoveredHosts;
-
-    /// <summary>Recently used connection addresses; bound to the history picker ComboBox.</summary>
-    public System.Collections.ObjectModel.ObservableCollection<Remex.Core.Models.ConnectionProfile> ConnectionHistory => _connection.ConnectionHistory;
-
-    [RelayCommand]
-    private async Task DiscoverHostAsync()
-    {
-        IsDiscovering = true;
-        try
-        {
-            await _connection.DiscoverHostsCommand.ExecuteAsync(null);
-            // Sync the discovered address back into our property
-            HostAddress = _connection.HostAddress;
-        }
-        finally
-        {
-            IsDiscovering = false;
-        }
     }
 
     [ObservableProperty]
@@ -775,23 +734,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         Save();
         await _layoutService.FlushAsync();
         ShowTransientStatus(LocalizationService.Instance["Settings_SavedStatus"]);
-    }
-
-    [RelayCommand]
-    private async Task SaveAndReconnectAsync()
-    {
-        Save();
-        await _layoutService.FlushAsync();
-
-        // Disconnect first if already connected, then reconnect with new settings
-        if (_connection.IsConnected || _connection.IsConnecting)
-        {
-            _connection.DisconnectCommand.Execute(null);
-        }
-
-        // Small delay so the disconnect completes
-        await Task.Delay(300);
-        await _connection.ConnectCommand.ExecuteAsync(null);
     }
 
     // ═══════════════ Navigation ═══════════════
@@ -948,7 +890,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         foreach (var record in records)
         {
             var item = new FileTrustDeviceItem(
-                record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming, names);
+                record.ClientId, record.FullBrowseGranted, names);
             SubscribeTrustDevice(item);
             TrustedDevices.Add(item);
         }
@@ -978,14 +920,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void SubscribeTrustDevice(FileTrustDeviceItem item)
     {
         item.FullBrowseChanged += OnTrustFullBrowseChanged;
-        item.AutoAcceptChanged += OnTrustAutoAcceptChanged;
         item.RevokeRequested += OnTrustRevokeRequested;
     }
 
     private void UnsubscribeTrustDevice(FileTrustDeviceItem item)
     {
         item.FullBrowseChanged -= OnTrustFullBrowseChanged;
-        item.AutoAcceptChanged -= OnTrustAutoAcceptChanged;
         item.RevokeRequested -= OnTrustRevokeRequested;
     }
 
@@ -996,21 +936,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             await service.SetFullBrowseGrantedAsync(item.ClientId, granted, CancellationToken.None);
-            ShowTransientStatus(LocalizationService.Instance["Settings_TrustUpdated"]);
-        }
-        catch (Exception ex)
-        {
-            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
-        }
-    }
-
-    private async void OnTrustAutoAcceptChanged(object? sender, bool autoAccept)
-    {
-        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
-            return;
-        try
-        {
-            await service.SetAutoAcceptIncomingAsync(item.ClientId, autoAccept, CancellationToken.None);
             ShowTransientStatus(LocalizationService.Instance["Settings_TrustUpdated"]);
         }
         catch (Exception ex)
@@ -1190,10 +1115,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             or nameof(ConnectionViewModel.IsAutoReconnecting))
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHostCapabilitySummary);
-        }
-        else if (e.PropertyName is nameof(ConnectionViewModel.HostAddress))
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => HostAddress = _connection.HostAddress);
         }
     }
 
@@ -1375,7 +1296,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         // still remembered from InitializeAsync.
         var updated = _layoutService.CurrentProfile with
         {
-            HostAddress = HostAddress,
             Language = Language,
             CloseToTray = IsCloseToTrayEnabled,
             CheckForUpdatesAutomatically = IsCheckForUpdatesEnabled,
@@ -1466,11 +1386,10 @@ public partial class FileTrustDeviceItem : ObservableObject
     [ObservableProperty]
     private bool _fullBrowseGranted;
 
-    [ObservableProperty]
-    private bool _autoAcceptIncoming;
-
+    // NO "AUTO-ACCEPT INCOMING" SWITCH ANY MORE (RemEx-bezf). It persisted a flag nothing has read
+    // since RemEx-e11w deleted the PC's incoming-push prompt, so turning it off protected a user
+    // exactly as much as turning it on. A control that does nothing still reads like protection.
     public event EventHandler<bool>? FullBrowseChanged;
-    public event EventHandler<bool>? AutoAcceptChanged;
     public event EventHandler? RevokeRequested;
 
     /// <param name="names">
@@ -1486,7 +1405,6 @@ public partial class FileTrustDeviceItem : ObservableObject
     public FileTrustDeviceItem(
         string clientId,
         bool fullBrowseGranted,
-        bool autoAcceptIncoming,
         IReadOnlyDictionary<string, string>? names)
     {
         ClientId = clientId;
@@ -1496,7 +1414,6 @@ public partial class FileTrustDeviceItem : ObservableObject
         _displayName = PairedDeviceDisplayName.Resolve(clientId, names);
         _seeding = true;
         FullBrowseGranted = fullBrowseGranted;
-        AutoAcceptIncoming = autoAcceptIncoming;
         _seeding = false;
     }
 
@@ -1504,12 +1421,6 @@ public partial class FileTrustDeviceItem : ObservableObject
     {
         if (!_seeding)
             FullBrowseChanged?.Invoke(this, value);
-    }
-
-    partial void OnAutoAcceptIncomingChanged(bool value)
-    {
-        if (!_seeding)
-            AutoAcceptChanged?.Invoke(this, value);
     }
 
     [RelayCommand]

@@ -59,24 +59,6 @@ public class PairingQrAndPinTogetherTests
     }
 
     [Fact]
-    public async Task TheINSTALLEDAgentPathRevealsTheDigitsToo()
-    {
-        // THE SIXTEENTH INERT GUARD, found in review: the embedded test above kills BOTH call sites
-        // when the method body is emptied, so it looked like coverage for a reveal that has two
-        // separate call sites. Delete only the standalone one and the suite stayed green — and the
-        // standalone path is the NORMAL installed shape, where remex.agent runs as its own process.
-        var vm = new ConnectionViewModel();
-        vm.AttachStandalonePairingPinQueryService(new FakeStandalonePairingPinQueryService(
-            new PairingPinInfo("654321", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds())));
-        vm.ShowPairingPin.Should().BeFalse("the panel must start shut, or the act below proves nothing");
-
-        await vm.GenerateQrCodeCommand.ExecuteAsync(null);
-
-        vm.ShowPairingPin.Should().BeTrue("a phone paired against the installed agent needs the digits too");
-        vm.ActivePairingPin.Should().Be("654321");
-    }
-
-    [Fact]
     public async Task WithNoPairingServiceTheDigitsPanelStaysShut()
     {
         // FAILS CLOSED on the panel, not on the button: with nothing attached there is no PIN, and an
@@ -91,7 +73,6 @@ public class PairingQrAndPinTogetherTests
     }
 
     [Theory]
-    [InlineData("ConnectionView.axaml", "GenerateQrCodeCommand", "CanRevealPairingPin")]
     [InlineData("SettingsView.axaml", "Connection.GenerateQrCodeCommand", "Connection.CanRevealPairingPin")]
     public void EachHostOffersONEPairingButton(string view, string command, string gate)
     {

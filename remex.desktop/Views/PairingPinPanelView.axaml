@@ -1,9 +1,8 @@
 <!--
-    The pairing-PIN panel's contents, shared by ConnectionView and SettingsView.
-    See PairingQrPanelView.axaml for why only the contents are shared and not the card chrome.
+    The pairing-PIN panel's contents, hosted by SettingsView (ConnectionView shared it until sweep D1
+    deleted that unreachable page). See PairingQrPanelView.axaml for why the card chrome lives in the host.
 
-    DataContext is the ConnectionViewModel: inherited in ConnectionView, passed explicitly as
-    DataContext="{Binding Connection}" in SettingsView.
+    DataContext is the ConnectionViewModel, passed explicitly as DataContext="{Binding Connection}".
 -->
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

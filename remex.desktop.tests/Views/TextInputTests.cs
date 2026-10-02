@@ -43,8 +43,8 @@ public class TextInputTests
     /// </summary>
     private static readonly Dictionary<string, string> LabelExemptInputs = new()
     {
-        // Search/filter fields: the bead's own exception (Btn_Discover's caption is the label,
-        // a filter box's placeholder is the label - "Search" floating above an empty filter box
+        // Search/filter fields: the bead's own exception (a filter box's placeholder is the
+        // label - "Search" floating above an empty filter box
         // says less than the placeholder text it would replace).
         ["Binding SearchQuery"] = "FileTransferView - search field, placeholder is the affordance",
         ["Binding WindowSearchText"] = "RemoteDesktopView - search field, placeholder is the affordance",
@@ -169,28 +169,6 @@ public class TextInputTests
         offenders.Should().BeEmpty(
             "these are Fluent's template part names; Material has no elements by them, so a "
             + "selector naming one is inert and looks like working code");
-    }
-
-    [Fact]
-    public void ThePairingErrorIsAttachedToTheFieldRatherThanFloatingBelowIt()
-    {
-        // The bead's acceptance criterion, at the one place in the app with inline field
-        // validation. The message used to be a red TextBlock underneath the box: correct
-        // information, visually unattached to the input it described, and announced by nothing.
-        // TextFieldAssist.Hints renders it inside the field's own template, so it moves with the
-        // field and belongs to it.
-        var dialog = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "PairingDialog.axaml"));
-
-        dialog.Should().Contain(@"assists:TextFieldAssist.Hints=""{Binding ErrorText}""",
-            "the PIN error belongs to the field, not to a TextBlock near it");
-
-        dialog.Should().Contain("Classes.invalid=",
-            "the field also has to CHANGE, not just gain text — border plus message is two "
-            + "channels, which is what 'not colour alone' means here");
-
-        Regex.Matches(dialog, @"<TextBlock[^>]*Text=""\{Binding ErrorText\}""").Should().BeEmpty(
-            "the floating error TextBlock is what this replaced; two copies of the message would "
-            + "be worse than either");
     }
 
     [Fact]

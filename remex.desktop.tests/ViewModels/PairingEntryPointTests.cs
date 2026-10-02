@@ -25,8 +25,7 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// </para>
 /// <para>
 /// It was also the wrong property rather than an inverted one. <c>RevealPairingPinAsync</c> reaches
-/// <c>IPairingService</c> in process or <c>IPairingPinQueryService</c> over IPC; neither touches that
-/// socket. On the reading where the old gate looked deliberate — "offer pairing only while
+/// <c>IPairingService</c> in process and never touches that socket. On the reading where the old gate looked deliberate — "offer pairing only while
 /// disconnected" — it showed the button precisely when the services behind it were least likely to
 /// be attached.
 /// </para>
@@ -47,18 +46,6 @@ public class PairingEntryPointTests
         var vm = new ConnectionViewModel();
 
         vm.AttachEmbeddedPairingService(Mock.Of<IPairingService>());
-
-        vm.CanRevealPairingPin.Should().BeTrue();
-    }
-
-    [Fact]
-    public void AttachingTheStandaloneQueryServiceOffersTheButton()
-    {
-        // The IPC path, for a desktop talking to a host service in another process. It is a separate
-        // attach point and was equally hidden by the old gate.
-        var vm = new ConnectionViewModel();
-
-        vm.AttachStandalonePairingPinQueryService(Mock.Of<IPairingPinQueryService>());
 
         vm.CanRevealPairingPin.Should().BeTrue();
     }
@@ -139,11 +126,12 @@ public class PairingEntryPointTests
         // A FLOOR, BECAUSE "FOUND NOTHING" AND "FOUND NOTHING WRONG" LOOK IDENTICAL OTHERWISE
         // (review). This is the THIRD way this one test managed to be inert: a rename of the command,
         // or the button becoming some other control, would leave the scan matching zero elements and
-        // the emptiness assertion below trivially true. Two entry points exist; if that changes, this
+        // the emptiness assertion below trivially true. One entry point exists (the unreachable
+        // ConnectionView that carried the second was deleted in sweep D1); if that changes, this
         // number is the thing that makes somebody look.
-        buttons.Should().HaveCount(2,
-            "ConnectionView and SettingsView each offer the pairing button, and a scan that finds "
-            + "neither is not a clean result — it is a guard that has stopped looking");
+        buttons.Should().HaveCount(1,
+            "SettingsView offers the pairing button, and a scan that finds none is not a clean "
+            + "result — it is a guard that has stopped looking");
 
         // And the retry inside the panel still exists, so this test cannot be satisfied by deleting
         // the thing it just excused.

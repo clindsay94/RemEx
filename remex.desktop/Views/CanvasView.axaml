@@ -330,7 +330,7 @@
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
                                             <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{conv:Localize Conn_HostAddress}" AutomationProperties.Name="{conv:Localize Conn_HostAddress}" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                            <!-- No host-address box (sweep D1): this PC only ever links to its own host. -->
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->

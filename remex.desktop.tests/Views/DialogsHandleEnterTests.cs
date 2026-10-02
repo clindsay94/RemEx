@@ -44,16 +44,6 @@ public class DialogsHandleEnterTests
         File.ReadAllText(Path.Combine(ViewsDirectory(), fileName));
 
     [Fact]
-    public void PairingDialog_EnterRoutesToSubmitNotCancel()
-    {
-        var xaml = ReadView("PairingDialog.axaml");
-
-        Assert.Matches(
-            new Regex(@"<KeyBinding\s+Gesture=""Enter""\s+Command=""\{Binding SubmitCommand\}""\s*/>"),
-            xaml);
-    }
-
-    [Fact]
     public void SetAlertDialog_EnterRoutesToConfirmNotClearOrCancel()
     {
         var xaml = ReadView("SetAlertDialog.axaml");

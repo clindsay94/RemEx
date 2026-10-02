@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Bağlan</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Bağlantıyı Kes</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>İptal</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Gözat...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Keşfet</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Başlat</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>BAĞLANTI</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>PC Adresi</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Kaydet &amp; Yeniden Bağlan</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kılavuza Yapıştır</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Bağlantı Kesildi (sunucu kapandı)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>mDNS aracılığıyla PC bulunamadı.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>PC aranıyor…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Keşif hizmeti kullanılamıyor.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (zaman damgası yok)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Bağlantı zaman aşımına uğradı</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>PC bulundu: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Ağınızda {0} RemEx PC bulundu.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>PC adresi gereklidir.</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} için bağlı bir RemEx hostu gerekir. Bağlantınızı yapılandırmak için Ayarlar'ı açın.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>PC ile eşleştiriliyor...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN tam olarak 6 haneli olmalıdır.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Eşleştirildi</value>
   </data>
 
   
@@ -1399,12 +1363,6 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI'ye Yeniden Başlat</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Bilgisayarla eşleştir</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Bilgisayarda görünen 6 haneli PIN'i girin:</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Eşleştir</value>
   </data>
@@ -1980,18 +1938,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Başlangıç hoş geldiniz açılış ekranı animasyonu tarzını seç</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>RemEx sunucu adresini yapılandır (websocket protokolü wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Bağlantı URL'sini girin, örn: wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>automatic network discovery kullanarak ağınızdaki yerel aktif RemEx sunucularını otomatik olarak bul</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Bu bilgisayarla bağlantıyı kes</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Sensör karolarının tuval üzerinde hizalanması için kılavuzları etkinleştir</value>
   </data>
@@ -2003,9 +1949,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Kenar Çubuğunu Aç/Kapat</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Ana bilgisayar yapılandırma adresini kaydedin ve bağlanmayı deneyin</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Kılavuzu tekrar görmek ister misiniz?</value>
@@ -2175,12 +2118,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   </data>
   <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
     <value>Eşleştirilmiş bir cihaz, bu PC'deki tüm sürücülere ve klasörlere göz atmak istiyor.</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Gelen dosyalar kabul edilsin mi?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Eşleştirilmiş bir cihaz bu PC'ye dosya göndermek istiyor.</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Bu cihaz için seçimimi hatırla</value>
@@ -2416,9 +2353,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
     <value>Tüm sürücülere göz atmaya izin ver</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Gelen dosyaları otomatik kabul et</value>
-  </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Güven ayarları güncellendi.</value>
   </data>
@@ -2442,24 +2376,6 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Görünümü kişiselleştir</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Bağlantı</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Telefonunuzun bu bilgisayara nasıl ulaştığı</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Host adresi</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Ağımdaki hostları bul</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Ana Bilgisayar</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Gecikme</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Atlamak için herhangi bir yere tıklayın</value>
@@ -2976,17 +2892,8 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Eşleştirme PIN'i oluşturulamadı</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>PC bir eşleştirme PIN'i vermedi</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>Eşleştirme şu anda kullanılamıyor</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Eşleştirme başarısız. PC'deki PIN'i kontrol edin</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Eşleştirme iptal edildi</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Bağlantı ayarlarını kontrol edin</value>
@@ -4214,5 +4121,8 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Sürüm ve emeği geçenler</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>Bu bilgisayardaki RemEx yalnızca kendisine bağlanır. Başka bir bilgisayara ulaşmak için telefonunuzdaki RemEx uygulamasını kullanın.</value>
   </data>
 </root>

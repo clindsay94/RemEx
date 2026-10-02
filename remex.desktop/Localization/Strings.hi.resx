@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>कनेक्ट</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>डिसकनेक्ट</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>रद्द करें</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>ब्राउज़...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>खोजें</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ शुरू करें</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>कनेक्शन</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>होस्ट पता</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>सहेजें &amp; पुनः कनेक्ट करें</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>ग्रिड पर स्नैप</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>डिसकनेक्ट (सर्वर बंद)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>mDNS के माध्यम से कोई होस्ट नहीं मिला।</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>होस्ट खोज रहे हैं…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>डिस्कवरी सेवा उपलब्ध नहीं।</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (कोई टाइमस्टैम्प नहीं)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>कनेक्शन का समय समाप्त</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>होस्ट मिला: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>आपके नेटवर्क पर {0} RemEx पीसी मिले।</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>पीसी का पता आवश्यक है।</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} के लिए एक कनेक्टेड RemEx होस्ट की आवश्यकता है। अपना कनेक्शन कॉन्फ़िगर करने के लिए सेटिंग्स खोलें।</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>होस्ट के साथ पेयरिंग हो रही है...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>पिन ठीक 6 अंकों का होना चाहिए।</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>युग्मित</value>
   </data>
 
   
@@ -1399,12 +1363,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI में रीस्टार्ट करें</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>PC के साथ पेयर करें</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>PC पर दिखाया गया 6 अंकों का PIN दर्ज करें:</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>पेयर करें</value>
   </data>
@@ -1980,18 +1938,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>स्टार्टअप स्वागत स्प्लैश स्क्रीन अनुक्रम एनीमेशन की शैली चुनें</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>रेमेक्स होस्ट पता कॉन्फ़िगर करें (वेबसॉकेट प्रोटोकॉल wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>कनेक्शन URL इनपुट करें, जैसे wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>automatic network discovery का उपयोग करके अपने नेटवर्क पर स्थानीय सक्रिय रेमेक्स होस्ट को स्वचालित रूप से खोजें</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>इस पीसी से डिसकनेक्ट करें</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>संरेखण मार्गदर्शिकाएँ सक्षम करें ताकि सेंसर टाइलें प्लेसमेंट कैनवास पर मानक वेतन वृद्धि में स्नैप हो सकें</value>
   </data>
@@ -2003,9 +1949,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>साइडबार टॉगल करें</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>होस्ट कॉन्फ़िगरेशन पता सहेजें और इससे जुड़ने का प्रयास करें</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>क्या आपको फिर से वॉकथ्रू देखने की आवश्यकता है?</value>
@@ -2177,12 +2120,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>पूर्ण डिवाइस ब्राउज़िंग की अनुमति दें?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>एक युग्मित डिवाइस इस पीसी पर फ़ाइलें भेजना चाहता है।</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>आने वाली फ़ाइलें स्वीकार करें?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>इस डिवाइस के लिए मेरा चयन याद रखें</value>
@@ -2394,9 +2331,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>आने वाली फ़ाइलें स्वतः स्वीकार करें</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
     <value>नियंत्रित करें कि प्रत्येक युग्मित डिवाइस आपकी फ़ाइलों के साथ क्या कर सकता है। पूर्ण डिवाइस ब्राउज़िंग और आने वाली फ़ाइलों को स्वतः स्वीकार करना डिफ़ॉल्ट रूप से बंद है।</value>
   </data>
@@ -2438,24 +2372,6 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>दिखावट वैयक्तिकृत करें</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>कनेक्शन</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>आपका फ़ोन इस पीसी तक कैसे पहुँचता है</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>होस्ट पता</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>मेरे नेटवर्क पर होस्ट खोजें</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>होस्ट</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>विलंबता</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>छोड़ने के लिए कहीं भी क्लिक करें</value>
@@ -2972,17 +2888,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>पेयरिंग पिन नहीं बनाया जा सका</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>PC ने पेयरिंग पिन नहीं दिया</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>पेयरिंग अभी उपलब्ध नहीं है</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>पेयरिंग विफल। PC पर दिख रहा पिन देखें</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>पेयरिंग रद्द की गई</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>कनेक्शन सेटिंग्स जांचें</value>
@@ -4210,5 +4117,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>संस्करण और श्रेय</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>इस PC पर RemEx सिर्फ़ खुद से कनेक्ट होता है। किसी दूसरे PC तक पहुँचने के लिए अपने फ़ोन पर RemEx ऐप इस्तेमाल करें।</value>
   </data>
 </root>

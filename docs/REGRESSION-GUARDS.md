@@ -1292,7 +1292,8 @@ Host `TransportTrust.IsTrustedForPinAutoFetch(remote, local)` and Android
   tunnel must NOT unlock auto-fetch.
 - **Loopback is NOT trusted for the PIN, on either side — do not add it back (RemEx-fd7e).** It used to
   be, "for the PC's own UI". But the UI runs in the agent process and reads the PIN in-process
-  (`IpcPairingPinQueryService` → `IPairingService.TryGetActivePinInfo`); it never used the socket. So
+  (`ConnectionViewModel.AttachEmbeddedPairingService` → `IPairingService.TryGetActivePinInfo`; the old
+  `IpcPairingPinQueryService` wrapper was deleted in RemEx-f2dwg); it never used the socket. So
   the loopback branch served only *other* local processes — including unelevated ones — handing them
   the live PIN of the elevated agent's open pairing window. Nothing at the socket tells the UI apart
   from them. `LoopbackPairingPinTests` (host, incl. the real `/ws` map site) and

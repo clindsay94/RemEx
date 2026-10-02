@@ -20,7 +20,7 @@ namespace Remex.Agent.Tests;
 /// <c>pairing_pin_request</c> used to hand the active PIN to anything on 127.0.0.1, on the theory that
 /// the PC's own UI was the loopback caller. It never was: the UI runs inside the agent process and
 /// reads the PIN in-process through <see cref="IPairingService.TryGetActivePinInfo"/>
-/// (<c>remex.desktop/Services/Security/IpcPairingPinQueryService.cs</c>). So the loopback branch served
+/// (<c>ConnectionViewModel.AttachEmbeddedPairingService</c>). So the loopback branch served
 /// exactly one population — every OTHER local process, including an unelevated one — during the one
 /// window the user is least likely to notice a second pairing: while they are actively pairing.
 /// </para>

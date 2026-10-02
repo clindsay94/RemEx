@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Hubungkan</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Putuskan</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Batal</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Jelajahi...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Temukan</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Mulai</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>KONEKSI</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Alamat PC</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Simpan &amp; Hubungkan Ulang</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kunci ke Grid</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Terputus (PC ditutup)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>Tidak ada PC ditemukan via mDNS.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Mencari PC…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Layanan penemuan tidak tersedia.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (tanpa stempel waktu)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Koneksi habis waktu</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>PC ditemukan: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Ditemukan {0} PC RemEx di jaringan Anda.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>Alamat PC harus diisi.</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} memerlukan PC RemEx yang terhubung. Buka Pengaturan untuk mengonfigurasi koneksi Anda.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Memasangkan dengan PC...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN harus terdiri dari tepat 6 digit.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Dipasangkan</value>
   </data>
 
   
@@ -1399,12 +1363,6 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Boot ke UEFI</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pasangkan dengan PC</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Masukkan PIN 6 digit yang ditampilkan di mesin PC:</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pasangkan</value>
   </data>
@@ -1980,18 +1938,6 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Pilih gaya animasi layar selamat datang</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Konfigurasikan alamat PC RemEx (protokol websocket wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Masukkan URL koneksi, misal wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Temukan PC aktif di jaringan lokal secara otomatis menggunakan automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Putuskan koneksi dari PC ini</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Aktifkan panduan perataan agar ubin sensor sejajar dengan kisi-kisi</value>
   </data>
@@ -2003,9 +1949,6 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alihkan Bilah Sisi</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Simpan alamat konfigurasi PC dan coba sambungkan</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Perlu melihat panduan lagi?</value>
@@ -2177,12 +2120,6 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Izinkan penjelajahan perangkat penuh?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Perangkat yang disandingkan ingin mengirim file ke PC ini.</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Terima file masuk?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Ingat pilihan saya untuk perangkat ini</value>
@@ -2394,9 +2331,6 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Terima otomatis file masuk</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
     <value>Kontrol apa yang boleh dilakukan setiap perangkat yang disandingkan dengan file Anda. Penjelajahan perangkat penuh dan penerimaan otomatis file masuk dinonaktifkan secara default.</value>
   </data>
@@ -2438,24 +2372,6 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalisasi tampilan</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Koneksi</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Cara ponsel Anda menjangkau PC ini</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Alamat host</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Temukan host di jaringan saya</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Latensi</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Klik di mana saja untuk melewati</value>
@@ -2975,17 +2891,8 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Tidak dapat membuat PIN pairing</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>PC tidak memberikan PIN pairing</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>Penyandingan tidak tersedia saat ini</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Penyandingan gagal. Periksa PIN di PC</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Penyandingan dibatalkan</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Periksa pengaturan koneksi</value>
@@ -4213,5 +4120,8 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Versi dan kredit</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx di PC ini hanya terhubung ke dirinya sendiri. Untuk menjangkau PC lain, gunakan aplikasi RemEx di ponsel Anda.</value>
   </data>
 </root>

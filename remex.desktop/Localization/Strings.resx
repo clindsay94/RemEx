@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Connect</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Disconnect</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Browse...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Discover</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Start</value>
@@ -199,12 +193,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>CONNECTION</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>PC Address</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Save &amp; Reconnect</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Snap to Grid</value>
@@ -509,15 +497,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Disconnected (PC closed)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>No hosts found via mDNS.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Searching for hosts…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Discovery service not available.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (no timestamp)</value>
   </data>
@@ -582,12 +561,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Connection timed out</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found PC: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} RemEx PCs on your network.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>PC address is required.</value>
@@ -657,15 +630,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} requires a connected RemEx PC. Open Settings to configure your connection.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with PC...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Paired</value>
   </data>
 
   
@@ -1441,12 +1405,6 @@ You can see them, switch them off and check their history on the Routines page.<
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reboot to UEFI</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
   </data>
@@ -2178,18 +2136,6 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Select the style of startup welcome splash screen sequence animation</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Configure RemEx PC address (websocket protocol wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Input connection URL, e.g. wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Automatically discover local active RemEx hosts on your network using automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Disconnect from this PC</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Enable alignment guides so sensor tiles snap to standard increments on placement canvas</value>
   </data>
@@ -2201,9 +2147,6 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Toggle Sidebar</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Save the PC configuration address and attempt connecting to it</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Need to see the walkthrough again?</value>
@@ -2626,12 +2569,6 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
     <value>A paired device is asking to browse all of the drives and folders on this PC.</value>
   </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Accept incoming files?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>A paired device wants to send files to this PC.</value>
-  </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Remember my choice for this device</value>
   </data>
@@ -2660,9 +2597,6 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
     <value>Allow browsing all drives</value>
-  </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Auto-accept incoming files</value>
   </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Trust settings updated.</value>
@@ -2732,24 +2666,6 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalize appearance</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Connection</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>How your phone reaches this PC</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Host address</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Find hosts on my network</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Latency</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Software Update</value>
@@ -2978,17 +2894,8 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Could not create a pairing PIN</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>The PC did not provide a pairing PIN</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>Pairing is not available right now</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Pairing failed. Check the PIN on the PC</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Pairing cancelled</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Check your connection settings</value>
@@ -4216,5 +4123,8 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Version and credits</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx on this PC only connects to itself. To reach another PC, use the RemEx app on your phone.</value>
   </data>
 </root>

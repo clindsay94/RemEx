@@ -76,7 +76,7 @@ public class TypographyStylesTests
         // THE MECHANISM (RemEx-jt6w5.11, after the original runtime Application.Styles mutation and
         // two more abandoned attempts): a STATIC Style selecting every Window, present from the
         // moment this stylesheet loads — so cold start's MainWindow and every on-demand window
-        // (TrayFlyoutWindow, PairingDialog, CommandPaletteWindow, etc.) get the current value from
+        // (TrayFlyoutWindow, CommandPaletteWindow, etc.) get the current value from
         // construction, no per-window push required (Attempt 2, measured broken: pushing the value
         // onto already-open windows at Apply time missed both startup Apply calls, which run before
         // MainWindow exists, and every window opened after the last Apply). Sets the INHERITED

@@ -197,7 +197,7 @@
         </Style>
         <!-- ═══ PALETTE CROSSFADE (RemEx-zgtn1) ═══
              OPT-IN VIA `.palette-crossfade`, NOT ON BARE `Window`. An unqualified Window selector
-             reaches every window in the app — ConfirmationDialog, PairingDialog, FileConsentDialog,
+             reaches every window in the app — ConfirmationDialog, FileConsentDialog,
              TrayFlyoutWindow, CommandPaletteWindow and the rest — and only MainWindow binds the
              suppression class below. Those windows would therefore have animated for 400ms with no
              way to turn it off, including for a user who has asked for reduced motion, where before

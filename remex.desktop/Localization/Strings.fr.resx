@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Connecter</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Déconnecter</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Parcourir...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Découvrir</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Démarrer</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>CONNEXION</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Adresse de l'hôte</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Enregistrer et reconnecter</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Aligner sur la grille</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Déconnecté (serveur fermé)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>Aucun hôte trouvé via mDNS.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Recherche d'hôtes...</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Service de découverte indisponible.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (pas d'horodatage)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Délai de connexion dépassé</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Hôte trouvé : {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>{0} PC RemEx trouvés sur votre réseau.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>L'adresse du PC est requise.</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} nécessite un hôte RemEx connecté. Ouvrez Paramètres pour configurer votre connexion.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Appairage avec le PC...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>Le PIN doit comporter exactement 6 chiffres.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Appairé</value>
   </data>
 
   
@@ -1399,12 +1363,6 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Redémarrer vers UEFI</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Appairer avec le PC</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Entrez le code PIN à 6 chiffres affiché sur le PC :</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Appairer</value>
   </data>
@@ -1980,18 +1938,6 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Sélectionner le style d'animation de l'écran d'accueil</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Configurer l'adresse de l'hôte RemEx (protocole websocket wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Entrez l'URL de connexion, ex. wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Découvrir automatiquement les hôtes actifs sur le réseau local via automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Se déconnecter de ce PC</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Activer les guides d'alignement pour aligner les capteurs sur le canevas</value>
   </data>
@@ -2003,9 +1949,6 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Basculer la barre latérale</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Enregistrer l'adresse de configuration de l'hôte et tenter de s'y connecter</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Besoin de revoir le guide ?</value>
@@ -2177,12 +2120,6 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Autoriser la navigation complète de l'appareil ?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Un appareil associé souhaite envoyer des fichiers à ce PC.</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Accepter les fichiers entrants ?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Mémoriser mon choix pour cet appareil</value>
@@ -2394,9 +2331,6 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Accepter automatiquement les fichiers entrants</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
     <value>Contrôlez ce que chaque appareil associé peut faire avec vos fichiers. La navigation complète de l'appareil et l'acceptation automatique des fichiers entrants sont désactivées par défaut.</value>
   </data>
@@ -2438,24 +2372,6 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personnaliser l'apparence</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Connexion</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Comment votre téléphone joint ce PC</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Adresse de l'hôte</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Trouver les hôtes sur mon réseau</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Hôte</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Latence</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Cliquez n'importe où pour passer</value>
@@ -2972,17 +2888,8 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Impossible de créer un code PIN d'appairage</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>Le PC n'a pas fourni de code PIN d'appairage</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>L'appairage n'est pas disponible pour le moment</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Échec de l'appairage. Vérifiez le PIN sur le PC</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Appairage annulé</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Vérifiez les paramètres de connexion</value>
@@ -4210,5 +4117,8 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Version et crédits</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx sur ce PC ne se connecte qu'à lui-même. Pour joindre un autre PC, utilisez l'appli RemEx sur votre téléphone.</value>
   </data>
 </root>

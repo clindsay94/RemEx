@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Połącz</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Rozłącz</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Anuluj</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Przeglądaj...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Odkryj</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Uruchom</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>POŁĄCZENIE</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Adres hosta</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Zapisz &amp; Połącz ponownie</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Przyciągaj do siatki</value>
@@ -437,15 +425,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Rozłączono (serwer zamknięty)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>Nie znaleziono hostów przez mDNS.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Szukam hostów…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Usługa wykrywania niedostępna.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (brak znacznika czasu)</value>
   </data>
@@ -495,12 +474,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Upłynął limit czasu połączenia</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Znaleziono hosta: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Znaleziono {0} PC z RemEx w Twojej sieci.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>Adres PC jest wymagany.</value>
@@ -570,15 +543,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} wymaga połączonego hosta RemEx. Otwórz Ustawienia, aby skonfigurować połączenie.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Parowanie z hostem...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN musi składać się z dokładnie 6 cyfr.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Sparowano</value>
   </data>
 
   
@@ -1734,18 +1698,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Wybierz styl animacji ekranu powitalnego</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Konfiguruj adres hosta RemEx (protokół websocket wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Wprowadź adres URL połączenia, np. wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Automatycznie wykrywaj aktywne hosty w sieci lokalnej przy użyciu automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Rozłącz z tym komputerem</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Włącz przyciąganie do siatki, aby sensory wyrównywały się do standardowych przyrostów</value>
   </data>
@@ -1757,9 +1709,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Przełącz pasek boczny</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Zapisz adres konfiguracji hosta i spróbuj się połączyć</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Czy chcesz ponownie zobaczyć samouczek?</value>
@@ -1932,12 +1881,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Zezwolić na pełne przeglądanie urządzenia?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Sparowane urządzenie chce wysłać pliki na ten komputer.</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Zaakceptować przychodzące pliki?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Zapamiętaj mój wybór dla tego urządzenia</value>
@@ -2149,9 +2092,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Automatycznie akceptuj przychodzące pliki</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
     <value>Kontroluj, co każde sparowane urządzenie może robić z Twoimi plikami. Pełne przeglądanie urządzenia i automatyczne akceptowanie przychodzących plików są domyślnie wyłączone.</value>
   </data>
@@ -2193,24 +2133,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalizuj wygląd</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Połączenie</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Jak telefon łączy się z tym komputerem</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Adres hosta</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Znajdź hosty w mojej sieci</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Opóźnienie</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Kliknij w dowolnym miejscu, aby pominąć</value>
@@ -2431,12 +2353,6 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Uruchom do UEFI</value>
-  </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Sparuj z komputerem</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Wprowadź 6-cyfrowy kod PIN wyświetlany na komputerze:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Sparuj</value>
@@ -2973,17 +2889,8 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Nie udało się utworzyć kodu PIN parowania</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>PC nie udostępnił kodu PIN parowania</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>Parowanie jest teraz niedostępne</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Parowanie nie powiodło się. Sprawdź PIN na PC</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Parowanie anulowane</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Sprawdź ustawienia połączenia</value>
@@ -4211,5 +4118,8 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Wersja i podziękowania</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx na tym komputerze łączy się tylko sam ze sobą. Aby połączyć się z innym komputerem, użyj aplikacji RemEx na telefonie.</value>
   </data>
 </root>

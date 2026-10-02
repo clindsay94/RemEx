@@ -100,9 +100,6 @@
   <data name="Btn_Connect" xml:space="preserve">
     <value>Підключити</value>
   </data>
-  <data name="Btn_Disconnect" xml:space="preserve">
-    <value>Відключити</value>
-  </data>
   <data name="Btn_Cancel" xml:space="preserve">
     <value>Скасувати</value>
   </data>
@@ -114,9 +111,6 @@
   </data>
   <data name="Btn_Browse" xml:space="preserve">
     <value>Огляд...</value>
-  </data>
-  <data name="Btn_Discover" xml:space="preserve">
-    <value>Знайти</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Запустити</value>
@@ -181,12 +175,6 @@
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>ПІДКЛЮЧЕННЯ</value>
-  </data>
-  <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Адреса хоста</value>
-  </data>
-  <data name="Settings_SaveReconnect" xml:space="preserve">
-    <value>Зберегти &amp; Перепідключити</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Прив'язати до сітки</value>
@@ -467,15 +455,6 @@
   <data name="Status_ServerClosed" xml:space="preserve">
     <value>Відключено (сервер закрито)</value>
   </data>
-  <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>Хости через mDNS не знайдено.</value>
-  </data>
-  <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Пошук хостів…</value>
-  </data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
-    <value>Служба виявлення недоступна.</value>
-  </data>
   <data name="Status_PongNoTimestamp" xml:space="preserve">
     <value>Pong (без мітки часу)</value>
   </data>
@@ -540,12 +519,6 @@
   </data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve">
     <value>Час очікування підключення минув</value>
-  </data>
-  <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Знайдено хост: {0}</value>
-  </data>
-  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>У вашій мережі знайдено {0} ПК RemEx.</value>
   </data>
   <data name="Connection_PcAddressRequired" xml:space="preserve">
     <value>Потрібна адреса ПК.</value>
@@ -615,15 +588,6 @@
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} потребує підключеного хоста RemEx. Відкрийте Налаштування, щоб налаштувати підключення.</value>
-  </data>
-  <data name="Status_Pairing" xml:space="preserve">
-    <value>Сполучення з ПК...</value>
-  </data>
-  <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN-код повинен складатися рівно з 6 цифр.</value>
-  </data>
-  <data name="Pairing_Succeeded" xml:space="preserve">
-    <value>Спарено</value>
   </data>
 
   
@@ -1399,12 +1363,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Перезавантажити в UEFI</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Сполучити з ПК</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Введіть 6-значний PIN-код, показаний на ПК:</value>
-  </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Сполучити</value>
   </data>
@@ -1980,18 +1938,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Вибрати стиль анімації екрана привітання</value>
   </data>
-  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Налаштувати адресу хоста RemEx (протокол веб-сокета wss://)</value>
-  </data>
-  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Введіть URL-адресу з'єднання, наприклад wss://192.168.1.100:8443/ws</value>
-  </data>
-  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>Автоматично знаходити активні хости в локальній мережі за допомогою automatic network discovery</value>
-  </data>
-  <data name="Settings_DisconnectTooltip" xml:space="preserve">
-    <value>Відключитися від цього ПК</value>
-  </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Увімкнути напрямні вирівнювання для прив'язки сенсорів до сітки</value>
   </data>
@@ -2003,9 +1949,6 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Перемкнути бічну панель</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Зберегти конфігураційну адресу хоста та спробувати підключитися</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Потрібно переглянути інструкцію знову?</value>
@@ -2178,12 +2121,6 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Дозволити повний перегляд пристрою?</value>
-  </data>
-  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
-    <value>Спарований пристрій хоче надіслати файли на цей ПК.</value>
-  </data>
-  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
-    <value>Прийняти вхідні файли?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
     <value>Запам'ятати мій вибір для цього пристрою</value>
@@ -2395,9 +2332,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_TrustAutoAccept" xml:space="preserve">
-    <value>Автоматично приймати вхідні файли</value>
-  </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
     <value>Керуйте тим, що кожен спарований пристрій може робити з вашими файлами. Повний перегляд пристрою та автоматичне прийняття вхідних файлів вимкнені за замовчуванням.</value>
   </data>
@@ -2439,24 +2373,6 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Персоналізувати вигляд</value>
-  </data>
-  <data name="Conn_Header" xml:space="preserve">
-    <value>Підключення</value>
-  </data>
-  <data name="Conn_Subheader" xml:space="preserve">
-    <value>Як ваш телефон під'єднується до цього ПК</value>
-  </data>
-  <data name="Conn_HostAddress" xml:space="preserve">
-    <value>Адреса хоста</value>
-  </data>
-  <data name="Conn_DiscoverHosts" xml:space="preserve">
-    <value>Знайти хости в моїй мережі</value>
-  </data>
-  <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Хост</value>
-  </data>
-  <data name="Conn_Latency" xml:space="preserve">
-    <value>Затримка</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Натисніть будь-де, щоб пропустити</value>
@@ -2973,17 +2889,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Не вдалося створити PIN-код сполучення</value>
   </data>
-  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
-    <value>ПК не надав PIN-код сполучення</value>
-  </data>
   <data name="Status_PairingServiceUnavailable" xml:space="preserve">
     <value>Сполучення зараз недоступне</value>
-  </data>
-  <data name="Status_PairingFailed" xml:space="preserve">
-    <value>Помилка сполучення. Перевірте PIN-код на ПК</value>
-  </data>
-  <data name="Status_PairingCancelled" xml:space="preserve">
-    <value>Сполучення скасовано</value>
   </data>
   <data name="Status_InvalidSettings" xml:space="preserve">
     <value>Перевірте налаштування підключення</value>
@@ -4211,5 +4118,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="About_Subheader" xml:space="preserve">
     <value>Версія та автори</value>
+  </data>
+  <data name="Status_OwnHostOnly" xml:space="preserve">
+    <value>RemEx на цьому ПК підключається лише до себе. Щоб дістатися іншого ПК, скористайтеся застосунком RemEx на телефоні.</value>
   </data>
 </root>

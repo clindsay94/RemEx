@@ -74,7 +74,7 @@ namespace Remex.Desktop.Services;
 /// <c>DashboardLayoutService.LoadAsync</c> path) run before <c>MainWindow</c> exists, so a
 /// persisted Body-bold-on opened the shell Regular at cold start until the next settings change —
 /// and the same gap applied to every on-demand window (<c>TrayFlyoutWindow</c>,
-/// <c>PairingDialog</c>, <c>CommandPaletteWindow</c>, etc.) created after the last Apply.
+/// <c>FileConsentDialog</c>, <c>CommandPaletteWindow</c>, etc.) created after the last Apply.
 /// </para>
 /// <para>
 /// THE MECHANISM: <c>Typo.UntaggedBold.FontWeight</c> (in <see cref="TypographyResolution.FontWeights"/>
