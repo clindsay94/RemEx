@@ -226,10 +226,12 @@ public class CustomizationMigrationTests
     [Fact]
     public void AMigratedProfileIsOnTheCustomSource()
     {
-        // The file's seed was chosen by hand or by a preset; only a NEW profile starts on the
-        // Windows accent.
-        CustomizationMigration.Migrate(SchemaTwo(), out _).ColorSource.Should().Be(ColorSources.Custom);
-        new CustomizationSettings().ColorSource.Should().Be(ColorSources.WindowsAccent);
+        // The file's seed was chosen by hand or by a preset. A NEW profile starts on Custom too since
+        // RemEx-pp4cm C8 (RemEx's own colours on first run), so the migration's rewrite is pinned
+        // against a schema-2 file that stored the Windows accent.
+        var storedAccent = SchemaTwo() with { ColorSource = ColorSources.WindowsAccent };
+        CustomizationMigration.Migrate(storedAccent, out _).ColorSource.Should().Be(ColorSources.Custom);
+        new CustomizationSettings().ColorSource.Should().Be(ColorSources.Custom);
     }
 
     [Fact]
@@ -407,7 +409,7 @@ public class CustomizationMigrationTests
         // which is 5 now - has no themeSeedChromaRequest key at all. The only honest seed for a
         // request nobody has typed yet is the seed's own achieved chroma.
         var before = SchemaFour() with { ThemeSeedChroma = 73.0 };
-        before.ThemeSeedChromaRequest.Should().Be(48.0, "anti-vacuity: the un-migrated record default, not a coincidence");
+        before.ThemeSeedChromaRequest.Should().Be(CustomizationSettings.DefaultSeedChroma, "anti-vacuity: the un-migrated record default, not a coincidence");
 
         var migrated = CustomizationMigration.Migrate(before, out var warning);
 

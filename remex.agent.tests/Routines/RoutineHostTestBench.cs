@@ -17,6 +17,9 @@ internal sealed class FakeStateFiles : IRoutineStateFiles
     public bool FailQuarantine { get; set; }
     public int Writes { get; private set; }
 
+    /// <summary>When set, every write waits for it: holds a save in flight to open a race window.</summary>
+    public TaskCompletionSource? HoldWrites { get; set; }
+
     public string? Read(string fileName) => Files.TryGetValue(fileName, out var text) ? text : null;
 
     public bool Exists(string fileName) => Files.ContainsKey(fileName);
@@ -24,8 +27,13 @@ internal sealed class FakeStateFiles : IRoutineStateFiles
     public string? TrustProblem(string fileName) =>
         Files.ContainsKey(fileName) && Untrusted.TryGetValue(fileName, out var why) ? why : null;
 
-    public Task WriteAsync(string fileName, string contents)
+    public async Task WriteAsync(string fileName, string contents)
     {
+        if (HoldWrites is { } hold)
+        {
+            await hold.Task;
+        }
+
         if (FailWrites)
         {
             throw new IOException("disk full");
@@ -33,7 +41,6 @@ internal sealed class FakeStateFiles : IRoutineStateFiles
 
         Writes++;
         Files[fileName] = contents;
-        return Task.CompletedTask;
     }
 
     public string? Quarantine(string fileName, DateTimeOffset now)
@@ -60,10 +67,18 @@ internal sealed class FakePhoneChannel : IRoutinePhoneChannel
     public HashSet<string> Reachable { get; } = new(StringComparer.Ordinal);
     public List<(string ClientId, RemexMessage Message)> Sent { get; } = [];
 
+    /// <summary>Makes every send throw, as a broken socket write would.</summary>
+    public bool FailSends { get; set; }
+
     public bool CanReach(string clientId) => Reachable.Contains(clientId);
 
     public Task<bool> TrySendAsync(string clientId, RemexMessage message)
     {
+        if (FailSends)
+        {
+            throw new IOException("socket closed");
+        }
+
         if (!CanReach(clientId))
         {
             return Task.FromResult(false);

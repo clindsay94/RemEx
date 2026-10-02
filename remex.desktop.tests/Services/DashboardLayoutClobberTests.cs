@@ -120,28 +120,33 @@ public class DashboardLayoutClobberTests : IDisposable
     }
 
     [Fact]
-    public async Task AFreshInstallStartsOnTheWindowsAccentSourceRatherThanMigratingToCustom()
+    public async Task AFreshInstallStartsOnRemExsOwnColoursAndIsStampedNotMigrated()
     {
         // RemEx-8twk0.1 review (HIGH): a brand-new DashboardProfile has SchemaVersion 0, and running
-        // it through CustomizationMigration.Migrate ran it through arm 3, which unconditionally forces
-        // ColorSource to Custom - making the spec's actual fresh-install default (WindowsAccent, SPEC
-        // section 4/9) and the whole accent-follow feature unreachable for every new user. A fresh
+        // it through CustomizationMigration.Migrate rewrote it as if it were a legacy file. A fresh
         // install must be STAMPED at the current schema, never migrated: there is nothing on disk to
-        // translate.
+        // translate. Since RemEx-pp4cm C8 the record default is the Custom source on RemEx's own seed
+        // and chroma (it was the Windows accent), so the first run looks like RemEx on every PC.
         using var service = NewService();
 
         var loaded = await service.LoadAsync();
 
-        loaded.Customization.ColorSource.Should().Be(ColorSources.WindowsAccent,
+        loaded.Customization.ColorSource.Should().Be(ColorSources.Custom,
             "a brand-new profile chose nothing yet; the record default is the actual answer");
+        loaded.Customization.AccentColor.Should().Be("#6C4CFF");
+        loaded.Customization.ThemeSeedChroma.Should().Be(CustomizationSettings.DefaultSeedChroma);
+        loaded.Customization.ThemeSeedChromaRequest.Should().Be(CustomizationSettings.DefaultSeedChroma);
+        CustomizationMigration.Migrate(new CustomizationSettings(), out _).UseLightPalette.Should().NotBeNull(
+            "anti-vacuity: migrating a fresh record really does stamp a light/dark answer");
+        loaded.Customization.UseLightPalette.Should().BeNull(
+            "arm 1 stamps an explicit light/dark answer on every migrated schema-0 profile; a stamped fresh one has none");
         loaded.Customization.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
 
         service.RequestSave(loaded);
         await service.FlushAsync();
 
         var onDisk = await File.ReadAllTextAsync(service.FilePathForTests);
-        onDisk.Should().Contain("\"colorSource\": \"WindowsAccent\"",
-            "the persisted file must carry the real default, not the migration's Custom rewrite");
+        onDisk.Should().Contain("\"colorSource\": \"Custom\"");
         onDisk.Should().Contain($"\"schemaVersion\": {CustomizationMigration.CurrentSchemaVersion}");
     }
 

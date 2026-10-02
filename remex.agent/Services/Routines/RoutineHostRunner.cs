@@ -235,7 +235,7 @@ public sealed class RoutineHostRunner
             }
         }
 
-        var pending = targets.Select(t => t.Completion).OfType<Task>().ToList();
+        var pending = targets.Select(t => (Task)t.Completion).ToList();
         if (pending.Count == 0)
         {
             return;
@@ -365,17 +365,31 @@ public sealed class RoutineHostRunner
             return new RoutineRunHandle(skipped, Task.FromResult(skipped));
         }
 
-        // §8.1: the record exists and is saved BEFORE any step runs, so an interruption is visible.
-        record = await _runs.UpsertAsync(record!);
-        active!.Record = record;
-        _logger.LogInformation(
-            "Routine run {RunId} started for {Owner}, source {Source}{Test}.",
-            record.RunId, LogRedaction.RedactClientId(start.OwnerClientId), start.Source, start.TestRun ? " [test]" : string.Empty);
-        await ReportAsync(record, live: true);
-        RaiseChanged();
+        try
+        {
+            // §8.1: the record exists and is saved BEFORE any step runs, so an interruption is visible.
+            record = await _runs.UpsertAsync(record!);
+            active!.Record = record;
+            _logger.LogInformation(
+                "Routine run {RunId} started for {Owner}, source {Source}{Test}.",
+                record.RunId, LogRedaction.RedactClientId(start.OwnerClientId), start.Source, start.TestRun ? " [test]" : string.Empty);
+            await ReportAsync(record, live: true);
+            RaiseChanged();
+        }
+        catch
+        {
+            // The run never got going: release its slot (it would otherwise read as "already running" and
+            // hold a concurrency slot forever) and release anyone waiting on it before StartAsync reports.
+            lock (_gate)
+            {
+                _active.Remove(active!.RunId);
+            }
+
+            active.Complete(active.Record);
+            throw;
+        }
 
         var completion = Task.Run(() => ExecuteAsync(start, routine!, active));
-        active.Completion = completion;
         return new RoutineRunHandle(record, completion);
     }
 
@@ -459,6 +473,9 @@ public sealed class RoutineHostRunner
             }
 
             RaiseChanged();
+
+            // Every Finish* path has saved the final record into active.Record by now.
+            active.Complete(active.Record);
         }
     }
 
@@ -937,8 +954,17 @@ public sealed class RoutineHostRunner
 
         public CancellationToken Token => _cts.Token;
 
-        /// <summary>The background execution, once started.</summary>
-        public Task<RoutineRun>? Completion { get; set; }
+        private readonly TaskCompletionSource<RoutineRun> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// Completes once this run has left <c>_active</c> with its final record written (or its start
+        /// failed). It exists from construction, so a forget that lands while the start is still saving the
+        /// first record waits for the run instead of finding nothing to wait on (RemEx-pp4cm C2).
+        /// </summary>
+        public Task<RoutineRun> Completion => _completion.Task;
+
+        public void Complete(RoutineRun final) => _completion.TrySetResult(final);
 
         public bool CancelRequested => _cts.IsCancellationRequested;
 

@@ -77,6 +77,14 @@ public record CardState
 /// <summary>
 /// A complete dashboard layout profile, serialised to/from JSON.
 /// </summary>
+/// <remarks>
+/// <b>THE INITIALIZERS BELOW ARE WHAT AN ABSENT KEY READS AS, BUT ONLY THROUGH THE REFLECTION READER</b>
+/// (<c>Remex.Desktop.Services.DashboardLayoutService.JsonOptions</c>, the one the profile is loaded with).
+/// The source-generated <see cref="Serialization.RemexJsonSerializerContext"/> metadata for this record,
+/// <see cref="CustomizationSettings"/>, <see cref="TypographySettings"/> and <see cref="SavedPalette"/>
+/// sets every init-only property, so there an absent key reads as null / 0 / false (RemEx-rpvde,
+/// pinned by <c>ProfileAbsentKeyDefaultsTests</c>). Never read a saved profile through that context.
+/// </remarks>
 public record DashboardProfile
 {
     /// <summary>Human-readable profile name (e.g. "Gaming Mode", "Idle Monitoring").</summary>
@@ -248,7 +256,8 @@ public record CustomizationSettings
     /// <remarks>
     /// THE ONLY HONEST WAY TO ASK "HAS THIS PROFILE BEEN MIGRATED YET". Every other signal is
     /// ambiguous: an absent <c>ThemeContrast</c> and a deliberate 0.0 deserialise to the same
-    /// double, an absent <c>SchemeVariant</c> and a deliberate TonalSpot to the same string. A
+    /// double, an absent <c>SchemeVariant</c> and a deliberate TonalSpot to the same string (through
+    /// the reflection reader the profile is loaded with; see <see cref="DashboardProfile"/>). A
     /// migration that guesses from those either re-runs on every launch — overwriting the user's
     /// choices with the preset's every time — or never runs at all. A version stamp is one integer
     /// and it makes the question exact.
@@ -322,8 +331,17 @@ public record CustomizationSettings
     /// <summary>Vibrancy (Chroma) level for the seed color (Material 3). The ACHIEVED chroma of
     /// <see cref="AccentColor"/> — what <c>Hct.From(hue, ThemeSeedChroma, tone)</c> actually
     /// reproduces, which may be lower than what was asked for (most hue/tone pairs cannot reach
-    /// high chroma in sRGB). This is Android's vibrancy axis and the parity RemEx-ndhlv wants.</summary>
-    public double ThemeSeedChroma { get; init; } = 48.0;
+    /// high chroma in sRGB). This is Android's vibrancy axis and the parity RemEx-ndhlv wants.
+    /// Defaults to <see cref="DefaultSeedChroma"/>, the default seed's own chroma.</summary>
+    public double ThemeSeedChroma { get; init; } = DefaultSeedChroma;
+
+    /// <summary>
+    /// The HCT chroma of the default seed <c>#6C4CFF</c> (78.89, rounded), so a first run paints exactly
+    /// RemEx's own colours rather than a duller rebuild of them (RemEx-pp4cm C8). The phone uses the
+    /// same value (<c>ThemeDefaults.THEME_SEED_CHROMA</c>); <c>Hct.From(hue, 78.9, tone)</c> round-trips
+    /// to <c>#6C4CFF</c>, which <c>DefaultSeedChromaTests</c> pins against remex.core's own Hct.
+    /// </summary>
+    public const double DefaultSeedChroma = 78.9;
 
     /// <summary>
     /// The Vibrancy slider's raw ask, independent of what the seed could hold. A Windows-accent or
@@ -332,7 +350,7 @@ public record CustomizationSettings
     /// could reach (RemEx-ceu4x). <see cref="ThemeSeedChroma"/> stays the ACHIEVED value the two
     /// platforms agree on; this field never leaves the desktop's own studio.
     /// </summary>
-    public double ThemeSeedChromaRequest { get; init; } = 48.0;
+    public double ThemeSeedChromaRequest { get; init; } = DefaultSeedChroma;
 
     /// <summary>Contrast level for the dynamic color scheme (-1.0 to 1.0).</summary>
     public double ThemeContrast { get; init; } = 0.0;
@@ -347,10 +365,12 @@ public record CustomizationSettings
     public string SchemeVariant { get; init; } = "TonalSpot";
 
     /// <summary>Who writes <see cref="AccentColor"/>: a <see cref="ColorSources"/> value. New
-    /// profiles start on the Windows accent; the desktop resolves an unavailable source (Linux) to
-    /// Custom without persisting it (RemEx-ddynd).</summary>
+    /// profiles start on <see cref="ColorSources.Custom"/> with RemEx's own seed, so a first run looks
+    /// like RemEx on every PC and matches the phone's first run (Connor, 2026-10-02; it was the Windows
+    /// accent from RemEx-ddynd). Saved profiles keep the source they stored; the desktop still
+    /// resolves an unavailable source (Windows accent on Linux) to Custom without persisting it.</summary>
     [JsonPropertyName("colorSource")]
-    public string ColorSource { get; init; } = ColorSources.WindowsAccent;
+    public string ColorSource { get; init; } = ColorSources.Custom;
 
     /// <summary>Which extracted wallpaper candidate was chosen. Out of range resets to 0 at load.</summary>
     [JsonPropertyName("wallpaperSeedIndex")]

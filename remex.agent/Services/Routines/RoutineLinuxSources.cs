@@ -67,6 +67,42 @@ public static class LogindParsing
     public static bool IsYes(string? answer) => string.Equals(answer, "yes", StringComparison.Ordinal);
 }
 
+/// <summary>
+/// Bounded connect that never leaks the connection it gave up on. Platform-neutral so it can be tested
+/// off Linux; <see cref="RoutineDbus.ConnectAsync"/> is its only production caller.
+/// </summary>
+internal static class RoutineConnectGuard
+{
+    /// <summary>
+    /// Connects within <paramref name="timeout"/> and returns the connection, or disposes it and returns
+    /// null when the connect fails or times out. Before RemEx-pp4cm C4 a timed-out connect was simply
+    /// dropped, leaving its socket and reader alive with nothing that would ever dispose them.
+    /// </summary>
+    public static async Task<T?> ConnectOrDisposeAsync<T>(T connection, Func<T, Task> connect, TimeSpan timeout, ILogger logger)
+        where T : class, IDisposable
+    {
+        try
+        {
+            await connect(connection).WaitAsync(timeout);
+            return connection;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "D-Bus connect failed for a routine source.");
+            try
+            {
+                connection.Dispose();
+            }
+            catch (Exception disposeEx)
+            {
+                logger.LogDebug(disposeEx, "Disposing an abandoned D-Bus connection failed.");
+            }
+
+            return null;
+        }
+    }
+}
+
 /// <summary>Small D-Bus helpers for the routine sources.</summary>
 [SupportedOSPlatform("linux")]
 internal static class RoutineDbus
@@ -85,17 +121,19 @@ internal static class RoutineDbus
             return null;
         }
 
+        DBusConnection connection;
         try
         {
-            var connection = new DBusConnection(address);
-            await Task.Run(async () => await connection.ConnectAsync()).WaitAsync(CallTimeout);
-            return connection;
+            connection = new DBusConnection(address);
         }
         catch (Exception ex)
         {
             logger.LogDebug(ex, "D-Bus connect failed for a routine source.");
             return null;
         }
+
+        return await RoutineConnectGuard.ConnectOrDisposeAsync(
+            connection, static c => Task.Run(async () => await c.ConnectAsync()), CallTimeout, logger);
     }
 
     public static Task<VariantValue> GetPropertyAsync(DBusConnection connection, string destination, string path, string iface, string name)

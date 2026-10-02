@@ -99,6 +99,22 @@ The host defines "Shared Roots" (e.g., "Downloads", "Documents"). Clients browse
 4. **Client → Host:** `file_transfer_end` signal.
 5. **Host:** Verifies the received file hash and responds with success/failure.
 
+### Folder Manifest Paging (`file_manifest_request` / `file_manifest_response`)
+A folder download first lists the folder's subtree in pages. Each entry's `relativePath` is
+**root-relative** (it includes the requested folder's own path, e.g. `Photos/2026/a.jpg` for a request
+on `Photos`), so it can be fed straight into a download request. Order is ordinal by name, pre-order,
+with directories emitted in their own right.
+
+`nextCursor` is opaque to the requester, which echoes it back unchanged with the same root and folder.
+Both hosts (the PC's `FileTransferService` and the phone's `FileHostHandler`) format and read it the
+same way, so the meaning is fixed:
+- Format: `{entriesEmittedSoFar}|{lastPath}`, with the count in invariant-culture digits.
+- `lastPath` is the **root-relative** path of the last entry on the page, base prefix included (the
+  same string as that entry's `relativePath`). The host strips `{folder}/` before resuming the walk.
+- A cursor that is malformed, or whose path does not lie under the requested folder, restarts the
+  listing from the first page (with totals) rather than failing.
+- `nextCursor` is absent on the last page and when the listing was truncated at the total-entry cap.
+
 ---
 
 ## 4. TCP Command Ingress (External Network Listener)

@@ -248,6 +248,55 @@ public sealed class RoutineRevokeRaceTests
     }
 }
 
+/// <summary>
+/// RemEx-pp4cm C2: a forget that lands while a run is still saving its first record must wait for that run,
+/// or the run's final save puts history straight back for an owner that was just forgotten.
+/// </summary>
+public sealed class RoutineOwnerCancelWindowTests
+{
+    [Fact]
+    public async Task CancellingAnOwnerMidStartWaitsForTheRunToFinish()
+    {
+        var bench = new RoutineHostTestBench();
+        await bench.SyncAsync(1, routines: Routine(1, IdleTrigger(), NotifyPc()));
+
+        var hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bench.Files.HoldWrites = hold;
+        var start = bench.StartAsync(1);
+        Assert.True(bench.Runner.IsRunning(Owner, Id(1)));
+
+        var cancel = bench.Runner.CancelOwnerAsync(Owner);
+        await Task.Delay(50);
+        Assert.False(cancel.IsCompleted, "the owner cancel returned while the run was still starting");
+
+        bench.Files.HoldWrites = null;
+        hold.SetResult();
+        var handle = await start;
+        await cancel;
+
+        Assert.False(bench.Runner.IsRunning(Owner, Id(1)));
+        var final = await handle.Completion;
+        Assert.Equal(RoutineRunOutcomes.Cancelled, final.Outcome);
+    }
+
+    [Fact]
+    public async Task ARunWhoseStartFailsReleasesItsSlotAndItsWaiters()
+    {
+        var bench = new RoutineHostTestBench();
+        await bench.SyncAsync(1, routines: Routine(1, IdleTrigger(), NotifyPc()));
+        bench.Channel.Reachable.Add(Owner);
+        bench.Channel.FailSends = true;
+
+        var handle = await bench.StartAsync(1);
+
+        Assert.Equal(RoutineRunOutcomes.Failed, handle.Initial.Outcome);
+        Assert.False(bench.Runner.IsRunning(Owner, Id(1)), "a failed start kept reading as already running");
+        var cancel = bench.Runner.CancelOwnerAsync(Owner);
+        Assert.True(cancel.IsCompleted);
+        await cancel;
+    }
+}
+
 /// <summary>T17: a run request can never be answered with another owner's record.</summary>
 public sealed class RoutineRunRequestIsolationTests
 {

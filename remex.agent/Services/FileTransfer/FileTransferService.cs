@@ -1177,18 +1177,18 @@ public sealed class FileTransferService : IFileTransferService
             ? FileTransferLimits.ManifestDefaultEntriesPerPage
             : Math.Min(maxEntries, FileTransferLimits.ManifestMaxEntriesPerPage);
 
+        var baseRelative = ToManifestBase(rootPath, baseDir);
         var (emittedBefore, cursorPath) = ParseManifestCursor(cursor);
+        var cursorSegments = ToBaseRelativeCursorSegments(cursorPath, baseRelative);
+        if (cursorSegments is null)
+            emittedBefore = 0;
+
         var state = new ManifestState
         {
             PageSize = pageSize,
             EmittedBefore = emittedBefore,
         };
 
-        var cursorSegments = string.IsNullOrEmpty(cursorPath)
-            ? null
-            : cursorPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-        var baseRelative = ToManifestBase(rootPath, baseDir);
         ManifestWalk(new DirectoryInfo(baseDir), baseRelative, cursorSegments, 0, state, ct);
 
         var isFirstPage = cursorSegments is null || cursorSegments.Length == 0;
@@ -1346,7 +1346,9 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     /// <summary>
-    /// Cursor format: <c>{entriesEmittedSoFar}|{lastRelativePath}</c>. Opaque to clients by contract —
+    /// Cursor format: <c>{entriesEmittedSoFar}|{lastRelativePath}</c>, where the path is ROOT-relative
+    /// (the same string as that entry's <c>relativePath</c>, base prefix included; see
+    /// <see cref="ToBaseRelativeCursorSegments"/>). Opaque to clients by contract —
     /// the count rides along only so the whole-enumeration ceiling can be enforced without the host
     /// keeping per-request state. A malformed cursor restarts from the beginning rather than throwing:
     /// it is client-supplied text, and the walk it positions grants nothing the request did not already.
@@ -1369,6 +1371,33 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     private static string FormatManifestCursor(long emitted, string lastPath) => $"{emitted}|{lastPath}";
+
+    /// <summary>
+    /// Turns the cursor's path into the segments <see cref="ManifestWalk"/> positions by. The cursor path
+    /// is ROOT-relative (it is the last emitted entry's <see cref="FileManifestEntry.RelativePath"/>, base
+    /// prefix included), but the walk starts at the base and compares segment 0 with the BASE's children,
+    /// so the <c>{base}/</c> prefix is stripped first (RemEx-pp4cm C1). Without that, every page after the
+    /// first of a non-root folder compared the base's own name with its children and either repeated page
+    /// one until the total cap or silently skipped entries. A cursor that does not lie under the base — or
+    /// names the base itself — is not one this walk produced, so it restarts like a malformed cursor.
+    /// </summary>
+    private static string[]? ToBaseRelativeCursorSegments(string? cursorPath, string baseRelative)
+    {
+        if (string.IsNullOrEmpty(cursorPath))
+            return null;
+
+        var withinBase = cursorPath;
+        if (baseRelative.Length > 0)
+        {
+            var prefix = baseRelative + "/";
+            if (!cursorPath.StartsWith(prefix, StringComparison.Ordinal))
+                return null;
+            withinBase = cursorPath[prefix.Length..];
+        }
+
+        var segments = withinBase.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length == 0 ? null : segments;
+    }
 
     /// <summary>
     /// Counts the whole subtree for the first page's totals, giving up at

@@ -21,6 +21,24 @@ public class DeviceActivityDetailTests
             .GetMethod("DescribeDevice", BindingFlags.NonPublic | BindingFlags.Static)!
             .Invoke(null, [deviceName, clientId])!;
 
+    private static bool ShouldRecordDeparture(bool identityProven, string? clientId) =>
+        (bool)typeof(PingPongHandler)
+            .GetMethod("ShouldRecordDeparture", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, [identityProven, clientId])!;
+
+    [Theory]
+    [InlineData(true, "phone-a", true)]
+    [InlineData(false, "phone-a", false)]
+    [InlineData(true, null, false)]
+    [InlineData(true, "  ", false)]
+    [InlineData(false, null, false)]
+    public void ADepartureIsRecordedOnlyForAProvenIdentity(bool proven, string? clientId, bool expected)
+    {
+        // RemEx-pp4cm C3: any message can CLAIM a client id before pairing; only a proven one ever wrote
+        // an arrival row, so only a proven one may write the matching departure.
+        Assert.Equal(expected, ShouldRecordDeparture(proven, clientId));
+    }
+
     [Theory]
     [InlineData("Study Phone", "phone-a", "Study Phone")]
     [InlineData(null, "phone-a", "phone-a")]

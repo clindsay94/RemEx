@@ -1116,10 +1116,12 @@ public sealed class PingPongHandler(
             // phone that ever connected is still attached — and the reason is what tells a flapping
             // network from a device somebody walked away with.
             //
-            // ONLY FOR A CONNECTION THAT AUTHENTICATED. An unpaired probe that was refused never
-            // produced an arrival row, so a departure row for it would be a disconnection from
-            // nothing.
-            if (!string.IsNullOrWhiteSpace(connectionClientId))
+            // ONLY FOR A CONNECTION WHOSE IDENTITY WAS PROVEN. An arrival row is written only at the
+            // freeze points (a verified pairing or reconnect proof). Before that, connectionClientId
+            // is whatever id the sender last wrote on any message, so an unpaired probe that merely
+            // named a phone would otherwise leave "<that phone> disconnected" in the feed: a
+            // disconnection from nothing, attributed to a device that was never here (RemEx-pp4cm C3).
+            if (ShouldRecordDeparture(identityProven, connectionClientId))
             {
                 RecordDeviceDisconnectedActivity(
                     nameStore.Resolve(connectionClientId), connectionClientId, disconnectReason);
@@ -1458,6 +1460,13 @@ public sealed class PingPongHandler(
     /// timer is what would produce the very reading this bead exists to remove, a feed showing three
     /// arrivals and one departure and implying two phones are still attached.
     /// </remarks>
+    /// <summary>
+    /// Whether a closing connection gets a "disconnected" row: only one whose identity was proven, the
+    /// same connections that can produce a "connected" row. A claimed-but-unproven id does not count.
+    /// </summary>
+    private static bool ShouldRecordDeparture(bool identityProven, string? connectionClientId) =>
+        identityProven && !string.IsNullOrWhiteSpace(connectionClientId);
+
     private static void RecordDeviceDisconnectedActivity(string? deviceName, string? clientId, string reason) =>
         Remex.Desktop.Services.ActivityService.Instance.Record(
             Remex.Desktop.Services.ActivityKind.DeviceDisconnected,
