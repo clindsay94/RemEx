@@ -751,7 +751,7 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
     <value>1. Bilgisayarda Ayarlar → Bağlantı bölümünü açın
-2. "QR Kodunu Göster" düğmesine tıklayın
+2. QR kodunu göstermek için "Telefon eşleştir" düğmesine tıklayın
 3. RemEx mobil uygulamasını açın
 4. Bağlantı ekranındaki QR tarayıcı simgesine dokunun
 5. Kamerayı koda doğrultun — bağlantı otomatik kurulur!</value>
