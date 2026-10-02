@@ -79,7 +79,7 @@ namespace Remex.Desktop.Tests.Views;
 /// <c>ToolTip.Tip="{Binding MachineName}"</c>, a hover path to the untruncated value.
 /// </para>
 /// <para>
-/// THE ELEVATION TRAP, the same one <c>AppBarSurface</c>/<c>GearFabShadow</c> already document:
+/// THE ELEVATION TRAP, the same one <c>AppBarSurface</c> already documents:
 /// <c>ColorZone</c>'s default <c>ShadowAssist.ShadowDepth="Depth2"</c> renders Material's own fixed,
 /// GlowStrength-blind black shadow. <see cref="TheDrawerHeaderZone_NeutralizesMaterialsFixedShadow"/>
 /// pins <c>Depth0</c> - this block does not need its own elevation shadow inside the drawer rail.
@@ -95,7 +95,7 @@ namespace Remex.Desktop.Tests.Views;
 /// lives inside <c>DrawerHeaderZone</c>.
 /// </para>
 /// <para>
-/// A source scan, matching <see cref="Remex.Desktop.Tests.Views.ShellGearFabTests"/> and
+/// A source scan, matching <see cref="Remex.Desktop.Tests.Views.ShellPersonalizeFooterTests"/> and
 /// <see cref="Remex.Desktop.Tests.Views.ShellAppBarTests"/>: there is no headless Avalonia render
 /// harness in this repo, so nothing here can actually measure a rendered brush or contrast ratio.
 /// What this proves is that the wiring exists and is shaped the way the acceptance criteria - and
@@ -144,7 +144,7 @@ public class ShellDrawerHeaderTests
     {
         var zone = DrawerHeaderZoneOpenTag();
         zone.Should().MatchRegex(@"assists:ShadowAssist\.ShadowDepth=""Depth0""",
-            "ColorZone's own Depth2 default renders Material's fixed, GlowStrength-blind black shadow — the same trap AppBarSurface and GearFabShadow already neutralize");
+            "ColorZone's own Depth2 default renders Material's fixed, GlowStrength-blind black shadow — the same trap AppBarSurface already neutralizes");
     }
 
     [Fact]
@@ -307,7 +307,7 @@ public class ShellDrawerHeaderTests
 
     private static string DrawerHeaderZoneOpenTag()
     {
-        // Anchored on the Name via a lookahead, matching ShellGearFabTests' own fix for this: a
+        // Anchored on the Name via a lookahead (the old ShellGearFabTests' fix for this): a
         // reordering of Mode/Margin/Padding/ShadowAssist (a semantically null edit) cannot fail
         // this scan.
         var match = Regex.Match(ShellMarkup(),

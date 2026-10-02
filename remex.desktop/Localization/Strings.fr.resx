@@ -2436,7 +2436,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>APPARENCE EN DIRECT</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personnaliser l'apparence</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

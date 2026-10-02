@@ -240,50 +240,6 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
         </Style>
 
-        <!-- ═══ Gear FAB (RemEx-bado6) ═══
-             The old Button.gear-fab style block is gone — the element is a material:FloatingButton
-             now (its own comment, further down, covers the size/shadow/ripple traps) — and a
-             Button-typed selector can no longer even reach that control, so the block would have
-             been dead code, not merely superseded.
-
-             What is left here is the interactive feedback the migration otherwise dropped (Opus
-             review round 2, MEDIUM): the vendor theme's own hover/press affordances turned out to
-             be nearly silent once ShadowAssist.ShadowDepth was pinned to Depth0 (no shadow left for
-             ^:pointerover:not(.no-material)'s ShadowAssist.Darken to darken) and Background is a
-             LocalValue on the button (permanently outranks any Style, so a :pointerover repaint the
-             old style used is not an option here - see the FAB's own comment). RenderTransform is
-             free of that conflict: nothing in FloatingButton.axaml sets it at any priority, so a
-             plain app Style can drive it uncontested, the same scale(1.1)/scale(0.95) the deleted
-             Button.gear-fab:pointerover/:pressed blocks used.
-
-             The shadow half of the lift lives on GearFabShadow, a plain Avalonia Border with no
-             vendor ControlTheme of its own — nothing here competes with an unconditioned base Style,
-             so BoxShadow can be set the normal way (Style priority) with a :pointerover variant
-             (StyleTrigger priority) safely overriding it, unlike the FloatingButton itself. Scoped to
-             Panel#GearFabWrap:pointerover rather than a pseudo-class on the Border directly - the
-             Border is IsHitTestVisible="False" and could never receive :pointerover on its own; the
-             wrapping Panel's bounds are exactly the FAB's own (GearFabWrap carries the shared size),
-             so hovering anywhere over the visible button IS hovering the Panel. -->
-        <Style Selector="Border#GearFabShadow">
-            <Setter Property="BoxShadow" Value="{DynamicResource Elevation2Shadow}"/>
-        </Style>
-        <Style Selector="Panel#GearFabWrap:pointerover Border#GearFabShadow">
-            <Setter Property="BoxShadow" Value="{DynamicResource Elevation3Shadow}"/>
-        </Style>
-        <Style Selector="material|FloatingButton#GearFab">
-            <Setter Property="Transitions">
-                <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="material|FloatingButton#GearFab:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.1)"/>
-        </Style>
-        <Style Selector="material|FloatingButton#GearFab:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.95)"/>
-        </Style>
-
         <!-- ═══ Drawer surface ═══
              The SplitView this replaced carried PaneBackground="Transparent", and the drawer content
              brings its own accent gradient over GlassBaseDarkBrush at 0.9 opacity. Material's control
@@ -690,8 +646,8 @@
 
                                      ShadowAssist.ShadowDepth="Depth0" neutralizes ColorZone's own Depth2 default
                                      (Material's fixed, GlowStrength-blind black shadow) rather than fighting it
-                                     with a lower-priority Style, the same reasoning AppBarSurface/GearFabShadow
-                                     already document - this block does not need its own elevation shadow inside
+                                     with a lower-priority Style, the same reasoning AppBarSurface
+                                     already documents -this block does not need its own elevation shadow inside
                                      the drawer rail.
 
                                      ABSORBS the round brand-mark drawer-toggle button rather than duplicating
@@ -940,7 +896,40 @@
                                     </ListBoxItem>
                                 </ListBox>
 
-                                <!-- ═══ Bottom: Connection Status (RemEx-44gc6) ═══
+                                <!-- ═══ Bottom: footer - Personalize + Connection Status ═══ -->
+                                <StackPanel Grid.Row="2" Name="DrawerFooter">
+                                <!-- Personalize (RemEx-kq10x.6, cross-app cohesion decision 8). This used to
+                                     be a floating palette button in the window's bottom-right corner on every
+                                     page; it lives here now, directly above the connection chip, so the shell
+                                     has one floating element (the snackbar) instead of two. It opens the side
+                                     sheet through the same ToggleSettingsPanelCommand that Ctrl+, and the
+                                     command palette use. Opening the sheet closes the drawer
+                                     (ShellViewModel.OnIsSettingsPanelOpenChanged), so the sheet's focus
+                                     fallback is the app bar's DrawerToggle, not this button.
+                                     "tertiary" from docs/BUTTON-VOCABULARY.md: a present-but-not-competing
+                                     action with the card-hover state layer, like the drawer's other chrome
+                                     buttons. It is not a ListBoxItem in NavList on purpose: Personalize is a
+                                     sheet over the current page, not a destination, so it must never take
+                                     the nav list's "you are here" selection. The 22px icon matches the nav items
+                                     and the chip below, and the label reuses the sheet's own title key, so the
+                                     entry and the sheet it opens say the same word. No Padding/CornerRadius/
+                                     Foreground inline: the tertiary class owns them (ButtonVocabularyTests). -->
+                                <Button Name="PersonalizeFooterButton" Classes="tertiary" Margin="2,4,2,0" Height="48"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand"
+                                        Command="{Binding ToggleSettingsPanelCommand}"
+                                        ToolTip.Tip="{conv:Localize Personalize_EntryTooltip}"
+                                        AutomationProperties.Name="{conv:Localize Personalize_EntryTooltip}">
+                                    <!-- Margins line the icon and label up with the nav items' 64px icon column
+                                         and their label start above, measured on the live window: the tertiary
+                                         class's own Padding sits in front of this Grid, so the offsets are
+                                         small rather than 21/72. -->
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <mi:MaterialIcon Grid.Column="0" Kind="Palette" Width="22" Height="22" Margin="4,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{conv:Localize Personalize_Title}" FontSize="14" VerticalAlignment="Center" Margin="28,0,0,0" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </Button>
+
+                                <!-- ═══ Connection Status (RemEx-44gc6) ═══
                                      Border → Button: a Border cannot be focused or carry a ToolTip, and the
                                      status this control reports is the whole reason someone would want either.
                                      RemEx-z7pnx.1 revisited the "no role fits" call above: the inline
@@ -950,7 +939,7 @@
                                 <!-- Padding/CornerRadius stay inline: this is the collapsed drawer's full-width
                                      status row, a deliberately different geometry from the CornerRadiusSmall
                                      card buttons around it, not a copy-paste leftover (RemEx-cgrv3). -->
-                                <Button Name="ConnectionStatusButton" Classes="secondary" Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand" AutomationProperties.Name="{conv:Localize A11y_ConnectionStatusButton}" AutomationProperties.HelpText="{Binding Presence.PresenceAccessibleName}">
+                                <Button Name="ConnectionStatusButton" Classes="secondary" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Cursor="Hand" AutomationProperties.Name="{conv:Localize A11y_ConnectionStatusButton}" AutomationProperties.HelpText="{Binding Presence.PresenceAccessibleName}">
                                     <!-- THE COLLAPSED DRAWER'S ONLY INFORMATION CHANNEL (RemEx-44gc6). With the
                                          drawer closed, column [1] below is hidden and this tooltip is the whole
                                          picture — the reason host-down and no-phone have to read differently
@@ -1037,6 +1026,7 @@
                                         </Flyout>
                                     </Button.Flyout>
                                 </Button>
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </Border>
@@ -1360,115 +1350,12 @@
                 </Thumb>
             </Panel>
 
-            <!-- ═══ FLOATING GEAR FAB (Bottom-Right, RemEx-bado6, revised per Opus review round 2
-                 of a4c0997) ═══
-                 material:FloatingButton replaces the hand-rolled Button.gear-fab (its three style
-                 blocks are gone from UserControl.Styles above).
-
-                 ONE WRAPPER, ONE POSITION (review round 2, MEDIUM). Grid.Row/size/alignment/Margin/
-                 IsVisible used to be duplicated on BOTH the shadow Border and the FloatingButton —
-                 nothing stopped a future resize of one from silently leaving the other behind,
-                 which is exactly how the shadow would stop being a coincident circle. GearFabWrap
-                 carries all of that exactly ONCE now; the two children below own only what makes
-                 each of them different from the other (CornerRadius/Background/IsHitTestVisible for
-                 the shadow; the button's own local-value overrides for the size/shadow trap below).
-                 Width/Height still appear on the FloatingButton too — not duplication so much as
-                 the other half of the size trap immediately below, which needs a value that beats
-                 the theme regardless of what the Panel would otherwise stretch it to.
-
-                 THE SIZE TRAP. Material.Avalonia 3.19.0's FloatingButton.axaml (read from source,
-                 not assumed off the DLL, per the RemEx-vryje/RemEx-04ftl lesson) sets its default
-                 56x56 footprint from an UNCONDITIONED <Style Selector="^"> inside its own
-                 ControlTheme, and its 40x40 (.Mini) / 48-tall ([IsExtended=true]) variants from
-                 ACTIVATED class/attribute selectors — the same
-                 material-avalonia-activated-setters-outrank-plain-overrides shape a plain app-level
-                 Style override would silently lose to regardless of which kind of selector actually
-                 wins. Width/Height/MinWidth/MinHeight/Padding are LOCAL VALUES here instead, which
-                 beat every one of those unconditionally — and stay at 52/52/0 because
-                 ShellSnackbarHostTests.TheSnackbarHostIsAnchoredClearOfTheGearFab measures the
-                 toast's own bottom margin (88 = 20 + 52 + 16) against exactly that number; a
-                 different footprint here silently reopens that gap. MinWidth/MinHeight need the
-                 same local override as Width/Height, not just the latter — the theme's own MinHeight
-                 default (56) would otherwise still win over a Height=52 local value.
-
-                 Background/Foreground stay local values too, pointed at RemEx's own AccentPrimary/
-                 AccentForeground pair (what the old Button used) rather than Material's own
-                 MaterialPrimaryMidBrush/-ForegroundBrush default — which is also WHY the hover/press
-                 feedback below can't just repaint Background on :pointerover the way the old
-                 Button.gear-fab style did: a LocalValue is permanently sticky against the whole
-                 Styles system (Style AND StyleTrigger alike), so a Background assigned here can
-                 never be overridden by any Style rule afterward. RenderTransform carries the
-                 lift/press feedback instead, below, because nothing in FloatingButton's own theme
-                 sets that property at any priority, so there is nothing for an app Style to lose to.
-
-                 assists:ButtonAssist.ClickFeedbackColor is a local value too (review round 2, LOW,
-                 corrected RemEx-alwfa.3): the #000000-at-26%-opacity default does NOT come from
-                 Assists/ButtonAssist.cs — that class (checked against Material.Avalonia 3.19.0's
-                 own source) only declares ClickFeedbackColorProperty as an attached property with
-                 no default value of its own. The literal lives in THIS control's own ControlTheme
-                 instead: Material.Avalonia 3.19.0's Controls/FloatingButton.axaml sets
-                 assists:ButtonAssist.ClickFeedbackColor="#000000" directly and binds the ripple's
-                 RippleOpacity to its own ButtonPressedOpacity resource (0.26) - both confirmed
-                 against that file, not the assist class. This is FloatingButton's own choice, not
-                 a shared one: MaterialButtonBase's Button.axaml (the theme every other Button in
-                 this app resolves against) instead binds the same property to
-                 "{Binding $self.Foreground}", so an ordinary Button's ripple already follows its
-                 own Foreground with no override needed - only the FAB hardcodes a literal, and
-                 only the FAB reads as a near-invisible dark smudge on the dark accents
-                 CyberNOC/BaseDarkGlass already use for AccentPrimary. Pointed at
-                 AccentForegroundBrush instead, the ripple inverts with the theme the same way the
-                 icon and the shadow do.
-
-                 THE SHADOW TRAP. assists:ShadowAssist.ShadowDepth="Depth0" neutralizes
-                 FloatingButton's own fixed black shadow (Depth1 default) THE SAME WAY
-                 AppBarSurface/ColorZone above do, for the same reason: ShadowAssist writes BoxShadow
-                 as a LocalValue on PART_ButtonRootBorder the instant ShadowDepth changes (confirmed
-                 against Material.Avalonia 3.19.0's own Assists/ShadowAssist.cs), so no lower-priority
-                 override could ever compete with it afterward. The real shadow lives on
-                 GearFabShadow instead, a separate childless Border behind this control.
-
-                 Classes="no-transitions" (review round 2, MEDIUM) opts the button out of its own
-                 theme's entrance animation — FloatingButton.axaml animates PART_ButtonRootBorder
-                 from scale 0 to opacity/scale 1 over 0:0:0.5 whenever it is shown, but GearFabShadow
-                 has no such animation and would otherwise sit fully visible around an invisible,
-                 still-scaling-up button for that half second: a dark ring with nothing inside it,
-                 worst on the deepest shadows (CyberNOC/BaseDarkGlass). The class collapses that
-                 animation to near-instant (the theme's own opt-out, not a workaround), matching the
-                 old plain Button, which never animated in either. It is scoped to exactly that one
-                 entrance keyframe — the ripple and hover-wash effects below are gated by a different
-                 class (:not(.no-material)) and are untouched by this one.
-
-                 CornerRadius on the shadow is NOT settable on the FloatingButton itself to compare
-                 against: the template bakes its own from a StaticResource (32, not a
-                 TemplateBinding). GearFabShadow's 26 is half its own Width (52/2) instead, which
-                 ShellGearFabTests pins directly rather than merely asserting "looks like a circle" —
-                 Avalonia's rounded-rect geometry would still render a circle at other CornerRadius
-                 values too (it clamps an over-large radius), so a geometry test needs the exact
-                 relationship, not just a passing shape. -->
-            <Panel Grid.Row="1" Name="GearFabWrap" Width="52" Height="52"
-                   HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20"
-                   IsVisible="{Binding !IsShellChromeHidden}">
-                <Border Name="GearFabShadow" CornerRadius="26"
-                        Background="Transparent" IsHitTestVisible="False"/>
-                <material:FloatingButton AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}"
-                                          Name="GearFab" Classes="no-transitions"
-                                          Width="52" Height="52" MinWidth="52" MinHeight="52" Padding="0"
-                                          Background="{DynamicResource AccentPrimaryBrush}"
-                                          Foreground="{DynamicResource AccentForegroundBrush}"
-                                          assists:ShadowAssist.ShadowDepth="Depth0"
-                                          assists:ButtonAssist.ClickFeedbackColor="{DynamicResource AccentForegroundBrush}"
-                                          Command="{Binding ToggleSettingsPanelCommand}"
-                                          ToolTip.Tip="{conv:Localize Personalize_FabTooltip}">
-                    <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </material:FloatingButton>
-            </Panel>
-
             <!-- ═══ SNACKBAR HOST (RemEx-uedna) ═══
-                 Replaces the WindowNotificationManager / NotificationCard toast. Declared after the
-                 FAB so it paints on top of it should the two ever overlap, but the real fix is the
-                 bottom margin: 20 (FAB's own margin) + 52 (FAB height) + 16 (gap) = 88, which clears
-                 the FAB's footprint entirely rather than relying on z-order alone - the acceptance
-                 criterion is "above the FAB", not merely "not visually identical to it".
+                 Replaces the WindowNotificationManager / NotificationCard toast. Bottom margin is 20,
+                 the same 20px corner inset on both edges: it used to be 88 to clear the floating
+                 Personalize button, which sat in this corner until RemEx-kq10x.6 moved Personalize
+                 into the drawer footer (cross-app cohesion decision 8: one floating element). The
+                 snackbar is that one element now, so it takes the corner itself.
                  HorizontalAlignment/VerticalAlignment (not the Snackbar* ones) are set to Right/Bottom
                  so the control sizes to its own content instead of stretching over the row - a
                  stretched ContentControl with a Background (the control theme sets Transparent, and
@@ -1485,7 +1372,7 @@
                  both ends. -->
             <material:SnackbarHost Grid.Row="1" HostName="ShellSnackbar"
                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                   Margin="0,0,20,88"
+                                   Margin="0,0,20,20"
                                    SnackbarHorizontalAlignment="Right" SnackbarVerticalAlignment="Bottom"
                                    SnackbarMaxCounts="3"/>
 

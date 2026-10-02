@@ -2730,7 +2730,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>LIVE APPEARANCE</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalize appearance</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

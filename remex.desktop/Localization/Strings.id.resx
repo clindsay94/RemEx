@@ -2436,7 +2436,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>TAMPILAN LANGSUNG</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalisasi tampilan</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

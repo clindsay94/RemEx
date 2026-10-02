@@ -66,12 +66,14 @@ public partial class ShellView : UserControl
 
     // RemEx-ddk6b: overlay focus management. _drawerContentRoot/_settingsSideSheet are the two
     // overlays' focus scopes (KeyboardNavigation.TabNavigation="Cycle" traps Tab inside each in
-    // XAML); _drawerToggle/_gearFab/_settingsSheetCloseButton are focus targets - the fallback
-    // restore target and, for the sheet, the move-in target. _drawerInvoker/_sheetInvoker hold
-    // whatever had focus right before each overlay opened, so OnOverlayToggled can give it back.
+    // XAML); _drawerToggle/_settingsSheetCloseButton are focus targets - the fallback restore
+    // target for both overlays and, for the sheet, the move-in target. _drawerToggle is the sheet's
+    // fallback too since RemEx-kq10x.6: Personalize now opens from the drawer footer, and opening
+    // the sheet closes the drawer, so the button that opened it is off screen by the time the sheet
+    // closes. _drawerInvoker/_sheetInvoker hold whatever had focus right before each overlay opened,
+    // so OnOverlayToggled can give it back.
     private Border? _drawerContentRoot;
     private Button? _drawerToggle;
-    private FloatingButton? _gearFab;
     private SideSheet? _settingsSideSheet;
     private Button? _settingsSheetCloseButton;
     private IInputElement? _drawerInvoker;
@@ -133,7 +135,6 @@ public partial class ShellView : UserControl
         _navList = this.FindControl<ListBox>("NavList");
         _drawerContentRoot = this.FindControl<Border>("DrawerContentRoot");
         _drawerToggle = this.FindControl<Button>("DrawerToggle");
-        _gearFab = this.FindControl<FloatingButton>("GearFab");
         _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
         _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
         WireSheetResizeGrip();
@@ -300,7 +301,6 @@ public partial class ShellView : UserControl
         _navList = this.FindControl<ListBox>("NavList");
         _drawerContentRoot = this.FindControl<Border>("DrawerContentRoot");
         _drawerToggle = this.FindControl<Button>("DrawerToggle");
-        _gearFab = this.FindControl<FloatingButton>("GearFab");
         _settingsSideSheet = this.FindControl<SideSheet>("SettingsSideSheet");
         _settingsSheetCloseButton = this.FindControl<Button>("SettingsSheetCloseButton");
         WireSheetResizeGrip();
@@ -731,7 +731,7 @@ public partial class ShellView : UserControl
                 _settingsSideSheet,
                 ref _sheetInvoker,
                 () => _settingsSheetCloseButton,
-                _gearFab);
+                _drawerToggle);
         }
 
         // RemEx-vkkcq review MEDIUM: the view model re-syncs PersonalizeSheetWidth from every

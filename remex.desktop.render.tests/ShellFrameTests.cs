@@ -35,7 +35,7 @@ public sealed class ShellFrameTests
         var whole = new PixelRect(0, 0, frame.Size.Width, frame.Size.Height);
 
         IsEffectivelyFlat(frame, whole).Should().BeFalse(
-            "the rendered shell should carry the drawer, app bar, FAB and background - not present "
+            "the rendered shell should carry the drawer, app bar and background - not present "
             + "as one solid colour the way RemEx-b8dxy's opaque SideSheet did");
     }
 
@@ -44,7 +44,7 @@ public sealed class ShellFrameTests
         yield return new object[] { "AppBar" };
         yield return new object[] { "ShellDrawer" };
         yield return new object[] { "DrawerHeaderMachineName" };
-        yield return new object[] { "GearFabWrap" };
+        yield return new object[] { "PersonalizeFooterButton" };
     }
 
     [AvaloniaTheory]

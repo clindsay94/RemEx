@@ -2436,7 +2436,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>APARÊNCIA AO VIVO</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalizar aparência</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

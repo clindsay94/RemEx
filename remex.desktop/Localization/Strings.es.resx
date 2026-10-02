@@ -2449,7 +2449,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>APARIENCIA EN VIVO</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalizar apariencia</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

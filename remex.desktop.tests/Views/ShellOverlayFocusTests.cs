@@ -100,8 +100,12 @@ public class ShellOverlayFocusTests
     }
 
     [Fact]
-    public void TheSettingsBranchTogglesFocusWithTheGearFabAsFallback()
+    public void TheSettingsBranchTogglesFocusWithTheDrawerToggleAsFallback()
     {
+        // RemEx-kq10x.6: the floating gear FAB used to be this fallback. Personalize now opens from
+        // the drawer footer, and opening the sheet closes the drawer, so the button that opened it
+        // is off screen by the time the sheet closes. The app bar's DrawerToggle is always on
+        // screen while the shell chrome is, which is what a fallback restore target needs.
         var body = OnViewModelPropertyChangedBody();
 
         var sheetBranch = body.IndexOf("nameof(ShellViewModel.IsSettingsPanelOpen)", StringComparison.Ordinal);
@@ -111,8 +115,9 @@ public class ShellOverlayFocusTests
 
         Assert.Contains("OnOverlayToggled(", sheetSection, StringComparison.Ordinal);
         Assert.Contains("_sheetInvoker", sheetSection, StringComparison.Ordinal);
-        Assert.Contains("_gearFab", sheetSection, StringComparison.Ordinal);
+        Assert.Contains("_drawerToggle", sheetSection, StringComparison.Ordinal);
         Assert.Contains("_settingsSideSheet", sheetSection, StringComparison.Ordinal);
+        Assert.DoesNotContain("_gearFab", ShellCodeBehind(), StringComparison.Ordinal);
     }
 
     [Fact]

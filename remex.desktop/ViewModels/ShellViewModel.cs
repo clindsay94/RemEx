@@ -135,7 +135,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Mutual exclusion between the drawer (RemEx-q3mle) and the settings side sheet (RemEx-zrlze).
     /// Both are full-height overlays with their own scrim, and both can be triggered from several
-    /// places (the drawer toggle, nav-item activation, the gear FAB, <c>NavigateToCustomization</c>,
+    /// places (the drawer toggle, nav-item activation, the drawer footer's Personalize button, <c>NavigateToCustomization</c>,
     /// <c>DismissOverlays</c>) - putting the rule here instead of in each call site means every one
     /// of them gets it for free, and a new caller added later cannot forget it. Closing the OTHER
     /// side is a plain assignment rather than a toggle, so setting either property false never
@@ -1778,7 +1778,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Opens the live Personalization popup. Kept for the command palette / Home shortcut that
     /// previously navigated to the full-screen Customization page (now retired — its content
-    /// lives in the FAB popup so changes preview live against the current screen).
+    /// lives in the Personalize side sheet so changes preview live against the current screen).
     /// </summary>
     [RelayCommand]
     public void NavigateToCustomization()

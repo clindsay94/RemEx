@@ -2436,7 +2436,7 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>लाइव रूप-रंग</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>दिखावट वैयक्तिकृत करें</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">

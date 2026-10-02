@@ -15,9 +15,9 @@ namespace Remex.Desktop.Tests.Views;
 /// </summary>
 /// <remarks>
 /// A source scan, matching <see cref="ShellDrawerOverlayTests"/>: there is no headless render here,
-/// and a misplaced or mis-sized <c>SnackbarHost</c> throws nothing - it just quietly sits under the
-/// gear FAB or swallows clicks over the content area, which is exactly what the bead's acceptance
-/// criterion ("snackbars appear above the FAB rather than under it") is about.
+/// and a misplaced or mis-sized <c>SnackbarHost</c> throws nothing - it just quietly sits in the wrong
+/// place or swallows clicks over the content area. (The floating Personalize button it once had to
+/// clear moved into the drawer footer under RemEx-kq10x.6.)
 /// </remarks>
 public class ShellSnackbarHostTests
 {
@@ -64,13 +64,14 @@ public class ShellSnackbarHostTests
     }
 
     [Fact]
-    public void TheSnackbarHostIsAnchoredClearOfTheGearFab()
+    public void TheSnackbarHostTakesTheCornerTheFloatingButtonLeft()
     {
-        // The FAB is Width/Height=52 at Margin 0,0,20,20 (bottom 20 to bottom 72). The snackbar's own
-        // bottom margin must clear that footprint entirely, not merely differ from it - 88 = 20 (FAB
-        // margin) + 52 (FAB height) + 16 (gap).
+        // The bottom margin used to be 88 to clear the floating Personalize button (52 tall at a 20
+        // inset, plus a 16 gap). RemEx-kq10x.6 moved Personalize into the drawer footer, so the
+        // snackbar is the shell's one floating element and sits at the same 20px inset on both edges.
+        // An 88 here now would just float toasts over empty space.
         Assert.Matches(
-            new Regex(@"material:SnackbarHost[^>]*Margin=""0,0,20,88"""),
+            new Regex(@"material:SnackbarHost[^>]*Margin=""0,0,20,20"""),
             ShellMarkup());
     }
 

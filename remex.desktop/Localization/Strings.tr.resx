@@ -2440,7 +2440,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
   <data name="Personalize_Subtitle" xml:space="preserve">
     <value>CANLI GÖRÜNÜM</value>
   </data>
-  <data name="Personalize_FabTooltip" xml:space="preserve">
+  <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Görünümü kişiselleştir</value>
   </data>
   <data name="Conn_Header" xml:space="preserve">
