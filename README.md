@@ -131,7 +131,7 @@ The bullet-by-bullet record, 770 entries with bead IDs, is in [docs/CHANGELOG.md
 - Power controls (shutdown, reboot, etc.) and Wake-on-LAN (no more typing the MAC address)
 - Clipboard sync, phone to PC
 - Multi-monitor support (including monitors placed above/left of the origin, fixed on Linux in 2.5.0)
-- Palette Studio and seed-based theming (PC), Material You dynamic color as a real toggle (Android)
+- Personalize: seed-based theming with a colour wheel and live preview (PC), Material You dynamic color as a real toggle (Android)
 - Paired-device management: rename/unpair from Settings, tap-to-connect from the phone
 - First-run tutorial (Android) and paged tutorial carousel (PC), plus the Home-screen readiness check (admin rights, certificate, firewall, start-at-sign-in)
 - Localized in 9 languages: en, es, fr, hi, id, pl, pt-BR, tr, uk
@@ -213,7 +213,7 @@ cd RemEx
 - Kotlin 2.3.21, AGP 9.2.1, Gradle 9.4.1, JDK 17, Compose UI 1.12.0-beta02 with Material3 1.5.0-alpha24 (`remex.android`)
 - `remex.core`, shared protocol/models (`RemexMessage`, `DesktopMeta`, `TelemetryPayload`), targets `net10.0` and `net10.0-android`
 - `remex.agent` / `remex.agent.windows` / `remex.agent.native.linux`, the PC host and its platform backends
-- `remex.desktop`, Avalonia UI (Palette Studio, dashboard, tray)
+- `remex.desktop`, Avalonia UI (Personalize, dashboard, tray)
 - `remex.android`, the Kotlin/Compose client
 - `remex.branding`, shared branding assets
 - `installer/`, Inno Setup (`RemEx.iss`) for Windows, packaging scripts for Linux

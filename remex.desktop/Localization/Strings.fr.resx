@@ -121,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  Commandes</value>
+    <value>Commandes</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>Verrouillez, redémarrez ou éteignez ce PC</value>
@@ -162,7 +162,7 @@
 
   
   <data name="Settings_Header" xml:space="preserve">
-    <value>PARAMÈTRES</value>
+    <value>Paramètres</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
     <value>← Accueil</value>
@@ -174,7 +174,7 @@
     <value>Paramètres enregistrés !</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
-    <value>CONNEXION</value>
+    <value>Connexion</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Aligner sur la grille</value>
@@ -186,7 +186,7 @@
     <value>Taille de la grille</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>CAPTEURS ÉPINGLÉS</value>
+    <value>Capteurs épinglés</value>
   </data>
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Sélectionnez les capteurs à afficher sur l'écran d'accueil</value>
@@ -225,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  Applications</value>
+    <value>Applications</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>Programmes que votre téléphone peut lancer</value>
@@ -300,10 +300,10 @@
     <value>MAX</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
-    <value>CAPTEURS ACTIFS</value>
+    <value>Capteurs actifs</value>
   </data>
   <data name="Canvas_NewSensors" xml:space="preserve">
-    <value>NOUVEAUX CAPTEURS</value>
+    <value>Nouveaux capteurs</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
     <value>+ Ajouter une carte</value>
@@ -329,7 +329,7 @@
 
   
   <data name="RemoteDesktop_Header" xml:space="preserve">
-    <value>BUREAU À DISTANCE</value>
+    <value>Bureau à distance</value>
   </data>
   <data name="RemoteDesktop_Quality" xml:space="preserve">
     <value>Qualité :</value>
@@ -376,13 +376,13 @@
     <value>Rayon des angles</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Opacité du verre</value>
+    <value>Opacité des cartes</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Opacité de la fenêtre</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>VOLET</value>
+    <value>Volet de la zone de notification</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>Opacité du volet</value>
@@ -638,7 +638,7 @@
   </data>
   
   <data name="Tutorial_Header" xml:space="preserve">
-    <value>MISE EN ROUTE</value>
+    <value>Mise en route</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
     <value>Ignorer ✕</value>
@@ -707,7 +707,7 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>🪟 Intégré : Capteurs de base — usage CPU, RAM, E/S disque, débits réseau. Toujours disponible, sans logiciel tiers.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>Épinglez vos capteurs favoris à l'écran d'Accueil depuis Paramètres → Capteurs épinglés.</value>
+    <value>Épinglez vos capteurs favoris sur l'Accueil depuis Personnaliser → Mise en page → Capteurs épinglés.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -777,10 +777,10 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Vous êtes prêt !</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Utilisez la barre latérale pour naviguer entre Accueil, Capteurs, Commandes, Applications, Processus, Fichiers, Routines et À propos.</value>
+    <value>Utilisez la barre latérale pour naviguer entre Accueil, Capteurs, Commandes, Routines, Applications, Processus, Fichiers, Journaux et Diagnostics, Paramètres et À propos. Personnaliser se trouve en bas de la barre latérale.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Ouvrez Paramètres (⚙) pour personnaliser votre thème, connexion, qualité de flux et épingler des capteurs sur l'accueil.</value>
+    <value>Paramètres regroupe l'appairage, les dossiers partagés, les appareils de confiance, les alertes des capteurs et les sauvegardes. La langue, le thème et les capteurs épinglés se trouvent dans Personnaliser.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Vous pouvez rejouer ce tutoriel à tout moment depuis Paramètres.</value>
@@ -815,7 +815,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Scanner avec l'app RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PIN D'APPAIRAGE</value>
+    <value>PIN d'appairage</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Entrez ce code sur votre téléphone pour terminer l'appairage</value>
@@ -829,7 +829,7 @@ Linux : ip addr  ou  hostname -I</value>
 
   
   <data name="Settings_General" xml:space="preserve">
-    <value>GÉNÉRAL</value>
+    <value>Général</value>
   </data>
   <data name="Settings_CloseToTray" xml:space="preserve">
     <value>Réduire dans la zone de notification à la fermeture</value>
@@ -862,7 +862,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Quitter</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
-    <value>AIDE</value>
+    <value>Aide</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Revoir le tutoriel</value>
@@ -871,7 +871,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Regarder à nouveau le tutoriel de démarrage</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
-    <value>DOSSIERS PARTAGÉS</value>
+    <value>Dossiers partagés</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Choisissez quels dossiers de ce PC apparaissent dans Fichiers. Les dossiers en lecture seule permettent de parcourir et de télécharger, tandis que les dossiers modifiables acceptent aussi les envois depuis votre téléphone.</value>
@@ -1182,7 +1182,7 @@ Linux : ip addr  ou  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>Type de graphique</value>
+    <value>Choisir une vue</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>Verrouiller le PC</value>
@@ -1254,7 +1254,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Sur Android, ajoutez des tuiles RemEx aux Paramètres rapides pour des actions instantanées comme Verrouiller, Mettre en veille, Redémarrer ou Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossaire : Personnalisation</value>
+    <value>Glossaire : Personnaliser</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Ajustez les thèmes, la stratégie de palette, les polices, les formes de cartes et l'opacité pour personnaliser votre expérience.</value>
@@ -1293,7 +1293,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>À propos</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>Contrôle à distance sécurisé de votre PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>Compilation</value>
@@ -1433,7 +1433,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Comment trouver l'adresse IP de mon PC ?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows : « ipconfig » dans l'invite de commandes. macOS : Préférences Système → Réseau. Linux : « ip addr » dans le terminal. Vous pouvez également voir l'IP directement dans la fenêtre RemEx sur votre PC.</value>
+    <value>Windows : lancez « ipconfig » dans l'invite de commandes. Linux : lancez « ip addr » dans un terminal. C'est rarement nécessaire : le QR code d'appairage de ce PC contient déjà son adresse.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>La découverte automatique ne trouve pas mon PC. Que dois-je vérifier ?</value>
@@ -1550,7 +1550,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Désactivé</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>JOURNAUX ET DIAGNÓSTICS</value>
+    <value>Journaux et Diagnostics</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>Journaux d'application en direct</value>
@@ -1828,7 +1828,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Déconnecter</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>REMEX - Exécution à Distance / Télémétrie en Direct</value>
+    <value>RemEx : contrôlez votre PC et suivez ses capteurs depuis votre téléphone</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Journaux et Diagnostics</value>
@@ -1924,7 +1924,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Rayon de bordure en pixels</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Ajuster l'opacité de l'effet de verre dépoli en arrière-plan</value>
+    <value>Opacité des cartes. Baissez-la pour laisser transparaître l'arrière-plan.</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>Pourcentage d'opacité du verre dépoli</value>
@@ -2002,25 +2002,25 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Épingler ou détacher la fenêtre RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>Auto (intelligent)</value>
+    <value>Auto</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>Barre ▮▮▮</value>
+    <value>Histogramme à barres</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>Ligne ╱╲╱</value>
+    <value>Ligne</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>Anneau ◍</value>
+    <value>Jauge annulaire</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>Compteur LED</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>Lueur ▒▓▒</value>
+    <value>Lueur</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>Jauge ━━━</value>
+    <value>Jauge</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>Couleur / Préréglage</value>
@@ -2050,7 +2050,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Avertissement de sécurité : lorsque cette option est activée, toute personne disposant d'un appareil associé peut voir et contrôler ce PC sans le déverrouiller au clavier. Ne l'activez que sur un PC de confiance.</value>
   </data>
   <data name="Settings_BackupSection" xml:space="preserve">
-    <value>SAUVEGARDE ET RESTAURATION</value>
+    <value>Sauvegarde et restauration</value>
   </data>
   <data name="Settings_BackupDescription" xml:space="preserve">
     <value>Exportez tout ce que RemEx mémorise — la disposition de votre canevas, les applications du lanceur, les dossiers partagés et le thème — dans un seul fichier, ou importez-en un pour le restaurer. Les appairages et certificats ne sont jamais inclus ; vous devrez réappairer votre téléphone après une restauration.</value>
@@ -2224,7 +2224,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Impossible de charger les détails de cet élément. Vérifiez que l'appareil connecté est toujours couplé, puis réessayez.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
-    <value>PROPRIÉTÉS</value>
+    <value>Propriétés</value>
   </data>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Afficher les détails et un aperçu de l'élément sélectionné.</value>
@@ -2239,13 +2239,13 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Effacer les terminés</value>
   </data>
   <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
-    <value>TÉLÉCHARGEMENT</value>
+    <value>Téléchargement</value>
   </data>
   <data name="FileTransfer_QueueKindSend" xml:space="preserve">
-    <value>ENVOI</value>
+    <value>Envoi</value>
   </data>
   <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
-    <value>TÉLÉVERSEMENT</value>
+    <value>Téléversement</value>
   </data>
   <data name="FileTransfer_QueueStateActive" xml:space="preserve">
     <value>Transfert en cours…</value>
@@ -2272,7 +2272,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Vérification…</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
-    <value>TRANSFERTS</value>
+    <value>Transferts</value>
   </data>
   <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
     <value>Ajouté à la file d'attente des transferts.</value>
@@ -2323,7 +2323,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Demande d'accès aux lecteurs…</value>
   </data>
   <data name="FileTransfer_VolumesTitle" xml:space="preserve">
-    <value>LECTEURS</value>
+    <value>Lecteurs</value>
   </data>
   <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
     <value>Afficher les lecteurs de l'appareil connecté (autorisation requise).</value>
@@ -2338,7 +2338,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Aucun appareil n'a encore reçu d'autorisations de partage de fichiers.</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>Autoriser la navigation dans tous les lecteurs</value>
+    <value>Autoriser l'exploration de tout l'appareil</value>
   </data>
   <data name="Settings_TrustRefresh" xml:space="preserve">
     <value>Actualiser</value>
@@ -2350,7 +2350,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Autorisations de l'appareil révoquées.</value>
   </data>
   <data name="Settings_TrustSection" xml:space="preserve">
-    <value>CONFIANCE — PARTAGE DE FICHIERS</value>
+    <value>Confiance pour le partage de fichiers</value>
   </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Paramètres de confiance mis à jour.</value>
@@ -2368,7 +2368,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Personnaliser</value>
   </data>
   <data name="Personalize_Subtitle" xml:space="preserve">
-    <value>APPARENCE EN DIRECT</value>
+    <value>Apparence en direct</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personnaliser l'apparence</value>
@@ -2497,7 +2497,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Construire votre tableau de bord</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
-    <value>Double métrique ⑂</value>
+    <value>Double métrique</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Deuxième métrique</value>
@@ -2521,7 +2521,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Fonte pour les grands titres de page. Inclut les fontes d'affichage de l'application et toute fonte installée sur ce système.</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
-    <value>Taille de l'IU</value>
+    <value>Taille de l'interface</value>
   </data>
   <data name="Custom_UiScaleTip" xml:space="preserve">
     <value>Agrandissez ou réduisez tout — texte et contrôles — de 85 % à 130 %.</value>
@@ -2533,7 +2533,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Basculer entre la vue liste et la vue icône</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
-    <value>EFFACER</value>
+    <value>Effacer</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx sur GitHub</value>
@@ -2593,10 +2593,10 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>CPU</value>
   </data>
   <data name="Home_StatMemory" xml:space="preserve">
-    <value>MÉMOIRE</value>
+    <value>Mémoire</value>
   </data>
   <data name="Home_StatUptime" xml:space="preserve">
-    <value>DISPONIBILITÉ</value>
+    <value>Temps de fonctionnement</value>
   </data>
   <data name="Home_WelcomeIntro" xml:space="preserve">
     <value>Contrôlez ce PC depuis votre téléphone — diffusez le bureau, parcourez et transférez des fichiers, lancez des applications, exécutez des commandes et regardez les capteurs en direct. Associez votre téléphone dans Paramètres pour commencer.</value>
@@ -2668,7 +2668,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Adresse MAC copiée — collez-la dans l'application RemEx sur votre téléphone.</value>
   </data>
   <data name="Remote_ThisPcMac" xml:space="preserve">
-    <value>ADRESSE MAC DE CE PC</value>
+    <value>Adresse MAC de ce PC</value>
   </data>
   <data name="Remote_WakeExplainer" xml:space="preserve">
     <value>Wake-on-LAN vous permet de basculer ce PC sur votre réseau — même quand il est en veille ou complètement éteint. Cela fonctionne en envoyant un petit « paquet magique » qui dit à cet ordinateur de s'allumer.</value>
@@ -2680,7 +2680,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Réveiller ce PC depuis votre téléphone</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>SUPERPOSER UN DEUXIÈME CAPTEUR SUR</value>
+    <value>Superposer un deuxième capteur sur</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>Rechercher des capteurs…</value>
@@ -2835,7 +2835,7 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Couleur unie</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>Touche tonale</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>Éclatant</value>
@@ -2967,15 +2967,15 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Comment changer l'apparence de RemEx ?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Utilisez le bouton « Personnaliser l'apparence » pour ouvrir le panneau Personnaliser.
+    <value>Ouvrez Personnaliser en bas de la barre latérale.
 
-Vous pouvez modifier :
-• La couleur de base de votre palette : choisissez-la sur la roue chromatique, saisissez un code hexadécimal, alignez-la sur l’accentuation de Windows, ou prélevez-la depuis votre fond d’écran
+Vous pouvez modifier :
+• La couleur de base de votre palette : choisissez-la sur la roue chromatique, saisissez un code hexadécimal, alignez-la sur l’accentuation de Windows, ou prélevez-la depuis votre fond d’écran
 • Le mode clair, sombre ou système, et le contraste
 • La variante du jeu de couleurs et le matériau d’arrière-plan
-• Le rayon des coins, l’opacité du verre et l’intensité de la lueur
+• Le rayon des coins, l’opacité des cartes et l’intensité de la lueur
 • Le style de l’écran de démarrage
-• Les polices du titre de page et du contenu, ainsi que l’échelle de l’interface
+• Les polices du titre de page et du contenu, ainsi que la taille de l’interface
 • La langue de l’application, indépendamment de celle de Windows ou Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3216,7 +3216,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>RemEx ne fonctionne pas sur ce PC</value>
   </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
-    <value>TÉLÉPHONE</value>
+    <value>Téléphone</value>
   </data>
   <data name="Settings_PairedDevices" xml:space="preserve">
     <value>Appareils associés</value>
@@ -3378,7 +3378,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Nom de la palette</value>
   </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
-    <value>COMPORTEMENT</value>
+    <value>Comportement</value>
   </data>
   <data name="Custom_Tab_Colour" xml:space="preserve">
     <value>Couleur</value>
@@ -3483,7 +3483,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Abandon de « {0} » après plusieurs tentatives. Rien n'a été modifié pour cet élément.</value>
   </data>
   <data name="Custom_SectionFonts" xml:space="preserve">
-    <value>FONTES</value>
+    <value>Polices</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Titres</value>
@@ -4120,5 +4120,8 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   </data>
   <data name="Status_OwnHostOnly" xml:space="preserve">
     <value>RemEx sur ce PC ne se connecte qu'à lui-même. Pour joindre un autre PC, utilisez l'appli RemEx sur votre téléphone.</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Grande valeur</value>
   </data>
 </root>

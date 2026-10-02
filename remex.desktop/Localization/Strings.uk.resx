@@ -121,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  Команди</value>
+    <value>Команди</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>Заблокуйте, перезапустіть або вимкніть цей ПК</value>
@@ -162,7 +162,7 @@
 
   
   <data name="Settings_Header" xml:space="preserve">
-    <value>НАЛАШТУВАННЯ</value>
+    <value>Налаштування</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
     <value>← Головна</value>
@@ -174,7 +174,7 @@
     <value>Налаштування збережено!</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
-    <value>ПІДКЛЮЧЕННЯ</value>
+    <value>Підключення</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Прив'язати до сітки</value>
@@ -186,7 +186,7 @@
     <value>Розмір сітки</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>ЗАКРІПЛЕНІ ДАТЧИКИ</value>
+    <value>Закріплені датчики</value>
   </data>
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Виберіть датчики для відображення на головному екрані</value>
@@ -225,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  Застосунки</value>
+    <value>Застосунки</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>Програми, які може запустити ваш телефон</value>
@@ -300,10 +300,10 @@
     <value>МАКС</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
-    <value>АКТИВНІ ДАТЧИКИ</value>
+    <value>Активні датчики</value>
   </data>
   <data name="Canvas_NewSensors" xml:space="preserve">
-    <value>НОВІ ДАТЧИКИ</value>
+    <value>Нові датчики</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
     <value>+ Додати картку</value>
@@ -329,7 +329,7 @@
 
   
   <data name="RemoteDesktop_Header" xml:space="preserve">
-    <value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value>
+    <value>Віддалений робочий стіл</value>
   </data>
   <data name="RemoteDesktop_Quality" xml:space="preserve">
     <value>Якість:</value>
@@ -376,13 +376,13 @@
     <value>Радіус кута</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Непрозорість скла</value>
+    <value>Непрозорість карток</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Непрозорість вікна</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>СПЛИВАЮЧЕ ВІКНО</value>
+    <value>Спливаюче вікно в треї</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>Непрозорість спливаючого вікна</value>
@@ -638,7 +638,7 @@
   </data>
   
   <data name="Tutorial_Header" xml:space="preserve">
-    <value>ПОЧАТОК РОБОТИ</value>
+    <value>Початок роботи</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
     <value>Пропустити ✕</value>
@@ -707,7 +707,7 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>🪟 Вбудоване: Основні датчики — використання ЦП, ОЗП, дисковий ввід/вивід, швидкість мережі. Завжди доступно, без додаткового ПЗ.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>Закріпіть ваші улюблені датчики на головному екрані в Налаштуваннях → Закріплені датчики.</value>
+    <value>Закріпіть улюблені датчики на Головній у Персоналізувати → Макет → Закріплені датчики.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -777,10 +777,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Ви готові!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Використовуйте бічну панель, щоб переходити між сторінками Головна, Датчики, Команди, Застосунки, Процеси, Файли, Рутини та Про програму.</value>
+    <value>Використовуйте бічну панель, щоб переходити між сторінками Головна, Датчики, Команди, Рутини, Застосунки, Процеси, Файли, Журнали та діагностика, Налаштування та Про програму. Персоналізувати — унизу бічної панелі.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Відкрийте Налаштування (⚙), щоб налаштувати тему, з'єднання, якість потоку та закріпити датчики на Головній.</value>
+    <value>У Налаштуваннях — сполучення, спільні папки, довірені пристрої, сповіщення датчиків і резервні копії. Мова, тема та закріплені датчики — у Персоналізувати.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Ви можете повторно переглянути це навчання в будь-який час у Налаштуваннях.</value>
@@ -815,7 +815,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Скануйте додатком RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PIN-КОД СПОЛУЧЕННЯ</value>
+    <value>PIN-код сполучення</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Введіть цей код на телефоні, щоб завершити сполучення</value>
@@ -829,7 +829,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Settings_General" xml:space="preserve">
-    <value>ЗАГАЛЬНІ</value>
+    <value>Загальні</value>
   </data>
   <data name="Settings_CloseToTray" xml:space="preserve">
     <value>Згортати в трей під час закриття</value>
@@ -862,7 +862,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Вийти</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
-    <value>ДОПОМОГА</value>
+    <value>Допомога</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Повторити посібник</value>
@@ -871,7 +871,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Переглянути посібник для початківців ще раз</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
-    <value>СПІЛЬНІ ПАПКИ</value>
+    <value>Спільні папки</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Виберіть, які папки цього ПК відображатимуться у Файлах. Папки лише для читання дозволяють переглядати й завантажувати, а папки з правом запису також приймають файли з телефона.</value>
@@ -1182,7 +1182,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>Тип графіка</value>
+    <value>Виберіть вигляд</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>Заблокувати ПК</value>
@@ -1254,7 +1254,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>На Android додайте плитки RemEx до Швидких налаштувань для миттєвих дій, як-от Блокування, Сон, Перезавантаження або Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Глосарій: Налаштування вигляду</value>
+    <value>Глосарій: Персоналізувати</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Налаштуйте теми, стратегію палітри, шрифти, форми карток і прозорість під свій спосіб стеження та керування.</value>
@@ -1293,7 +1293,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Про програму</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>Безпечне віддалене керування ПК</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>Збірка</value>
@@ -1433,7 +1433,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Як дізнатися IP-адресу мого ПК?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' у Командному рядку. macOS: Системні параметри → Мережа. Linux: 'ip addr' у терміналі. Ви також можете побачити IP-адресу безпосередньо у вікні RemEx на вашому ПК.</value>
+    <value>Windows: виконайте 'ipconfig' у Командному рядку. Linux: виконайте 'ip addr' у терміналі. Це рідко потрібно: QR-код сполучення на цьому ПК уже містить його адресу.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Автоматичний пошук не знаходить мій ПК. Що перевірити?</value>
@@ -1550,7 +1550,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Вимк.</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>ЛОГИ ТА ДІАГНОСТИКА</value>
+    <value>Журнали та діагностика</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>Логи програми в реальному часі</value>
@@ -1828,7 +1828,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Відключити</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>REMEX - Віддалене виконання / Жива телеметрія</value>
+    <value>RemEx: керуйте ПК і стежте за його датчиками з телефона</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Журнали та діагностика</value>
@@ -1924,7 +1924,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Радіус заокруглення кутів у пікселях</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Налаштувати рівень непрозорості ефекту скла на фоні</value>
+    <value>Наскільки щільними виглядають картки. Зменште, щоб проступав фон.</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>Відсоток непрозорості ефекту скла</value>
@@ -2002,25 +2002,25 @@ Linux: ip addr  або  hostname -I</value>
     <value>Закріпити або відкріпити вікно RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>Авто (розумно)</value>
+    <value>Авто</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>Стовпчик ▮▮▮</value>
+    <value>Стовпчикова гістограма</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>Лінія ╱╲╱</value>
+    <value>Лінія</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>Кільце ◍</value>
+    <value>Кільцева шкала</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>LED-індикатор</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>Сяйво ▒▓▒</value>
+    <value>Сяйво</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>Датчик ━━━</value>
+    <value>Шкала</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>Колір / Пресет</value>
@@ -2050,7 +2050,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Попередження безпеки: коли це ввімкнено, будь-хто зі сполученим пристроєм може бачити та керувати цим ПК, не розблоковуючи його з клавіатури. Вмикайте лише на ПК, якому довіряєте.</value>
   </data>
   <data name="Settings_BackupSection" xml:space="preserve">
-    <value>РЕЗЕРВНЕ КОПІЮВАННЯ ТА ВІДНОВЛЕННЯ</value>
+    <value>Резервне копіювання та відновлення</value>
   </data>
   <data name="Settings_BackupDescription" xml:space="preserve">
     <value>Експортуйте все, що пам'ятає RemEx — розташування на полотні, застосунки лаунчера, спільні папки та тему — в один файл, або імпортуйте файл, щоб відновити це. Спарювання та сертифікати ніколи не включаються; після відновлення вам потрібно буде повторно спарувати телефон.</value>
@@ -2225,7 +2225,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Не вдалося завантажити відомості про цей елемент. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
-    <value>ВЛАСТИВОСТІ</value>
+    <value>Властивості</value>
   </data>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Показати відомості та попередній перегляд вибраного елемента.</value>
@@ -2240,13 +2240,13 @@ Linux: ip addr  або  hostname -I</value>
     <value>Очистити завершені</value>
   </data>
   <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
-    <value>ЗАВАНТАЖЕННЯ</value>
+    <value>Завантаження</value>
   </data>
   <data name="FileTransfer_QueueKindSend" xml:space="preserve">
-    <value>НАДСИЛАННЯ</value>
+    <value>Надсилання</value>
   </data>
   <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
-    <value>ВИВАНТАЖЕННЯ</value>
+    <value>Вивантаження</value>
   </data>
   <data name="FileTransfer_QueueStateActive" xml:space="preserve">
     <value>Передавання…</value>
@@ -2273,7 +2273,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перевірка…</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
-    <value>ПЕРЕДАЧІ</value>
+    <value>Передачі</value>
   </data>
   <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
     <value>Додано до черги передач.</value>
@@ -2324,7 +2324,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Запит доступу до дисків…</value>
   </data>
   <data name="FileTransfer_VolumesTitle" xml:space="preserve">
-    <value>ДИСКИ</value>
+    <value>Диски</value>
   </data>
   <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
     <value>Показати диски підключеного пристрою (потребує дозволу).</value>
@@ -2339,7 +2339,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Жодному пристрою ще не надано дозволів на спільний доступ до файлів.</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>Дозволити перегляд усіх дисків</value>
+    <value>Дозволити перегляд усього пристрою</value>
   </data>
   <data name="Settings_TrustRefresh" xml:space="preserve">
     <value>Оновити</value>
@@ -2351,7 +2351,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Дозволи пристрою відкликано.</value>
   </data>
   <data name="Settings_TrustSection" xml:space="preserve">
-    <value>ДОВІРА СПІЛЬНОГО ДОСТУПУ ДО ФАЙЛІВ</value>
+    <value>Довіра для спільного доступу до файлів</value>
   </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Налаштування довіри оновлено.</value>
@@ -2369,7 +2369,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Персоналізувати</value>
   </data>
   <data name="Personalize_Subtitle" xml:space="preserve">
-    <value>ЖИВИЙ ВИГЛЯД</value>
+    <value>Живий вигляд</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Персоналізувати вигляд</value>
@@ -2498,7 +2498,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Створіть свою панель</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
-    <value>Два показники ⑂</value>
+    <value>Два показники</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Другий показник</value>
@@ -2534,7 +2534,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перемкнути між виглядом списку та значків</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
-    <value>ОЧИСТИТИ</value>
+    <value>Очистити</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx на GitHub</value>
@@ -2594,10 +2594,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>CPU</value>
   </data>
   <data name="Home_StatMemory" xml:space="preserve">
-    <value>ПАМ'ЯТЬ</value>
+    <value>Пам'ять</value>
   </data>
   <data name="Home_StatUptime" xml:space="preserve">
-    <value>ЧАС РОБОТИ</value>
+    <value>Час роботи</value>
   </data>
   <data name="Home_WelcomeIntro" xml:space="preserve">
     <value>Керуйте цим ПК з телефону — транслюйте робочий стіл, переглядайте та передавайте файли, запускайте застосунки, виконуйте команди й стежте за датчиками в реальному часі. Щоб почати, з'єднайте телефон у налаштуваннях.</value>
@@ -2669,7 +2669,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>MAC-адресу скопійовано — вставте її в застосунок RemEx на телефоні.</value>
   </data>
   <data name="Remote_ThisPcMac" xml:space="preserve">
-    <value>MAC-АДРЕСА ЦЬОГО ПК</value>
+    <value>MAC-адреса цього ПК</value>
   </data>
   <data name="Remote_WakeExplainer" xml:space="preserve">
     <value>Wake-on-LAN дозволяє вашому телефону вмикати цей ПК через мережу — навіть коли він спить або повністю вимкнений. Це працює завдяки надсиланню невеликого «магічного пакета», який каже цьому комп'ютеру увімкнутися.</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Увімкнути цей ПК з телефону</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>НАКЛАСТИ ДРУГИЙ ДАТЧИК НА</value>
+    <value>Накласти другий датчик на</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>Пошук датчиків…</value>
@@ -2836,7 +2836,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Суцільний колір</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>Тональний акцент</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>Яскрава</value>
@@ -2968,15 +2968,15 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Як змінити вигляд RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Скористайтеся кнопкою «Персоналізувати вигляд», щоб відкрити панель Персоналізувати.
+    <value>Відкрийте Персоналізувати внизу бічної панелі.
 
 Можна змінити:
 • Базовий (seed) колір палітри — виберіть його на колірному колі, введіть hex-код, узгодьте з акцентом Windows або візьміть із шпалер
 • Світлий, темний чи системний режим і контраст
 • Варіант схеми та матеріал тла
-• Радіус кутів, прозорість скла та інтенсивність світіння
+• Радіус кутів, непрозорість карток та інтенсивність світіння
 • Стиль екрана заставки
-• Шрифти заголовка сторінки та вмісту, а також масштаб інтерфейсу
+• Шрифти заголовка сторінки та вмісту, а також розмір інтерфейсу
 • Мову застосунку — незалежно від мови Windows чи Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3217,7 +3217,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>RemEx не працює на цьому ПК</value>
   </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
-    <value>ТЕЛЕФОН</value>
+    <value>Телефон</value>
   </data>
   <data name="Settings_PairedDevices" xml:space="preserve">
     <value>Пов’язані пристрої</value>
@@ -3379,7 +3379,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Назва палітри</value>
   </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
-    <value>ПОВЕДІНКА</value>
+    <value>Поведінка</value>
   </data>
   <data name="Custom_Tab_Colour" xml:space="preserve">
     <value>Колір</value>
@@ -3484,7 +3484,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Після кількох спроб «{0}» покинуто. У цьому елементі нічого не змінено.</value>
   </data>
   <data name="Custom_SectionFonts" xml:space="preserve">
-    <value>ШРИФТИ</value>
+    <value>Шрифти</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Заголовки</value>
@@ -4121,5 +4121,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Status_OwnHostOnly" xml:space="preserve">
     <value>RemEx на цьому ПК підключається лише до себе. Щоб дістатися іншого ПК, скористайтеся застосунком RemEx на телефоні.</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Велике значення</value>
   </data>
 </root>

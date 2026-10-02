@@ -69,11 +69,30 @@
 
         <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
         <Grid Grid.Row="1">
-            <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" SecondaryHistory="{Binding SecondaryHistory}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6" Classes="card-spark"/>
+            <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" SecondaryHistory="{Binding SecondaryHistory}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6" Classes="card-spark" IsVisible="{Binding !IsBigValue}"/>
+
+            <!-- "Big value" view (RemEx-hc15q): no graph, the reading large and centred. Uniform in
+                 both directions so a short number fills the card instead of sitting small in a corner;
+                 the corner plate below is hidden in this view so the number is not shown twice. -->
+            <Viewbox Stretch="Uniform" StretchDirection="Both" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,8" IsVisible="{Binding IsBigValue}">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Theme="{StaticResource Headline6TextBlock}" FontWeight="Black" Classes="card-value" VerticalAlignment="Bottom">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                <Binding Path="Value"/>
+                                <Binding Path="Unit"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock Text="{Binding Unit}" Theme="{StaticResource CaptionTextBlock}" Classes="card-unit" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                </StackPanel>
+            </Viewbox>
 
             <!-- Value plate: its OWN Viewbox (title excluded) so every card's number renders at a
                  consistent size; DownOnly means short values don't balloon. Layered above the
-                 sparkline on a semi-opaque plate so it stays crisp over the prominent line. -->
+                 sparkline on a semi-opaque plate so it stays crisp over the prominent line. Wrapped
+                 so the Big value view can hide it without touching the user's overlay switch. -->
+            <Panel IsVisible="{Binding !IsBigValue}">
             <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="34" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding ShowValueOverlay}">
                 <Border CornerRadius="6" Padding="7,3" Classes="card-plate">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
@@ -89,6 +108,7 @@
                     </StackPanel>
                 </Border>
             </Viewbox>
+            </Panel>
 
             <!-- Dual Metric: the SECOND sensor's value, mirrored bottom-right and tinted with the
                  secondary accent so it maps to the amber line (the primary value stays bottom-left). -->

@@ -235,6 +235,12 @@
                                                         <mi:MaterialIcon Kind="AutoAwesome" Width="16" Height="16"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
+                                                <!-- Big value (RemEx-hc15q): no graph, the reading large and centred. Same name and place as the phone's picker. -->
+                                                <MenuItem Header="{local:Localize Canvas_GraphBigValue}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="BigValue">
+                                                    <MenuItem.Icon>
+                                                        <mi:MaterialIcon Kind="Numeric" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
                                                 <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar">
                                                     <MenuItem.Icon>
                                                         <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"/>

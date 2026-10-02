@@ -121,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  कमांड</value>
+    <value>कमांड</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>इस पीसी को लॉक, रीस्टार्ट या बंद करें</value>
@@ -225,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  ऐप्स</value>
+    <value>ऐप्स</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>प्रोग्राम जिन्हें आपका फ़ोन शुरू कर सकता है</value>
@@ -376,13 +376,13 @@
     <value>कोने की त्रिज्या</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>ग्लास अपारदर्शिता</value>
+    <value>कार्ड अपारदर्शिता</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>विंडो अपारदर्शिता</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>फ्लाईआउट</value>
+    <value>ट्रे पॉप-अप</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>पॉपअप अपारदर्शिता</value>
@@ -707,7 +707,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>🪟 बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं।</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>सेटिंग्स → पिन किए गए सेंसर से अपने पसंदीदा सेंसर को होम स्क्रीन पर पिन करें।</value>
+    <value>वैयक्तिकृत करें → लेआउट → पिन किए गए सेंसर से अपने पसंदीदा सेंसर होम पर पिन करें।</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -777,10 +777,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>आप तैयार हैं!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>होम, सेंसर, कमांड, ऐप्स, प्रक्रियाएँ, फ़ाइलें, रूटीन और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें।</value>
+    <value>होम, सेंसर, कमांड, रूटीन, ऐप्स, प्रक्रियाएँ, फ़ाइलें, लॉग और निदान, सेटिंग्स और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें। वैयक्तिकृत करें साइडबार में सबसे नीचे है।</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>अपनी थीम, कनेक्शन, स्ट्रीम गुणवत्ता अनुकूलित करने और होम पर सेंसर पिन करने के लिए सेटिंग्स (⚙) खोलें।</value>
+    <value>सेटिंग्स में पेयरिंग, साझा फ़ोल्डर, भरोसेमंद डिवाइस, सेंसर अलर्ट और बैकअप हैं। भाषा, थीम और पिन किए गए सेंसर वैयक्तिकृत करें में हैं।</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>आप सेटिंग्स से कभी भी इस ट्यूटोरियल को फिर से चला सकते हैं।</value>
@@ -1182,7 +1182,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>ग्राफ़ प्रकार</value>
+    <value>एक दृश्य चुनें</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>पीसी लॉक करें</value>
@@ -1254,7 +1254,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Android पर, Lock, Sleep, Restart या Wake-on-LAN जैसी तुरंत क्रियाओं के लिए क्विक सेटिंग्स में RemEx टाइलें जोड़ें।</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>शब्दावली: अनुकूलन</value>
+    <value>शब्दावली: वैयक्तिकृत करें</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>थीम, पैलेट रणनीति, फ़ॉन्ट, कार्ड आकार और अपारदर्शिता को अपनी निगरानी और नियंत्रण की शैली के अनुसार समायोजित करें।</value>
@@ -1293,7 +1293,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>के बारे में</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>आपके PC का सुरक्षित रिमोट कंट्रोल</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>बिल्ड</value>
@@ -1433,7 +1433,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>मैं अपने पीसी का IP पता कैसे ढूँढूँ?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: Command Prompt में 'ipconfig'. macOS: System Settings → Network. Linux: टर्मिनल में 'ip addr'. आप अपने पीसी पर RemEx विंडो में सीधे IP भी देख सकते हैं।</value>
+    <value>Windows: Command Prompt में 'ipconfig' चलाएँ। Linux: टर्मिनल में 'ip addr' चलाएँ। इसकी ज़रूरत कम ही पड़ती है: इस PC के पेयरिंग QR कोड में उसका पता पहले से होता है।</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>ऑटो-डिस्कवरी मेरा पीसी नहीं ढूँढ पा रही है। मुझे क्या जाँचना चाहिए?</value>
@@ -1550,7 +1550,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>बंद</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>लॉग और डायग्नोस्टिक्स</value>
+    <value>लॉग और निदान</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>लाइव एप्लिकेशन लॉग</value>
@@ -1828,7 +1828,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>डिसकनेक्ट</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>रेमेक्स - रिमोट निष्पादन / लाइव टेलीमेट्री</value>
+    <value>RemEx: अपने फ़ोन से PC चलाएँ और उसके सेंसर देखें</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>लॉग और निदान</value>
@@ -1924,7 +1924,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पिक्सेल में बॉर्डर कॉर्नर त्रिज्या</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>ग्लासमॉर्फ़िज़्म पृष्ठभूमि प्रभाव के दृश्य अपारदर्शिता स्तर को समायोजित करें</value>
+    <value>कार्ड कितने ठोस दिखें। पृष्ठभूमि दिखाने के लिए इसे कम करें।</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>ग्लास फ्रॉस्टिंग अपारदर्शिता प्रतिशत</value>
@@ -2002,25 +2002,25 @@ Linux: ip addr  या  hostname -I</value>
     <value>RemEx विंडो को पिन या अनपिन करें</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>ऑटो (स्मार्ट)</value>
+    <value>स्वचालित</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>बार ▮▮▮</value>
+    <value>बार हिस्टोग्राम</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>रेखा ╱╲╱</value>
+    <value>रेखा</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>रिंग ◍</value>
+    <value>रिंग गेज</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>एलईडी मीटर</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>चमक ▒▓▒</value>
+    <value>चमक</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>गेज ━━━</value>
+    <value>गेज</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>रंग / प्रीसेट</value>
@@ -2338,7 +2338,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>अभी तक किसी भी डिवाइस को फ़ाइल-साझाकरण अनुमतियां नहीं दी गई हैं।</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>सभी ड्राइव ब्राउज़ करने की अनुमति दें</value>
+    <value>पूरे डिवाइस को ब्राउज़ करने की अनुमति दें</value>
   </data>
   <data name="Settings_TrustRefresh" xml:space="preserve">
     <value>रिफ्रेश करें</value>
@@ -2488,7 +2488,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>मुख्य और सामग्री टेक्स्ट के लिए फ़ॉन्ट — विवरण, लेबल और सेंसर पेज। स्थिर-चौड़ाई वाले डेटा रीडआउट अपना मोनोस्पेस फ़ॉन्ट रखते हैं।</value>
   </data>
   <data name="Custom_UiScale" xml:space="preserve">
-    <value>UI आकार</value>
+    <value>इंटरफ़ेस का आकार</value>
   </data>
   <data name="Custom_UiScaleTip" xml:space="preserve">
     <value>सब कुछ — पाठ और नियंत्रण — 85% से 130% तक बड़ा या छोटा करें।</value>
@@ -2644,7 +2644,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Google Play पर Android के लिए RemEx डाउनलोड करें।</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
-    <value>दोहरा मीट्रिक ⑂</value>
+    <value>दोहरा मीट्रिक</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>दूसरा मीट्रिक</value>
@@ -2677,7 +2677,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>दूसरा मीट्रिक चुनें</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>दूसरा सेंसर ओवरले करें</value>
+    <value>इस पर दूसरा सेंसर ओवरले करें</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>सेंसर खोजें…</value>
@@ -2835,7 +2835,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>ठोस रंग</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>टोनल स्पॉट</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>जीवंत</value>
@@ -2967,15 +2967,15 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>RemEx का रूप कैसे बदलें?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>«दिखावट वैयक्तिकृत करें» बटन से वैयक्तिकृत करें पैनल खोलें।
+    <value>साइडबार में सबसे नीचे वैयक्तिकृत करें खोलें।
 
 आप बदल सकते हैं:
 • अपने पैलेट का सीड रंग — इसे कलर व्हील से चुनें, हेक्स कोड टाइप करें, Windows के एक्सेंट से मिलाएं, या अपने वॉलपेपर से लें
 • लाइट, डार्क या सिस्टम मोड, और कंट्रास्ट
 • स्कीम वेरिएंट और बैकग्राउंड मटीरियल
-• कोनों की त्रिज्या, ग्लास की अपारदर्शिता और ग्लो की तीव्रता
+• कोनों की त्रिज्या, कार्ड की अपारदर्शिता और ग्लो की तीव्रता
 • स्प्लैश स्क्रीन का स्टाइल
-• पेज टाइटल और कंटेंट के फ़ॉन्ट, और UI स्केल
+• पेज टाइटल और कंटेंट के फ़ॉन्ट, और इंटरफ़ेस का आकार
 • ऐप की भाषा, आपके Windows या Linux की भाषा से अलग</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -4120,5 +4120,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Status_OwnHostOnly" xml:space="preserve">
     <value>इस PC पर RemEx सिर्फ़ खुद से कनेक्ट होता है। किसी दूसरे PC तक पहुँचने के लिए अपने फ़ोन पर RemEx ऐप इस्तेमाल करें।</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>बड़ा मान</value>
   </data>
 </root>

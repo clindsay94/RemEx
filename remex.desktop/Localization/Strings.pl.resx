@@ -121,7 +121,7 @@
 
   
   <data name="Remote_Header" xml:space="preserve">
-    <value>⏻  Polecenia</value>
+    <value>Polecenia</value>
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>Zablokuj, uruchom ponownie lub wyłącz ten komputer</value>
@@ -162,7 +162,7 @@
 
   
   <data name="Settings_Header" xml:space="preserve">
-    <value>USTAWIENIA</value>
+    <value>Ustawienia</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
     <value>← Główna</value>
@@ -174,7 +174,7 @@
     <value>Ustawienia zapisane!</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
-    <value>POŁĄCZENIE</value>
+    <value>Połączenie</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Przyciągaj do siatki</value>
@@ -186,7 +186,7 @@
     <value>Rozmiar siatki</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>PRZYPIĘTE CZUJNIKI</value>
+    <value>Przypięte czujniki</value>
   </data>
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Wybierz czujniki do wyświetlenia na ekranie głównym</value>
@@ -225,7 +225,7 @@
 
   
   <data name="AppLauncher_Header" xml:space="preserve">
-    <value>◈  Aplikacje</value>
+    <value>Aplikacje</value>
   </data>
   <data name="AppLauncher_Subheader" xml:space="preserve">
     <value>Programy, które telefon może uruchomić</value>
@@ -300,10 +300,10 @@
     <value>MAKS</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
-    <value>AKTYWNE CZUJNIKI</value>
+    <value>Aktywne czujniki</value>
   </data>
   <data name="Canvas_NewSensors" xml:space="preserve">
-    <value>NOWE CZUJNIKI</value>
+    <value>Nowe czujniki</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
     <value>+ Dodaj kartę</value>
@@ -329,7 +329,7 @@
 
   
   <data name="RemoteDesktop_Header" xml:space="preserve">
-    <value>ZDALNY PULPIT</value>
+    <value>Zdalny pulpit</value>
   </data>
   <data name="RemoteDesktop_Quality" xml:space="preserve">
     <value>Jakość:</value>
@@ -376,7 +376,7 @@
     <value>Promień narożnika</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Krycie szkła</value>
+    <value>Krycie kart</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Siła poświaty</value>
@@ -593,7 +593,7 @@
   </data>
   
   <data name="Tutorial_Header" xml:space="preserve">
-    <value>WPROWADZENIE</value>
+    <value>Wprowadzenie</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
     <value>Pomiń ✕</value>
@@ -656,7 +656,7 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>🪟 Wbudowane: Podstawowe czujniki — użycie CPU, RAM, I/O dysku, prędkość sieci. Zawsze dostępne, bez dodatkowego oprogramowania.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>Przypnij ulubione czujniki do ekranu głównego w Ustawienia → PRZYPIĘTE CZUJNIKI.</value>
+    <value>Przypnij ulubione czujniki do strony Główna w Personalizuj → Układ → Przypięte czujniki.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
@@ -710,10 +710,10 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Gotowe!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Używaj paska bocznego, aby przechodzić między stronami Główna, Czujniki, Polecenia, Aplikacje, Procesy, Pliki, Rutyny i O programie.</value>
+    <value>Używaj paska bocznego, aby przechodzić między stronami Główna, Czujniki, Polecenia, Rutyny, Aplikacje, Procesy, Pliki, Dzienniki i diagnostyka, Ustawienia i O programie. Personalizuj znajdziesz na dole paska bocznego.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Otwórz Ustawienia (⚙), aby dostosować motyw, połączenie, jakość transmisji i przypiąć czujniki do strony głównej.</value>
+    <value>W Ustawieniach znajdziesz parowanie, foldery udostępnione, zaufane urządzenia, alerty czujników i kopie zapasowe. Język, motyw i przypięte czujniki są w Personalizuj.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Ten samouczek możesz odtworzyć ponownie w dowolnym momencie z Ustawień.</value>
@@ -748,7 +748,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Skanuj aplikacją RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>KOD PIN PAROWANIA</value>
+    <value>Kod PIN parowania</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Wprowadź ten kod w telefonie, aby zakończyć parowanie</value>
@@ -762,7 +762,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Settings_General" xml:space="preserve">
-    <value>OGÓLNE</value>
+    <value>Ogólne</value>
   </data>
   <data name="Settings_CloseToTray" xml:space="preserve">
     <value>Minimalizuj do zasobnika przy zamykaniu</value>
@@ -795,7 +795,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Zamknij</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
-    <value>POMOC</value>
+    <value>Pomoc</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Powtórz samouczek</value>
@@ -804,7 +804,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Obejrzyj ponownie samouczek wprowadzający</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
-    <value>FOLDERY UDOSTĘPNIONE</value>
+    <value>Foldery udostępnione</value>
   </data>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Wybierz, które foldery tego komputera mają być widoczne w Plikach. Foldery tylko do odczytu można przeglądać i pobierać z nich pliki, a foldery z prawem zapisu przyjmują też pliki wysłane z telefonu.</value>
@@ -1115,7 +1115,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Canvas_GraphType" xml:space="preserve">
-    <value>Typ wykresu</value>
+    <value>Wybierz widok</value>
   </data>
   <data name="Canvas_LockPC" xml:space="preserve">
     <value>Zablokuj komputer</value>
@@ -1152,7 +1152,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>O programie</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>Bezpieczne zdalne sterowanie komputerem</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
     <value>Kompilacja</value>
@@ -1217,7 +1217,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Otwórz Ustawienia → Połączenie w tym oknie, aby wyświetlić kod QR i 6-cyfrowy PIN parowania. Na telefonie otwórz aplikację RemEx i zeskanuj kod QR, aby skonfigurować wszystko najszybciej, lub wpisz PIN, gdy aplikacja o niego poprosi. Parowanie zawsze odbywa się z telefonu do tego komputera.</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' w Wierszu polecenia. macOS: Ustawienia systemowe → Sieć. Linux: 'ip addr' w terminalu. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
+    <value>Windows: uruchom 'ipconfig' w Wierszu polecenia. Linux: uruchom 'ip addr' w terminalu. Rzadko jest to potrzebne: kod QR parowania na tym komputerze zawiera już jego adres.</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.
@@ -1310,7 +1310,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Wyłączone</value>
   </data>
   <data name="Logs_Header" xml:space="preserve">
-    <value>LOGI I DIAGNOSTYKA</value>
+    <value>Dzienniki i diagnostyka</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
     <value>Logi aplikacji na żywo</value>
@@ -1588,7 +1588,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Rozłącz</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
-    <value>REMEX - Zdalne uruchamianie / Telemetria na żywo</value>
+    <value>RemEx: steruj komputerem i obserwuj jego czujniki z telefonu</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Dzienniki i diagnostyka</value>
@@ -1684,7 +1684,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Promień zaokrąglenia krawędzi w pikselach</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Dostosuj krycie efektu szkła w tle</value>
+    <value>Jak bardzo karty są nieprzezroczyste. Zmniejsz, aby prześwitywało tło.</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>Procent krycia efektu szkła</value>
@@ -1762,25 +1762,25 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Przypnij lub odepnij okno RemEx</value>
   </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>Auto (inteligentne)</value>
+    <value>Auto</value>
   </data>
   <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>Słupek ▮▮▮</value>
+    <value>Histogram słupkowy</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>Linia ╱╲╱</value>
+    <value>Linia</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
-    <value>Pierścień ◍</value>
+    <value>Wskaźnik pierścieniowy</value>
   </data>
   <data name="Canvas_GraphLed" xml:space="preserve">
-    <value>LED ▮▮▫</value>
+    <value>Miernik LED</value>
   </data>
   <data name="Canvas_GraphGlow" xml:space="preserve">
-    <value>Poświata ▒▓▒</value>
+    <value>Poświata</value>
   </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>Wskaźnik ━━━</value>
+    <value>Wskaźnik</value>
   </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>Kolor / Ustawienie</value>
@@ -1810,7 +1810,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Ostrzeżenie bezpieczeństwa: gdy ta opcja jest włączona, każdy ze sparowanym urządzeniem może oglądać i sterować tym komputerem bez odblokowywania go na klawiaturze. Włączaj tylko na zaufanym komputerze.</value>
   </data>
   <data name="Settings_BackupSection" xml:space="preserve">
-    <value>KOPIA ZAPASOWA I PRZYWRACANIE</value>
+    <value>Kopia zapasowa i przywracanie</value>
   </data>
   <data name="Settings_BackupDescription" xml:space="preserve">
     <value>Wyeksportuj wszystko, co pamięta RemEx — układ pulpitu, aplikacje z launchera, udostępnione foldery i motyw — do jednego pliku, albo zaimportuj plik, aby to przywrócić. Parowania i certyfikaty nigdy nie są uwzględniane; po przywróceniu trzeba będzie ponownie sparować telefon.</value>
@@ -1985,7 +1985,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Nie udało się wczytać szczegółów tego elementu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
-    <value>WŁAŚCIWOŚCI</value>
+    <value>Właściwości</value>
   </data>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Pokaż szczegóły i podgląd zaznaczonego elementu.</value>
@@ -2000,13 +2000,13 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Wyczyść zakończone</value>
   </data>
   <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
-    <value>POBIERANIE</value>
+    <value>Pobieranie</value>
   </data>
   <data name="FileTransfer_QueueKindSend" xml:space="preserve">
-    <value>WYSYŁANIE</value>
+    <value>Wysyłanie</value>
   </data>
   <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
-    <value>PRZESYŁANIE</value>
+    <value>Przesyłanie</value>
   </data>
   <data name="FileTransfer_QueueStateActive" xml:space="preserve">
     <value>Przesyłanie…</value>
@@ -2033,7 +2033,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Weryfikowanie…</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
-    <value>TRANSFERY</value>
+    <value>Transfery</value>
   </data>
   <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
     <value>Dodano do kolejki transferów.</value>
@@ -2084,7 +2084,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Żądanie dostępu do dysków…</value>
   </data>
   <data name="FileTransfer_VolumesTitle" xml:space="preserve">
-    <value>DYSKI</value>
+    <value>Dyski</value>
   </data>
   <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
     <value>Pokaż dyski połączonego urządzenia (wymaga uprawnień).</value>
@@ -2099,7 +2099,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Żadnemu urządzeniu nie przyznano jeszcze uprawnień do udostępniania plików.</value>
   </data>
   <data name="Settings_TrustFullBrowse" xml:space="preserve">
-    <value>Zezwól na przeglądanie wszystkich dysków</value>
+    <value>Zezwól na przeglądanie całego urządzenia</value>
   </data>
   <data name="Settings_TrustRefresh" xml:space="preserve">
     <value>Odśwież</value>
@@ -2111,7 +2111,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Cofnięto uprawnienia urządzenia.</value>
   </data>
   <data name="Settings_TrustSection" xml:space="preserve">
-    <value>ZAUFANIE DO UDOSTĘPNIANIA PLIKÓW</value>
+    <value>Zaufanie do udostępniania plików</value>
   </data>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Zaktualizowano ustawienia zaufania.</value>
@@ -2129,7 +2129,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Personalizuj</value>
   </data>
   <data name="Personalize_Subtitle" xml:space="preserve">
-    <value>WYGLĄD NA ŻYWO</value>
+    <value>Wygląd na żywo</value>
   </data>
   <data name="Personalize_EntryTooltip" xml:space="preserve">
     <value>Personalizuj wygląd</value>
@@ -2213,7 +2213,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Krycie okna</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
-    <value>POPUP</value>
+    <value>Okienko w zasobniku</value>
   </data>
   <data name="Custom_FlyoutOpacity" xml:space="preserve">
     <value>Krycie popupu</value>
@@ -2400,7 +2400,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Na Androidzie dodaj kafelki RemEx do Szybkich ustawień dla natychmiastowych akcji, takich jak Blokada, Uśpienie, Restart czy Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Słownik: Dostosowanie</value>
+    <value>Słownik: Personalizuj</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
     <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i krycie, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
@@ -2498,7 +2498,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Zbuduj swój pulpit</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
-    <value>Podwójny wskaźnik ⑂</value>
+    <value>Podwójny wskaźnik</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Drugi wskaźnik</value>
@@ -2534,7 +2534,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Przełącz między widokiem listy a ikon</value>
   </data>
   <data name="Home_ClearActivity" xml:space="preserve">
-    <value>WYCZYŚĆ</value>
+    <value>Wyczyść</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx na GitHubie</value>
@@ -2594,10 +2594,10 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>CPU</value>
   </data>
   <data name="Home_StatMemory" xml:space="preserve">
-    <value>PAMIĘĆ</value>
+    <value>Pamięć</value>
   </data>
   <data name="Home_StatUptime" xml:space="preserve">
-    <value>CZAS PRACY</value>
+    <value>Czas pracy</value>
   </data>
   <data name="Home_WelcomeIntro" xml:space="preserve">
     <value>Steruj tym komputerem ze swojego telefonu — przesyłaj strumieniowo pulpit, przeglądaj i przesyłaj pliki, uruchamiaj aplikacje, wykonuj polecenia i obserwuj czujniki na żywo. Sparuj telefon w Ustawieniach, aby zacząć.</value>
@@ -2669,7 +2669,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Skopiowano adres MAC — wklej go w aplikacji RemEx na telefonie.</value>
   </data>
   <data name="Remote_ThisPcMac" xml:space="preserve">
-    <value>ADRES MAC TEGO KOMPUTERA</value>
+    <value>Adres MAC tego komputera</value>
   </data>
   <data name="Remote_WakeExplainer" xml:space="preserve">
     <value>Wake-on-LAN pozwala telefonowi zdalnie włączyć ten komputer przez sieć — nawet gdy jest uśpiony lub całkowicie wyłączony. Działa to poprzez wysłanie małego "magicznego pakietu", który nakazuje temu komputerowi się uruchomić.</value>
@@ -2681,7 +2681,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Obudź ten komputer z telefonu</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
-    <value>NAŁÓŻ DRUGI CZUJNIK NA</value>
+    <value>Nałóż drugi czujnik na</value>
   </data>
   <data name="SecondMetric_Search" xml:space="preserve">
     <value>Szukaj czujników…</value>
@@ -2836,7 +2836,7 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Kolor jednolity</value>
   </data>
   <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
-    <value>Tonal Spot</value>
+    <value>Akcent tonalny</value>
   </data>
   <data name="Custom_Scheme_Vibrant" xml:space="preserve">
     <value>Żywy</value>
@@ -2968,15 +2968,15 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Jak zmienić wygląd RemEx?</value>
   </data>
   <data name="Faq_Q15_Answer" xml:space="preserve">
-    <value>Użyj przycisku „Personalizuj wygląd”, aby otworzyć panel Personalizacji.
+    <value>Otwórz Personalizuj na dole paska bocznego.
 
 Możesz zmienić:
 • Kolor bazowy (seed) swojej palety — wybierz go z koła kolorów, wpisz kod hex, dopasuj do akcentu systemu Windows lub pobierz z tapety
 • Tryb jasny, ciemny lub systemowy oraz kontrast
 • Wariant schematu i materiał tła
-• Promień narożników, przezroczystość szkła i intensywność poświaty
+• Promień narożników, krycie kart i intensywność poświaty
 • Styl ekranu powitalnego
-• Czcionki tytułu strony i treści oraz skalę interfejsu
+• Czcionki tytułu strony i treści oraz rozmiar interfejsu
 • Język aplikacji, niezależnie od języka systemu Windows lub Linux</value>
   </data>
   <data name="Faq_Q16_Question" xml:space="preserve">
@@ -3217,7 +3217,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>RemEx nie działa na tym komputerze</value>
   </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
-    <value>TELEFON</value>
+    <value>Telefon</value>
   </data>
   <data name="Settings_PairedDevices" xml:space="preserve">
     <value>Sparowane urządzenia</value>
@@ -3379,7 +3379,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Nazwa palety</value>
   </data>
   <data name="Custom_SectionBehaviour" xml:space="preserve">
-    <value>ZACHOWANIE</value>
+    <value>Zachowanie</value>
   </data>
   <data name="Custom_Tab_Colour" xml:space="preserve">
     <value>Kolor</value>
@@ -3484,7 +3484,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Zrezygnowano z elementu „{0}” po kilku próbach. Nic w nim nie zostało zmienione.</value>
   </data>
   <data name="Custom_SectionFonts" xml:space="preserve">
-    <value>CZCIONKI</value>
+    <value>Czcionki</value>
   </data>
   <data name="Custom_TextHeaders" xml:space="preserve">
     <value>Nagłówki</value>
@@ -4121,5 +4121,8 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="Status_OwnHostOnly" xml:space="preserve">
     <value>RemEx na tym komputerze łączy się tylko sam ze sobą. Aby połączyć się z innym komputerem, użyj aplikacji RemEx na telefonie.</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Duża wartość</value>
   </data>
 </root>
