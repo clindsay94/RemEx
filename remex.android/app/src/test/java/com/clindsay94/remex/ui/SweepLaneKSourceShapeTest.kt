@@ -121,8 +121,10 @@ class SweepLaneKSourceShapeTest {
             assertTrue("$file must hold $key", source(file).contains("TelemetryLeaseEffect($key"))
         }
         assertTrue(
-            "Home holds its lease only while it shows pinned sensors",
-            source("ui/screens/HomeScreen.kt").contains("TelemetryLeaseEffect(TelemetryDemand.HOME_PINNED, active = pins.pinned.isNotEmpty())"),
+            // Unconditional while Home is on screen: the PC card's uptime line reads telemetry too,
+            // and froze when the lease depended on having pinned sensors.
+            "Home holds its lease whenever it is shown, pins or not",
+            source("ui/screens/HomeScreen.kt").contains("TelemetryLeaseEffect(TelemetryDemand.HOME_PINNED)"),
         )
     }
 

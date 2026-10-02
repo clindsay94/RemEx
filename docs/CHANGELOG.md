@@ -248,6 +248,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - PC switches no longer draw the word "Off" on top of the knob, and the tutorial's QR steps name the
   real "Pair a phone" button in every language. (RemEx-pp4cm)
 
+- **Phone Apps, Connection and Files, restyled.** Apps shows square tiles with refresh in the top bar
+  (or pull down), and says so plainly when the PC doesn't send its app list. Connection opens on "Your
+  PCs" with the connected one marked; "Add a PC" covers searching, the QR code and typing an address,
+  each PC has its own details sheet (edit, rename, unpair, remove), and the status line wraps instead
+  of being cut off. The Remote Desktop quality, FPS and scale settings left Connection; they live in
+  the stream's own settings. Files hides dot-folders and Windows system items unless you turn on
+  "Show hidden items" in the Sort menu; folder downloads still include them. (RemEx-wqo7a.6)
+
 - **The phone's splash plays every time you open the app.** It used to play once per process, so
   closing the app and opening it again while Android still had it cached skipped straight past it.
   Rebuilding the screen (for example after a settings change) still doesn't replay it. (RemEx-wqo7a.4)
