@@ -133,6 +133,70 @@ public sealed class FileTransferManifestTests : IDisposable
         Assert.Equal(new[] { "dir/inner.txt", "z.txt" }, rest);
     }
 
+    [Theory]
+    [InlineData("Photos", 1)]
+    [InlineData("Photos", 2)]
+    [InlineData("Photos", 3)]
+    [InlineData("Photos/2026", 1)]
+    [InlineData("Photos/2026", 2)]
+    public async Task Enumerate_PagedNonRootFolder_MatchesTheUnpagedWalkExactly(string basePath, int pageSize)
+    {
+        // RemEx-pp4cm C1: the cursor path is root-relative ("Photos/a.jpg") but the walk starts at the
+        // base, so page two used to compare "Photos" with the base's own children — repeating page one
+        // until the total cap, or skipping entries while the download still reported success.
+        var (service, rootDir) = CreateService();
+        WriteFile(Path.Combine(rootDir, "Photos", "2026", "a.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "2026", "b.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "2026", "trip", "c.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "2026", "z.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "Album", "d.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "e.jpg"), 1);
+        // A sibling of the base whose name sorts among the base's children must never leak in.
+        WriteFile(Path.Combine(rootDir, "Album", "outside.jpg"), 1);
+
+        var whole = await service.EnumerateSubtreeAsync("root-1", basePath, null, 100, CancellationToken.None);
+        Assert.Null(whole.NextCursor);
+        Assert.True(whole.Entries.Count >= 4);
+
+        var paged = await PageAllAsync(service, basePath, pageSize);
+
+        Assert.Equal(
+            whole.Entries.Select(entry => entry.RelativePath),
+            paged.Select(entry => entry.RelativePath));
+        Assert.All(paged, entry => Assert.StartsWith(basePath + "/", entry.RelativePath, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Enumerate_NonRootFolder_CursorIsRootRelativeAndResumesAfterIt()
+    {
+        // Pins the wire meaning shared with the phone's FileHostHandler: the cursor's path is the last
+        // entry's ROOT-relative path, base prefix included.
+        var (service, rootDir) = CreateService();
+        WriteFile(Path.Combine(rootDir, "Photos", "a.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "b.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "c.jpg"), 1);
+
+        var first = await service.EnumerateSubtreeAsync("root-1", "Photos", null, 1, CancellationToken.None);
+        Assert.Equal("1|Photos/a.jpg", first.NextCursor);
+
+        var second = await service.EnumerateSubtreeAsync("root-1", "Photos", first.NextCursor, 1, CancellationToken.None);
+        Assert.Equal("Photos/b.jpg", Assert.Single(second.Entries).RelativePath);
+        Assert.Equal("2|Photos/b.jpg", second.NextCursor);
+    }
+
+    [Fact]
+    public async Task Enumerate_NonRootFolder_CursorFromAnotherFolder_RestartsFromTheBeginning()
+    {
+        var (service, rootDir) = CreateService();
+        WriteFile(Path.Combine(rootDir, "Photos", "a.jpg"), 1);
+        WriteFile(Path.Combine(rootDir, "Photos", "b.jpg"), 1);
+
+        var page = await service.EnumerateSubtreeAsync("root-1", "Photos", "5|Music/a.jpg", 100, CancellationToken.None);
+
+        Assert.Equal(new[] { "Photos/a.jpg", "Photos/b.jpg" }, page.Entries.Select(entry => entry.RelativePath));
+        Assert.Equal(2, page.TotalFiles);
+    }
+
     [Fact]
     public async Task Enumerate_Subtree_PathsAreRootRelativeNotSubtreeRelative()
     {
