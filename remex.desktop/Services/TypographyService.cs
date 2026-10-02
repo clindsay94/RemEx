@@ -111,18 +111,41 @@ public sealed class TypographyService
     /// <summary>What the last <see cref="Apply"/> computed.</summary>
     public TypographyResolution? LastApplied { get; private set; }
 
+    /// <summary>The inputs of the last full publish, so an identical apply can be skipped (RemEx-hwarp).</summary>
+    private (TypographySettings Settings, Color Surface)? _lastInputs;
+
     /// <summary>
     /// Resolves <paramref name="settings"/> against <paramref name="surface"/> (the palette's
     /// surface colour, <c>palette.Surface</c> in ThemeService) and publishes every resource.
     /// Batched like ThemeService: detach, repopulate, reattach — one ResourcesChanged.
     /// </summary>
+    /// <remarks>
+    /// NOTHING CHANGED, NOTHING PUBLISHED (RemEx-hwarp). ThemeService calls this on EVERY theme apply
+    /// (every slider tick, every accent change), and a full publish costs two tree-wide resource
+    /// notifications (the detach and the re-add), an own-key write and a new DropShadowEffect, even
+    /// when the text settings and the surface colour are exactly what they were. The resolution is a
+    /// pure function of those two inputs (<see cref="TypographySettings"/> is an all-scalar record,
+    /// so its equality is value equality), so identical inputs with the dictionary still merged mean
+    /// the published resources are already right. The own key is still checked, equality-guarded,
+    /// because it lives on <c>Application.Resources</c> where something else could have written it.
+    /// </remarks>
     public void Apply(TypographySettings settings, Color surface)
     {
-        var resolved = TypographyResolver.Resolve(settings, surface);
-        LastApplied = resolved;
-
+        var normalized = TypographySettings.Normalize(settings);
         var app = Application.Current;
         var merged = app?.Resources.MergedDictionaries;
+
+        if (_lastInputs is { } last && last.Settings == normalized && last.Surface == surface
+            && (merged is null || merged.Contains(_overrideResources)) && LastApplied is { } previous)
+        {
+            if (app is not null)
+                ThemeService.SetOwnResourceIfChanged(app.Resources, DefaultFontSizeKey, previous.DefaultFontSize);
+            return;
+        }
+
+        var resolved = TypographyResolver.Resolve(normalized, surface);
+        LastApplied = resolved;
+        _lastInputs = (normalized, surface);
         // Contains-guarded because either this constructor's own Apply(...) or ThemeService's
         // constructor-post Add can be the FIRST merge, depending on construction order —
         // production (App.axaml.cs's ApplyThemeBeforeWindowShown, called from
@@ -166,6 +189,6 @@ public sealed class TypographyService
 
         if (app is null) return;
 
-        app.Resources[DefaultFontSizeKey] = resolved.DefaultFontSize;
+        ThemeService.SetOwnResourceIfChanged(app.Resources, DefaultFontSizeKey, resolved.DefaultFontSize);
     }
 }
