@@ -2343,7 +2343,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Confianza para compartir archivos</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Controla lo que cada dispositivo emparejado puede hacer con tus archivos. La exploración completa del dispositivo y la aceptación automática de archivos entrantes están desactivadas de forma predeterminada.</value>
+    <value>Controla lo que cada teléfono emparejado puede hacer con tus archivos. La exploración de todo el dispositivo está desactivada hasta que la permitas. Lo que sube un teléfono solo va a las carpetas compartidas con escritura habilitada.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Ningún dispositivo tiene permisos de uso compartido de archivos todavía.</value>

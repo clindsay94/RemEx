@@ -2584,7 +2584,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>File-sharing trust</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Control what each paired device may do with your files. Full device browsing and auto-accepting incoming files are off by default.</value>
+    <value>Control what each paired phone may do with your files. Full-device browsing is off until you allow it. Uploads from a phone only go into shared folders you made writable.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>No devices have been granted file-sharing permissions yet.</value>

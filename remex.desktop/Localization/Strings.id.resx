@@ -2332,7 +2332,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>{0} FPS</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Kontrol apa yang boleh dilakukan setiap perangkat yang disandingkan dengan file Anda. Penjelajahan perangkat penuh dan penerimaan otomatis file masuk dinonaktifkan secara default.</value>
+    <value>Atur apa yang boleh dilakukan setiap ponsel yang disandingkan dengan file Anda. Penelusuran seluruh perangkat nonaktif sampai Anda mengizinkannya. Unggahan dari ponsel hanya masuk ke folder bersama yang Anda buat dapat ditulis.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Belum ada perangkat yang diberi izin berbagi file.</value>

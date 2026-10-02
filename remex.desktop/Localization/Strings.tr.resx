@@ -2339,7 +2339,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Dosya paylaşımı güveni</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Her eşleştirilmiş cihazın dosyalarınızla neler yapabileceğini kontrol edin. Tam cihaz gezintisi ve gelen dosyaları otomatik kabul etme varsayılan olarak kapalıdır.</value>
+    <value>Her eşleştirilmiş telefonun dosyalarınızla neler yapabileceğini kontrol edin. Tüm cihazda gezinme, siz izin verene kadar kapalıdır. Telefondan yüklenenler yalnızca yazılabilir yaptığınız paylaşılan klasörlere gider.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Henüz hiçbir cihaza dosya paylaşımı izni verilmedi.</value>

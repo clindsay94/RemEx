@@ -2332,7 +2332,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>{0} FPS</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Controle o que cada dispositivo pareado pode fazer com seus arquivos. A navegação completa no dispositivo e a aceitação automática de arquivos recebidos ficam desativadas por padrão.</value>
+    <value>Controle o que cada telefone pareado pode fazer com seus arquivos. A navegação por todo o dispositivo fica desativada até você permitir. Os envios de um telefone só vão para pastas compartilhadas que você deixou graváveis.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Nenhum dispositivo recebeu permissões de compartilhamento de arquivos ainda.</value>

@@ -2093,7 +2093,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>{0} FPS</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Kontroluj, co każde sparowane urządzenie może robić z Twoimi plikami. Pełne przeglądanie urządzenia i automatyczne akceptowanie przychodzących plików są domyślnie wyłączone.</value>
+    <value>Kontroluj, co każdy sparowany telefon może robić z Twoimi plikami. Przeglądanie całego urządzenia jest wyłączone, dopóki na nie nie zezwolisz. Pliki z telefonu trafiają tylko do folderów udostępnionych z prawem zapisu.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Żadnemu urządzeniu nie przyznano jeszcze uprawnień do udostępniania plików.</value>

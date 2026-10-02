@@ -123,6 +123,13 @@ public class FileConsentDialogViewModelTests
             text.Should().NotContain("\"FileConsent_IncomingPushTitle\"", Path.GetFileName(file));
             text.Should().NotContain("\"FileConsent_IncomingPushMessage\"", Path.GetFileName(file));
         }
+
+        // The card's own description used to promise an auto-accept switch that is gone.
+        var english = File.ReadAllText(Path.Combine(root, "remex.desktop", "Localization", "Strings.resx"));
+        var desc = System.Text.RegularExpressions.Regex.Match(english,
+            "<data name=\"Settings_TrustDesc\"[^>]*>\\s*<value>(.*?)</value>", System.Text.RegularExpressions.RegexOptions.Singleline);
+        desc.Success.Should().BeTrue();
+        desc.Groups[1].Value.Should().NotContainEquivalentOf("auto-accept");
     }
 
     private static string RepoRoot()

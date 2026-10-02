@@ -2332,7 +2332,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>{0} FPS</value>
   </data>
   <data name="Settings_TrustDesc" xml:space="preserve">
-    <value>Contrôlez ce que chaque appareil associé peut faire avec vos fichiers. La navigation complète de l'appareil et l'acceptation automatique des fichiers entrants sont désactivées par défaut.</value>
+    <value>Contrôlez ce que chaque téléphone associé peut faire avec vos fichiers. L'exploration de tout l'appareil reste désactivée tant que vous ne l'autorisez pas. Les envois d'un téléphone ne vont que dans les dossiers partagés accessibles en écriture.</value>
   </data>
   <data name="Settings_TrustEmpty" xml:space="preserve">
     <value>Aucun appareil n'a encore reçu d'autorisations de partage de fichiers.</value>
