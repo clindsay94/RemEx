@@ -55,8 +55,16 @@ public static class CustomizationMigration
     /// 8 = Live Handshake becomes the splash for everyone upgrading to 3.0 (RemEx-8g6n0.2/.3): Connor
     ///     decided every stored SplashStyle moves to LiveHandshake once, whatever it was; a style picked
     ///     after the upgrade is written at schema 8 and sticks.
+    /// 9 = bundled fonts are addressed by file, not folder (sweep D11): a stored folder-scoped
+    ///     Orbitron or JetBrains Mono URI made Avalonia load every bundled .ttf at first paint.
     /// </remarks>
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
+
+    /// <summary>The folder-scoped Orbitron URI schema 8 and earlier stored (sweep D11).</summary>
+    internal const string LegacyOrbitronUri = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+
+    /// <summary>The prefix of the JetBrains Mono chain that pointed at a folder with no such font in it.</summary>
+    internal const string LegacyJetBrainsMonoPrefix = "avares://Remex.Desktop/Assets#JetBrains Mono";
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -105,6 +113,7 @@ public static class CustomizationMigration
         if (migrated.SchemaVersion < 6) migrated = FromSchemaFive(migrated);
         if (migrated.SchemaVersion < 7) migrated = FromSchemaSix(migrated);
         if (migrated.SchemaVersion < 8) migrated = FromSchemaSeven(migrated);
+        if (migrated.SchemaVersion < 9) migrated = FromSchemaEight(migrated);
         return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
 
@@ -283,6 +292,37 @@ public static class CustomizationMigration
     /// </remarks>
     private static CustomizationSettings FromSchemaSeven(CustomizationSettings settings) =>
         settings with { SplashStyle = "LiveHandshake" };
+
+    /// <summary>
+    /// Schema 8 → 9: bundled fonts are addressed by file, not folder (sweep D11). ONE <c>with</c>
+    /// EXPRESSION, so a field this arm does not name cannot be dropped (the RemEx-8y3qy guard).
+    /// </summary>
+    /// <remarks>
+    /// A folder address makes Avalonia build a font collection from every .ttf under that folder, so
+    /// a profile storing the old Orbitron or JetBrains Mono string kept loading all eight bundled
+    /// files (Nabla alone is 1.6 MB) even after App.axaml stopped doing so. The rewrite is exact: the
+    /// same face, now loaded from its own files. Any other value, including a system font, is left
+    /// alone.
+    /// </remarks>
+    private static CustomizationSettings FromSchemaEight(CustomizationSettings settings) =>
+        settings with
+        {
+            PageTitleFontFamily = CanonicalFont(settings.PageTitleFontFamily)!,
+            PageSubtitleFontFamily = CanonicalFont(settings.PageSubtitleFontFamily),
+            CardHeaderFontFamily = CanonicalFont(settings.CardHeaderFontFamily)!,
+            BodyFontFamily = CanonicalFont(settings.BodyFontFamily)!,
+        };
+
+    /// <summary>Maps a folder-scoped bundled-font URI to its file-scoped form; anything else unchanged.</summary>
+    internal static string? CanonicalFont(string? font)
+    {
+        if (font is null) return null;
+        if (string.Equals(font, LegacyOrbitronUri, StringComparison.Ordinal))
+            return PageDisplayFontRule.DefaultSubtitleFont;
+        if (font.StartsWith(LegacyJetBrainsMonoPrefix, StringComparison.Ordinal))
+            return SystemFontService.JetBrainsMonoChain;
+        return font;
+    }
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

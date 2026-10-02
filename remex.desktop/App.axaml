@@ -20,17 +20,21 @@
                 <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/DraggableCard.axaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Typography -->
-            <FontFamily x:Key="JetBrainsMono">avares://Remex.Desktop/Assets#JetBrains Mono, Consolas, DejaVu Sans Mono, monospace</FontFamily>
+            <!-- Typography. EVERY BUNDLED FONT IS ADDRESSED BY FILE, never by folder (sweep D11): a folder
+                 address makes Avalonia build a collection from EVERY .ttf under it, so "Assets#JetBrains
+                 Mono" (no such file ships) and "Assets/Fonts#Orbitron" each loaded all eight bundled
+                 files, 1.6 MB of Nabla included, at first paint. JetBrains Mono is not bundled, so it is
+                 plain installed-font names; Orbitron's four weights are one file pattern. -->
+            <FontFamily x:Key="JetBrainsMono">JetBrains Mono, Consolas, DejaVu Sans Mono, monospace</FontFamily>
             <FontFamily x:Key="Bungee_Shade">avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
             <FontFamily x:Key="Nabla">avares://Remex.Desktop/Assets/Fonts/Nabla-Regular.ttf#Nabla</FontFamily>
             <FontFamily x:Key="Sixtyfour">avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
             <FontFamily x:Key="VictorMono">avares://Remex.Desktop/Assets/Fonts/victor_mono_bold.ttf#Victor Mono</FontFamily>
-            <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
+            <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron</FontFamily>
             <!-- Themeable header font — overridden live by the personalization font picker; default = Bungee Shade (RemEx-kq10x.4). -->
             <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
             <!-- Themeable page-subtitle font — overridden live by the picker; default = Orbitron, which the default Bungee Shade title pairs with (PageDisplayFontRule.SubtitleFont). -->
-            <FontFamily x:Key="PageSubtitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
+            <FontFamily x:Key="PageSubtitleFontFamily">avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron</FontFamily>
             <!-- Themeable content/body font — overridden live by the picker; default = Inter (the app default font). -->
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
             <!-- Overall UI scale (the personalization "UI size" slider). Overridden live by ThemeService. -->

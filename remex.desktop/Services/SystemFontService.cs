@@ -19,18 +19,21 @@ public sealed record FontOption(string DisplayName, string Value, bool IsBundled
 /// </summary>
 public static class SystemFontService
 {
+    /// <summary>JetBrains Mono by installed-font name, with monospace fallbacks. Not a bundled file.</summary>
+    public const string JetBrainsMonoChain = "JetBrains Mono, Consolas, DejaVu Sans Mono, monospace";
+
     // Bundled display fonts. The Value strings MUST match the FontFamily resources in App.axaml.
     private static readonly FontOption[] Bundled =
     {
         new("Inter", "avares://Avalonia.Fonts.Inter/Assets#Inter", true),
-        new("Orbitron", "avares://Remex.Desktop/Assets/Fonts#Orbitron", true),
+        new("Orbitron", "avares://Remex.Desktop/Assets/Fonts/Orbitron-*.ttf#Orbitron", true),
         new("Bungee Shade", "avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade", true),
         new("Sixtyfour", "avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour", true),
         new("Nabla", "avares://Remex.Desktop/Assets/Fonts/Nabla-Regular.ttf#Nabla", true),
         // JetBrains Mono is NOT embedded as a font file — it is only referenced via a fallback chain
         // elsewhere. Use plain family names (installed JetBrains Mono, else a monospace fallback) so
         // selecting it can never resolve to an empty avares asset and freeze the render thread.
-        new("JetBrains Mono", "JetBrains Mono, Consolas, DejaVu Sans Mono, monospace", true),
+        new("JetBrains Mono", JetBrainsMonoChain, true),
         new("Victor Mono", "avares://Remex.Desktop/Assets/Fonts/victor_mono_bold.ttf#Victor Mono", true),
     };
 
