@@ -1108,7 +1108,10 @@ with no `MaxHeight` has no bound either, so without one a long pinned-sensor lis
 screen with many pins and nothing throws: no exception, no log line, just a window taller than the
 monitor. `CardsMaxHeight` is that cap; its XML doc on `TrayFlyoutGeometry` carries the full arithmetic
 (header + toolbar + margins subtracted from `TrayFlyoutGeometryValidator.MaxHeight`, rounded down to a
-whole number of 200×150 card rows) so it can be re-derived if the window's chrome changes.
+whole number of 200×150 card rows) so it can be re-derived if the window's chrome changes. Since
+RemEx-8tm8l the cards widen past 200 to fill each row (`TrayFlyoutGeometry.CardSlotWidth`, bound to the
+cards `WrapPanel`'s `ItemWidth`), but their height stays 150 on purpose: a height that followed the
+width would make this cap and `MinHeight` stop being whole card rows.
 
 **The toolbar `ItemsControl`'s `WrapPanel` has the identical problem, for the identical reason
 (RemEx-4kv0g.18.6).** Unlike the cards row, there is no scroll affordance on this row at all — enough
