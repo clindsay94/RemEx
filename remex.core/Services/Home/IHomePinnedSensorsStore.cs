@@ -37,7 +37,9 @@ public interface IHomePinnedSensorsStore
     /// </summary>
     /// <returns>
     /// False, and no event, when both normalized lists equal the current ones in order under ordinal
-    /// comparison — a re-save that changed nothing is not news for the phone.
+    /// comparison — a re-save that changed nothing is not news for the phone. The one exception is the
+    /// first publish after <see cref="RequestFromPhone"/>: that one always broadcasts, because it is the
+    /// answer to the request, and a refused request leaves the lists unchanged.
     /// </returns>
     bool PublishFromPc(IReadOnlyList<string> pinned, IReadOnlyList<string> pinnable);
 

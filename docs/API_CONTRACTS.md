@@ -473,7 +473,9 @@ dropped without a trace. Both slots are lenient: a wrong-typed field nulls the s
 - **Names, not ids.** The key is `SensorReading.Name`, compared case-insensitively. A name is non-blank,
   at most 200 characters, with no control characters; a list holds at most 100 names, duplicates removed
   case-insensitively keeping the first.
-- **Sync.** Sent on attach and after every change. `pinnableSensorNames` lists the sensors with a placed
+- **Sync.** Sent once the session has authenticated (straight after `pairing_complete` or
+  `reconnect_result`) and after every change; nothing is sent before the PC has published once
+  (revision 0), so a phone never mistakes "not loaded yet" for "no pins". `pinnableSensorNames` lists the sensors with a placed
   card on the PC canvas; only those can be pinned durably. `revision` rises per host process; the phone
   ignores an older sync on the same connection and forgets the counter on reconnect.
 - **Change.** One sensor per message, never a whole list. The host applies changes in arrival order, so

@@ -15,6 +15,7 @@ using Remex.Core.Guards;
 using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Home;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -706,6 +707,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private AppLauncherViewModel? _appLauncherViewModel;
     private CustomizationViewModel? _customizationViewModel;
     private LayoutSettingsViewModel? _layoutSettingsViewModel;
+    private readonly HomePinsBridge? _homePinsBridge;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
@@ -1094,6 +1096,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _ = _canvasViewModel.InitializeAsync();
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
 
+        // The phone's view of the PC Home's pinned sensors (RemEx-wqo7a.5). Only when the embedded
+        // host is running: with no host there is no store, nothing to sync with, and no bridge.
+        if (App.EmbeddedHostServices?.GetService(typeof(IHomePinnedSensorsStore)) is IHomePinnedSensorsStore homePinsStore)
+        {
+            _homePinsBridge = new HomePinsBridge(
+                homePinsStore, _layoutService, _canvasViewModel, logger: _services.GetService<ILogger<HomePinsBridge>>());
+        }
+
         // AlertBadgeCount MIRRORS THE TRACKER, IT DOES NOT COUNT (RemEx-8wpvr.3). Seeded from
         // whatever is already tripped (a fresh tracker is always empty, but a test or future caller
         // handing in one that is not should not have to wait for the next trip to see it), then kept
@@ -1186,6 +1196,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _wallpaperPathLoading = null;
         WallpaperBitmap?.Dispose();
         WallpaperBitmap = null;
+
+        // Before the canvas it watches.
+        _homePinsBridge?.Dispose();
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();
