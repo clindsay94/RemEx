@@ -30,8 +30,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.DriveFolderUpload
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,6 +76,8 @@ fun FileManagerToolbar(
     onUpload: () -> Unit,
     onUploadFolder: () -> Unit,
     modifier: Modifier = Modifier,
+    showHidden: Boolean = false,
+    onShowHiddenChange: (Boolean) -> Unit = {},
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
     var sortMenuOpen by remember { mutableStateOf(false) }
@@ -130,6 +134,8 @@ fun FileManagerToolbar(
                 onNewFolder = onNewFolder,
                 onUpload = onUpload,
                 onUploadFolder = onUploadFolder,
+                showHidden = showHidden,
+                onShowHiddenChange = onShowHiddenChange,
             )
         }
     }
@@ -148,6 +154,8 @@ private fun ToolbarIconRow(
     onNewFolder: () -> Unit,
     onUpload: () -> Unit,
     onUploadFolder: () -> Unit,
+    showHidden: Boolean,
+    onShowHiddenChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -173,6 +181,18 @@ private fun ToolbarIconRow(
             SortMenuRow(R.string.file_manager_sort_name, SortField.NAME, sortOption, onSort) { onSortMenuOpenChange(false) }
             SortMenuRow(R.string.file_manager_sort_size, SortField.SIZE, sortOption, onSort) { onSortMenuOpenChange(false) }
             SortMenuRow(R.string.file_manager_sort_date, SortField.DATE, sortOption, onSort) { onSortMenuOpenChange(false) }
+            // What the listing shows lives with how it is ordered (RemEx-wqo7a.6). The menu stays
+            // open on toggle so the person sees the switch flip and the list change behind it.
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.file_manager_show_hidden)) },
+                // onCheckedChange = null: the whole row is the one target, and the box only shows
+                // (and, merged into the row, announces) the current state.
+                trailingIcon = {
+                    Checkbox(checked = showHidden, onCheckedChange = null)
+                },
+                onClick = { onShowHiddenChange(!showHidden) },
+            )
         }
 
         RemexTooltip(

@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
+import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.BatchConflictChoice
 import com.clindsay94.remex.service.ConflictAction
 import com.clindsay94.remex.service.FileConflictPolicy
@@ -144,6 +145,19 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private val _viewMode = MutableStateFlow(FileViewMode.LIST)
     val viewMode = _viewMode.asStateFlow()
 
+    private val settingsManager = SettingsManager(application)
+
+    /**
+     * "Show hidden items" (RemEx-wqo7a.6): off by default and remembered. Applied in
+     * [recomputeDisplayed] only, so it changes what the listing shows and nothing a transfer does.
+     */
+    private val _showHidden = MutableStateFlow(false)
+    val showHidden = _showHidden.asStateFlow()
+
+    /** How many rows of the current folder (or search) are being kept out of sight right now. */
+    private val _hiddenItemCount = MutableStateFlow(0)
+    val hiddenItemCount = _hiddenItemCount.asStateFlow()
+
     /** Sorted view of the current folder (or the search results while searching). */
     private val _displayedEntries = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
     val displayedEntries = _displayedEntries.asStateFlow()
@@ -261,6 +275,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         FileTransferEngine.start(getApplication())
         viewModelScope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> handleFileTransferMessage(json) }
+        }
+        viewModelScope.launch {
+            settingsManager.fileManagerShowHiddenFlow.collect { show ->
+                if (_showHidden.value == show) return@collect
+                _showHidden.value = show
+                recomputeDisplayed()
+            }
         }
         loadRemoteRoots()
     }
@@ -397,9 +418,30 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _viewMode.value = if (_viewMode.value == FileViewMode.LIST) FileViewMode.GRID else FileViewMode.LIST
     }
 
+    /** Turns "Show hidden items" on or off and remembers the choice. */
+    fun setShowHidden(show: Boolean) {
+        if (_showHidden.value != show) {
+            _showHidden.value = show
+            recomputeDisplayed()
+        }
+        viewModelScope.launch { settingsManager.setFileManagerShowHidden(show) }
+    }
+
     private fun recomputeDisplayed() {
         val source = if (_searchActive.value) _searchResults.value else _rawEntries.value
-        _displayedEntries.value = FileManagerLogic.sortEntries(source, _sortOption.value)
+        val visible = FileManagerLogic.visibleEntries(source, _showHidden.value)
+        _hiddenItemCount.value = source.size - visible.size
+        _displayedEntries.value = FileManagerLogic.sortEntries(visible, _sortOption.value)
+        // Nothing hidden may stay selected: the bulk actions act on what is selected AND shown,
+        // and an item the person can no longer see must not ride along with them.
+        val selected = _selectedEntryNames.value
+        if (selected.isNotEmpty()) {
+            val kept = FileManagerLogic.selectionWithin(selected, _displayedEntries.value)
+            if (kept.size != selected.size) {
+                _selectedEntryNames.value = kept
+                if (kept.isEmpty()) _isSelectionMode.value = false
+            }
+        }
     }
 
     // ── Search (debounced) ──────────────────────────────────────────────────────
@@ -1375,14 +1417,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 return null
             }
 
-            val array = response.optJSONArray("entries") ?: JSONArray()
-            for (i in 0 until array.length()) {
-                val node = array.getJSONObject(i)
+            // Every row, hidden items included: "Show hidden items" is display-only and a folder
+            // download brings the whole folder across (RemEx-wqo7a.6).
+            for (node in FileManagerLogic.parseManifestEntries(response.optJSONArray("entries"))) {
                 entries.add(
                     ManifestNode(
-                        relativePath = node.optString("relativePath"),
-                        isDirectory = node.optBoolean("isDirectory"),
-                        sizeBytes = node.optLong("sizeBytes"),
+                        relativePath = node.relativePath,
+                        isDirectory = node.isDirectory,
+                        sizeBytes = node.sizeBytes,
                     )
                 )
             }

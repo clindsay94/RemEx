@@ -85,6 +85,17 @@ data class ParsedFileEntry(
     val modifiedUnixMs: Long,
 )
 
+/**
+ * One row of a `file_manifest_response` page: a file or folder inside a folder being downloaded.
+ * [relativePath] is ROOT-relative, i.e. already a valid transfer source. Mirrors `remex.core`
+ * `FileManifestEntry` fields.
+ */
+data class ManifestEntry(
+    val relativePath: String,
+    val isDirectory: Boolean,
+    val sizeBytes: Long,
+)
+
 /** Detailed metadata for the properties sheet. Mirrors `remex.core` `FileMetadataResponse`. */
 data class FileProperties(
     val name: String,
@@ -125,6 +136,74 @@ object FileManagerLogic {
         val directed = if (option.ascending) comparator else comparator.reversed()
 
         return parent + dirs.sortedWith(directed) + files.sortedWith(directed)
+    }
+
+    /**
+     * Windows' own system items, which Explorer hides unless you ask to see them (RemEx-wqo7a.6).
+     * Compared case-insensitively, by exact name only: a folder that merely CONTAINS one of these
+     * words is somebody's own folder and stays visible.
+     */
+    private val WindowsSystemItemNames: Set<String> = setOf(
+        "\$recycle.bin",
+        "\$winreagent",
+        "\$windows.~bt",
+        "\$windows.~ws",
+        "\$sysreset",
+        "\$getcurrent",
+        "config.msi",
+        "system volume information",
+        "documents and settings",
+        "recovery",
+        "msocache",
+        "pagefile.sys",
+        "hiberfil.sys",
+        "swapfile.sys",
+        "dumpstack.log",
+        "dumpstack.log.tmp",
+        "desktop.ini",
+        "thumbs.db",
+    )
+
+    /**
+     * Whether a listing row is a hidden item: a dot-file or dot-folder (".git", ".config"), or one
+     * of Windows' system items ($Recycle.Bin, System Volume Information, pagefile.sys...). The
+     * "up one level" row is never hidden.
+     */
+    fun isHiddenItemName(name: String): Boolean {
+        if (name == PARENT_ENTRY) return false
+        val trimmed = name.trim()
+        if (trimmed.length > 1 && trimmed.startsWith('.')) return true
+        return trimmed.lowercase() in WindowsSystemItemNames
+    }
+
+    /**
+     * Whether [entry] is hidden: its own name is a hidden item, or (for a search hit, which carries
+     * its root-relative path) it sits inside a hidden folder, so a search does not surface what
+     * the folder view keeps out of sight.
+     */
+    fun isHiddenEntry(entry: RemoteFileEntry): Boolean {
+        if (isHiddenItemName(entry.name)) return true
+        val path = entry.relativePath ?: return false
+        return path.split('/', '\\').any { it.isNotEmpty() && isHiddenItemName(it) }
+    }
+
+    /**
+     * What the listing SHOWS (RemEx-wqo7a.6): everything when [showHidden] is on, otherwise
+     * everything except hidden items. Display only: transfers never go through this. A folder
+     * download lists its subtree with its own manifest request (see [parseManifestEntries]), so a
+     * hidden child inside a downloaded folder still downloads, the same as copying the folder in
+     * Windows Explorer.
+     */
+    fun visibleEntries(entries: List<RemoteFileEntry>, showHidden: Boolean): List<RemoteFileEntry> =
+        if (showHidden) entries else entries.filterNot(::isHiddenEntry)
+
+    /**
+     * Drops selected names that are no longer on screen, so turning hidden items off cannot leave
+     * an invisible item selected and then deleted, copied or moved along with the visible ones.
+     */
+    fun selectionWithin(selected: Set<String>, visible: List<RemoteFileEntry>): Set<String> {
+        val names = visible.mapTo(HashSet()) { it.name }
+        return selected.filterTo(LinkedHashSet()) { it in names }
     }
 
     /**
@@ -241,6 +320,26 @@ object FileManagerLogic {
                     isDirectory = item.optBoolean("isDirectory"),
                     sizeBytes = item.optLong("sizeBytes"),
                     modifiedUnixMs = item.optLong("modifiedUnixMs"),
+                )
+            )
+        }
+    }
+
+    /**
+     * Parses one `file_manifest_response` `entries` page into [ManifestEntry]s: the whole subtree a
+     * folder download transfers. Deliberately keeps EVERY row, hidden items included — the "Show
+     * hidden items" switch only changes what the listing shows ([visibleEntries]), never what a
+     * folder download brings across (RemEx-wqo7a.6). A null array yields empty.
+     */
+    fun parseManifestEntries(arr: JSONArray?): List<ManifestEntry> = buildList {
+        if (arr == null) return@buildList
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
+            add(
+                ManifestEntry(
+                    relativePath = item.optString("relativePath"),
+                    isDirectory = item.optBoolean("isDirectory"),
+                    sizeBytes = item.optLong("sizeBytes"),
                 )
             )
         }

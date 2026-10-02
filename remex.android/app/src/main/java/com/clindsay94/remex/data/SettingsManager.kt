@@ -791,6 +791,17 @@ class SettingsManager(val context: Context) {
                 }
         }
 
+        // Files: "Show hidden items" (RemEx-wqo7a.6). Off by default, like Windows Explorer; only
+        // changes what the listing shows, never what a transfer brings across.
+        private val fileManagerShowHiddenKey = booleanPreferencesKey("file_manager_show_hidden")
+
+        val fileManagerShowHiddenFlow: Flow<Boolean> =
+                context.dataStore.data.map { prefs -> prefs[fileManagerShowHiddenKey] ?: false }
+
+        suspend fun setFileManagerShowHidden(show: Boolean) {
+                context.dataStore.edit { prefs -> prefs[fileManagerShowHiddenKey] = show }
+        }
+
         // ── File-sharing 2.1: full-browse SAF root + per-device trust ─────────────
         // (plan §2). Full-browse is a single SAF ACTION_OPEN_DOCUMENT_TREE grant of a storage root,
         // exposed as a "volume" to a consenting paired PC. Per-device trust keys follow the plan's

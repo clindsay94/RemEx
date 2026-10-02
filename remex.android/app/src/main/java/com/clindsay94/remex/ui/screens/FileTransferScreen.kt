@@ -98,6 +98,8 @@ fun FileTransferScreen(
     val selectedEntryNames by vm.selectedEntryNames.collectAsStateWithLifecycle()
     val sortOption by vm.sortOption.collectAsStateWithLifecycle()
     val viewMode by vm.viewMode.collectAsStateWithLifecycle()
+    val showHidden by vm.showHidden.collectAsStateWithLifecycle()
+    val hiddenItemCount by vm.hiddenItemCount.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
     val searchActive by vm.searchActive.collectAsStateWithLifecycle()
     val searchTruncated by vm.searchTruncated.collectAsStateWithLifecycle()
@@ -267,6 +269,8 @@ fun FileTransferScreen(
                         onUpload = { uploadLauncher.launch("*/*") },
                         onUploadFolder = { uploadTreeLauncher.launch(null) },
                         modifier = Modifier.padding(vertical = 4.dp),
+                        showHidden = showHidden,
+                        onShowHiddenChange = vm::setShowHidden,
                     )
 
                     FileManagerQuickAccess(
@@ -402,9 +406,14 @@ fun FileTransferScreen(
                                         CenteredMessage(stringResource(R.string.file_transfer_no_shared_folders))
                                     }
                                     FileManagerBodyState.Kind.Empty -> {
+                                        // A folder holding only hidden items is not empty, and saying
+                                        // so would send the person looking for files that are there.
                                         CenteredMessage(
-                                            if (searchActive) stringResource(R.string.file_manager_no_results)
-                                            else stringResource(R.string.file_transfer_empty)
+                                            when {
+                                                hiddenItemCount > 0 -> stringResource(R.string.file_manager_only_hidden_items)
+                                                searchActive -> stringResource(R.string.file_manager_no_results)
+                                                else -> stringResource(R.string.file_transfer_empty)
+                                            }
                                         )
                                     }
                                     FileManagerBodyState.Kind.Content -> if (state.viewMode == FileViewMode.GRID) {
