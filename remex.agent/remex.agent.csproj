@@ -161,6 +161,10 @@
     (perf audit P4-8, ~9.7 MB of ReadyToRun images). The host is minimal APIs + WebSockets on Kestrel
     and never registers MVC, Razor, Components or SignalR; VisualBasic is only named by CodeDom's VB
     generator and System.Management's strongly-typed-class codegen, neither of which RemEx calls.
+    Microsoft.DiaSymReader.Native.amd64.dll (2.38 MB, Windows runtime pack only) reads WINDOWS-format
+    PDBs for stack-trace line numbers; RemEx builds portable PDBs, which System.Reflection.Metadata
+    reads without it (RemEx-pp4cm C9). The worst case if it were ever asked for is a stack trace
+    without line numbers, never a failure.
 
     PROVEN, NOT ASSUMED: a metadata scan of the published folder with these assemblies removed found no
     AssemblyRef to any of them from any remaining assembly, and no string literal or attribute naming
@@ -182,7 +186,8 @@
                                             or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.Razor'))
                                             or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.Components'))
                                             or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.AspNetCore.SignalR'))
-                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.VisualBasic'))" />
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.VisualBasic'))
+                                            or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.DiaSymReader.Native'))" />
       <RuntimePackAsset Remove="@(_RemexUnusedRuntimePackAsset)" />
       <ReferenceCopyLocalPaths Remove="@(_RemexUnusedRuntimePackAsset)" />
     </ItemGroup>
