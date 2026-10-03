@@ -21,10 +21,17 @@ namespace Remex.Desktop.Controls;
 /// <remarks>
 /// <para>
 /// WHAT ANIMATES. Only rows that arrive through an <c>Add</c> to the bound collection after the
-/// list is on screen — a routine created, a device paired, a sensor pinned, a log line written —
-/// and only when that burst of additions is small (<see cref="Motion.MaxAnimatedBatch"/>). A burst
-/// is everything added before the next layout pass, so a view model that fills a list in a loop is
-/// one burst, not a cascade.
+/// list is on screen — a new entry at the top of Home's recent activity — and only when that burst
+/// of additions is small (<see cref="Motion.MaxAnimatedBatch"/>). A burst is everything added
+/// before the next layout pass, so a view model that fills a list in a loop is one burst, not a
+/// cascade.
+/// </para>
+/// <para>
+/// WHERE TO OPT IN. Only on a list whose view model inserts or adds the new row on its own. A list
+/// that is rebuilt with Clear-then-Add or a replaced <c>ItemsSource</c> (paired and trusted devices,
+/// the pinned and tray sensors, routines and their history, the launcher grid) never produces
+/// anything but reloads, so an opt-in there does nothing; and a live log tail would animate every
+/// line it writes, which is noise rather than feedback (review of RemEx-pp4cm.1).
 /// </para>
 /// <para>
 /// WHAT DOES NOT. The rows a list shows when its page opens (the page's own shared-axis entrance

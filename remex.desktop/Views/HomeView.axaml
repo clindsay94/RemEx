@@ -331,7 +331,7 @@
                         </Button>
                     </Grid>
 
-                    <ListBox ItemsSource="{Binding PinnedSensors}" ctrl:ListEntrance.IsEnabled="True" Background="Transparent" BorderThickness="0" Padding="0" IsVisible="{Binding PinnedSensors.Count}">
+                    <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0" IsVisible="{Binding PinnedSensors.Count}">
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0"/>

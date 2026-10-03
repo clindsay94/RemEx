@@ -117,26 +117,23 @@ public partial class TrayFlyoutWindow : Window
         PlayOpenAnimation();
     }
 
-    private System.Threading.CancellationTokenSource? _openAnimation;
+    private Remex.Desktop.Controls.EntranceRunner? _openAnimation;
 
     /// <summary>
     /// The flyout eases up into place as it opens instead of popping (RemEx-pp4cm.1): M3's
-    /// emphasized-decelerate over <see cref="Remex.Desktop.Styles.Motion.Medium1"/>. Nothing under reduced motion
-    /// (<see cref="Remex.Desktop.Controls.EntranceAnimation.PlayAsync"/> returns at once). A re-open
-    /// while the previous one is still playing restarts it rather than stacking a second run.
+    /// emphasized-decelerate over <see cref="Remex.Desktop.Styles.Motion.Medium1"/>. Nothing under
+    /// reduced motion. A re-open while the previous one is still playing restarts it rather than
+    /// stacking a second run, and the superseded run does not clear the new one's slide
+    /// (<see cref="Remex.Desktop.Controls.EntranceRunner"/>).
     /// </summary>
     private void PlayOpenAnimation()
     {
-        _openAnimation?.Cancel();
-        _openAnimation?.Dispose();
-        _openAnimation = new System.Threading.CancellationTokenSource();
-
-        Remex.Desktop.Controls.EntranceAnimation.PlayAsync(
-                FlyoutSurface,
+        _openAnimation ??= new Remex.Desktop.Controls.EntranceRunner(FlyoutSurface);
+        _openAnimation
+            .Play(
                 Remex.Desktop.Styles.Motion.Medium1,
                 TimeSpan.Zero,
-                Remex.Desktop.Styles.Motion.ListItemOffset,
-                _openAnimation.Token)
+                Remex.Desktop.Styles.Motion.ListItemOffset)
             .FireAndForget("TrayFlyoutWindow.PlayOpenAnimation");
     }
 

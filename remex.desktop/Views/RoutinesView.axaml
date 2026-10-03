@@ -1,6 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ctrl="using:Remex.Desktop.Controls"
              xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -52,7 +51,7 @@
 
                 <TextBlock Text="{local:Localize Routines_Detail_History}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                 <TextBlock Text="{local:Localize Routines_Detail_NoHistory}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !HasHistory}"/>
-                <ItemsControl x:Name="HistoryList" ctrl:ListEntrance.IsEnabled="True" ItemsSource="{Binding History}">
+                <ItemsControl x:Name="HistoryList" ItemsSource="{Binding History}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:RoutineRunViewModel">
                             <Border Classes="history-row" AutomationProperties.Name="{Binding AccessibleName}"
@@ -427,7 +426,7 @@
                                                 AutomationProperties.Name="{Binding BlockButtonName}"/>
                                     </Grid>
 
-                                    <ListBox Classes="routine-list" ctrl:ListEntrance.IsEnabled="True" ItemsSource="{Binding Routines}" SelectedItem="{Binding SelectedRoutine}" SelectionMode="Single"
+                                    <ListBox Classes="routine-list" ItemsSource="{Binding Routines}" SelectedItem="{Binding SelectedRoutine}" SelectionMode="Single"
                                              AutomationProperties.Name="{Binding PhoneName}" ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                         <ListBox.ItemTemplate>

@@ -975,8 +975,8 @@ crash so nobody re-tries the `RenderTransform` shortcut.
 
 ### Palette-transition suppression must carry an activator AND be declared after the crossfade
 
-`remex.desktop/App.axaml:224` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1195`
-(the "chrome drag suppression … MUST STAY LAST" block, suppressor styles at :1217-1229) — RemEx-zgtn1.
+`remex.desktop/App.axaml:231` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1265`
+(the "chrome drag suppression … MUST STAY LAST" block, suppressor styles at :1288-1302) — RemEx-zgtn1.
 
 Avalonia's `StyleInstance.GetPriority` returns `StyleTrigger` for any style carrying a class activator
 and `Style` otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. A suppression selector with

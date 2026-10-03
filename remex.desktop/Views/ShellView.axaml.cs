@@ -32,19 +32,20 @@ public partial class ShellView : UserControl
     internal const string ShellSnackbarHostName = "ShellSnackbar";
 
     /// <summary>
-    /// How long a page transition runs, from the click to the new page settling: M3's 200 ms
-    /// emphasized-accelerate exit, then its 400 ms emphasized-decelerate enter starting as soon as the
-    /// old page has faded (RemEx-pp4cm.1; the timings live in <see cref="Motion"/>).
+    /// How long the host's transition runs before it reports itself finished, and so how long the
+    /// next navigation can be held back: M3's 200 ms emphasized-accelerate exit (RemEx-pp4cm.1; the
+    /// timings live in <see cref="Motion"/>). The 400 ms emphasized-decelerate enter starts as soon as
+    /// the old page has faded and keeps running after this, outside the host's view.
     /// </summary>
     /// <remarks>
     /// It used to be shorter for a defensive reason — the window in which a second navigation could
     /// interrupt the first was exactly this duration, and an interrupted transition left the content
     /// area blank (RemEx-yj3x2). <see cref="PageHostSequencer"/> removed interruption rather than
     /// shortening the window it happens in, so the duration is free to be chosen for how it looks
-    /// again (RemEx-yzu5m). The enter curve is front-loaded, so the page reads as arrived well before
-    /// the tail settles.
+    /// again (RemEx-yzu5m). Only the exit is held, though: holding the whole 500 ms made a second
+    /// sidebar click wait for the first page's arrival to finish (review of RemEx-pp4cm.1).
     /// </remarks>
-    private static readonly TimeSpan TransitionDuration = new SharedAxisPageTransition().TotalDuration;
+    private static readonly TimeSpan TransitionDuration = new SharedAxisPageTransition().HoldDuration;
 
     /// <summary>
     /// How long to wait for a transition to report itself finished before assuming it never will.

@@ -143,7 +143,7 @@
                           VerticalScrollBarVisibility="Auto"
                           MaxHeight="{x:Static svc:TrayFlyoutGeometry.CardsMaxHeight}"
                           IsVisible="{Binding !!FlyoutSensors.Count}">
-                <ItemsControl ItemsSource="{Binding FlyoutSensors}" Margin="6,0" ctrl:ListEntrance.IsEnabled="True">
+                <ItemsControl ItemsSource="{Binding FlyoutSensors}" Margin="6,0">
                     <!-- Cards SCALE WITH THE FLYOUT (RemEx-8tm8l). ItemWidth shares the panel's width
                          out evenly over as many 212px (TrayFlyoutGeometry.CardPitch) columns as fit,
                          so each card grows from its 200px MinWidth to fill the row instead of leaving

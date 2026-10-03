@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -13,7 +11,8 @@ namespace Remex.Desktop.Controls;
 /// <summary>
 /// The one "something arrives" animation the PC plays from code (RemEx-pp4cm.1): fade up from
 /// nothing while settling a few pixels into place, on M3's emphasized-decelerate curve. Used for list
-/// rows (<see cref="ListEntrance"/>) and the tray flyout opening.
+/// rows (<see cref="ListEntrance"/>) and the tray flyout opening (<see cref="EntranceRunner"/>).
+/// Whoever runs it owns the cleanup, and only the run that is still current may clear the target.
 /// </summary>
 /// <remarks>
 /// Key frames target <c>Opacity</c> and <c>TranslateTransform.Y</c> — never <c>RenderTransform</c>
@@ -31,7 +30,7 @@ internal static class EntranceAnimation
         Duration = duration,
         Delay = delay,
         // Backward: hold the first frame (invisible, offset) through the delay. Not Forward: the end
-        // values are the resting ones, and PlayAsync clears both properties afterwards anyway.
+        // values are the resting ones, and the runner clears both properties afterwards anyway.
         FillMode = FillMode.Backward,
         Children =
         {
@@ -56,33 +55,6 @@ internal static class EntranceAnimation
             },
         },
     };
-
-    /// <summary>
-    /// Plays the entrance on <paramref name="target"/> and then clears the two properties it drove,
-    /// so the target is left with no local value that would outrank its styles. A no-op under reduced
-    /// motion.
-    /// </summary>
-    internal static async Task PlayAsync(
-        Control target,
-        TimeSpan duration,
-        TimeSpan delay,
-        double offset,
-        CancellationToken cancellationToken)
-    {
-        if (Motion.IsReducedMotion)
-        {
-            return;
-        }
-
-        try
-        {
-            await Build(duration, delay, offset).RunAsync(target, cancellationToken);
-        }
-        finally
-        {
-            Clear(target);
-        }
-    }
 
     /// <summary>Removes whatever the entrance left on <paramref name="target"/>.</summary>
     internal static void Clear(Control target)

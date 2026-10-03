@@ -120,6 +120,29 @@ public class SharedAxisPageTransitionTests
     }
 
     [Fact]
+    public void TheHostIsHeldForTheExitOnlyNotTheWholeArrival()
+    {
+        // Review of RemEx-pp4cm.1: the shell holds every navigation until the transition reports
+        // itself finished, so that report comes when the outgoing page has left, and the incoming
+        // page's arrival runs on by itself.
+        var transition = NewTransition();
+
+        transition.HoldDuration.Should().Be(Exit);
+        transition.HoldDuration.Should().BeLessThan(transition.TotalDuration);
+    }
+
+    [Fact]
+    public void APageStillArrivingLeavesFromWhereItIsRatherThanJumpingBackToRest()
+    {
+        var animation = NewTransition().BuildOutgoing(forward: true, startOpacity: 0.6d, startTranslate: 9d);
+
+        Opacity(animation, 0d).Should().Be(0.6d);
+        Translate(animation, 0d).Should().Be(9d);
+        Opacity(animation, SharedAxisPageTransition.ExitFadeCue).Should().Be(0d);
+        Translate(animation, 1d).Should().Be(-SharedAxisPageTransition.DefaultOffset);
+    }
+
+    [Fact]
     public void TheShellsDefaultTimingIsM3sEmphasizedEnterAndExit()
     {
         var transition = new SharedAxisPageTransition();

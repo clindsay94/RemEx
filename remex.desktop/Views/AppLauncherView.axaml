@@ -1,6 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ctrl="using:Remex.Desktop.Controls"
              xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -164,7 +163,7 @@
                  virtualization was considered and rejected: WrapPanel still realizes every item
                  regardless of the ScrollViewer's clip, so it would add scroll-in-scroll UX risk on
                  an already-tested drag surface for zero actual performance benefit. -->
-            <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid" ctrl:ListEntrance.IsEnabled="True">
+            <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <!-- 176, up from 160 (RemEx-u4244). The 80px icon plus its label no longer
