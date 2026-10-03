@@ -4133,4 +4133,10 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Nilai besar</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Tidak dapat dibuka</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx tidak dapat membukanya dengan izin normal Anda. Tunggu sebentar, lalu coba lagi.</value>
+  </data>
 </root>

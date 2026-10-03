@@ -56,10 +56,15 @@ folder) goes through `UserLauncher.Launch` (`remex.desktop/Services/Launching/`)
 - **Everything else** (web links, documents, folders) is handed to the running shell through
   `IShellWindows` → desktop `IShellView` → `IShellDispatch2.ShellExecute`, so it opens inside Explorer.
 
-It falls back to the old elevated shell-execute launch when the target asks for administrator rights
-(the program's manifest or compatibility setting gives `ERROR_ELEVATION_REQUIRED`, or the shortcut has
-"Run as administrator" ticked), when no shell is running, or when the de-elevated attempt fails, so an
-app that launched before still launches. Validation (the launcher allowlist and the network-path
+Before either route, the shell's own token is checked: an elevated Explorer or one in another session
+is not a normal-permission source. The fallback to the old elevated shell-execute launch is narrow:
+only when the target asks for administrator rights (the program's manifest or compatibility setting
+gives `ERROR_ELEVATION_REQUIRED`, or the shortcut has "Run as administrator" ticked), when no shell
+exists at all (`GetShellWindow` is null), or when a launcher-list PROGRAM can't take the token route
+(command line over 1024 characters, Secondary Logon unavailable, unusable shell token). A link,
+document or folder NEVER falls back: if Explorer doesn't answer it is retried once, then opened as
+`explorer.exe "<target>"` with the shell's token, and if that fails too the user sees "Couldn't open
+it" (`UserLaunchFailedException`, `UserLauncher.LaunchOrNotify`) instead of an administrator browser. Validation (the launcher allowlist and the network-path
 guard in `AppLauncherService`) runs first and is unchanged. Linux registers a pass-through and launches
 exactly as before. Internal helper processes (schtasks, netsh, PowerShell, ffmpeg) are not
 user-facing and still start directly.

@@ -341,7 +341,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         try
         {
             // Normal user permissions for the browser, not this elevated host's (RemEx-pp4cm.2).
-            UserLauncher.Launch(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(),
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(),
                 "https://github.com/clindsay94/remex");
         }
         catch (Exception ex)
@@ -379,7 +379,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         var url = _downloadUrl ?? _updateService?.ReleasesUrl ?? "https://github.com/clindsay94/remex/releases/latest";
         try
         {
-            UserLauncher.Launch(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
         }
         catch (Exception ex)
         {

@@ -239,9 +239,9 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         try
         {
             // Through UserLauncher so the browser starts with the user's normal permissions, not
-            // this elevated host's (RemEx-pp4cm.2). A null launcher (no embedded host) or a declined
-            // de-elevation falls back to the old shell-execute launch.
-            UserLauncher.Launch(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
+            // this elevated host's (RemEx-pp4cm.2). It never falls back to an administrator browser;
+            // if the link can't open normally the user gets a "Couldn't open it" notification.
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
         }
         catch
         {

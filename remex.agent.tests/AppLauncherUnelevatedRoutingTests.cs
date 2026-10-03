@@ -63,7 +63,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     [InlineData(UnelevatedLaunchResult.ElevationRequired)]
     [InlineData(UnelevatedLaunchResult.NoShell)]
     [InlineData(UnelevatedLaunchResult.NotNeeded)]
-    [InlineData(UnelevatedLaunchResult.Failed)]
+    [InlineData(UnelevatedLaunchResult.ProgramRouteUnavailable)]
     public async Task WhenTheUnelevatedRouteDeclinesTheOldLaunchStillRuns(UnelevatedLaunchResult declined)
     {
         // "Nothing that works today stops working": an app whose manifest needs administrator
@@ -77,6 +77,20 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
         Assert.Equal(Path.GetFullPath(_target), psi.FileName);
         Assert.True(psi.UseShellExecute);
         Assert.Equal(_dir, psi.WorkingDirectory);
+    }
+
+    [Fact]
+    public async Task AFailedDocumentOrFolderOpenIsReportedAndNeverRetriedElevated()
+    {
+        // Failed is the shell route giving up (Explorer unreachable after the retry and the
+        // explorer.exe last resort). Falling back here would run the target as administrator, which
+        // is the bug RemEx-pp4cm.2 fixes, so the failure goes back to the caller instead.
+        _unelevated.Result = UnelevatedLaunchResult.Failed;
+
+        await Assert.ThrowsAsync<UserLaunchFailedException>(() => Service(_target).LaunchAppAsync(_target));
+
+        Assert.Single(_unelevated.Calls);
+        Assert.Empty(_standardStarts);
     }
 
     [Fact]

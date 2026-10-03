@@ -50,15 +50,24 @@ public enum UnelevatedLaunchResult
     /// made it work before, so the caller falls back to it.</summary>
     ElevationRequired,
 
-    /// <summary>No desktop shell (Explorer) is running in this session, so there is no normal-level
-    /// process to borrow permissions from.</summary>
+    /// <summary>No desktop shell (Explorer) is running in this session at all (<c>GetShellWindow</c>
+    /// returned nothing), so there is no normal-level process to borrow permissions from. The caller
+    /// falls back. A shell that exists but is busy or restarting is <see cref="Failed"/>, not this.</summary>
     NoShell,
 
     /// <summary>Nothing to drop: this process is not elevated, or this platform has no split
     /// administrator token. The standard launch already runs at the user's level.</summary>
     NotNeeded,
 
-    /// <summary>The de-elevated attempt failed for another reason (logged by the implementation).
-    /// The caller falls back so a launch that worked yesterday still works today.</summary>
+    /// <summary>A PROGRAM could not be started with the shell's token (command line too long for
+    /// <c>CreateProcessWithTokenW</c>, Secondary Logon unavailable, or the shell's token is elevated or
+    /// in another session). The caller falls back to the elevated launch: for a program the owner put
+    /// on the launcher list that is no worse than before RemEx-pp4cm.2, and it keeps working.</summary>
+    ProgramRouteUnavailable,
+
+    /// <summary>A link, document or folder could not be opened at normal permissions even after a
+    /// retry and the <c>explorer.exe</c> last resort. The caller must NOT fall back to the elevated
+    /// launch (that would open an administrator browser, the very bug this fixes); it reports the
+    /// failure instead.</summary>
     Failed,
 }

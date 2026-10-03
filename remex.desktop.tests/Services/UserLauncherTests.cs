@@ -44,7 +44,7 @@ public sealed class UserLauncherTests : IDisposable
     [InlineData(UnelevatedLaunchResult.ElevationRequired)]
     [InlineData(UnelevatedLaunchResult.NoShell)]
     [InlineData(UnelevatedLaunchResult.NotNeeded)]
-    [InlineData(UnelevatedLaunchResult.Failed)]
+    [InlineData(UnelevatedLaunchResult.ProgramRouteUnavailable)]
     public void WhenTheUnelevatedRouteDeclinesTheOldShellExecuteLaunchRuns(UnelevatedLaunchResult declined)
     {
         _fake.Result = declined;
@@ -56,6 +56,48 @@ public sealed class UserLauncherTests : IDisposable
         psi.FileName.Should().Be("https://example.org/");
         psi.UseShellExecute.Should().BeTrue("documents, folders and links only open through their association");
         psi.WorkingDirectory.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void AUrlThatFailsAtNormalPermissionsNeverFallsBackElevated()
+    {
+        // Security review of RemEx-pp4cm.2: Failed means the shell route gave up (Explorer
+        // restarting, busy, or an elevated/foreign shell). Falling back would open an administrator
+        // browser - the original bug - so it throws and starts nothing.
+        _fake.Result = UnelevatedLaunchResult.Failed;
+
+        var act = () => UserLauncher.Launch(_fake, "https://example.org/", null, _standardStarts.Add);
+
+        act.Should().Throw<UserLaunchFailedException>();
+        _standardStarts.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ThePcAppsLinksTellTheUserInsteadOfOpeningElevated()
+    {
+        _fake.Result = UnelevatedLaunchResult.Failed;
+        var notified = new List<(string Title, string Message)>();
+
+        var opened = UserLauncher.LaunchOrNotify(
+            _fake, "https://example.org/", _standardStarts.Add, (t, m) => notified.Add((t, m)));
+
+        opened.Should().BeFalse();
+        _standardStarts.Should().BeEmpty();
+        notified.Should().ContainSingle();
+        notified[0].Title.Should().NotBe("Launch_OpenFailed_Title", "the title must come from the resx, not the raw key");
+        notified[0].Message.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void LaunchOrNotifyStaysQuietWhenTheLinkOpens()
+    {
+        _fake.Result = UnelevatedLaunchResult.Launched;
+        var notified = 0;
+
+        UserLauncher.LaunchOrNotify(_fake, "https://example.org/", _standardStarts.Add, (_, _) => notified++)
+            .Should().BeTrue();
+
+        notified.Should().Be(0);
     }
 
     [Fact]

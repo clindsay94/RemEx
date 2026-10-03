@@ -522,7 +522,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     {
         if (OperatingSystem.IsWindows())
         {
-            UserLauncher.Launch(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), directory);
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), directory);
         }
         else if (OperatingSystem.IsLinux())
         {
