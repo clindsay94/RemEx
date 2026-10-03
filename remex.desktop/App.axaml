@@ -1,5 +1,6 @@
 ﻿<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
              xmlns:local="clr-namespace:Remex.Desktop.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
@@ -96,8 +97,8 @@
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="Transitions">
                     <Transitions>
-                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
-                        <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.Lift}" Easing="{x:Static motion:Motion.Standard}"/>
+                        <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                     </Transitions>
                 </Setter>
                 <Setter Property="Template">
@@ -111,11 +112,7 @@
                                     BoxShadow="{DynamicResource Elevation1Shadow}">
                                 <Border.Transitions>
                                     <Transitions>
-                                        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                                            <BoxShadowsTransition.Easing>
-                                                <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
-                                            </BoxShadowsTransition.Easing>
-                                        </BoxShadowsTransition>
+                                        <BoxShadowsTransition Property="BoxShadow" Duration="{x:Static motion:Motion.Lift}" Easing="{x:Static motion:Motion.Standard}"/>
                                     </Transitions>
                                 </Border.Transitions>
                             </Border>
@@ -215,8 +212,8 @@
         <Style Selector="Window.palette-crossfade">
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.4" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.Medium4}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="Foreground" Duration="{x:Static motion:Motion.Medium4}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -354,8 +351,8 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.Lift}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -418,8 +415,8 @@
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth1"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -440,9 +437,9 @@
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="BorderBrush" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -462,9 +459,9 @@
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="Foreground" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -591,9 +588,9 @@
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="BorderBrush" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.Selection}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -676,8 +673,8 @@
             <Setter Property="assists:ShadowAssist.ShadowDepth" Value="Depth0"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="BorderBrush" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -950,7 +947,7 @@
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="ContentTransition">
-                <CrossFade Duration="0:0:0.2"/>
+                <CrossFade Duration="{x:Static motion:Motion.Short4}" FadeInEasing="{x:Static motion:Motion.Standard}" FadeOutEasing="{x:Static motion:Motion.Standard}"/>
             </Setter>
         </Style>
 
@@ -1183,7 +1180,7 @@
             <Setter Property="Fill" Value="{DynamicResource SystemErrorBrush}"/>
         <Setter Property="Transitions">
             <Transitions>
-                <BrushTransition Property="Fill" Duration="0:0:0.4"/>
+                <BrushTransition Property="Fill" Duration="{x:Static motion:Motion.InPlace}" Easing="{x:Static motion:Motion.Standard}"/>
             </Transitions>
         </Setter>
         </Style>
@@ -1194,7 +1191,7 @@
             <Setter Property="Stroke" Value="{DynamicResource SystemErrorBrush}"/>
         <Setter Property="Transitions">
             <Transitions>
-                <BrushTransition Property="Stroke" Duration="0:0:0.4"/>
+                <BrushTransition Property="Stroke" Duration="{x:Static motion:Motion.InPlace}" Easing="{x:Static motion:Motion.Standard}"/>
             </Transitions>
         </Setter>
         </Style>
@@ -1237,7 +1234,7 @@
             <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.4"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.InPlace}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>

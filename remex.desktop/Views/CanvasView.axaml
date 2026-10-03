@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -107,7 +108,7 @@
             <Setter Property="MinHeight" Value="2"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <DoubleTransition Property="Height" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <DoubleTransition Property="Height" Duration="{x:Static motion:Motion.Selection}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>

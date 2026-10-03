@@ -1,5 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="using:Remex.Desktop.Controls"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
@@ -50,7 +52,7 @@
 
                 <TextBlock Text="{local:Localize Routines_Detail_History}" Theme="{StaticResource OverlineTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                 <TextBlock Text="{local:Localize Routines_Detail_NoHistory}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !HasHistory}"/>
-                <ItemsControl x:Name="HistoryList" ItemsSource="{Binding History}">
+                <ItemsControl x:Name="HistoryList" ctrl:ListEntrance.IsEnabled="True" ItemsSource="{Binding History}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:RoutineRunViewModel">
                             <Border Classes="history-row" AutomationProperties.Name="{Binding AccessibleName}"
@@ -228,7 +230,7 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- P-M8: the Pause all banner grows and fades in over 200 ms CubicEaseOut; under reduced
+        <!-- P-M8: the Pause all banner grows and fades in over Motion.Short4 (200 ms) on the M3 standard curve; under reduced
              motion it appears at once. It stays in the tree so the transition has something to run. -->
         <Style Selector="Border.paused-banner">
             <Setter Property="Opacity" Value="0"/>
@@ -243,17 +245,17 @@
         <Style Selector="Grid#RoutinesRoot:not(.reduced-motion) Border.paused-banner">
             <Setter Property="Transitions">
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <DoubleTransition Property="MaxHeight" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.Short4}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <DoubleTransition Property="MaxHeight" Duration="{x:Static motion:Motion.Short4}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
-        <!-- P-M4 chip recolour: 200 ms CubicEaseOut, instant under reduced motion. -->
+        <!-- P-M4 chip recolour: Motion.Selection (200 ms) on the M3 standard curve, instant under reduced motion. -->
         <Style Selector="Grid#RoutinesRoot:not(.reduced-motion) Border.chip">
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.Selection}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="BorderBrush" Duration="{x:Static motion:Motion.Selection}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -281,7 +283,7 @@
              RoutinesView.axaml.cs through StaggeredEntrance, which returns false under reduced motion. -->
         <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(1)">
             <Style.Animations>
-                <Animation Duration="0:0:0.200" Delay="0:0:0.000" FillMode="Backward">
+                <Animation Duration="0:0:0.200" Delay="0:0:0.000" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
                     <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
@@ -290,7 +292,7 @@
         </Style>
         <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.200" Delay="0:0:0.030" FillMode="Backward">
+                <Animation Duration="0:0:0.200" Delay="0:0:0.030" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
                     <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
@@ -299,7 +301,7 @@
         </Style>
         <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.200" Delay="0:0:0.060" FillMode="Backward">
+                <Animation Duration="0:0:0.200" Delay="0:0:0.060" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
                     <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
@@ -308,7 +310,7 @@
         </Style>
         <Style Selector="ItemsControl#RoutineGroups.entrance ListBox.routine-list > ListBoxItem:nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.200" Delay="0:0:0.090" FillMode="Backward">
+                <Animation Duration="0:0:0.200" Delay="0:0:0.090" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <Animation.Easing><SplineEasing X1="0.2" Y1="0" X2="0" Y2="1"/></Animation.Easing>
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/><Setter Property="TranslateTransform.Y" Value="16"/></KeyFrame>
                     <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/><Setter Property="TranslateTransform.Y" Value="0"/></KeyFrame>
@@ -425,7 +427,7 @@
                                                 AutomationProperties.Name="{Binding BlockButtonName}"/>
                                     </Grid>
 
-                                    <ListBox Classes="routine-list" ItemsSource="{Binding Routines}" SelectedItem="{Binding SelectedRoutine}" SelectionMode="Single"
+                                    <ListBox Classes="routine-list" ctrl:ListEntrance.IsEnabled="True" ItemsSource="{Binding Routines}" SelectedItem="{Binding SelectedRoutine}" SelectionMode="Single"
                                              AutomationProperties.Name="{Binding PhoneName}" ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                         <ListBox.ItemTemplate>
@@ -500,7 +502,7 @@
                     <Panel>
                         <TextBlock Text="{local:Localize Routines_Detail_Select}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
                                    IsVisible="{Binding SelectedRoutine, Converter={x:Static ObjectConverters.IsNull}}"/>
-                        <!-- P-M3: the detail cross-fades 150 ms CubicEaseOut; RoutinesView.axaml.cs drops
+                        <!-- P-M3: the detail cross-fades over Motion.StateChange (150 ms); RoutinesView.axaml.cs drops
                              the transition under reduced motion. -->
                         <TransitioningContentControl x:Name="DetailHost" Content="{Binding SelectedRoutine}" ContentTemplate="{StaticResource RoutineDetailTemplate}"/>
                     </Panel>

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="using:Remex.Desktop.Controls"
              xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
              xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -69,7 +70,7 @@
 
                         <!-- Colored, virtualized log list -->
                         <material:Card Grid.Row="4" Classes="surface" Padding="4" InsideClipping="True" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <ListBox x:Name="LogListBox" Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}" ScrollViewer.ScrollChanged="OnLogListScrollChanged">
+                            <ListBox x:Name="LogListBox" ctrl:ListEntrance.IsEnabled="True" Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}" ScrollViewer.ScrollChanged="OnLogListScrollChanged">
                                 <!-- Ctrl+C on the list itself, so the shortcut works wherever the
                                      selection was made rather than only while the button has focus. -->
                                 <ListBox.KeyBindings>

@@ -31,7 +31,8 @@ namespace Remex.Desktop.Tests.Views;
 /// </remarks>
 public class SharedAxisPageTransitionTests
 {
-    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan Enter = TimeSpan.FromMilliseconds(400);
+    private static readonly TimeSpan Exit = TimeSpan.FromMilliseconds(200);
 
     [Fact]
     public void TheOutgoingPageTravelsAgainstTheNavigationAndIsGoneBeforeTheIncomingOneArrives()
@@ -42,7 +43,7 @@ public class SharedAxisPageTransitionTests
         Opacity(animation, 0d).Should().Be(1d);
 
         // Faded out by the crossover point, and it stays out for the rest of the run.
-        Opacity(animation, SharedAxisPageTransition.FadeCue).Should().Be(0d);
+        Opacity(animation, SharedAxisPageTransition.ExitFadeCue).Should().Be(0d);
         Opacity(animation, 1d).Should().Be(0d);
 
         // Forward navigation pushes the old page left.
@@ -57,8 +58,12 @@ public class SharedAxisPageTransitionTests
         Translate(animation, 0d).Should().Be(SharedAxisPageTransition.DefaultOffset);
         Opacity(animation, 0d).Should().Be(0d);
 
-        // Invisible until the outgoing page has gone - the two are never legible at once.
-        Opacity(animation, SharedAxisPageTransition.FadeCue).Should().Be(0d);
+        // Invisible until the outgoing page has gone - the two are never legible at once: the
+        // incoming animation does not start until the outgoing one has faded out, and it holds its
+        // first (invisible) frame through that delay.
+        animation.Delay.Should().Be(NewTransition().IncomingDelay);
+        NewTransition().IncomingDelay.Should().Be(Exit * SharedAxisPageTransition.ExitFadeCue);
+        animation.FillMode.Should().Be(FillMode.Both);
 
         Translate(animation, 1d).Should().Be(0d);
         Opacity(animation, 1d).Should().Be(1d);
@@ -96,18 +101,48 @@ public class SharedAxisPageTransitionTests
     }
 
     [Fact]
-    public void BothHalvesRunForTheRequestedDurationOnMaterialsStandardEasing()
+    public void TheOutgoingPageLeavesOnTheExitTokenAndTheIncomingOneArrivesOnTheEnterToken()
+    {
+        var transition = NewTransition();
+        var outgoing = transition.BuildOutgoing(true);
+        var incoming = transition.BuildIncoming(true);
+
+        outgoing.Duration.Should().Be(Exit);
+        incoming.Duration.Should().Be(Enter);
+
+        // Forward fill on both: the last interpolated value stays applied until the transition
+        // clears it, so a page cannot flicker back to its starting offset between the animation
+        // ending and the cleanup running. The incoming page also fills backward, through its delay.
+        outgoing.FillMode.Should().Be(FillMode.Forward);
+        incoming.FillMode.Should().HaveFlag(FillMode.Forward);
+
+        transition.TotalDuration.Should().Be(transition.IncomingDelay + Enter);
+    }
+
+    [Fact]
+    public void TheShellsDefaultTimingIsM3sEmphasizedEnterAndExit()
+    {
+        var transition = new SharedAxisPageTransition();
+
+        transition.EnterDuration.Should().Be(Remex.Desktop.Styles.Motion.Enter);
+        transition.ExitDuration.Should().Be(Remex.Desktop.Styles.Motion.Exit);
+    }
+
+    [Fact]
+    public void ExitIsEmphasizedAccelerateAndEnterIsEmphasizedDecelerate()
     {
         var transition = NewTransition();
 
-        foreach (var animation in new[] { transition.BuildOutgoing(true), transition.BuildIncoming(true) })
+        foreach (var frame in transition.BuildOutgoing(true).Children.Where(f => f.KeySpline != null))
         {
-            animation.Duration.Should().Be(Duration);
+            (frame.KeySpline!.ControlPointX1, frame.KeySpline.ControlPointY1,
+             frame.KeySpline.ControlPointX2, frame.KeySpline.ControlPointY2).Should().Be((0.3, 0.0, 0.8, 0.15));
+        }
 
-            // Forward fill: the last interpolated value stays applied until the transition clears it,
-            // so a page cannot flicker back to its starting offset between the animation ending and
-            // the cleanup running.
-            animation.FillMode.Should().Be(FillMode.Forward);
+        foreach (var frame in transition.BuildIncoming(true).Children.Where(f => f.KeySpline != null))
+        {
+            (frame.KeySpline!.ControlPointX1, frame.KeySpline.ControlPointY1,
+             frame.KeySpline.ControlPointX2, frame.KeySpline.ControlPointY2).Should().Be((0.05, 0.7, 0.1, 1.0));
         }
     }
 
@@ -116,8 +151,8 @@ public class SharedAxisPageTransitionTests
     {
         // Avalonia eases the animation's global progress and THEN picks the key-frame segment by
         // comparing that eased value against the cue, so an animation-level easing silently moves
-        // every cue: under Material's curve the crossover at 0.3 would land at 14% of the run, and
-        // the outgoing fade would be over in the first ~27ms of a 200ms navigation. A key spline is
+        // every cue: under emphasized-accelerate the crossover would land well past the middle of
+        // the run, leaving the old page legible after the new one has started. A key spline is
         // applied to the segment's own progress instead, after the lookup.
         var animation = NewTransition().BuildOutgoing(forward: true);
 
@@ -162,18 +197,40 @@ public class SharedAxisPageTransitionTests
     }
 
     [Fact]
-    public void ReducedMotionRemovesTheTravelRatherThanShorteningIt()
+    public void ReducedMotionSwapsThePageInstantlyRatherThanShorteningTheAnimation()
     {
-        // A shortened slide is still a slide. What is left for someone who asked for less motion is
-        // the fade, which is the standard accommodation - not a faster version of the same movement.
+        // A shortened slide is still a slide, and a half-length fade is still a fade (RemEx-pp4cm.1):
+        // under reduced motion the page simply replaces the old one. It is still a transition
+        // object, so TransitioningContentControl's continuation runs and releases the sequencer.
         var transition = ShellView.NewPageTransition(reducedMotion: true);
 
         transition.Should().BeOfType<InterruptSafePageTransition>()
+            .Which.Inner.Should().BeOfType<InstantPageTransition>();
+    }
+
+    [Fact]
+    public void TheInstantTransitionCompletesSynchronouslyAndLeavesNoAnimationArtefacts()
+    {
+        var to = new ContentPresenter { Opacity = 0.3d, RenderTransform = new TranslateTransform(30d, 0d) };
+
+        var running = new InstantPageTransition().Start(null, to, forward: true, CancellationToken.None);
+
+        running.IsCompletedSuccessfully.Should().BeTrue();
+        to.Opacity.Should().Be(1d);
+        to.RenderTransform.Should().BeNull();
+    }
+
+    [Fact]
+    public void TheImmersiveHostCrossFadesAndIsInstantUnderReducedMotion()
+    {
+        ShellView.NewImmersiveTransition(reducedMotion: false).Should().BeOfType<InterruptSafePageTransition>()
             .Which.Inner.Should().BeOfType<CrossFade>();
+        ShellView.NewImmersiveTransition(reducedMotion: true).Should().BeOfType<InterruptSafePageTransition>()
+            .Which.Inner.Should().BeOfType<InstantPageTransition>();
     }
 
     private static SharedAxisPageTransition NewTransition(SharedAxis axis = SharedAxis.Horizontal) =>
-        new(Duration, axis);
+        new(Enter, Exit, axis);
 
     /// <summary>The translate value set at <paramref name="cue"/>, or null if that frame sets none.</summary>
     private static double? Translate(Animation animation, double cue) =>

@@ -1,5 +1,7 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="using:Remex.Desktop.Controls"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
@@ -21,7 +23,7 @@
              reduced motion is off. -->
         <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(1)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -35,7 +37,7 @@
         </Style>
         <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -49,7 +51,7 @@
         </Style>
         <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -356,7 +358,7 @@
 
                         <TextBlock Text="{local:Localize Settings_PairedDevicesEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding !PairedDevices.Count}"/>
 
-                        <ItemsControl ItemsSource="{Binding PairedDevices}">
+                        <ItemsControl ItemsSource="{Binding PairedDevices}" ctrl:ListEntrance.IsEnabled="True">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:PairedDeviceItem">
                                     <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
@@ -454,7 +456,7 @@
                         <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding ShowNoTrustedDevices}"/>
 
                         <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoadingTrustedDevices}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
-                        <ItemsControl ItemsSource="{Binding TrustedDevices}">
+                        <ItemsControl ItemsSource="{Binding TrustedDevices}" ctrl:ListEntrance.IsEnabled="True">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:FileTrustDeviceItem">
                                     <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">

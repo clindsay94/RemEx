@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -14,7 +15,7 @@
              reduced motion is off. -->
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(1)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -28,7 +29,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.020" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.020" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -42,7 +43,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.040" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.040" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -56,7 +57,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.060" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.060" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -70,7 +71,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(5)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.080" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.080" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -84,7 +85,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(6)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -98,7 +99,7 @@
         </Style>
         <Style Selector="StackPanel#RemoteSections.entrance > :is(Control):nth-child(7)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.120" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.120" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>

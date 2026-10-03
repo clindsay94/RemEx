@@ -114,6 +114,30 @@ public partial class TrayFlyoutWindow : Window
         _shownAtUtc = DateTime.UtcNow;
         ViewModel?.Refresh();
         Show();
+        PlayOpenAnimation();
+    }
+
+    private System.Threading.CancellationTokenSource? _openAnimation;
+
+    /// <summary>
+    /// The flyout eases up into place as it opens instead of popping (RemEx-pp4cm.1): M3's
+    /// emphasized-decelerate over <see cref="Remex.Desktop.Styles.Motion.Medium1"/>. Nothing under reduced motion
+    /// (<see cref="Remex.Desktop.Controls.EntranceAnimation.PlayAsync"/> returns at once). A re-open
+    /// while the previous one is still playing restarts it rather than stacking a second run.
+    /// </summary>
+    private void PlayOpenAnimation()
+    {
+        _openAnimation?.Cancel();
+        _openAnimation?.Dispose();
+        _openAnimation = new System.Threading.CancellationTokenSource();
+
+        Remex.Desktop.Controls.EntranceAnimation.PlayAsync(
+                FlyoutSurface,
+                Remex.Desktop.Styles.Motion.Medium1,
+                TimeSpan.Zero,
+                Remex.Desktop.Styles.Motion.ListItemOffset,
+                _openAnimation.Token)
+            .FireAndForget("TrayFlyoutWindow.PlayOpenAnimation");
     }
 
     /// <summary>Switches between the transient popup and the pinned, movable window.</summary>
