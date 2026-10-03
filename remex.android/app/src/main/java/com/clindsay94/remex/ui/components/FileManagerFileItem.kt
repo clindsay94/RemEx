@@ -63,6 +63,7 @@ import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemoteFileEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 
 /**
  * Decoded thumbnails, keyed by the base64 string they came from (perf audit P3-13).
@@ -213,7 +214,7 @@ fun FileManagerListItem(
 
         if (!isSelectionMode && entry.name != FileManagerLogic.PARENT_ENTRY) {
             if (showDownload && !entry.isDirectory) {
-                IconButton(onClick = onDownload) {
+                IconButton(onClick = onDownload, shapes = rememberRemexIconButtonShapes()) {
                     Icon(
                         Icons.Default.Download,
                         contentDescription = stringResource(R.string.file_transfer_download),
@@ -222,7 +223,7 @@ fun FileManagerListItem(
                 }
             }
             if (showOverflow) {
-                IconButton(onClick = onOverflow) {
+                IconButton(onClick = onOverflow, shapes = rememberRemexIconButtonShapes()) {
                     Icon(
                         Icons.Default.MoreVert,
                         contentDescription = stringResource(R.string.cd_more_options),

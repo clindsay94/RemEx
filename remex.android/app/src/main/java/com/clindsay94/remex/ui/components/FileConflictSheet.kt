@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.service.ConflictAction
 import com.clindsay94.remex.service.FileConflictCodes
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /** What the sheet is asking about. */
 data class FileConflictPrompt(
@@ -131,16 +133,22 @@ fun FileConflictSheet(
                     ConflictAction.KeepBoth -> Button(
                         onClick = { onResolved(prompt.token, action, applyToAll) },
                         modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding,
                     ) { Text(stringResource(R.string.file_conflict_keep_both)) }
 
                     ConflictAction.Replace -> OutlinedButton(
                         onClick = { onResolved(prompt.token, action, applyToAll) },
                         modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding,
                     ) { Text(stringResource(R.string.file_conflict_replace)) }
 
                     ConflictAction.Skip -> TextButton(
                         onClick = { onResolved(prompt.token, action, applyToAll) },
                         modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding,
                     ) { Text(stringResource(R.string.file_conflict_skip)) }
                 }
             }

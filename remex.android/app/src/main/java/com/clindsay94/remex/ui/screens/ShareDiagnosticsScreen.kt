@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -42,6 +40,11 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
 
 /**
  * Lets the user read the whole diagnostics report and then send it (RemEx-0iww).
@@ -104,7 +107,7 @@ private fun ShareDiagnosticsContent(
         onIncludeNetworkInfoChange: (Boolean) -> Unit,
         onShare: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
 
     Scaffold(
@@ -122,11 +125,13 @@ private fun ShareDiagnosticsContent(
                 Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onShare()
                             },
                             enabled = !collecting && !sharing && bundle.isNotEmpty(),
                             modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding,
                     ) { Text(stringResource(R.string.share_diagnostics_send)) }
                 }
             },
@@ -195,7 +200,7 @@ private fun NetworkInfoToggle(
         enabled: Boolean,
         onChange: (Boolean) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     Row(
             modifier =
                     Modifier.fillMaxWidth()
@@ -206,9 +211,7 @@ private fun NetworkInfoToggle(
                                     enabled = enabled,
                                     role = Role.Switch,
                                     onValueChange = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                        )
+                                        haptics.perform(RemexHaptics.toggle(it))
                                         onChange(it)
                                     },
                             ),

@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +38,10 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.RemexSegmentedSwitch
 import com.clindsay94.remex.ui.navigation.DesktopMode
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * The Desktop tab (refresh spec, Desktop; RemEx-wqo7a.2): a Stream | Trackpad switch under the
@@ -126,7 +128,7 @@ private fun DesktopStreamPane(
         onStartStream: () -> Unit,
         onNavigateToConnection: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         NotConnectedBanner(
                 isConnected = isConnected,
@@ -164,11 +166,13 @@ private fun DesktopStreamPane(
             }
             Button(
                     onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                        haptics.perform(RemexHapticEvent.Press)
                         onStartStream()
                     },
                     enabled = isConnected,
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding
             ) {
                 Icon(
                         Icons.Default.PlayArrow,

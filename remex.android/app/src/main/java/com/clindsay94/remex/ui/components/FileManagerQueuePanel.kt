@@ -50,6 +50,9 @@ import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferState
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * Persistent transfer-queue panel (plan WP7): one row per [QueuedTransfer] with live progress and
@@ -113,12 +116,12 @@ private fun QueuePanelContent(
                     modifier = Modifier.weight(1f),
                 )
                 if (hasUnfinished) {
-                    TextButton(onClick = onCancelAll) {
+                    TextButton(onClick = onCancelAll, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                         Text(stringResource(R.string.file_manager_cancel_all))
                     }
                 }
                 if (hasFinished) {
-                    TextButton(onClick = onClearFinished) {
+                    TextButton(onClick = onClearFinished, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                         Text(stringResource(R.string.file_manager_clear_finished))
                     }
                 }
@@ -211,16 +214,16 @@ private fun TransferRow(
                 state == TransferState.Failed
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (state == TransferState.Paused || state == TransferState.Failed) {
-                    IconButton(onClick = { onResume(transfer.id) }) {
+                    IconButton(onClick = { onResume(transfer.id) }, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
                     }
                 } else if (stateActive) {
-                    IconButton(onClick = { onPause(transfer.id) }) {
+                    IconButton(onClick = { onPause(transfer.id) }, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.file_manager_pause))
                     }
                 }
                 if (!stateFinished) {
-                    IconButton(onClick = { onCancel(transfer.id) }) {
+                    IconButton(onClick = { onCancel(transfer.id) }, shapes = rememberRemexIconButtonShapes()) {
                         Icon(
                             Icons.Default.Cancel,
                             contentDescription = stringResource(R.string.file_transfer_cancel),

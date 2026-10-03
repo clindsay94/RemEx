@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.LocaleManager
 import android.content.Context
 import android.os.LocaleList
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -58,10 +57,16 @@ import com.clindsay94.remex.ui.theme.isDarkThemeFor
 import com.clindsay94.remex.ui.theme.rememberPaletteColorScheme
 import com.clindsay94.remex.ui.theme.CardShapes
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.FilterChip
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.components.RemexFilterChip
 
 @OptIn(
         ExperimentalMaterial3Api::class,
@@ -174,6 +179,7 @@ fun PersonalizationScreenContent(
     ) -> Unit
 ) {
     val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
 
     var themeMode by remember { mutableStateOf(settings.themeMode) }
@@ -283,7 +289,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -340,9 +346,7 @@ fun PersonalizationScreenContent(
                                 confirmButton = {
                                     Button(
                                             onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.CONFIRM
-                                                )
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 pendingLanguageTag = null
                                                 val tags = if (pendingTag == "system") "" else pendingTag
                                                 val lm = view.context.getSystemService(LocaleManager::class.java)
@@ -351,11 +355,13 @@ fun PersonalizationScreenContent(
                                                         if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
                                                         else LocaleList.forLanguageTags(tags)
                                                 }
-                                            }
+                                            },
+                                            shapes = rememberRemexButtonShapes(),
+                                            contentPadding = ButtonDefaults.ContentPadding
                                     ) { Text(stringResource(R.string.button_confirm)) }
                                 },
                                 dismissButton = {
-                                    TextButton(onClick = { pendingLanguageTag = null }) {
+                                    TextButton(onClick = { pendingLanguageTag = null }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                                         Text(stringResource(R.string.button_cancel))
                                     }
                                 }
@@ -367,7 +373,7 @@ fun PersonalizationScreenContent(
                     ExposedDropdownMenuBox(
                             expanded = expanded,
                             onExpandedChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 expanded = it
                             }
                     ) {
@@ -401,9 +407,7 @@ fun PersonalizationScreenContent(
                                 DropdownMenuItem(
                                         text = { Text(name) },
                                         onClick = {
-                                            view.performHapticFeedback(
-                                                    HapticFeedbackConstants.KEYBOARD_TAP
-                                            )
+                                            haptics.perform(RemexHapticEvent.Select)
                                             expanded = false
                                             // Re-picking the current language changes nothing,
                                             // so it asks nothing.
@@ -422,7 +426,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -494,7 +498,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -541,7 +545,9 @@ fun PersonalizationScreenContent(
 
                     OutlinedButton(
                             onClick = { showSplashPreview = true },
-                            modifier = Modifier.align(Alignment.End)
+                            modifier = Modifier.align(Alignment.End),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding
                     ) {
                         Icon(
                                 Icons.Default.PlayArrow,
@@ -560,7 +566,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -595,6 +601,7 @@ fun PersonalizationScreenContent(
                         Switch(
                                 checked = dynamicColor,
                                 onCheckedChange = {
+                                    haptics.perform(RemexHaptics.toggle(it))
                                     dynamicColor = it
                                     onDynamicColorChange(it)
                                 },
@@ -700,9 +707,7 @@ fun PersonalizationScreenContent(
                                     value = themeSeedChroma,
                                     onValueChange = { themeSeedChroma = it },
                                     onValueChangeFinished = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.CLOCK_TICK
-                                        )
+                                        haptics.perform(RemexHapticEvent.Release)
                                     },
                                     valueRange = 0f..120f,
                                     modifier =
@@ -727,12 +732,15 @@ fun PersonalizationScreenContent(
                             )
                             Slider(
                                     value = themeContrast,
-                                    // Detents at -1, 0 and 1, the same rule as the PC's slider.
-                                    onValueChange = { themeContrast = ContrastDetents.snap(it) },
-                                    onValueChangeFinished = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.CLOCK_TICK
-                                        )
+                                    // Detents at -1, 0 and 1, the same rule as the PC's slider. Each
+                                    // one ticks as the thumb lands on it, so the finger feels "standard"
+                                    // and the two extremes without looking; no tick on release.
+                                    onValueChange = {
+                                        val snapped = ContrastDetents.snap(it)
+                                        if (RemexHaptics.landedOnDetent(themeContrast, snapped, ContrastDetents.DETENTS)) {
+                                            haptics.perform(RemexHapticEvent.Detent)
+                                        }
+                                        themeContrast = snapped
                                     },
                                     valueRange = -1.0f..1.0f,
                                     modifier =
@@ -799,7 +807,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -833,7 +841,7 @@ fun PersonalizationScreenContent(
                     ExposedDropdownMenuBox(
                             expanded = fontExpanded,
                             onExpandedChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 fontExpanded = it
                             }
                     ) {
@@ -858,7 +866,7 @@ fun PersonalizationScreenContent(
                                 DropdownMenuItem(
                                         text = { Text(name) },
                                         onClick = {
-                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                            haptics.perform(RemexHapticEvent.Select)
                                             fontFamily = key
                                             fontExpanded = false
                                         }
@@ -880,7 +888,7 @@ fun PersonalizationScreenContent(
                             value = fontScale,
                             onValueChange = { fontScale = it },
                             onValueChangeFinished = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                haptics.perform(RemexHapticEvent.Release)
                             },
                             valueRange = 0.85f..1.4f,
                             modifier =
@@ -898,7 +906,7 @@ fun PersonalizationScreenContent(
                             CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                    modifier = Modifier.animateContentSize()
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
             ) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -923,7 +931,7 @@ fun PersonalizationScreenContent(
                             value = cornerRadius.toFloat(),
                             onValueChange = { cornerRadius = it.toInt() },
                             onValueChangeFinished = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                haptics.perform(RemexHapticEvent.Release)
                             },
                             valueRange = 4f..36f,
                             modifier =
@@ -956,7 +964,7 @@ fun PersonalizationScreenContent(
                             value = cardOpacity,
                             onValueChange = { cardOpacity = it },
                             onValueChangeFinished = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                haptics.perform(RemexHapticEvent.Release)
                             },
                             valueRange = 0.1f..1.0f,
                             // contentDescription names the control; stateDescription supplies the value.
@@ -1077,7 +1085,8 @@ fun PersonalizationScreenContent(
                                     if (!isInherit) {
                                         IconButton(
                                                 onClick = { setter(DashboardShapes.SHAPE_PRESET_INHERIT) },
-                                                modifier = Modifier.size(24.dp)
+                                                modifier = Modifier.size(24.dp),
+                                                shapes = rememberRemexIconButtonShapes()
                                         ) {
                                             Icon(
                                                     Icons.Default.Refresh,
@@ -1117,12 +1126,10 @@ fun PersonalizationScreenContent(
                                                     if (choiceIsAuto) R.string.personalization_shape_auto
                                                     else CardShapes.nameRes(choice)
                                             )
-                                    FilterChip(
+                                    RemexFilterChip(
                                             selected = selected,
                                             onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.CLOCK_TICK
-                                                )
+                                                haptics.perform(RemexHapticEvent.Select)
                                                 setter(choice)
                                             },
                                             label = { Text(choiceName) },
@@ -1187,7 +1194,8 @@ fun PersonalizationScreenContent(
                 )
                 IconButton(
                         onClick = { showSplashPreview = false },
-                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+                        shapes = rememberRemexIconButtonShapes()
                 ) {
                     Icon(
                             Icons.Default.Close,
@@ -1316,13 +1324,13 @@ private fun SingleSelectChips(
          */
         labelFor: (@Composable (String) -> String)? = null
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { option ->
-            FilterChip(
+            RemexFilterChip(
                     selected = selected == option,
                     onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Select)
                         onSelected(option)
                     },
                     label = {

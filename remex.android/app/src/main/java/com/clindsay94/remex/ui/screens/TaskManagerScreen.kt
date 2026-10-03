@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -35,7 +34,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +47,12 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexCollapsingScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.unit.IntOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,7 +166,7 @@ fun TaskManagerScreenContent(
         /** Connection > Add a PC. */
         onPair: () -> Unit = onNavigateToConnection,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val motionScheme = MaterialTheme.motionScheme
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -186,11 +190,10 @@ fun TaskManagerScreenContent(
                             actions = {
                                 IconButton(
                                         onClick = {
-                                            view.performHapticFeedback(
-                                                    HapticFeedbackConstants.KEYBOARD_TAP
-                                            )
+                                            haptics.perform(RemexHapticEvent.Press)
                                             onRefreshProcesses()
-                                        }
+                                        },
+                                        shapes = rememberRemexIconButtonShapes()
                                 ) {
                                     Icon(
                                             Icons.Default.Refresh,
@@ -208,7 +211,7 @@ fun TaskManagerScreenContent(
         PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    haptics.perform(RemexHapticEvent.Refresh)
                     onRefreshProcesses()
                 },
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -299,6 +302,12 @@ fun TaskManagerScreenContent(
                                     remember(processes) { ProcessRows.scaleMax(processes.map { it.ram }) }
                             val maxCpu =
                                     remember(processes) { ProcessRows.scaleMax(processes.map { it.cpu }) }
+                            val placementSpec =
+                                    if (ProcessRows.animatesReorder(sortField)) {
+                                        MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+                                    } else {
+                                        null
+                                    }
                             LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = 80.dp)
@@ -310,12 +319,7 @@ fun TaskManagerScreenContent(
                                             maxCpu = maxCpu,
                                             cornerRadius = cornerRadius,
                                             onKill = { onKillProcess(process) },
-                                            modifier =
-                                                    Modifier.animateItem(
-                                                            placementSpec =
-                                                                    MaterialTheme.motionScheme
-                                                                            .fastSpatialSpec()
-                                                    )
+                                            modifier = Modifier.animateItem(placementSpec = placementSpec)
                                     )
                                 }
                             }
@@ -387,7 +391,7 @@ private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Sha
                             enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
                             exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
                     ) {
-                        IconButton(onClick = { onUpdateQuery("") }) {
+                        IconButton(onClick = { onUpdateQuery("") }, shapes = rememberRemexIconButtonShapes()) {
                             Icon(
                                     Icons.Default.Close,
                                     contentDescription =
@@ -593,7 +597,7 @@ private fun SortFieldChips(
         onUpdateSortField: (ProcessSortField) -> Unit,
         modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the Expressive
     // ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20 (ButtonGroupMeasurePolicy
     // → Constraints.copy with negative width, ButtonGroup.kt:816). A standalone ToggleButton still
@@ -603,7 +607,7 @@ private fun SortFieldChips(
             ToggleButton(
                     checked = currentSortField == field,
                     onCheckedChange = {
-                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        haptics.perform(RemexHapticEvent.Select)
                         onUpdateSortField(field)
                     },
                     modifier = Modifier.weight(1f),
@@ -625,12 +629,13 @@ private fun SortDirectionButton(
         currentSortField: ProcessSortField,
         onUpdateSortField: (ProcessSortField) -> Unit
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     IconButton(
             onClick = {
-                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                haptics.perform(RemexHapticEvent.Select)
                 onUpdateSortField(currentSortField) // same field → toggles descending
-            }
+            },
+            shapes = rememberRemexIconButtonShapes()
     ) {
         val sortArrowRotation by
                 animateFloatAsState(
@@ -657,7 +662,7 @@ private fun ProcessCard(
         onKill: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     var showConfirm by remember { mutableStateOf(false) }
     val adaptivePadding = cardInnerPadding()
     val row = ProcessRows.rowFor(process, maxCpu = maxCpu, maxRam = maxRam)
@@ -678,7 +683,7 @@ private fun ProcessCard(
                 confirmButton = {
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                                haptics.perform(RemexHapticEvent.Reject)
                                 onKill()
                                 showConfirm = false
                             },
@@ -686,11 +691,13 @@ private fun ProcessCard(
                                     ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.error,
                                             contentColor = MaterialTheme.colorScheme.onError
-                                    )
+                                    ),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding
                     ) { Text(stringResource(R.string.button_kill)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showConfirm = false }) {
+                    TextButton(onClick = { showConfirm = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                         Text(stringResource(R.string.button_cancel))
                     }
                 }
@@ -708,7 +715,7 @@ private fun ProcessCard(
                     ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             onClick = {
-                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                haptics.perform(RemexHapticEvent.Press)
                 showConfirm = true
             }
     ) {
@@ -852,8 +859,8 @@ private fun LoadErrorBanner(
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+                TextButton(onClick = onRetry, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.task_manager_retry)) }
+                TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.task_manager_dismiss)) }
             }
         }
     }

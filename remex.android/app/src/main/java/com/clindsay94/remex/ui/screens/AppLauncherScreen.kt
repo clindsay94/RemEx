@@ -1,7 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.LruCache
@@ -80,6 +78,11 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 data class AppLauncherUiState(
     val apps: List<AppEntry> = emptyList(),
@@ -153,7 +156,7 @@ fun AppLauncherScreenContent(
     /** Connection > Add a PC, for a PC that needs pairing again. */
     onPair: () -> Unit = onNavigateToConnection,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     val refreshLabel = stringResource(R.string.cd_refresh)
     Scaffold(
@@ -170,10 +173,11 @@ fun AppLauncherScreenContent(
                     RemexTooltip(refreshLabel) {
                         IconButton(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onRefreshApps()
                             },
-                            enabled = uiState.isConnected && !uiState.isRefreshing
+                            enabled = uiState.isConnected && !uiState.isRefreshing,
+                            shapes = rememberRemexIconButtonShapes()
                         ) {
                             Icon(Default.Refresh, contentDescription = refreshLabel)
                         }
@@ -186,7 +190,7 @@ fun AppLauncherScreenContent(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = {
-                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                haptics.perform(RemexHapticEvent.Refresh)
                 onRefreshApps()
             },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -234,7 +238,7 @@ fun AppLauncherScreenContent(
                             message = stringResource(R.string.app_launcher_no_answer),
                             actionLabel = stringResource(R.string.app_launcher_try_again),
                             onAction = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onRefreshApps()
                             }
                         ) {
@@ -251,7 +255,7 @@ fun AppLauncherScreenContent(
                             detail = stringResource(R.string.app_launcher_no_apps_hint),
                             actionLabel = stringResource(R.string.button_fetch_from_host),
                             onAction = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onRefreshApps()
                             }
                         ) {
@@ -266,7 +270,7 @@ fun AppLauncherScreenContent(
                         AppGrid(
                             uiState = uiState,
                             onLaunchApp = { app ->
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                haptics.perform(RemexHapticEvent.CommandSent)
                                 onLaunchApp(app)
                             },
                             onRetry = onRefreshApps,
@@ -382,7 +386,7 @@ private fun LauncherMessage(
             )
         }
         if (actionLabel != null) {
-            FilledTonalButton(onClick = onAction) { Text(actionLabel) }
+            FilledTonalButton(onClick = onAction, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(actionLabel) }
         }
     }
 }
@@ -405,13 +409,13 @@ private fun LauncherNoAnswerBanner(onRetry: () -> Unit, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onDismiss) {
+                TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                     Text(
                         stringResource(R.string.button_dismiss),
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
-                TextButton(onClick = onRetry) {
+                TextButton(onClick = onRetry, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                     Text(
                         stringResource(R.string.app_launcher_try_again),
                         color = MaterialTheme.colorScheme.onErrorContainer
@@ -701,7 +705,7 @@ private fun RecentAppCarousel(
     onLaunchApp: (AppEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val carouselState = rememberCarouselState { apps.size }
     HorizontalMultiBrowseCarousel(
         state = carouselState,
@@ -717,7 +721,7 @@ private fun RecentAppCarousel(
                 .maskClip(MaterialTheme.shapes.extraLarge)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    haptics.perform(RemexHapticEvent.CommandSent)
                     onLaunchApp(app)
                 },
             contentAlignment = Alignment.Center

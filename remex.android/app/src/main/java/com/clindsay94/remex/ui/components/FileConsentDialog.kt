@@ -30,6 +30,8 @@ import com.clindsay94.remex.service.FileConsentKinds
 import com.clindsay94.remex.service.FileConsentManager
 import com.clindsay94.remex.service.FileConsentOrigin
 import kotlinx.coroutines.delay
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * Foreground consent dialog (plan §2 / WP9). Observes the single active prompt raised by
@@ -134,14 +136,18 @@ fun FileConsentDialogHost() {
         },
         confirmButton = {
             TextButton(
-                onClick = { FileConsentManager.resolve(active.consentId, granted = true, remember = rememberChoice) }
+                onClick = { FileConsentManager.resolve(active.consentId, granted = true, remember = rememberChoice) },
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
             ) {
                 Text(stringResource(R.string.file_consent_allow))
             }
         },
         dismissButton = {
             TextButton(
-                onClick = { FileConsentManager.resolve(active.consentId, granted = false, remember = false) }
+                onClick = { FileConsentManager.resolve(active.consentId, granted = false, remember = false) },
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
             ) {
                 Text(stringResource(R.string.file_consent_deny))
             }

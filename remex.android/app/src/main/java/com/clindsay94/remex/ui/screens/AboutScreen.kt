@@ -2,7 +2,6 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -47,6 +45,10 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import org.json.JSONObject
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 @Composable
 fun AboutScreen() {
@@ -66,7 +68,7 @@ fun AboutScreenContent(
     hostCapabilities: String
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val connectedLabel = stringResource(R.string.status_connected)
     val disconnectedLabel = stringResource(R.string.status_disconnected)
     val unknownLabel = stringResource(R.string.about_status_unknown)
@@ -302,7 +304,7 @@ fun AboutScreenContent(
 
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 val intent =
                                         Intent(
                                                 Intent.ACTION_VIEW,
@@ -315,7 +317,9 @@ fun AboutScreenContent(
                                     // Fallback or log if browser not found
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding
                     ) {
                         Icon(Icons.Default.Code, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))

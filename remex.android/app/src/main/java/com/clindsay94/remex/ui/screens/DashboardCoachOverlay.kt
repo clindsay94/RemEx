@@ -43,6 +43,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * First-run coaching for the Sensors grid (RemEx-km0i.10, cut to the grid's three hints in
@@ -367,10 +369,10 @@ internal fun CoachPanel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDismiss) {
+                TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                     Text(stringResource(R.string.coach_skip))
                 }
-                Button(onClick = onAdvance) {
+                Button(onClick = onAdvance, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                     Text(
                         if (isLast) stringResource(R.string.coach_got_it)
                         else stringResource(R.string.coach_next)

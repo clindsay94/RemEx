@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.TextUnit
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.currentDisplayType
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 
 /**
  * Project-wide flexible top app bar.
@@ -204,7 +205,7 @@ private fun RemexFlexibleTopBarWithSubtitleAndActionsPreview() {
             subtitle = "Secondary subtitle",
             navigationIcon = {
                 RemexTooltip(stringResource(R.string.cd_back)) {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {}, shapes = rememberRemexIconButtonShapes()) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back)
@@ -214,7 +215,7 @@ private fun RemexFlexibleTopBarWithSubtitleAndActionsPreview() {
             },
             actions = {
                 RemexTooltip(stringResource(R.string.nav_more_label)) {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {}, shapes = rememberRemexIconButtonShapes()) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = stringResource(R.string.nav_more_label)

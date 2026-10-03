@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.text.format.DateUtils
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -56,6 +54,13 @@ import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.theme.rememberAnimateBoundsModifier
+import androidx.compose.ui.layout.LookaheadScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,7 +162,7 @@ fun ConnectionScreenContent(
         /** The connected PC no longer recognises this phone (sweep P3): its card says so. */
         connectedNeedsPairing: Boolean = false,
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val motionScheme = MaterialTheme.motionScheme
@@ -588,7 +593,9 @@ fun ConnectionScreenContent(
                                                                                                         ?: 5005
                                                                                         )
                                                                                 },
-                                                                                modifier = Modifier.align(Alignment.End)
+                                                                                modifier = Modifier.align(Alignment.End),
+                                                                                shapes = rememberRemexButtonShapes(),
+                                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                                         ) {
                                                                                 Text(stringResource(R.string.connection_action_repair), color = MaterialTheme.colorScheme.onErrorContainer)
                                                                         }
@@ -596,12 +603,10 @@ fun ConnectionScreenContent(
                                                         }
                                                         IconButton(
                                                                 onClick = {
-                                                                        view.performHapticFeedback(
-                                                                                HapticFeedbackConstants
-                                                                                        .KEYBOARD_TAP
-                                                                        )
+                                                                        haptics.perform(RemexHapticEvent.Press)
                                                                         onClearError()
-                                                                }
+                                                                },
+                                                                shapes = rememberRemexIconButtonShapes()
                                                         ) {
                                                                 Icon(
                                                                         Icons.Default.Close,
@@ -712,7 +717,9 @@ fun ConnectionScreenContent(
                                                                                 target,
                                                                                 pin
                                                                         )
-                                                                }
+                                                                },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -724,7 +731,9 @@ fun ConnectionScreenContent(
                                                 },
                                                 dismissButton = {
                                                         TextButton(
-                                                                onClick = { pairingEntry = null }
+                                                                onClick = { pairingEntry = null },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -782,7 +791,9 @@ fun ConnectionScreenContent(
                                                                                 nicknameInput
                                                                         )
                                                                         renamingHost = null
-                                                                }
+                                                                },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -794,7 +805,9 @@ fun ConnectionScreenContent(
                                                 },
                                                 dismissButton = {
                                                         TextButton(
-                                                                onClick = { renamingHost = null }
+                                                                onClick = { renamingHost = null },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -837,7 +850,9 @@ fun ConnectionScreenContent(
                                                                                 target
                                                                         )
                                                                         unpairingHost = null
-                                                                }
+                                                                },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -853,7 +868,9 @@ fun ConnectionScreenContent(
                                                 },
                                                 dismissButton = {
                                                         TextButton(
-                                                                onClick = { unpairingHost = null }
+                                                                onClick = { unpairingHost = null },
+                                                                shapes = rememberRemexButtonShapes(),
+                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -1094,14 +1111,13 @@ fun ConnectionScreenContent(
                                                         if (prompt.canRepair) {
                                                                 TextButton(
                                                                         onClick = {
-                                                                                view.performHapticFeedback(
-                                                                                        HapticFeedbackConstants
-                                                                                                .KEYBOARD_TAP
-                                                                                )
+                                                                                haptics.perform(RemexHapticEvent.Press)
                                                                                 onConfirmCertRepair(
                                                                                         context
                                                                                 )
-                                                                        }
+                                                                        },
+                                                                        shapes = rememberRemexButtonShapes(),
+                                                                        contentPadding = ButtonDefaults.TextButtonContentPadding
                                                                 ) {
                                                                         Text(
                                                                                 stringResource(
@@ -1117,7 +1133,7 @@ fun ConnectionScreenContent(
                                                         }
                                                 },
                                                 dismissButton = {
-                                                        TextButton(onClick = onDismissCertRepair) {
+                                                        TextButton(onClick = onDismissCertRepair, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                                                                 Text(
                                                                         stringResource(
                                                                                 R.string.button_cancel
@@ -1228,10 +1244,7 @@ fun ConnectionScreenContent(
                                                                 animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
                                                         )
                                                         .clickable {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .KEYBOARD_TAP
-                                                                )
+                                                                haptics.perform(RemexHapticEvent.Press)
                                                                 showHelpSection = !showHelpSection
                                                         },
                                         colors =
@@ -1618,9 +1631,7 @@ fun ConnectionScreenContent(
 
                                 Button(
                                         onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.KEYBOARD_TAP
-                                                )
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 // Scope the required permissions to the target host: a
                                                 // loopback or Tailscale/VPN target needs no LAN permission,
                                                 // so a denied/undecided local-network grant must NOT block it
@@ -1650,7 +1661,9 @@ fun ConnectionScreenContent(
                                                 connectionForm = null
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        enabled = !isConnecting && hostInput.isNotEmpty()
+                                        enabled = !isConnecting && hostInput.isNotEmpty(),
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.ContentPadding
                                 ) {
                                         AnimatedContent(
                                                 targetState = isConnecting,
@@ -1711,10 +1724,7 @@ fun ConnectionScreenContent(
                                                         )
                                                         TextButton(
                                                                 onClick = {
-                                                                        view.performHapticFeedback(
-                                                                                HapticFeedbackConstants
-                                                                                        .KEYBOARD_TAP
-                                                                        )
+                                                                        haptics.perform(RemexHapticEvent.Press)
                                                                         // In the ViewModel, not this
                                                                         // screen's scope: leaving the
                                                                         // screen mid-flush must not
@@ -1729,7 +1739,8 @@ fun ConnectionScreenContent(
                                                                                 horizontal = 8.dp,
                                                                                 vertical = 0.dp
                                                                         ),
-                                                                modifier = Modifier.height(32.dp)
+                                                                modifier = Modifier.height(32.dp),
+                                                                shapes = rememberRemexButtonShapes()
                                                         ) {
                                                                 Text(
                                                                         stringResource(
@@ -1899,7 +1910,7 @@ private fun YourPcsSection(
         onDetails: (KnownPcEntry) -> Unit,
         onAddPc: () -> Unit
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val motionScheme = MaterialTheme.motionScheme
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -1936,34 +1947,45 @@ private fun YourPcsSection(
                         )
                 }
 
-                cards.forEach { card ->
-                        // Keyed by address, not by position: the list re-sorts when a connection
-                        // lands, and a card's remembered state would otherwise stay with the SLOT
-                        // and end up acting on whichever address moved into it.
-                        key(card.key) {
-                                YourPcCardView(
-                                        card = card,
-                                        enabled = enabled,
-                                        onConnect = { onConnect(card.entry) },
-                                        onDetails = { onDetails(card.entry) }
-                                )
+                if (cards.isNotEmpty()) {
+                        // The list re-sorts when a connection lands; in a lookahead scope each card
+                        // glides to its new place instead of jumping there (phase 6, RemEx-wqo7a.8).
+                        LookaheadScope {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        cards.forEach { card ->
+                                                // Keyed by address, not by position: the list re-sorts when a
+                                                // connection lands, and a card's remembered state would otherwise
+                                                // stay with the SLOT and end up acting on whichever address moved
+                                                // into it.
+                                                key(card.key) {
+                                                        Box(rememberAnimateBoundsModifier(this@LookaheadScope)) {
+                                                                YourPcCardView(
+                                                                        card = card,
+                                                                        enabled = enabled,
+                                                                        onConnect = { onConnect(card.entry) },
+                                                                        onDetails = { onDetails(card.entry) }
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
                         }
                 }
 
                 // The first-run primary action when there is nothing to reconnect to; a quieter
                 // tonal button once the list has PCs in it, so "Connect" stays the loudest thing.
                 val addPc: () -> Unit = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Press)
                         onAddPc()
                 }
                 if (cards.isEmpty()) {
-                        Button(onClick = addPc, modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = addPc, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.connection_add_pc))
                         }
                 } else {
-                        FilledTonalButton(onClick = addPc, modifier = Modifier.fillMaxWidth()) {
+                        FilledTonalButton(onClick = addPc, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.connection_add_pc))
@@ -1989,12 +2011,12 @@ private fun YourPcCardView(
         onConnect: () -> Unit,
         onDetails: () -> Unit
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val entry = card.entry
         val displayName = entry.displayName
         Card(
                 onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Press)
                         if (card.isCurrent) onDetails() else onConnect()
                 },
                 enabled = enabled || card.isCurrent,
@@ -2042,16 +2064,17 @@ private fun YourPcCardView(
                         if (!card.isCurrent) {
                                 FilledTonalButton(
                                         onClick = {
-                                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 onConnect()
                                         },
                                         enabled = enabled,
-                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        shapes = rememberRemexButtonShapes()
                                 ) {
                                         Text(stringResource(R.string.button_connect))
                                 }
                         }
-                        IconButton(onClick = onDetails) {
+                        IconButton(onClick = onDetails, shapes = rememberRemexIconButtonShapes()) {
                                 Icon(
                                         Icons.Default.MoreVert,
                                         contentDescription =
@@ -2122,7 +2145,7 @@ private fun AddPcSheet(
         onScanQr: () -> Unit,
         onAddManually: () -> Unit
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val motionScheme = MaterialTheme.motionScheme
         val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -2144,11 +2167,13 @@ private fun AddPcSheet(
                         )
                         Button(
                                 onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                        haptics.perform(RemexHapticEvent.Press)
                                         onDiscover()
                                 },
                                 enabled = !isDiscovering,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding
                         ) {
                                 AnimatedContent(
                                         targetState = isDiscovering,
@@ -2185,10 +2210,12 @@ private fun AddPcSheet(
                         }
                         FilledTonalButton(
                                 onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        haptics.perform(RemexHapticEvent.Press)
                                         onScanQr()
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding
                         ) {
                                 Icon(Icons.Default.QrCodeScanner, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -2196,10 +2223,12 @@ private fun AddPcSheet(
                         }
                         OutlinedButton(
                                 onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                        haptics.perform(RemexHapticEvent.Press)
                                         onAddManually()
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding
                         ) {
                                 Icon(Icons.Default.Edit, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -2228,7 +2257,7 @@ private fun PcDetailsSheet(
         onUnpair: () -> Unit,
         onForget: () -> Unit
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
                 Column(
@@ -2254,22 +2283,24 @@ private fun PcDetailsSheet(
                         if (status != YourPcStatus.ConnectedNow && status != YourPcStatus.ConnectedNeedsPairing) {
                                 Button(
                                         onClick = {
-                                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 onConnect()
                                         },
                                         enabled = enabled,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.ContentPadding
                                 ) {
                                         Text(stringResource(R.string.button_connect))
                                 }
                         }
-                        FilledTonalButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
+                        FilledTonalButton(onClick = onEdit, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                 Icon(Icons.Default.Edit, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.connection_edit_details))
                         }
                         if (entry.knownHost != null) {
-                                OutlinedButton(onClick = onRename, modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(onClick = onRename, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                         Text(stringResource(R.string.connection_known_pc_rename))
                                 }
                                 OutlinedButton(
@@ -2278,12 +2309,14 @@ private fun PcDetailsSheet(
                                         colors =
                                                 ButtonDefaults.outlinedButtonColors(
                                                         contentColor = MaterialTheme.colorScheme.error
-                                                )
+                                                ),
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.ContentPadding
                                 ) {
                                         Text(stringResource(R.string.connection_unpair))
                                 }
                         } else {
-                                OutlinedButton(onClick = onForget, modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(onClick = onForget, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                         Text(stringResource(R.string.connection_known_pc_forget))
                                 }
                         }

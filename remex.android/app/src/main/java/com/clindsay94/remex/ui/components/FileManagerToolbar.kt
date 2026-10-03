@@ -56,6 +56,9 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.screens.FileViewMode
 import com.clindsay94.remex.ui.screens.SortField
 import com.clindsay94.remex.ui.screens.SortOption
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.theme.RemexSwap
+import com.clindsay94.remex.ui.theme.AnimatedValueText
 
 /**
  * Primary file-manager toolbar (plan WP7): expandable debounced search, sort menu (name/size/date ×
@@ -113,7 +116,9 @@ fun FileManagerToolbar(
                         IconButton(onClick = {
                             onSearchChange("")
                             searchExpanded = false
-                        }) {
+                        },
+                            shapes = rememberRemexIconButtonShapes(),
+                        ) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_manager_search_close))
                         }
                     }
@@ -163,14 +168,14 @@ private fun ToolbarIconRow(
         horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         RemexTooltip(stringResource(R.string.file_manager_search)) {
-            IconButton(onClick = onExpandSearch) {
+            IconButton(onClick = onExpandSearch, shapes = rememberRemexIconButtonShapes()) {
                 Icon(Icons.Default.Search, contentDescription = stringResource(R.string.file_manager_search))
             }
         }
 
         // Sort menu
         RemexTooltip(stringResource(R.string.file_manager_sort)) {
-            IconButton(onClick = { onSortMenuOpenChange(true) }) {
+            IconButton(onClick = { onSortMenuOpenChange(true) }, shapes = rememberRemexIconButtonShapes()) {
                 Icon(
                     Icons.AutoMirrored.Filled.Sort,
                     contentDescription = stringResource(R.string.file_manager_sort),
@@ -200,30 +205,32 @@ private fun ToolbarIconRow(
                 if (viewMode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
             )
         ) {
-            IconButton(onClick = onToggleViewMode) {
-                Icon(
-                    imageVector = if (viewMode == FileViewMode.LIST) Icons.Default.GridView else Icons.AutoMirrored.Filled.List,
-                    contentDescription = stringResource(
-                        if (viewMode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
-                    ),
-                )
+            IconButton(onClick = onToggleViewMode, shapes = rememberRemexIconButtonShapes()) {
+                RemexSwap(targetState = viewMode, label = "viewModeGlyph") { mode ->
+                    Icon(
+                        imageVector = if (mode == FileViewMode.LIST) Icons.Default.GridView else Icons.AutoMirrored.Filled.List,
+                        contentDescription = stringResource(
+                            if (mode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
+                        ),
+                    )
+                }
             }
         }
 
         Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
             if (canWrite) {
                 RemexTooltip(stringResource(R.string.file_manager_new_folder)) {
-                    IconButton(onClick = onNewFolder) {
+                    IconButton(onClick = onNewFolder, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(R.string.file_manager_new_folder))
                     }
                 }
                 RemexTooltip(stringResource(R.string.file_transfer_upload)) {
-                    IconButton(onClick = onUpload) {
+                    IconButton(onClick = onUpload, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.file_transfer_upload))
                     }
                 }
                 RemexTooltip(stringResource(R.string.file_manager_upload_folder)) {
-                    IconButton(onClick = onUploadFolder) {
+                    IconButton(onClick = onUploadFolder, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.DriveFolderUpload, contentDescription = stringResource(R.string.file_manager_upload_folder))
                     }
                 }
@@ -283,35 +290,36 @@ fun FileManagerSelectionBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RemexTooltip(stringResource(R.string.file_transfer_cancel_selection)) {
-                IconButton(onClick = onClose) {
+                IconButton(onClick = onClose, shapes = rememberRemexIconButtonShapes()) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_transfer_cancel_selection))
                 }
             }
-            Text(
+            // The count rolls up or down as items are picked (phase 6), like a sensor reading.
+            AnimatedValueText(
                 text = "$selectedCount ${stringResource(R.string.file_transfer_selected)}",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
             )
             RemexTooltip(stringResource(R.string.file_transfer_select_all)) {
-                IconButton(onClick = onSelectAll) {
+                IconButton(onClick = onSelectAll, shapes = rememberRemexIconButtonShapes()) {
                     Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.file_transfer_select_all))
                 }
             }
             if (canWrite) {
                 RemexTooltip(stringResource(R.string.file_manager_copy)) {
-                    IconButton(onClick = onCopy, enabled = selectedCount > 0) {
+                    IconButton(onClick = onCopy, enabled = selectedCount > 0, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.file_manager_copy))
                     }
                 }
                 RemexTooltip(stringResource(R.string.file_manager_move)) {
-                    IconButton(onClick = onMove, enabled = selectedCount > 0) {
+                    IconButton(onClick = onMove, enabled = selectedCount > 0, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.file_manager_move))
                     }
                 }
             }
             if (canDelete) {
                 RemexTooltip(stringResource(R.string.file_transfer_delete_selected)) {
-                    IconButton(onClick = onDelete, enabled = selectedCount > 0) {
+                    IconButton(onClick = onDelete, enabled = selectedCount > 0, shapes = rememberRemexIconButtonShapes()) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = stringResource(R.string.file_transfer_delete_selected),

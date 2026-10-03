@@ -1,7 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
 import android.text.format.DateUtils
-import android.view.HapticFeedbackConstants
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -67,7 +66,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -99,6 +97,12 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.SENSORS_CONTAINER_KEY
 import com.clindsay94.remex.ui.theme.rememberContainerTransformModifier
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.Color
 
 /** Everything Home draws, assembled by [HomeScreen] so [HomeScreenContent] stays previewable. */
 data class HomeUiState(
@@ -219,7 +223,7 @@ fun HomeScreenContent(
         /** Connection > Add a PC, for a PC that needs pairing again. */
         onPair: () -> Unit = onNavigateToConnection,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     var showPinSheet by rememberSaveable { mutableStateOf(false) }
     val tileShape = CardShapes.shapeFor(CardShapes.ROUNDED_RECTANGLE, state.cornerRadius)
@@ -259,7 +263,7 @@ fun HomeScreenContent(
                     state = state,
                     shape = tileShape,
                     onEdit = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Press)
                         showPinSheet = true
                     },
             )
@@ -267,7 +271,7 @@ fun HomeScreenContent(
             OpenSensorsCard(
                     shape = tileShape,
                     onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Press)
                         onOpenDestination(Screen.Dashboard)
                     }
             )
@@ -295,22 +299,33 @@ fun HomeScreenContent(
 @Composable
 private fun PcBadge(online: Boolean) {
     // The cookie is an accent, not a container (refresh spec, "Principles"): it holds one icon.
+    // Its colours ease between online and not (phase 6) instead of switching in one frame.
+    val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
+    val container by
+            animateColorAsState(
+                    if (online) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerHighest,
+                    effects,
+                    label = "pcBadgeContainer"
+            )
+    val tint by
+            animateColorAsState(
+                    if (online) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    effects,
+                    label = "pcBadgeTint"
+            )
     Box(
             modifier =
                     Modifier.size(56.dp)
                             .clip(MaterialShapes.Cookie9Sided.toShape())
-                            .background(
-                                    if (online) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerHighest
-                            ),
+                            .background(container),
             contentAlignment = Alignment.Center
     ) {
         Icon(
                 Icons.Default.Computer,
                 contentDescription = null,
-                tint =
-                        if (online) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = tint,
                 modifier = Modifier.size(28.dp)
         )
     }
@@ -318,8 +333,28 @@ private fun PcBadge(online: Boolean) {
 
 @Composable
 private fun StatusChip(@StringRes label: Int, online: Boolean) {
-    val container = if (online) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest
-    val content = if (online) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    // A status pill: tertiary-free tonal colours that ease when the state changes (phase 6).
+    val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
+    val container by
+            animateColorAsState(
+                    if (online) MaterialTheme.colorScheme.secondaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerHighest,
+                    effects,
+                    label = "statusChipContainer"
+            )
+    val content by
+            animateColorAsState(
+                    if (online) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    effects,
+                    label = "statusChipContent"
+            )
+    val dot by
+            animateColorAsState(
+                    if (online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    effects,
+                    label = "statusChipDot"
+            )
     Surface(shape = CircleShape, color = container, contentColor = content) {
         Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -328,7 +363,7 @@ private fun StatusChip(@StringRes label: Int, online: Boolean) {
             Box(
                     Modifier.size(8.dp)
                             .clip(CircleShape)
-                            .background(if (online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+                            .background(dot)
             )
             Spacer(Modifier.width(6.dp))
             Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
@@ -343,7 +378,7 @@ private fun PcCard(
         onQuickAction: (String) -> Unit,
         onPair: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     var confirming by rememberSaveable { mutableStateOf<String?>(null) }
     val buttonShapes = rememberRemexButtonShapes()
 
@@ -364,11 +399,12 @@ private fun PcCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                     )
-                    if (state.needsPairing) {
-                        StatusChip(R.string.connection_known_pc_needs_pairing, online = false)
-                    } else {
-                        StatusChip(R.string.home_pc_online, online = true)
-                    }
+                    // One call site, so the pill eases between the two states instead of being
+                    // replaced by a second pill.
+                    StatusChip(
+                            if (state.needsPairing) R.string.connection_known_pc_needs_pairing else R.string.home_pc_online,
+                            online = !state.needsPairing
+                    )
                     state.uptime?.takeUnless { state.needsPairing }?.let { up ->
                         Text(
                                 stringResource(R.string.home_pc_uptime, up.days, up.hours, up.minutes),
@@ -387,7 +423,7 @@ private fun PcCard(
                 )
                 Button(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            haptics.perform(RemexHapticEvent.Press)
                             onPair()
                         },
                         shapes = buttonShapes,
@@ -398,8 +434,15 @@ private fun PcCard(
                     state.quickActions.forEach { action ->
                         FilledTonalButton(
                                 onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                    if (HomeLogic.needsConfirmation(action)) confirming = action else onQuickAction(action)
+                                    // A tap that only opens the confirm dialog is a press; the
+                                    // dialog's own button is the confirmation.
+                                    if (HomeLogic.needsConfirmation(action)) {
+                                        haptics.perform(RemexHapticEvent.Press)
+                                        confirming = action
+                                    } else {
+                                        haptics.perform(RemexHapticEvent.CommandSent)
+                                        onQuickAction(action)
+                                    }
                                 },
                                 shapes = buttonShapes,
                                 modifier = Modifier.weight(1f)
@@ -421,12 +464,16 @@ private fun PcCard(
                 text = { Text(stringResource(quickActionLabel(action))) },
                 confirmButton = {
                     TextButton(onClick = {
+                        haptics.perform(RemexHapticEvent.Confirm)
                         confirming = null
                         onQuickAction(action)
-                    }) { Text(stringResource(quickActionLabel(action))) }
+                    },
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding,
+                    ) { Text(stringResource(quickActionLabel(action))) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confirming = null }) { Text(stringResource(R.string.button_cancel)) }
+                    TextButton(onClick = { confirming = null }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) }
                 }
         )
     }
@@ -454,7 +501,7 @@ private fun ConnectCard(
         onWakePc: () -> Unit,
         onNavigateToConnection: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val buttonShapes = rememberRemexButtonShapes()
     Card(
             modifier = Modifier.fillMaxWidth(),
@@ -487,7 +534,7 @@ private fun ConnectCard(
                 )
                 Button(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             onNavigateToConnection()
                         },
                         shapes = buttonShapes,
@@ -517,7 +564,7 @@ private fun ConnectCard(
                         Spacer(Modifier.width(8.dp))
                         Button(
                                 onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    haptics.perform(RemexHapticEvent.Press)
                                     onConnectTo(pc)
                                 },
                                 shapes = buttonShapes,
@@ -530,7 +577,7 @@ private fun ConnectCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            haptics.perform(RemexHapticEvent.CommandSent)
                             onWakePc()
                         },
                         shapes = buttonShapes,
@@ -540,7 +587,7 @@ private fun ConnectCard(
                     Text(stringResource(R.string.dashboard_wake_pc))
                 }
                 if (pcs.isNotEmpty()) {
-                    TextButton(onClick = onNavigateToConnection) { Text(stringResource(R.string.home_connect_other)) }
+                    TextButton(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.home_connect_other)) }
                 }
             }
         }
@@ -569,7 +616,7 @@ private fun SectionHeader(@StringRes title: Int, action: (@Composable () -> Unit
 private fun PinnedSensorsSection(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape, onEdit: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(R.string.home_pinned_title) {
-            TextButton(onClick = onEdit, enabled = state.isConnected) {
+            TextButton(onClick = onEdit, enabled = state.isConnected, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.home_pinned_edit))
@@ -640,7 +687,7 @@ private fun PinnedTile(sensor: TelemetrySensor, shape: androidx.compose.ui.graph
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PinSheet(state: HomeUiState, onSetPinned: (String, Boolean) -> Unit, onDismiss: () -> Unit) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     // The sheet lists what the PC reports right now, so it reads telemetry while open (Leanness K8).
     TelemetryLeaseEffect(TelemetryDemand.HOME_PIN_SHEET)
     val groups = HomeLogic.pinSheet(state.pins, state.sensors)
@@ -684,7 +731,7 @@ private fun PinSheet(state: HomeUiState, onSetPinned: (String, Boolean) -> Unit,
                                                         enabled = enabled,
                                                         role = Role.Checkbox,
                                                         onValueChange = { pinned ->
-                                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                            haptics.perform(RemexHaptics.toggle(pinned))
                                                             onSetPinned(entry.name, pinned)
                                                         }
                                                 ),
@@ -712,7 +759,7 @@ private fun PinSheet(state: HomeUiState, onSetPinned: (String, Boolean) -> Unit,
                     }
                 }
             }
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(top = 12.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                 Text(stringResource(R.string.button_done))
             }
         }
@@ -772,14 +819,14 @@ private val SHORTCUTS =
 
 @Composable
 private fun ShortcutsSection(shape: androidx.compose.ui.graphics.Shape, onOpenDestination: (NavDestination) -> Unit) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(R.string.home_shortcuts_title)
         Row(horizontalArrangement = Arrangement.spacedBy(CardShapes.CARD_SPACING_DP.dp)) {
             SHORTCUTS.forEach { shortcut ->
                 Card(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             onOpenDestination(shortcut.destination)
                         },
                         modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {},

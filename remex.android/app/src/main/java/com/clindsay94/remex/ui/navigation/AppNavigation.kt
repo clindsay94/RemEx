@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.navigation
 
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -130,6 +129,13 @@ import com.clindsay94.remex.ui.theme.rememberContainerTransformModifier
 import com.clindsay94.remex.ui.theme.rememberRemexNavMotion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.TransferOutcomeHapticsEffect
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.EnterTransition
 
 /**
  * The route owner for the four primary pager tabs (Home, Desktop, Apps, Control) — typed like every other destination
@@ -298,6 +304,7 @@ private fun AppNavigationContent(
         var controlSegment by rememberSaveable { mutableStateOf(ControlSegment.Commands) }
 
         val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         val scope = rememberCoroutineScope()
 
         // ─── Adaptive layout ─────────────────────────────────────────────────────
@@ -378,6 +385,10 @@ private fun AppNavigationContent(
                         if (sync.reached) tabScrollTarget = null
                 }
         }
+
+        // A finished batch of file transfers confirms (or rejects) under the finger wherever the user
+        // is in the app, while it is in the foreground (phase 6, RemEx-wqo7a.8).
+        TransferOutcomeHapticsEffect()
 
         // Back handler: show exit confirmation when at the primary root destination
         val isAtRoot = isAtPrimary
@@ -489,7 +500,7 @@ private fun AppNavigationContent(
         }
 
         fun onNavItemClick(screen: NavDestination) {
-                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                haptics.perform(RemexHapticEvent.Press)
                 // Object identity replaces the old route-string lookup; the pager index is the
                 // position in navItems, whose order is load-bearing (see NavRoutes.kt). navItems is
                 // List<PrimaryDestination> (RemEx-740mr) but `screen` here is the wider
@@ -650,9 +661,7 @@ private fun AppNavigationContent(
                                         NavigationBarItem(
                                                 selected = moreSelected,
                                                 onClick = {
-                                                        view.performHapticFeedback(
-                                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                                        )
+                                                        haptics.perform(RemexHapticEvent.Press)
                                                         showMoreSheet = true
                                                 },
                                                 icon = {
@@ -893,9 +902,7 @@ private fun AppNavigationContent(
                                                 },
                                         selected = isOn(screen),
                                         onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.KEYBOARD_TAP
-                                                )
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 // Navigate only after the hide animation
                                                 // completes so the sheet slides out instead of
                                                 // being destroyed mid-animation (RemEx-rzzo).
@@ -935,11 +942,13 @@ private fun AppNavigationContent(
                                         onClick = {
                                                 showExitDialog = false
                                                 (exitContext as? android.app.Activity)?.finish()
-                                        }
+                                        },
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.ContentPadding
                                 ) { Text(stringResource(R.string.button_exit)) }
                         },
                         dismissButton = {
-                                TextButton(onClick = { showExitDialog = false }) {
+                                TextButton(onClick = { showExitDialog = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                                         Text(stringResource(R.string.button_cancel))
                                 }
                         },
@@ -950,6 +959,10 @@ private fun AppNavigationContent(
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+/** Routes that rise from the bottom edge over the screen they were opened from (QR scanner, pairing). */
+private fun androidx.navigation.NavBackStackEntry.isModalRoute(): Boolean =
+        destination.hasRoute<Screen.QrScanner>() || destination.hasRoute<PairingRoute>()
+
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
@@ -992,9 +1005,16 @@ private fun RemexNavHost(
                 startDestination = Screen.Splash,
                 // Shared-axis X for every route on top of the tabs (Sensors, Files, Routines,
                 // Settings, Connection, ...): forward comes in from the end side, Back reverses it.
+                // A modal route (QR scanner, pairing) rises over the screen it opened from instead,
+                // so that screen holds still underneath rather than sliding sideways, and is already
+                // there when a predictive back gesture pulls the modal down (RemEx-wqo7a.8).
                 enterTransition = { motion.enter },
-                exitTransition = { motion.exit },
-                popEnterTransition = { motion.popEnter },
+                exitTransition = {
+                        if (targetState.isModalRoute()) ExitTransition.KeepUntilTransitionsFinished else motion.exit
+                },
+                popEnterTransition = {
+                        if (initialState.isModalRoute()) EnterTransition.None else motion.popEnter
+                },
                 popExitTransition = { motion.popExit },
         ) {
                 composable<Screen.Splash>(
@@ -1102,9 +1122,11 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.QrScanner>(
-                        // QR scanner enters from bottom — modal feel
+                        // QR scanner enters from bottom — modal feel. Back sends it down the way it
+                        // came, so the predictive back gesture drags it toward the bottom edge.
                         enterTransition = { motion.modalEnter },
                         exitTransition = { motion.modalExit },
+                        popExitTransition = { motion.modalExit },
                 ) {
                         QrScannerScreen(
                                 onScanned = { host, port, pin ->
@@ -1125,6 +1147,7 @@ private fun RemexNavHost(
                         // be reintroduced by a missing one (RemEx-mt43).
                         enterTransition = { motion.modalEnter },
                         exitTransition = { motion.modalExit },
+                        popExitTransition = { motion.modalExit },
                 ) { backStackEntry ->
                         val pairing = backStackEntry.toRoute<PairingRoute>()
                         com.clindsay94.remex.ui.screens.PairingScreen(

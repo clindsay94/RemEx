@@ -76,6 +76,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 
 private data class TutorialPage(
     val emoji: String,
@@ -209,7 +212,7 @@ fun TutorialScreenContent(
                 .padding(top = 16.dp, end = 8.dp),
             horizontalArrangement = Arrangement.End
         ) {
-            TextButton(onClick = { onFinished() }) {
+            TextButton(onClick = { onFinished() }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                     Text(
                         text = stringResource(R.string.tutorial_skip),
                     style = MaterialTheme.typography.labelLarge,
@@ -298,7 +301,9 @@ fun TutorialScreenContent(
                 if (lastPage) {
                     Button(
                         onClick = { onFinished() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                     ) {
                         Text(stringResource(R.string.tutorial_get_started))
                     }
@@ -309,7 +314,9 @@ fun TutorialScreenContent(
                                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                     ) {
                         Text(stringResource(R.string.tutorial_next))
                     }
@@ -335,6 +342,9 @@ private fun TutorialPageContentPreview() {
     }
 }
 
+/** The illustrations' pulse under reduced motion: halfway, so rings and glows sit at a middle size. */
+private const val TUTORIAL_STILL_PULSE = 0.5f
+
 @Composable
 private fun TutorialPageContent(
     page: TutorialPage,
@@ -346,20 +356,31 @@ private fun TutorialPageContent(
     val secondary = MaterialTheme.colorScheme.secondary
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    // Shared animation for illustrations
-    val infiniteTransition = rememberInfiniteTransition(label = "tutorialAnim")
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse"
-    )
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
-        label = "rotation"
-    )
+    // Shared animation for illustrations. These loops are the one place durations are written by
+    // hand: an infinite repeat needs a duration-based spec, which the motion scheme's springs are
+    // not. Under "Remove animations" the illustrations hold a still frame instead of looping
+    // (phase 6, RemEx-wqo7a.8); with the animator duration scale at 0 an infinite loop would
+    // otherwise jump between its ends rather than stop.
+    val pulse: Float
+    val rotation: Float
+    if (LocalReducedMotion.current) {
+        pulse = TUTORIAL_STILL_PULSE
+        rotation = 0f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "tutorialAnim")
+        pulse = infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "pulse"
+        ).value
+        rotation = infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
+            label = "rotation"
+        ).value
+    }
 
     Column(
         modifier = modifier
@@ -452,7 +473,10 @@ private fun TutorialPageContent(
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                 intent.data = Uri.parse("package:" + context.packageName)
                 context.startActivity(intent)
-            }) {
+            },
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.ContentPadding,
+            ) {
                 Text(text = stringResource(page.actionLabelRes))
             }
         }

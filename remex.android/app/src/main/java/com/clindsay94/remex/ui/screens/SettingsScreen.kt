@@ -3,7 +3,6 @@ package com.clindsay94.remex.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.os.Parcelable
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -60,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +74,13 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.components.rememberSliderStepHaptics
 
 @Parcelize
 enum class SettingsCategory : Parcelable {
@@ -242,7 +247,7 @@ private fun ExpressiveSettingsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -274,7 +279,7 @@ private fun ExpressiveSettingsRow(
 
     Surface(
         onClick = {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            haptics.perform(RemexHapticEvent.Press)
             onClick()
         },
         interactionSource = interaction,
@@ -343,7 +348,7 @@ private fun SettingsDetailContent(
 
 @Composable
 private fun InputTab() {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
@@ -392,13 +397,13 @@ private fun InputTab() {
                                         ),
                                 style = MaterialTheme.typography.labelLargeEmphasized
                         )
+                        // Stepped: a light tick per step while dragging, nothing on release.
+                        val pointerStepHaptics = rememberSliderStepHaptics(preferences.pointerSpeed)
                         Slider(
                                 value = preferences.pointerSpeed,
                                 onValueChange = {
+                                    pointerStepHaptics(it)
                                     scope.launch { settingsManager.saveRemoteDesktopPointerSpeed(it) }
-                                },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                                 },
                                 valueRange = 0.25f..3.0f,
                                 steps = 10
@@ -420,18 +425,17 @@ private fun InputTab() {
                                         ),
                                 style = MaterialTheme.typography.labelLargeEmphasized
                         )
+                        val verticalStepHaptics = rememberSliderStepHaptics(preferences.verticalScrollSensitivity)
                         Slider(
                                 value = preferences.verticalScrollSensitivity,
                                 onValueChange = {
+                                    verticalStepHaptics(it)
                                     scope.launch {
                                         settingsManager.saveRemoteDesktopScrollSensitivity(
                                                 it,
                                                 preferences.horizontalScrollSensitivity
                                         )
                                     }
-                                },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                                 },
                                 valueRange = 0.1f..5.0f,
                                 steps = 20
@@ -451,18 +455,17 @@ private fun InputTab() {
                                         ),
                                 style = MaterialTheme.typography.labelLargeEmphasized
                         )
+                        val horizontalStepHaptics = rememberSliderStepHaptics(preferences.horizontalScrollSensitivity)
                         Slider(
                                 value = preferences.horizontalScrollSensitivity,
                                 onValueChange = {
+                                    horizontalStepHaptics(it)
                                     scope.launch {
                                         settingsManager.saveRemoteDesktopScrollSensitivity(
                                                 preferences.verticalScrollSensitivity,
                                                 it
                                         )
                                     }
-                                },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                                 },
                                 valueRange = 0.1f..5.0f,
                                 steps = 20
@@ -593,7 +596,8 @@ private fun FileTransferSettingsTab() {
                                                 onClick = {
                                                     scope.launch { settingsManager.removeSharedFolderUri(uriString) }
                                                 },
-                                                modifier = Modifier.size(32.dp)
+                                                modifier = Modifier.size(32.dp),
+                                                shapes = rememberRemexIconButtonShapes()
                                         ) {
                                             Icon(
                                                     Icons.Default.Close,
@@ -609,7 +613,9 @@ private fun FileTransferSettingsTab() {
 
                     OutlinedButton(
                             onClick = { folderPickerLauncher.launch(null) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding
                     ) {
                         Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                         Spacer(Modifier.size(6.dp))
@@ -642,6 +648,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
     val fullBrowseRoot by settingsManager.fullBrowseRootUriFlow.collectAsStateWithLifecycle(initialValue = null)
     val autoAcceptFlow = remember(deviceId) { settingsManager.fileTrustAutoAcceptFlow(deviceId) }
     val autoAccept by autoAcceptFlow.collectAsStateWithLifecycle(initialValue = false)
+    val haptics = rememberRemexHaptics()
 
     val fullBrowseLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.OpenDocumentTree()
@@ -691,8 +698,11 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                                     role = Role.Switch,
                                     onValueChange = { enabled ->
                                         if (enabled) {
+                                            // Not on yet: it only opens the folder picker.
+                                            haptics.perform(RemexHapticEvent.Press)
                                             fullBrowseLauncher.launch(null)
                                         } else {
+                                            haptics.perform(RemexHapticEvent.ToggleOff)
                                             scope.launch {
                                                 val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
                                                 settingsManager.clearFullBrowseRootUri()
@@ -730,6 +740,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                                     value = autoAccept,
                                     role = Role.Switch,
                                     onValueChange = { enabled ->
+                                        haptics.perform(RemexHaptics.toggle(enabled))
                                         scope.launch {
                                             val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
                                             settingsManager.setFileTrustAutoAccept(dev, enabled)
@@ -765,7 +776,7 @@ private fun HelpTab(
     onNavigateToAbout: (() -> Unit)?,
     onNavigateToShareDiagnostics: (() -> Unit)? = null
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
@@ -792,14 +803,16 @@ private fun HelpTab(
             if (onReplayTutorial != null) {
                 OutlinedButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             scope.launch {
                                 // Reset onboarding flag so the tutorial shows
                                 settingsManager.resetOnboarding()
                                 onReplayTutorial()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                 ) { Text(stringResource(R.string.settings_replay_tutorial)) }
 
                 Text(
@@ -819,10 +832,12 @@ private fun HelpTab(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             onNavigateToShareDiagnostics()
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                 ) { Text(stringResource(R.string.settings_share_diagnostics)) }
 
                 Text(
@@ -836,10 +851,12 @@ private fun HelpTab(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             onNavigateToAbout()
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                 ) { Text(stringResource(R.string.screen_about_title)) }
             }
         }

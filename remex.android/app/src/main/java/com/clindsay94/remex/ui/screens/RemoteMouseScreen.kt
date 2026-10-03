@@ -1,7 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +49,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -92,7 +93,7 @@ fun RemoteMouseScreenContent(
         onTextSent: (String) -> Unit,
         onSendKeyPress: (Int) -> Unit
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val focusRequester = remember { FocusRequester() }
     val remoteKeyboardState = rememberTextFieldState()
     val remoteKeyboardTransformation =
@@ -185,7 +186,7 @@ fun RemoteMouseScreenContent(
                                                         }
                                                     },
                                                     onTap = {
-                                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                        haptics.perform(RemexHapticEvent.Press)
                                                         onMouseClick(MouseButtons.LEFT)
                                                     }
                                             )
@@ -223,7 +224,7 @@ fun RemoteMouseScreenContent(
                 ) {
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onMouseClick(MouseButtons.LEFT)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
@@ -243,7 +244,7 @@ fun RemoteMouseScreenContent(
                     }
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onMouseClick(MouseButtons.RIGHT)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
@@ -269,9 +270,10 @@ fun RemoteMouseScreenContent(
                 ) {
                     IconButton(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onScroll((-100 * vScrollSensitivity).toInt())
-                            }
+                            },
+                            shapes = rememberRemexIconButtonShapes()
                     ) {
                         Icon(
                                 Icons.Default.KeyboardDoubleArrowUp,
@@ -280,9 +282,10 @@ fun RemoteMouseScreenContent(
                     }
                     IconButton(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onScroll((100 * vScrollSensitivity).toInt())
-                            }
+                            },
+                            shapes = rememberRemexIconButtonShapes()
                     ) {
                         Icon(
                                 Icons.Default.KeyboardDoubleArrowDown,
@@ -291,9 +294,10 @@ fun RemoteMouseScreenContent(
                     }
                     IconButton(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                haptics.perform(RemexHapticEvent.Press)
                                 focusRequester.requestFocus()
-                            }
+                            },
+                            shapes = rememberRemexIconButtonShapes()
                     ) {
                         Icon(
                                 Icons.Default.Keyboard,

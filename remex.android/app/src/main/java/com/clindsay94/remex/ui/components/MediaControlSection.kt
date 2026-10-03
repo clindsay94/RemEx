@@ -47,7 +47,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -62,6 +61,8 @@ import com.clindsay94.remex.data.MediaPlaybackStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.theme.RemexSwap
 
 /**
  * Windows virtual-key codes for the media and volume keys (RemEx-hulc).
@@ -346,11 +347,11 @@ private fun MediaButton(
         onSendKey: (Int) -> Unit,
         prominent: Boolean = false
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val label = stringResource(labelRes)
 
     val send: () -> Unit = {
-        view.hapticCommandSent()
+        haptics.perform(RemexHapticEvent.CommandSent)
         onSendKey(virtualKey)
     }
 
@@ -429,11 +430,14 @@ private fun MediaButton(
             )
         }
     } else if (prominent) {
-        FilledTonalIconButton(onClick = send, enabled = enabled) {
-            Icon(imageVector = icon, contentDescription = label, modifier = Modifier.size(24.dp))
+        FilledTonalIconButton(onClick = send, enabled = enabled, shapes = rememberRemexIconButtonShapes()) {
+            // Play and pause swap with a quick scale-and-fade rather than a cut (phase 6).
+            RemexSwap(targetState = icon, label = "mediaPlayPauseGlyph") { glyph ->
+                Icon(imageVector = glyph, contentDescription = label, modifier = Modifier.size(24.dp))
+            }
         }
     } else {
-        IconButton(onClick = send, enabled = enabled) {
+        IconButton(onClick = send, enabled = enabled, shapes = rememberRemexIconButtonShapes()) {
             Icon(imageVector = icon, contentDescription = label, modifier = Modifier.size(24.dp))
         }
     }

@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.provider.Settings
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -65,6 +63,10 @@ import com.clindsay94.remex.routines.nfc.NfcWriteState
 import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * The NFC tag write sheet (routines spec 1.5, A11; R-UX-14, R-SYS-41). Reads in reader mode while it
@@ -83,7 +85,7 @@ internal fun NfcWriteSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scope = rememberCoroutineScope()
     val activity = remember(context) { context.findActivity() }
     val adapter = remember(context) { NfcTagIo.adapter(context) }
@@ -105,8 +107,8 @@ internal fun NfcWriteSheet(
     }
     LaunchedEffect(state) {
         when (NfcWriteRules.haptic(state)) {
-            NfcHaptic.CONFIRM -> view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-            NfcHaptic.REJECT -> view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            NfcHaptic.CONFIRM -> haptics.perform(RemexHapticEvent.Confirm)
+            NfcHaptic.REJECT -> haptics.perform(RemexHapticEvent.Reject)
             NfcHaptic.NONE -> Unit
         }
     }
@@ -219,11 +221,11 @@ internal fun NfcTagActions(viewModel: RoutinesViewModel, routineId: String?, ena
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { onWrite(false) }, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp)) {
+        FilledTonalButton(onClick = { onWrite(false) }, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
             Text(stringResource(if (binding == null) R.string.routines_nfc_write_tag else R.string.routines_nfc_write_another))
         }
         if (binding != null) {
-            TextButton(onClick = { confirmRewrite = true }, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(onClick = { confirmRewrite = true }, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                 Text(stringResource(R.string.routines_nfc_rewrite))
             }
         }
@@ -237,9 +239,12 @@ internal fun NfcTagActions(viewModel: RoutinesViewModel, routineId: String?, ena
                 Button(onClick = {
                     confirmRewrite = false
                     onWrite(true)
-                }) { Text(stringResource(R.string.routines_nfc_rewrite)) }
+                },
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
+                ) { Text(stringResource(R.string.routines_nfc_rewrite)) }
             },
-            dismissButton = { TextButton(onClick = { confirmRewrite = false }) { Text(stringResource(R.string.button_cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmRewrite = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
         )
     }
 }
@@ -283,25 +288,25 @@ private fun NfcActions(
         val tall = Modifier.heightIn(min = 48.dp)
         when (state) {
             NfcWriteState.Off -> {
-                TextButton(onClick = onDone, modifier = tall) { Text(cancel) }
-                Button(onClick = onTurnOn, modifier = tall) { Text(stringResource(R.string.routines_nfc_turn_on)) }
+                TextButton(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(cancel) }
+                Button(onClick = onTurnOn, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_nfc_turn_on)) }
             }
             is NfcWriteState.ExistingTag -> {
-                TextButton(onClick = onDone, modifier = tall) { Text(cancel) }
-                Button(onClick = { onReplace(state.otherRoutineId) }, modifier = tall) { Text(stringResource(R.string.routines_nfc_replace)) }
+                TextButton(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(cancel) }
+                Button(onClick = { onReplace(state.otherRoutineId) }, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_nfc_replace)) }
             }
             NfcWriteState.Writing -> Unit
             NfcWriteState.Success -> {
-                OutlinedButton(onClick = onTest, modifier = tall) { Text(stringResource(R.string.routines_nfc_test_it)) }
-                Button(onClick = onDone, modifier = tall) { Text(stringResource(R.string.button_done)) }
+                OutlinedButton(onClick = onTest, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_nfc_test_it)) }
+                Button(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.button_done)) }
             }
             NfcWriteState.ReadOnly, NfcWriteState.TooSmall, NfcWriteState.LostContact, NfcWriteState.TestFailed -> {
-                TextButton(onClick = onDone, modifier = tall) { Text(if (state == NfcWriteState.TestFailed) stringResource(R.string.button_done) else cancel) }
-                Button(onClick = onRetry, modifier = tall) { Text(stringResource(R.string.routines_nfc_try_again)) }
+                TextButton(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(if (state == NfcWriteState.TestFailed) stringResource(R.string.button_done) else cancel) }
+                Button(onClick = onRetry, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_nfc_try_again)) }
             }
-            NfcWriteState.TestSuccess -> Button(onClick = onDone, modifier = tall) { Text(stringResource(R.string.button_done)) }
+            NfcWriteState.TestSuccess -> Button(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.button_done)) }
             NfcWriteState.NoHardware, NfcWriteState.Waiting, NfcWriteState.TestWaiting ->
-                TextButton(onClick = onDone, modifier = tall) { Text(cancel) }
+                TextButton(onClick = onDone, modifier = tall, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(cancel) }
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -64,7 +63,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.semantics.Role
@@ -80,6 +78,9 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import com.clindsay94.remex.ui.theme.AnimatedValueText
 import kotlin.math.abs
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.components.RemexHaptics
 
 /** Resolves the a11y content description for a view; a plain fun (not stringResource) so it's callable from Modifier.semantics {}. */
 private fun cdView(context: android.content.Context, resId: Int, sensor: TelemetrySensor?): String =
@@ -527,7 +528,7 @@ fun DisplayModePickerSheet(
     onSetTitle: (String, String?) -> Unit,
     onSetValueOverlay: (String, Boolean) -> Unit
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val sheetState = rememberBottomSheetState(SheetValue.Hidden)
     var awaitingSecondary by remember { mutableStateOf(false) }
     var titleDraft by remember(cardId) { mutableStateOf(currentTitle) }
@@ -555,7 +556,7 @@ fun DisplayModePickerSheet(
                         value = currentShowValueOverlay,
                         role = Role.Switch,
                         onValueChange = { enabled ->
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            haptics.perform(RemexHaptics.toggle(enabled))
                             onSetValueOverlay(cardId, enabled)
                         }
                     ),
@@ -599,7 +600,7 @@ fun DisplayModePickerSheet(
                                 modifier = Modifier.fillMaxWidth()
                                     .animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                                     .clickable {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        haptics.perform(RemexHapticEvent.Select)
                                         onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
                                     }
                                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -625,7 +626,7 @@ fun DisplayModePickerSheet(
                                 label = stringResource(R.string.dashboard_view_auto),
                                 selected = currentMode == TelemetryDisplayMode.AUTO,
                                 onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    haptics.perform(RemexHapticEvent.Select)
                                     onPickDisplayMode(cardId, TelemetryDisplayMode.AUTO, null)
                                 }
                             ) {
@@ -637,7 +638,7 @@ fun DisplayModePickerSheet(
                                 label = stringResource(entry.labelRes),
                                 selected = currentMode == entry.mode,
                                 onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    haptics.perform(RemexHapticEvent.Select)
                                     if (entry.mode == TelemetryDisplayMode.DUAL_METRIC) {
                                         awaitingSecondary = true
                                     } else {
