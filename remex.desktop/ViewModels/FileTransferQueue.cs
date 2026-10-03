@@ -778,6 +778,7 @@ public sealed class FileTransferQueue : IDisposable
     private static string DescribeFailure(Exception ex, FileTransferQueueKind kind) => ex switch
     {
         FileTransferHostException host => host.HostMessage,
+        FileTransferIntegrityException { FromPhone: true } => LocalizationService.Instance["FileTransfer_ErrPhoneIntegrity"],
         FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
         FileTransferBacklogException => LocalizationService.Instance["FileTransfer_ErrDestinationTooSlow"],
         TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
@@ -789,6 +790,8 @@ public sealed class FileTransferQueue : IDisposable
             kind == FileTransferQueueKind.Download
                 ? "FileTransfer_ErrDestinationNotAllowed"
                 : "FileTransfer_ErrSourceNotAllowed"],
+        // The PC browsing a phone (RemEx-xt0af): the phone left mid-transfer, or was never there.
+        PhoneNotConnectedException => LocalizationService.Instance["FileTransfer_ErrPhoneDisconnected"],
         _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
     };
 }

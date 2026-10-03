@@ -4130,4 +4130,49 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>बड़ा मान</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>स्रोत</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>चुनें कि किसकी फ़ाइलें दिखानी हैं: इस PC के शेयर्ड फ़ोल्डर, या किसी कनेक्टेड फ़ोन के।</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>यह PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>आपका फ़ोन</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>अपने फ़ोन को यहाँ ब्राउज़ करने के लिए, उसे इस PC से कनेक्ट करें, फिर फ़ोन पर RemEx में आपके PC से पहुँच के अंतर्गत कोई फ़ोल्डर शेयर करें।</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>आप अपना फ़ोन ब्राउज़ कर रहे हैं। आप फ़ाइलें डाउनलोड कर सकते हैं, और उन फ़ोल्डरों में फ़ाइलें अपलोड कर सकते हैं जिन्हें फ़ोन लिखने के लिए शेयर करता है। यह PC क्या देख सकता है, इसे बदलने के लिए फ़ोन पर RemEx खोलें और आपके PC से पहुँच में जाएँ।</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>वह फ़ोन अभी कनेक्ट नहीं है। फ़ोन पर RemEx खोलें, इस PC से कनेक्ट करें, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>आपका फ़ोन डिस्कनेक्ट हो गया, इसलिए आप इस PC के फ़ोल्डरों पर वापस आ गए हैं। फ़ोन को फिर से ब्राउज़ करने के लिए उसे दोबारा कनेक्ट करें।</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>आपके फ़ोन ने समय पर जवाब नहीं दिया। पक्का करें कि फ़ोन पर RemEx खुला और कनेक्टेड है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>आपके फ़ोन ने इसकी अनुमति नहीं दी। फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ, और देखें कि आप क्या शेयर कर रहे हैं।</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>आपका फ़ोन अभी कोई फ़ोल्डर शेयर नहीं कर रहा है। फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ, और एक शेयर्ड फ़ोल्डर जोड़ें।</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>आपके फ़ोन पर पूरे डिवाइस की ब्राउज़िंग बंद है। इसे इस्तेमाल करने के लिए, फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ, और पूरे डिवाइस को ब्राउज़ करने की अनुमति दें को चालू करें।</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>फ़ोन पर अभी फ़ोल्डर अपलोड नहीं किए जा सकते। इसके बजाय उसके अंदर की फ़ाइलें अपलोड करें।</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>ट्रांसफ़र पूरा होने से पहले आपका फ़ोन डिस्कनेक्ट हो गया। उसे दोबारा कनेक्ट करें, फिर कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>फ़ाइल फ़ोन की भेजी फ़ाइल से मेल नहीं खाती थी, इसलिए उसे हटा दिया गया। उसे दोबारा डाउनलोड करें।</value>
+  </data>
 </root>

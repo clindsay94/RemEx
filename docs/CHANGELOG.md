@@ -13,6 +13,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
+  paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
+  details and thumbnails, download files and folders to the PC, and upload files into a phone folder
+  shared for writing. What the PC can see is exactly what you allow on the phone under **Access from
+  your PC**; the phone does not ask again, and the PC cannot rename, delete or move anything there. The
+  phone still makes every connection: the PC sends the phone's existing file requests down the phone's
+  own session, and no new message types were added (`docs/API_CONTRACTS.md` §3). (RemEx-xt0af)
 - **The phone's Home tab is filled in.** The PC card shows your PC's name, whether it's online, how
   long it has been up, and Lock and Sleep (Sleep only when the PC can do it; Wake when it's off).
   Below it are your pinned sensors, an Open Sensors card, shortcuts to Desktop, Files and Routines, and
@@ -459,6 +466,9 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **The PC's whole-device button no longer shows a confusing error.** It asked the PC to list its own
+  drives and was refused with "A paired client identity is required to browse volumes". It now only
+  appears while you are browsing a phone that has full-device browsing turned on. (RemEx-xt0af)
 - The PC downloading a folder from the phone no longer skips or repeats files inside subfolders: the
   phone's folder listing pages the same way as the PC's (one shared cursor rule). (RemEx-pp4cm)
 - Large file transfers from older PCs no longer lose pieces when the phone is busy saving: file
@@ -560,6 +570,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   the base colour and Aurora looked like a flat black or white sheet. The radii are percentages
   now and the test refuses anything else. (RemEx-uil4h)
 
+### Security
+
+- **The phone only opens folders you share.** When the PC asks the phone for a file, the phone now
+  checks the folder against your current **Access from your PC** settings (so turning full-device
+  browsing off takes effect even if Android still remembers that folder) and refuses `.` and `..` in
+  paths. This covers the older transfer path too. Replies to the PC's file requests are accepted only
+  from the phone that was asked, never from a connection on the PC itself. (RemEx-xt0af)
 
 ## [2.5.0] — 2026-09-10
 

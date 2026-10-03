@@ -52,7 +52,11 @@ public sealed class PingPongHandler(
     Remex.Agent.Services.Routines.RoutineHostMessageHandler? routineHost = null,
     // The PC Home's pinned sensors (RemEx-wqo7a.5): home_pins_sync out to each authenticated phone,
     // home_pins_change in. Optional and last for the same reason; null means neither happens.
-    IHomePinnedSensorsStore? homePinsStore = null) : IDisposable
+    IHomePinnedSensorsStore? homePinsStore = null,
+    // The PC browsing a paired phone (RemEx-xt0af): the phone's answers to the read-only file_*
+    // requests the PC relayed down this session. Optional and last for the same reason as the three
+    // above; null means such replies are dropped, which is also what happens to one nobody asked for.
+    Remex.Agent.Services.FileTransfer.PhoneFileRelay? phoneFileRelay = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -1123,6 +1127,26 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.FileTransferControl when message.FileTransferControl is not null:
                         transferSessionManager.HandleControl(message.FileTransferControl, connectionClientId ?? string.Empty);
+                        break;
+
+                    // ── The PC browsing a paired phone (RemEx-xt0af) ──
+                    // A phone's answers to the read-only requests the PC relayed down THIS session. They
+                    // are handed over with what this connection has PROVED about itself, and the relay
+                    // decides: a loopback connection or one that never proved an id gets nothing
+                    // delivered (RemEx-4215's rule, applied to replies), and a reply goes only to a
+                    // request the PC sent to that same client id. Nothing here is broadcast.
+                    case MessageTypes.FileRootsResponse:
+                    case MessageTypes.FileBrowseResponse:
+                    case MessageTypes.FileVolumesResponse:
+                    case MessageTypes.FileSearchResponse:
+                    case MessageTypes.FileManifestResponse:
+                    case MessageTypes.FileMetadataResponse:
+                    case MessageTypes.FileThumbnailResponse:
+                        if (phoneFileRelay?.TryDeliverReply(connectionClientId, identityProven, isLoopback, message) != true
+                            && logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger.LogDebug("Dropped an unrequested {Type} from this connection.", message.Type);
+                        }
                         break;
 
                     default:

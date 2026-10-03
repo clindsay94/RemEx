@@ -4131,4 +4131,49 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Duża wartość</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Źródło</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Wybierz, czyje pliki pokazać: udostępnione foldery tego komputera albo podłączonego telefonu.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Ten komputer</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Twój telefon</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Aby przeglądać tu telefon, podłącz go do tego komputera, a potem udostępnij folder w RemEx na telefonie w sekcji Dostęp z komputera.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Przeglądasz telefon. Możesz pobierać pliki i wysyłać je do folderów, które telefon udostępnia do zapisu. Aby zmienić, co widzi ten komputer, otwórz RemEx na telefonie i przejdź do sekcji Dostęp z komputera.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Ten telefon nie jest teraz podłączony. Otwórz RemEx na telefonie, połącz się z tym komputerem i spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Telefon się rozłączył, więc wróciłeś do folderów tego komputera. Połącz telefon ponownie, aby znów go przeglądać.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Telefon nie odpowiedział na czas. Upewnij się, że RemEx jest otwarty i połączony na telefonie, i spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Telefon na to nie pozwolił. Otwórz RemEx na telefonie, przejdź do sekcji Dostęp z komputera i sprawdź, co udostępniasz.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Telefon nie udostępnia jeszcze żadnych folderów. Otwórz RemEx na telefonie, przejdź do sekcji Dostęp z komputera i dodaj udostępniony folder.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Przeglądanie całego urządzenia jest wyłączone na telefonie. Aby z niego skorzystać, otwórz RemEx na telefonie, przejdź do sekcji Dostęp z komputera i włącz opcję Zezwól na przeglądanie całego urządzenia.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Nie można jeszcze wysyłać folderów na telefon. Zamiast tego wyślij znajdujące się w nim pliki.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Telefon rozłączył się przed zakończeniem przesyłania. Połącz go ponownie i spróbuj jeszcze raz.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>Plik nie zgadzał się z tym, co wysłał telefon, więc został usunięty. Pobierz go ponownie.</value>
+  </data>
 </root>

@@ -103,6 +103,18 @@ public static class MessageAudience
         [MessageTypes.FileTransferReady] = ClientSurface.AndroidControl,
         [MessageTypes.FileTransferResult] = ClientSurface.AndroidControl,
         [MessageTypes.FileVolumesResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
+        // The PC browsing a paired phone (RemEx-xt0af). PhoneFileRelay forwards these seven REQUESTS,
+        // built by the PC's own File Transfer screen, down a paired phone's existing session; the
+        // phone's file host answers them as it always has. The phone only — the PC's UI is the asker
+        // here, never the receiver — and they reach Kotlin through the file_ prefix forward, which is
+        // exactly why naming them here matters: narrow that forward and these go red.
+        [MessageTypes.FileRootsRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileBrowseRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileVolumesRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileSearchRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileManifestRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileMetadataRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileThumbnailRequest] = ClientSurface.AndroidControl,
         // The phone only (RemEx-wqo7a.5). The PC's own UI publishes this list in-process through
         // IHomePinnedSensorsStore and the host never sends it to a loopback session. It reaches Kotlin
         // through the home_pins_ prefix forward; declaring it here is what makes that forward

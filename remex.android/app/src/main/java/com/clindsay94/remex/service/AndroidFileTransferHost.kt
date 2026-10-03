@@ -165,6 +165,11 @@ object AndroidFileTransferHost {
                 }
 
                 override fun isFullBrowseGranted(): Boolean = fullBrowseRootUri != null
+
+                // Straight from the settings snapshots (RemEx-xt0af): the same consent the two lists
+                // above express, without opening a DocumentFile per shared folder on every resolve.
+                override fun allowedRootIds(): Set<String> =
+                    sharedFolderUris + listOfNotNull(fullBrowseRootUri)
             }
 
         val mutator =
@@ -473,18 +478,22 @@ object AndroidFileTransferHost {
     // remove until 2.2; v2 PCs still stream chunks over /ws with this contract.
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Resolves a v2 path, but only under a folder the person currently shares (RemEx-xt0af).
+     *
+     * HARDENED RATHER THAN DELETED. It used to open whatever tree URI the PC named and walk any names
+     * it was given, `..` and empty ones included; the PC can now drive this phone's file host from its
+     * own File Transfer screen, so the rule lives in [SharedPathPolicy.legacySegments] and is tested
+     * there. Whole-device browsing is deliberately not admitted: v2 predates it.
+     */
     private fun resolveDocument(rootId: String, relativePath: String): DocumentFile? {
-        val rootUri = Uri.parse(rootId)
-        var currentDoc = DocumentFile.fromTreeUri(context, rootUri)
+        val names = SharedPathPolicy.legacySegments(rootId, relativePath, sharedFolderUris) ?: return null
 
-        if (currentDoc == null || !currentDoc.canRead()) return null
+        var currentDoc = DocumentFile.fromTreeUri(context, Uri.parse(rootId)) ?: return null
+        if (!currentDoc.canRead()) return null
 
-        if (relativePath.isNotEmpty()) {
-            val parts = relativePath.split('/')
-            for (part in parts) {
-                currentDoc = currentDoc?.findFile(part)
-                if (currentDoc == null) return null
-            }
+        for (name in names) {
+            currentDoc = currentDoc.findFile(name) ?: return null
         }
         return currentDoc
     }
@@ -514,6 +523,12 @@ object AndroidFileTransferHost {
             val targetName = relativePath.substringAfterLast('/', fileName)
 
             if (direction == "upload") {
+                // The name a file is CREATED under gets the same rule as the names walked to reach its
+                // folder (RemEx-xt0af).
+                if (!SharedPathPolicy.isSafeName(targetName)) {
+                    sendTransferEnd(transferId, false, "Invalid file name.")
+                    return
+                }
                 val parentDoc = resolveDocument(rootId, parentPath)
                 if (parentDoc == null || !parentDoc.canWrite()) {
                     sendTransferEnd(transferId, false, "Cannot write to destination folder.")

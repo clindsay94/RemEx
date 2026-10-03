@@ -58,6 +58,7 @@ public class TextInputTests
         // a fixed-height horizontal control bar does not have. Each of these keeps the caption
         // TextBlock beside it instead (unlike the vertical settings-row fields this bead converted).
         ["Binding RemoteRoots"] = "FileTransferView - toolbar row (Row 0: root selector + search + volumes)",
+        ["Binding Sources"] = "FileTransferView - toolbar row (Row 0: This PC / phone source picker, captioned beside it like the root selector)",
         ["Binding AvailableDisplayTargets"] = "RemoteDesktopView - toolbar row (display picker)",
         ["Binding SelectedScaleIndex"] = "RemoteDesktopView - toolbar row (scale picker)",
         ["Binding Connection.HostAddress"] = "RemoteDesktopView - toolbar row (connection panel host field)",

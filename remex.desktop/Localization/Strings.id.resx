@@ -4133,4 +4133,49 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Nilai besar</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Sumber</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Pilih file siapa yang ditampilkan: folder bersama PC ini, atau milik ponsel yang terhubung.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>PC ini</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Ponsel Anda</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Untuk menelusuri ponsel Anda di sini, hubungkan ke PC ini, lalu bagikan folder di RemEx pada ponsel di bagian Akses dari PC Anda.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Anda sedang menelusuri ponsel. Anda dapat mengunduh file, dan mengunggah file ke folder yang dibagikan ponsel untuk ditulis. Untuk mengubah apa yang dapat dilihat PC ini, buka RemEx di ponsel dan buka Akses dari PC Anda.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Ponsel itu sedang tidak terhubung. Buka RemEx di ponsel, hubungkan ke PC ini, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Ponsel Anda terputus, jadi Anda kembali ke folder PC ini. Hubungkan lagi ponsel untuk menelusurinya kembali.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Ponsel Anda tidak menjawab tepat waktu. Pastikan RemEx terbuka dan terhubung di ponsel, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Ponsel Anda tidak mengizinkannya. Buka RemEx di ponsel, buka Akses dari PC Anda, dan periksa apa yang Anda bagikan.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Ponsel Anda belum membagikan folder apa pun. Buka RemEx di ponsel, buka Akses dari PC Anda, lalu tambahkan folder bersama.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Penelusuran seluruh perangkat dimatikan di ponsel Anda. Untuk menggunakannya, buka RemEx di ponsel, buka Akses dari PC Anda, dan nyalakan Izinkan penelusuran seluruh perangkat.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Folder belum dapat diunggah ke ponsel. Unggah file di dalamnya saja.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Ponsel Anda terputus sebelum transfer selesai. Hubungkan lagi, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>File tidak cocok dengan yang dikirim ponsel, jadi file dihapus. Coba unduh lagi.</value>
+  </data>
 </root>

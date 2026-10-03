@@ -4136,4 +4136,49 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Big value</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Choose whose files to show: this PC's shared folders, or a connected phone's.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>This PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Your phone</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>To browse your phone here, connect it to this PC, then share a folder in RemEx on the phone under Access from your PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>You're browsing your phone. You can download files, and upload files into folders the phone shares for writing. To change what this PC can see, open RemEx on the phone and go to Access from your PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>That phone isn't connected right now. Open RemEx on the phone, connect to this PC, then try again.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Your phone disconnected, so you're back on this PC's folders. Reconnect the phone to browse it again.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Your phone didn't answer in time. Make sure RemEx is open and connected on the phone, then try again.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Your phone didn't allow that. Open RemEx on the phone, go to Access from your PC, and check what you're sharing.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Your phone isn't sharing any folders yet. Open RemEx on the phone, go to Access from your PC, and add a shared folder.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Whole-device browsing is turned off on your phone. To use it, open RemEx on the phone, go to Access from your PC, and turn on Allow full-device browsing.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Folders can't be uploaded to a phone yet. Upload the files inside it instead.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Your phone disconnected before the transfer finished. Reconnect it, then try again.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>The file didn't match what the phone sent, so it was deleted. Try downloading it again.</value>
+  </data>
 </root>
