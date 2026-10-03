@@ -12,6 +12,9 @@ import org.json.JSONObject
 /** How long the PC has been on, from the host's `uptimeText` (`"{d}d {h}h {m}m"`). */
 data class PcUptime(val days: Int, val hours: Int, val minutes: Int)
 
+/** One unit of the PC card's uptime line. */
+enum class UptimeUnit { DAYS, HOURS, MINUTES }
+
 /** One row of Home's pin sheet: a sensor name, whether it is pinned, and whether it can be. */
 data class PinSheetEntry(val name: String, val pinned: Boolean, val canPin: Boolean)
 
@@ -54,6 +57,18 @@ object HomeLogic {
         val match = UPTIME.matchEntire(text?.trim() ?: return null) ?: return null
         val (d, h, m) = match.destructured
         return runCatching { PcUptime(d.toInt(), h.toInt(), m.toInt()) }.getOrNull()
+    }
+
+    /**
+     * What the PC card's uptime line shows: the largest unit that is not zero and the one after it,
+     * leaving out zeros, so "3 d 4 h", "5 h", "5 h 12 min" or "7 min" rather than "0d 5h 12m".
+     * A PC that has been up for less than a minute shows "0 min".
+     */
+    fun uptimeParts(up: PcUptime): List<Pair<UptimeUnit, Int>> {
+        val all = listOf(UptimeUnit.DAYS to up.days, UptimeUnit.HOURS to up.hours, UptimeUnit.MINUTES to up.minutes)
+        val first = all.indexOfFirst { it.second > 0 }
+        if (first < 0) return listOf(UptimeUnit.MINUTES to 0)
+        return all.subList(first, minOf(first + 2, all.size)).filter { it.second > 0 }
     }
 
     /** `uptimeText` from one telemetry payload; null when missing or not JSON. */
