@@ -206,6 +206,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - Phone screens slide in from the side, sensor readings roll up or down when they change, buttons
   change shape while pressed, and the Open Sensors card grows into the Sensors screen. All of it
   turns off with the system's "Remove animations" setting. (RemEx-wqo7a.7)
+- The phone app has Material 3 Expressive motion: buttons squeeze slightly while pressed, chips and
+  status pills fade between states, play/pause and pin icons swap smoothly, and your PCs slide into
+  their new order. With "Remove animations" on, loading indicators, progress waves and tutorial
+  animations stay still. (RemEx-wqo7a.8)
+- The phone gives a short vibration for switches, the contrast slider's -1, 0 and 1 stops,
+  long-presses, sent commands, pairing results and finished file transfers. Plain taps stay quiet,
+  and it follows your phone's touch feedback setting. (RemEx-wqo7a.8)
 - **The phone app has five tabs: Home, Desktop, Apps, Control and More.** Labels are one word and
   always shown. Home is new: for now it has the PC card (online status, or Connect and Wake when the
   PC is offline) and an Open Sensors card, with more to come. The Sensors canvas moved into More and
