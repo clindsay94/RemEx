@@ -268,30 +268,12 @@ fun AboutScreenContent(
                                 style = MaterialTheme.typography.titleMediumEmphasized
                         )
                     }
-                    WhatsNewEntry(
-                            version = stringResource(R.string.about_whats_new_1_label),
-                            body = stringResource(R.string.about_whats_new_1_body)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    WhatsNewEntry(
-                            version = stringResource(R.string.about_whats_new_2_label),
-                            body = stringResource(R.string.about_whats_new_2_body)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    WhatsNewEntry(
-                            version = stringResource(R.string.about_whats_new_3_label),
-                            body = stringResource(R.string.about_whats_new_3_body)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    WhatsNewEntry(
-                            version = stringResource(R.string.about_whats_new_4_label),
-                            body = stringResource(R.string.about_whats_new_4_body)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    WhatsNewEntry(
-                            version = stringResource(R.string.about_whats_new_5_label),
-                            body = stringResource(R.string.about_whats_new_5_body)
-                    )
+                    whatsNewEntries.forEachIndexed { index, (label, body) ->
+                        if (index > 0) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                        WhatsNewEntry(version = stringResource(label), body = stringResource(body))
+                    }
                 }
             }
 
@@ -355,6 +337,21 @@ fun AboutScreenContent(
         }
     }
 }
+
+/**
+ * The What's New highlights for this release, in display order, as (title, body) string pairs.
+ * The PC's About page shows the same list (AboutViewModel.WhatsNewCount, keys
+ * About_WhatsNew_N_Title/_Body), and remex.desktop.tests' WhatsNewParityTests holds the two
+ * platforms to the same count. Change one side and change the other in the same commit.
+ */
+private val whatsNewEntries: List<Pair<Int, Int>> = listOf(
+    R.string.about_whats_new_1_label to R.string.about_whats_new_1_body,
+    R.string.about_whats_new_2_label to R.string.about_whats_new_2_body,
+    R.string.about_whats_new_3_label to R.string.about_whats_new_3_body,
+    R.string.about_whats_new_4_label to R.string.about_whats_new_4_body,
+    R.string.about_whats_new_5_label to R.string.about_whats_new_5_body,
+    R.string.about_whats_new_6_label to R.string.about_whats_new_6_body,
+)
 
 @Composable
 private fun WhatsNewEntry(version: String, body: String) {

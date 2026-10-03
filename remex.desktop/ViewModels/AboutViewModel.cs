@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Services.Security;
@@ -188,122 +187,27 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     }
     
     /// <summary>
-    /// The bundled CHANGELOG's highlights, parsed once per process. The changelog is English-only and
-    /// fixed for the build, so a language switch or a new About instance has nothing to re-read
-    /// (perf audit P3-28). An unreadable asset caches as empty and the static highlights take over.
+    /// Number of What's New highlights, keys <c>About_WhatsNew_1_Title</c>/<c>_Body</c> through
+    /// <c>About_WhatsNew_{WhatsNewCount}_Title</c>/<c>_Body</c>. The phone's About screen shows the
+    /// same list in the same order (<c>about_whats_new_N_label</c>/<c>_body</c> in AboutScreen.kt),
+    /// and <c>WhatsNewParityTests</c> holds both platforms to this count.
     /// </summary>
-    private static readonly Lazy<IReadOnlyList<WhatsNewItem>> s_bundledChangelog = new(LoadBundledChangelog);
-
-    private static IReadOnlyList<WhatsNewItem> LoadBundledChangelog()
-    {
-        // Pull the highlights straight from the bundled CHANGELOG so this stays current every release.
-        try
-        {
-            using var stream = Avalonia.Platform.AssetLoader.Open(new Uri("avares://Remex.Desktop/Assets/CHANGELOG.md"));
-            using var reader = new StreamReader(stream);
-            return ParseChangelog(reader, maxItems: 12);
-        }
-        catch (Exception ex)
-        {
-            // Benign - the static highlights are a real fallback - but recorded anyway, because
-            // "the About page shows the wrong release notes" is otherwise unexplainable from a log.
-            InMemoryLogSink.Append(LogLevel.Debug, "About",
-                "Could not read the bundled changelog; falling back to static highlights", ex);
-            return Array.Empty<WhatsNewItem>();
-        }
-    }
+    /// <remarks>
+    /// The list used to come from the newest released section of the bundled CHANGELOG, with these
+    /// keys only as a fallback. That showed English developer notes in every language, cut to two
+    /// lines each, and never matched what the phone said. The highlights are now written for users,
+    /// translated like every other string, and rebuilt on a language switch.
+    /// </remarks>
+    internal const int WhatsNewCount = 6;
 
     private void LoadWhatsNew()
     {
-        var bundled = s_bundledChangelog.Value;
-        foreach (var entry in bundled)
-            WhatsNewItems.Add(entry);
-        if (WhatsNewItems.Count > 0)
-            return;
-
-        WhatsNewItems.Add(new WhatsNewItem(
-            LocalizationService.Instance["About_WhatsNew_Features"],
-            LocalizationService.Instance["About_WhatsNew_Features_Body"]));
-        WhatsNewItems.Add(new WhatsNewItem(
-            LocalizationService.Instance["About_WhatsNew_Fixes"],
-            LocalizationService.Instance["About_WhatsNew_Fixes_Body"]));
-        WhatsNewItems.Add(new WhatsNewItem(
-            LocalizationService.Instance["About_WhatsNew_FileTransfer"],
-            LocalizationService.Instance["About_WhatsNew_FileTransfer_Body"]));
-        WhatsNewItems.Add(new WhatsNewItem(
-            LocalizationService.Instance["About_WhatsNew_Android"],
-            LocalizationService.Instance["About_WhatsNew_Android_Body"]));
-        WhatsNewItems.Add(new WhatsNewItem(
-            LocalizationService.Instance["About_WhatsNew_Issues"],
-            LocalizationService.Instance["About_WhatsNew_Issues_Body"]));
-    }
-
-    /// <summary>
-    /// Parses the newest *released* CHANGELOG section into What's-New highlights (bold title + description).
-    /// "## [Unreleased]" is skipped — its entries aren't shipped yet — and so is any released section with
-    /// no "- " bullets, otherwise an empty leading section makes this return 0 items and the About page
-    /// silently falls back to stale hardcoded highlights (RemEx-xtc2). Internal for unit testing.
-    /// </summary>
-    internal static List<WhatsNewItem> ParseChangelog(string markdown, int maxItems)
-        => ParseChangelog(new StringReader(markdown), maxItems);
-
-    /// <summary>
-    /// Streaming form of <see cref="ParseChangelog(string, int)"/>: reads line by line and stops as soon
-    /// as the newest non-empty released section is done, so the ~1.3 MB bundled changelog is never
-    /// materialised or split whole (perf audit P3-28). Same rules as the string overload.
-    /// </summary>
-    internal static List<WhatsNewItem> ParseChangelog(TextReader reader, int maxItems)
-    {
-        var items = new List<WhatsNewItem>();
-        var line = reader.ReadLine();
-        while (line != null)
+        for (int n = 1; n <= WhatsNewCount; n++)
         {
-            while (line != null && !line.StartsWith("## [", StringComparison.Ordinal)) line = reader.ReadLine();
-            if (line == null) break;
-            var isUnreleased = line.Contains("[Unreleased]", StringComparison.OrdinalIgnoreCase);
-            line = reader.ReadLine();
-            for (; line != null && items.Count < maxItems; line = reader.ReadLine())
-            {
-                if (line.StartsWith("## [", StringComparison.Ordinal))
-                    break; // section over — decide below whether it produced anything
-                if (isUnreleased)
-                    continue;
-                var trimmed = line.TrimStart();
-                if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
-                    continue;
-                var (title, description) = ParseBullet(trimmed.Substring(2));
-                if (!string.IsNullOrWhiteSpace(title))
-                    items.Add(new WhatsNewItem(title, description));
-            }
-            if (items.Count > 0)
-                break; // newest non-empty released section found — only surface that one
+            WhatsNewItems.Add(new WhatsNewItem(
+                LocalizationService.Instance[$"About_WhatsNew_{n}_Title"],
+                LocalizationService.Instance[$"About_WhatsNew_{n}_Body"]));
         }
-        return items;
-    }
-
-    private static (string Title, string Description) ParseBullet(string bullet)
-    {
-        bullet = bullet.Trim();
-        string title = string.Empty, description = bullet;
-        if (bullet.StartsWith("**", StringComparison.Ordinal))
-        {
-            int end = bullet.IndexOf("**", 2, StringComparison.Ordinal);
-            if (end > 0)
-            {
-                title = bullet.Substring(2, end - 2).Trim().TrimEnd('.', ' ');
-                description = bullet.Substring(end + 2).Trim();
-            }
-        }
-        // Drop a trailing "(files…; RemEx-id.)" attribution — it's noise for end users.
-        int lastParen = description.LastIndexOf('(');
-        if (lastParen >= 0)
-        {
-            var tail = description.Substring(lastParen);
-            if (tail.Contains("RemEx-") || tail.Contains('`'))
-                description = description.Substring(0, lastParen).TrimEnd();
-        }
-        description = description.Replace("**", string.Empty).Replace("`", string.Empty).Trim();
-        return (title, description);
     }
 
     /// <summary>

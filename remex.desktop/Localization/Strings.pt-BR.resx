@@ -1386,35 +1386,41 @@ Na página Rotinas você pode vê-las, desativá-las e conferir o histórico del
   <data name="About_WhatsNew" xml:space="preserve">
     <value>O que há de novo?</value>
   </data>
-  <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Vídeo por hardware H.264</value>
+  <data name="About_WhatsNew_1_Title" xml:space="preserve">
+    <value>Rotinas</value>
   </data>
-  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>Área de trabalho remota com aceleração de hardware via NVENC, QSV, AMF ou VAAPI no PC. O Android decodifica com MediaCodec para entrega por GPU sem cópias. Volta automaticamente para MJPEG quando não há codificadores de hardware disponíveis.</value>
+  <data name="About_WhatsNew_1_Body" xml:space="preserve">
+    <value>Seu celular agora pode agir sozinho quando você chega em casa ou sai, toca uma tag NFC ou um sensor do PC passa de um limite.</value>
   </data>
-  <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Segurança e pareamento de dispositivos</value>
+  <data name="About_WhatsNew_2_Title" xml:space="preserve">
+    <value>Rotinas no seu PC</value>
   </data>
-  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Todo o tráfego é criptografado com TLS 1.3 quando o cliente tem suporte, e nunca abaixo de TLS 1.2. O primeiro pareamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — nenhuma chave em texto puro trafega. Depois o cliente fixa a impressão digital SHA-256 do certificado do PC para todas as conexões futuras.</value>
+  <data name="About_WhatsNew_2_Body" xml:space="preserve">
+    <value>As rotinas também podem rodar no próprio PC, como suspendê-lo quando ele fica ocioso. Uma contagem regressiva dá tempo de cancelar um desligamento ou reinício.</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Transferência de arquivos remota</value>
+  <data name="About_WhatsNew_3_Title" xml:space="preserve">
+    <value>Um novo layout no celular</value>
   </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Navegue pelas pastas compartilhadas do PC e transfira arquivos em qualquer direção com verificação de integridade SHA-256. O Android pode compartilhar suas próprias pastas de volta com o PC. As transferências mostram o progresso em tempo real com suporte a cancelamento.</value>
+  <data name="About_WhatsNew_3_Body" xml:space="preserve">
+    <value>O aplicativo do celular agora tem cinco abas. O Início dele mostra este PC e os mesmos sensores fixados daqui, e um toque longo edita a grade de Sensores dele.</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Reformulação do Android</value>
+  <data name="About_WhatsNew_4_Title" xml:space="preserve">
+    <value>Um só visual nos dois aplicativos</value>
   </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Material 3 Expressive com física de mola em todo o aplicativo — reordenação de listas, puxar para atualizar, blocos de aplicativos, medidores animados. 8 blocos de Configurações Rápidas para comandos de energia com um toque. Widgets redimensionáveis na tela inicial. Feedback háptico de dois estágios. SDK alvo 37 (Android 17).</value>
+  <data name="About_WhatsNew_4_Body" xml:space="preserve">
+    <value>O PC e o celular agora usam as mesmas palavras, fontes, cartões e cores. Uma instalação nova começa com as cores do RemEx.</value>
   </data>
-  <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Linux e nova identidade</value>
+  <data name="About_WhatsNew_5_Title" xml:space="preserve">
+    <value>Correções na transferência de arquivos</value>
   </data>
-  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Suporte de primeira classe ao Linux com captura nativa PipeWire, injeção completa de entrada no Wayland e início automático ao entrar. Novo ícone de launcher premium, animação de inicialização Cosmic Zoom, banner ANSI colorido na inicialização e cópia de bitmap para a área de transferência a partir do canvas.</value>
+  <data name="About_WhatsNew_5_Body" xml:space="preserve">
+    <value>Baixar uma pasta, em qualquer direção, não pula nem repete mais arquivos. Arquivos, no celular, esconde itens ocultos e do sistema até você pedir.</value>
+  </data>
+  <data name="About_WhatsNew_6_Title" xml:space="preserve">
+    <value>Uma nova tela de inicialização</value>
+  </data>
+  <data name="About_WhatsNew_6_Body" xml:space="preserve">
+    <value>Ao abrir o RemEx, a tela de inicialização mostra o aplicativo iniciando e se conectando de verdade, em vez de uma animação fixa.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
