@@ -52,6 +52,8 @@ import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.screens.RemoteFileEntry
 import java.text.DateFormat
 import java.util.Date
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /** Properties (metadata) bottom sheet (plan WP7). */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -262,8 +264,8 @@ fun FileManagerDestinationSheet(
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_cancel)) }
-                Button(onClick = { onConfirm(destinationPath) }) {
+                TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.dialog_cancel)) }
+                Button(onClick = { onConfirm(destinationPath) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                     Text(
                         stringResource(
                             if (isMove) R.string.file_manager_move_here else R.string.file_manager_copy_here
@@ -298,10 +300,10 @@ fun FileManagerTextDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text); onDismiss() }, enabled = text.isNotBlank()) {
+            TextButton(onClick = { onConfirm(text); onDismiss() }, enabled = text.isNotBlank(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                 Text(confirmLabel)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.dialog_cancel)) } },
     )
 }

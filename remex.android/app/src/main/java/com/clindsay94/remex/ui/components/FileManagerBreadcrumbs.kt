@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.ui.screens.Breadcrumb
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * Horizontally scrollable, tappable breadcrumb trail (plan WP7). The first crumb is the root; each
@@ -60,7 +62,7 @@ fun FileManagerBreadcrumbs(
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )
             } else {
-                TextButton(onClick = { onNavigate(crumb.path) }) {
+                TextButton(onClick = { onNavigate(crumb.path) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                     Text(
                         text = crumb.label,
                         style = MaterialTheme.typography.labelLarge,

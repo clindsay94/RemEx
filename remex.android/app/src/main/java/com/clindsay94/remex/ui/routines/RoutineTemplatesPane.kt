@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +45,8 @@ import com.clindsay94.remex.TelemetryDemand
 import com.clindsay94.remex.ui.screens.TelemetryLeaseEffect
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.RemexTooltip
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.components.RemexFilterChip
 
 /** The template gallery (routines spec A3): filter chips, then cards; a grid on wide panes. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +93,7 @@ internal fun RoutineTemplatesPane(
                 navigationIcon = {
                     if (showBack) {
                         val back = stringResource(R.string.cd_back)
-                        RemexTooltip(back) { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = back) } }
+                        RemexTooltip(back) { IconButton(onClick = onBack, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = back) } }
                     }
                 },
             )
@@ -103,9 +104,9 @@ internal fun RoutineTemplatesPane(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text(stringResource(R.string.routines_category_all)) })
+                RemexFilterChip(selected = filter == null, onClick = { filter = null }, label = { Text(stringResource(R.string.routines_category_all)) })
                 categories.forEach { category ->
-                    FilterChip(
+                    RemexFilterChip(
                         selected = filter == category.name,
                         onClick = { filter = category.name },
                         label = { Text(stringResource(category.labelRes)) },

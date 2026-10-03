@@ -48,6 +48,7 @@ import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 
 /** A `manual` routine shown on Remote Control (spec A14, R-UX-06). */
 @Immutable
@@ -135,11 +136,13 @@ fun RemoteRoutineCard(
                                 onClick = onConfirm,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
                                 modifier = Modifier.weight(1f),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding,
                             ) { Text(stringResource(R.string.button_confirm)) }
-                            TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.button_cancel)) }
+                            TextButton(onClick = onCancel, modifier = Modifier.weight(1f), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) }
                         }
                     } else {
-                        FilledTonalButton(onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth()) {
+                        FilledTonalButton(onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                             Text(stringResource(if (routine.destructive) R.string.button_select else R.string.routines_run))
                         }
                     }

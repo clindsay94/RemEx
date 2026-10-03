@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -57,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -68,6 +66,8 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 import com.clindsay94.remex.R
 import kotlinx.coroutines.delay
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
 
 /**
  * A slim warning banner that slides in at the top of a screen when the PC is not connected.
@@ -88,7 +88,7 @@ fun NotConnectedBanner(
         modifier: Modifier = Modifier,
         useDelay: Boolean = true
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         var showBanner by remember { mutableStateOf(false) }
 
         // Debounce: only show banner if disconnected for 3+ seconds (if requested)
@@ -152,9 +152,7 @@ fun NotConnectedBanner(
                                         )
                                 TextButton(
                                         onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.CONFIRM
-                                                )
+                                                haptics.perform(RemexHapticEvent.Press)
                                                 onNavigateToConnection()
                                         },
                                         interactionSource = bannerInteractionSource,
@@ -168,7 +166,9 @@ fun NotConnectedBanner(
                                                         contentColor =
                                                                 MaterialTheme.colorScheme
                                                                         .onErrorContainer
-                                                )
+                                                ),
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.TextButtonContentPadding
                                 ) {
                                         Text(
                                                 stringResource(R.string.button_connect),
@@ -191,7 +191,7 @@ fun DisconnectedFullScreen(
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         Column(
                 modifier = modifier.fillMaxWidth().padding(32.dp),
                 verticalArrangement = Arrangement.Center,
@@ -228,7 +228,7 @@ fun DisconnectedFullScreen(
                         )
                 Button(
                         onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onNavigateToConnection()
                         },
                         interactionSource = ctaInteractionSource,
@@ -247,7 +247,7 @@ fun DisconnectedFullScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NeedsPairingContent(onPair: () -> Unit, modifier: Modifier = Modifier) {
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
         Column(
                 modifier = modifier.fillMaxWidth().padding(32.dp),
                 verticalArrangement = Arrangement.Center,
@@ -276,7 +276,7 @@ fun NeedsPairingContent(onPair: () -> Unit, modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(24.dp))
                 Button(
                         onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                haptics.perform(RemexHapticEvent.Press)
                                 onPair()
                         },
                         shapes = rememberRemexButtonShapes(),
@@ -387,6 +387,11 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
  * spinner used to sit (connecting, pairing, fetching).
  *
  * @param contained when true, draws the indicator inside the expressive tonal container shape.
+ *
+ * Under "Remove animations" ([LocalReducedMotion]) it holds still on its first shape instead: the
+ * indeterminate indicator drives its morph from an `Animatable` loop, and with the animator
+ * duration scale at 0 every step of that loop finishes on the next frame, so it would flick
+ * between shapes every frame rather than stop (phase 6, RemEx-wqo7a.8).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -395,6 +400,15 @@ fun RemexLoadingIndicator(
         contained: Boolean = false,
         color: androidx.compose.ui.graphics.Color? = null,
 ) {
+        if (LocalReducedMotion.current) {
+                val still = { 0f }
+                when {
+                        contained -> ContainedLoadingIndicator(progress = still, modifier = modifier)
+                        color != null -> LoadingIndicator(progress = still, modifier = modifier, color = color)
+                        else -> LoadingIndicator(progress = still, modifier = modifier)
+                }
+                return
+        }
         when {
                 contained -> ContainedLoadingIndicator(modifier = modifier)
                 color != null -> LoadingIndicator(modifier = modifier, color = color)
@@ -417,10 +431,15 @@ fun RemexCircularWavyGauge(
         modifier: Modifier = Modifier,
         size: androidx.compose.ui.unit.Dp = 64.dp,
 ) {
+        // The wave travels round the ring for as long as it is on screen; under "Remove
+        // animations" the ring is flat and still, and only the fill says the value.
+        val reduced = LocalReducedMotion.current
         Box(contentAlignment = Alignment.Center, modifier = modifier) {
                 CircularWavyProgressIndicator(
                         progress = { progress.coerceIn(0f, 1f) },
                         modifier = Modifier.size(size),
+                        amplitude = if (reduced) FLAT_WAVE else WavyProgressIndicatorDefaults.indicatorAmplitude,
+                        waveSpeed = if (reduced) 0.dp else WavyProgressIndicatorDefaults.CircularWavelength,
                 )
                 Text(
                         text = centerLabel,
@@ -434,7 +453,8 @@ fun RemexCircularWavyGauge(
  * ideal for file-transfer and long-running task progress.
  *
  * @param amplitude per M3 Expressive spec 4.3, a paused track flattens the wave — pass
- *   `{ 0f }` for that case. Defaults to the standard wavy amplitude.
+ *   `{ 0f }` for that case. Defaults to the standard wavy amplitude. Under "Remove animations" the
+ *   track is always flat and still, whatever is passed here.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -443,12 +463,17 @@ fun RemexLinearWavyProgress(
         modifier: Modifier = Modifier,
         amplitude: (Float) -> Float = WavyProgressIndicatorDefaults.indicatorAmplitude,
 ) {
+        val reduced = LocalReducedMotion.current
         LinearWavyProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
                 modifier = modifier,
-                amplitude = amplitude,
+                amplitude = if (reduced) FLAT_WAVE else amplitude,
+                waveSpeed = if (reduced) 0.dp else WavyProgressIndicatorDefaults.LinearDeterminateWavelength,
         )
 }
+
+/** A wavy indicator's amplitude when it must not wave: flat at every progress. */
+private val FLAT_WAVE: (Float) -> Float = { 0f }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview(showBackground = true)

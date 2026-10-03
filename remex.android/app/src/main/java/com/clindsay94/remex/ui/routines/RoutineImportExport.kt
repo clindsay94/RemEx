@@ -53,6 +53,8 @@ import com.clindsay94.remex.routines.model.RoutineReasonArgs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 // Routines export and import (spec §1.9, §6.10; RemEx-pp0rt.11). Storage Access Framework only:
 // the user picks where the file goes and which file comes in, so RemEx needs no storage permission.
@@ -108,9 +110,12 @@ internal fun rememberRoutineExchange(viewModel: RoutinesViewModel): RoutineExcha
                 Button(onClick = {
                     confirmExport = false
                     saver.launch(RoutineExchange.SUGGESTED_NAME)
-                }) { Text(stringResource(R.string.routines_export_confirm)) }
+                },
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
+                ) { Text(stringResource(R.string.routines_export_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { confirmExport = false }) { Text(stringResource(R.string.button_cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmExport = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
         )
     }
 
@@ -146,7 +151,7 @@ private fun RoutineImportHost(viewModel: RoutinesViewModel) {
                         )
                     )
                 },
-                confirmButton = { TextButton(onClick = viewModel::closeImport) { Text(stringResource(R.string.button_dismiss)) } },
+                confirmButton = { TextButton(onClick = viewModel::closeImport, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_dismiss)) } },
             )
         }
         is RoutineExchange.ReadResult.Ok -> ImportReviewSheet(viewModel, result)
@@ -180,7 +185,7 @@ private fun ImportReviewSheet(viewModel: RoutinesViewModel, file: RoutineExchang
                 // "Pick the PC it controls" (§1.9): the file never names one.
                 Text(stringResource(R.string.routines_import_pc), style = MaterialTheme.typography.labelLarge)
                 Box {
-                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                         Text(pcLabel(pcs.firstOrNull { it.identity == pc }?.name), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
@@ -229,8 +234,8 @@ private fun ImportReviewSheet(viewModel: RoutinesViewModel, file: RoutineExchang
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                TextButton(onClick = viewModel::closeImport) { Text(stringResource(R.string.button_cancel)) }
-                Button(onClick = { viewModel.importRoutines(chosen) }, enabled = chosen.isNotEmpty() && pcs.isNotEmpty()) {
+                TextButton(onClick = viewModel::closeImport, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) }
+                Button(onClick = { viewModel.importRoutines(chosen) }, enabled = chosen.isNotEmpty() && pcs.isNotEmpty(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                     Text(stringResource(R.string.routines_import_action))
                 }
             }

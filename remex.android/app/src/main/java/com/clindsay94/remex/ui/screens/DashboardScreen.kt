@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.snap
@@ -79,7 +78,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -121,6 +119,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
 
 /**
  * How far the Add-card button reaches up from the nav bar: the 56.dp button plus its 16.dp edge
@@ -273,7 +277,7 @@ fun DashboardScreenContent(
         editRevision: StateFlow<Long> = MutableStateFlow(0L),
         onUndoIfUnchanged: (Long) -> Unit = {},
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val chrome = SensorsChrome.forMode(editMode)
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -325,21 +329,24 @@ fun DashboardScreenContent(
                         scrollBehavior = topBarScrollBehavior,
                         actions = {
                             if (chrome.showEditActions) {
-                                IconButton(onClick = onUndo, enabled = canUndo) {
+                                IconButton(onClick = onUndo, enabled = canUndo, shapes = rememberRemexIconButtonShapes()) {
                                     Icon(UndoGlyph, contentDescription = undoText)
                                 }
-                                IconButton(onClick = onRedo, enabled = canRedo) {
+                                IconButton(onClick = onRedo, enabled = canRedo, shapes = rememberRemexIconButtonShapes()) {
                                     Icon(
                                             RedoGlyph,
                                             contentDescription = stringResource(R.string.dashboard_menu_redo)
                                     )
                                 }
                                 TextButton(onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    haptics.perform(RemexHapticEvent.Press)
                                     onExitEditMode()
-                                }) { Text(stringResource(R.string.button_done)) }
+                                },
+                                    shapes = rememberRemexButtonShapes(),
+                                    contentPadding = ButtonDefaults.TextButtonContentPadding,
+                                ) { Text(stringResource(R.string.button_done)) }
                             } else {
-                                IconButton(onClick = onReplayCoach) {
+                                IconButton(onClick = onReplayCoach, shapes = rememberRemexIconButtonShapes()) {
                                     Icon(
                                             Icons.AutoMirrored.Filled.HelpOutline,
                                             contentDescription = stringResource(R.string.coach_replay),
@@ -350,9 +357,10 @@ fun DashboardScreenContent(
                                 IconButton(
                                         modifier = Modifier.onGloballyPositioned { onMenuAnchor(it.boundsInRoot().center) },
                                         onClick = {
-                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                            haptics.perform(RemexHapticEvent.Press)
                                             menuOpen = true
                                         },
+                                        shapes = rememberRemexIconButtonShapes(),
                                 ) {
                                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more_options))
                                 }
@@ -377,7 +385,7 @@ fun DashboardScreenContent(
                                                     )
                                                 },
                                                 onClick = {
-                                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                                    haptics.perform(RemexHapticEvent.Confirm)
                                                     menuOpen = false
                                                     onClearAllCards()
                                                 }
@@ -522,7 +530,7 @@ fun DashboardScreenContent(
             ) {
                 ExtendedFloatingActionButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            haptics.perform(RemexHapticEvent.Press)
                             showCardDrawer = true
                         },
                         icon = { Icon(Icons.Default.Add, contentDescription = null) },
@@ -587,7 +595,7 @@ private fun SensorGridLayout(
         onEndDrag: () -> Unit,
         cardContent: @Composable (card: HomeCardState, index: Int, isDragging: Boolean) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val density = LocalDensity.current
         val gutter = CardShapes.CARD_SPACING_DP.toFloat()
@@ -644,9 +652,13 @@ private fun SensorGridLayout(
                                             .pointerInput(card.id) {
                                                 detectDragGesturesAfterLongPress(
                                                         onDragStart = {
-                                                            if (!currentEditMode) onEnterEditMode()
-                                                            if (onBeginDrag(card.id)) {
-                                                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                                            // One long-press tick for whatever the hold did: entered
+                                                            // edit mode, picked the card up, or both.
+                                                            val entering = !currentEditMode
+                                                            if (entering) onEnterEditMode()
+                                                            val began = onBeginDrag(card.id)
+                                                            if (entering || began) haptics.perform(RemexHapticEvent.LongPress)
+                                                            if (began) {
                                                                 val p = currentPlacements.first { it.id == card.id }
                                                                 dragTopLeft =
                                                                         Offset(
@@ -667,9 +679,14 @@ private fun SensorGridLayout(
                                                             val centreY = moved.y.toDp().value + SensorGrid.extent(p.rowSpan, rowNow, gutter) / 2f
                                                             val over = SensorGrid.indexAt(currentPlacements, centreX, centreY, cellNow, rowNow, gutter)
                                                             val from = currentCards.indexOfFirst { it.id == card.id }
-                                                            if (over != null && over != from) onDragTo(over)
+                                                            if (over != null && over != from) {
+                                                                // The card took a new slot: a detent under the finger.
+                                                                haptics.perform(RemexHapticEvent.Detent)
+                                                                onDragTo(over)
+                                                            }
                                                         },
                                                         onDragEnd = {
+                                                            if (dragTopLeft != null) haptics.perform(RemexHapticEvent.Release)
                                                             dragTopLeft = null
                                                             onEndDrag()
                                                         },
@@ -708,7 +725,7 @@ private fun NotConnectedBanner(onNavigateToConnection: () -> Unit) {
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Button(onClick = onNavigateToConnection) { Text(stringResource(R.string.button_connect)) }
+            Button(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.button_connect)) }
         }
     }
 }
@@ -721,7 +738,7 @@ private fun CardDrawerSheet(
         onSetCardEnabled: (String, Boolean) -> Unit,
         onDismiss: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
             Text(stringResource(R.string.dashboard_card_drawer_title), style = MaterialTheme.typography.titleLarge)
@@ -760,7 +777,7 @@ private fun CardDrawerSheet(
                                                     value = checked,
                                                     role = Role.Checkbox,
                                                     onValueChange = { on ->
-                                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                        haptics.perform(RemexHaptics.toggle(on))
                                                         onSetCardEnabled(item.id, on)
                                                     }
                                             ),
@@ -779,7 +796,7 @@ private fun CardDrawerSheet(
                     }
                 }
             }
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(top = 12.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                 Text(stringResource(R.string.button_done))
             }
         }
@@ -950,7 +967,7 @@ private fun TelemetryCardContent(
                 }
                 // Hidden in edit mode: a card has one set of controls at a time.
                 if (!selectionActive) {
-                    IconButton(onClick = onOpenPicker, modifier = Modifier.size(24.dp)) {
+                    IconButton(onClick = onOpenPicker, modifier = Modifier.size(24.dp), shapes = rememberRemexIconButtonShapes()) {
                         Icon(
                                 Icons.Default.GridView,
                                 contentDescription = stringResource(R.string.cd_open_view_picker),

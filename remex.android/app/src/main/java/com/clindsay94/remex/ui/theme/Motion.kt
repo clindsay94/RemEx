@@ -6,8 +6,12 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateBounds
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -16,6 +20,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +29,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +58,9 @@ import kotlin.math.sign
 object RemexMotion {
     /** Shared-axis travel, the M3 motion guidance's 30 dp. */
     const val SHARED_AXIS_OFFSET_DP = 30
+
+    /** How small a swapped icon gets on its way out (and starts on its way in) in [RemexSwap]. */
+    const val SWAP_SCALE = 0.6f
 
     /**
      * How a bottom-nav tab click moves the pager: [snapTo] first (instantly), then animate the rest
@@ -238,6 +249,67 @@ fun AnimatedValueText(
 fun rememberRemexButtonShapes(): ButtonShapes {
     val shapes = ButtonDefaults.shapes()
     return if (LocalReducedMotion.current) ButtonShapes(shapes.shape, shapes.shape) else shapes
+}
+
+/**
+ * The icon-button half of [rememberRemexButtonShapes]: the circle squares off a little while held,
+ * and holds still under reduced motion.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun rememberRemexIconButtonShapes(): IconButtonShapes {
+    val shapes = IconButtonDefaults.shapes()
+    return if (LocalReducedMotion.current) IconButtonShapes(shapes.shape, shapes.shape) else shapes
+}
+
+/**
+ * Swaps one small piece of content for another (play for pause, pin for unpin, add for close) with
+ * the outgoing one shrinking away as the incoming one grows in, on the fast tiers of the motion
+ * scheme (phase 6). Keyed on [targetState], so it only animates when the state really changes, and
+ * a plain swap under reduced motion. Meant for icons and other small, fixed-size content; the
+ * container does not resize.
+ */
+@Composable
+fun <T> RemexSwap(
+    targetState: T,
+    modifier: Modifier = Modifier,
+    label: String = "remexSwap",
+    content: @Composable (T) -> Unit,
+) {
+    if (LocalReducedMotion.current) {
+        androidx.compose.foundation.layout.Box(modifier, contentAlignment = Alignment.Center) { content(targetState) }
+        return
+    }
+    val scheme = MaterialTheme.motionScheme
+    AnimatedContent(
+        targetState = targetState,
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+        transitionSpec = {
+            val effects = scheme.fastEffectsSpec<Float>()
+            val spatial = scheme.fastSpatialSpec<Float>()
+            (fadeIn(effects) + scaleIn(spatial, initialScale = RemexMotion.SWAP_SCALE)) togetherWith
+                (fadeOut(effects) + scaleOut(spatial, targetScale = RemexMotion.SWAP_SCALE)) using
+                SizeTransform(clip = false)
+        },
+        label = label,
+    ) { state ->
+        content(state)
+    }
+}
+
+/**
+ * Lets a card in a plain (non-lazy) list glide to its new place when the list re-sorts or a
+ * neighbour comes or goes: the non-lazy counterpart of `animateItem` (phase 6). The caller wraps
+ * the list in a [LookaheadScope] and keys each card. Returns [Modifier] unchanged under reduced
+ * motion, so cards just appear where they belong.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun rememberAnimateBoundsModifier(lookaheadScope: LookaheadScope): Modifier {
+    if (LocalReducedMotion.current) return Modifier
+    val spec = MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.geometry.Rect>()
+    return Modifier.animateBounds(lookaheadScope = lookaheadScope, boundsTransform = { _, _ -> spec })
 }
 
 /** The [SharedTransitionScope] around the NavHost, for container transforms; null outside it. */

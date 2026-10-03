@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens.sensors
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -29,13 +28,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.PushPinOutlinedGlyph
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.theme.RemexSwap
 
 /**
  * A fading [AnimatedVisibility] called from top level, so the Card's ColumnScope receiver does not
@@ -93,7 +96,7 @@ fun SensorGridCard(
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val borderWidth by
             animateDpAsState(
                     targetValue = if (isDragging) 2.dp else 1.dp,
@@ -156,29 +159,38 @@ fun SensorGridCard(
                         FilledTonalIconToggleButton(
                                 checked = pin.pinned,
                                 onCheckedChange = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    // Pinning is a toggle; a sensor that cannot be pinned refuses.
+                                    haptics.perform(
+                                            if (pin.canToggle) RemexHaptics.toggle(!pin.pinned) else RemexHapticEvent.Reject
+                                    )
                                     if (pin.canToggle) onTogglePin() else onPinUnavailable()
                                 },
                                 modifier =
                                         Modifier.graphicsLayer { alpha = if (pin.canToggle) 1f else 0.38f }
                                                 .semantics { if (pin.pinned) stateDescription = pinnedState }
                         ) {
-                            Icon(
-                                    if (pin.pinned) Icons.Filled.PushPin else PushPinOutlinedGlyph,
-                                    contentDescription = pinLabel
-                            )
+                            RemexSwap(targetState = pin.pinned, label = "pinGlyph") { pinned ->
+                                Icon(
+                                        if (pinned) Icons.Filled.PushPin else PushPinOutlinedGlyph,
+                                        contentDescription = pinLabel
+                                )
+                            }
                         }
                     }
                     FilledTonalIconButton(onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        haptics.perform(RemexHapticEvent.Press)
                         onCycleSize()
-                    }) {
+                    },
+                        shapes = rememberRemexIconButtonShapes(),
+                    ) {
                         Icon(Icons.Default.OpenInFull, contentDescription = stringResource(R.string.dashboard_resize_card))
                     }
                     FilledTonalIconButton(onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                        haptics.perform(RemexHapticEvent.Confirm)
                         onRemove()
-                    }) {
+                    },
+                        shapes = rememberRemexIconButtonShapes(),
+                    ) {
                         Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.dashboard_remove_card))
                     }
                 }

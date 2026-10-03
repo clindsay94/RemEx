@@ -29,9 +29,13 @@ class ContrastDetentsTest {
         // calls would pass every test above while the slider stayed unsnapped.
         val source = java.io.File("src/main/java/com/clindsay94/remex/ui/screens/PersonalizationScreen.kt")
         org.junit.Assert.assertTrue("missing ${source.absolutePath}", source.exists())
+        // Since the haptics pass (RemEx-wqo7a.8) the handler snaps first, ticks if the snapped value
+        // landed on a detent, then stores the SNAPPED value: storing `it` would undo the detent.
+        val text = source.readText()
+        val handler = Regex("""onValueChange = \{\s*val snapped = ContrastDetents\.snap\(it\)[\s\S]*?themeContrast = snapped\s*\}""")
         org.junit.Assert.assertTrue(
-            "The contrast slider's onValueChange must snap with ContrastDetents.snap.",
-            source.readText().contains("onValueChange = { themeContrast = ContrastDetents.snap(it) }"),
+            "The contrast slider's onValueChange must snap with ContrastDetents.snap and store the snapped value.",
+            handler.containsMatchIn(text),
         )
     }
 

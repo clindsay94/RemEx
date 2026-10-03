@@ -50,6 +50,7 @@ import com.clindsay94.remex.routines.home.HomeCaptureRefusal
 import com.clindsay94.remex.routines.home.HomeFacts
 import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 
 /**
  * "Set your home network" (routines spec 1.4, A10; R-UX-12, R-SYS-39). Capture never runs silently:
@@ -122,7 +123,7 @@ internal fun HomeCaptureSheet(viewModel: RoutinesViewModel, onNavigateToConnecti
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.routines_home_not_now)) }
+                        TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.routines_home_not_now)) }
                         if (!sameAsSaved && facts != null && current.pcIdentity != null) {
                             Button(
                                 onClick = {
@@ -130,6 +131,8 @@ internal fun HomeCaptureSheet(viewModel: RoutinesViewModel, onNavigateToConnecti
                                     onDismiss()
                                 },
                                 modifier = Modifier.heightIn(min = 48.dp),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding,
                             ) { Text(stringResource(if (saved == null) R.string.routines_home_use else R.string.routines_home_use_instead)) }
                         }
                     }
@@ -153,9 +156,11 @@ internal fun HomeCaptureSheet(viewModel: RoutinesViewModel, onNavigateToConnecti
                                     onNavigateToConnection()
                                 },
                                 modifier = Modifier.heightIn(min = 48.dp),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding,
                             ) { Text(stringResource(R.string.routines_home_connect)) }
                         }
-                        Button(onClick = { attempt++ }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.routines_nfc_try_again)) }
+                        Button(onClick = { attempt++ }, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_nfc_try_again)) }
                     }
                 }
             }
@@ -165,6 +170,8 @@ internal fun HomeCaptureSheet(viewModel: RoutinesViewModel, onNavigateToConnecti
                     onClick = { confirmForget = true },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.heightIn(min = 48.dp),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
                 ) { Text(stringResource(R.string.routines_home_forget)) }
             }
         }
@@ -189,9 +196,11 @@ internal fun HomeCaptureSheet(viewModel: RoutinesViewModel, onNavigateToConnecti
                         onDismiss()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
                 ) { Text(stringResource(R.string.routines_home_forget)) }
             },
-            dismissButton = { TextButton(onClick = { confirmForget = false }) { Text(stringResource(R.string.button_cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmForget = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
         )
     }
 }

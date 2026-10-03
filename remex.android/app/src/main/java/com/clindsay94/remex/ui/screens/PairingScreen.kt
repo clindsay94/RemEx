@@ -52,6 +52,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import androidx.compose.runtime.saveable.rememberSaveable
 
 data class PairingUiState(
     val isLoading: Boolean = false,
@@ -459,6 +465,17 @@ fun PairingScreen(
         )
     }
 
+    // Pairing's outcome is felt as well as seen (phase 6, RemEx-wqo7a.8): Confirm when the PC takes
+    // the PIN (below, in onSubmitPin), Reject when a new error appears. The last error that buzzed
+    // survives rotation, so turning the phone does not buzz the same error again.
+    val haptics = rememberRemexHaptics()
+    var lastBuzzedError by rememberSaveable { mutableStateOf(state.pairingError) }
+    LaunchedEffect(state.pairingError) {
+        val error = state.pairingError
+        if (RemexHaptics.failureAppeared(lastBuzzedError, error)) haptics.perform(RemexHapticEvent.Reject)
+        lastBuzzedError = error
+    }
+
     // Auto-fill PIN when the host relays it over the pairing WebSocket after the handshake
     LaunchedEffect(state.autoFilledPin) {
         val fetched = state.autoFilledPin
@@ -509,6 +526,7 @@ fun PairingScreen(
                             }
                         }
                 if (paired) {
+                    haptics.perform(RemexHapticEvent.Confirm)
                     onPairSuccess()
                 }
             }
@@ -687,7 +705,9 @@ fun PairingScreenContent(
                         modifier = Modifier.weight(1f),
                         // Always enabled: if pairing hangs (PC offline mid-pairing), Cancel must
                         // remain the user's way out of the loading state.
-                        enabled = true
+                        enabled = true,
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                 ) { Text(stringResource(R.string.pairing_cancel)) }
 
                 Button(
@@ -697,7 +717,9 @@ fun PairingScreenContent(
                         // already gone (see PairingUiState doc comment) — re-enabling Submit here
                         // would just offer a retry that repeats "No active pairing session" forever.
                         // Cancel (always enabled above) is the only path that still works.
-                        enabled = pin.length == 6 && !state.isLoading && !state.sessionDead
+                        enabled = pin.length == 6 && !state.isLoading && !state.sessionDead,
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
                 ) {
                     AnimatedContent(
                             targetState = state.isLoading,

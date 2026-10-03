@@ -75,6 +75,10 @@ import com.clindsay94.remex.ui.components.FileManagerToolbar
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -114,6 +118,12 @@ fun FileTransferScreen(
     val destinationLoading by vm.destinationLoading.collectAsStateWithLifecycle()
     val isTransferring by vm.isTransferring.collectAsStateWithLifecycle()
     val transferProgress by vm.transferProgress.collectAsStateWithLifecycle()
+    val haptics = rememberRemexHaptics()
+    // A long-press that starts selecting says so under the finger (phase 6, RemEx-wqo7a.8).
+    val startSelecting: (RemoteFileEntry) -> Unit = { entry ->
+        haptics.perform(RemexHapticEvent.LongPress)
+        vm.enterSelectionMode(entry)
+    }
 
     val selectedRoot = remoteRoots.firstOrNull { it.rootId == selectedRootId }
     val selectedVolume = volumes.firstOrNull { it.id == selectedRootId }
@@ -381,7 +391,7 @@ fun FileTransferScreen(
                     ) {
                         Column {
                             RemexLinearWavyProgress(progress = transferProgress, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
-                            OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                                 Text(stringResource(R.string.file_transfer_cancel))
                             }
                         }
@@ -454,7 +464,7 @@ fun FileTransferScreen(
                                                         else if (entry.isDirectory) vm.navigateInto(entry)
                                                         else vm.showProperties(entry)
                                                     },
-                                                    onLongPress = { vm.enterSelectionMode(entry) },
+                                                    onLongPress = { startSelecting(entry) },
                                                     onOverflow = { contextMenuEntry = entry },
                                                 )
                                             }
@@ -479,7 +489,7 @@ fun FileTransferScreen(
                                                         if (isSelectionMode) vm.toggleEntrySelection(entry)
                                                         else vm.navigateInto(entry)
                                                     },
-                                                    onLongPress = { vm.enterSelectionMode(entry) },
+                                                    onLongPress = { startSelecting(entry) },
                                                     onDownload = { startDownload(entry) },
                                                     onOverflow = { contextMenuEntry = entry },
                                                 )
@@ -531,7 +541,7 @@ private fun DisconnectedContent(onNavigateToConnection: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onNavigateToConnection) { Text(stringResource(R.string.button_connect)) }
+            Button(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.button_connect)) }
         }
     }
 }

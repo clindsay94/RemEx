@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,7 +75,7 @@ fun FileManagerQuickAccess(
                     // label already names the folder.
                     val readOnly = !root.isWritable
                     val readOnlyLabel = stringResource(R.string.file_transfer_read_only_root)
-                    FilterChip(
+                    RemexFilterChip(
                         selected = root.rootId == selectedRootId,
                         onClick = { onSelectRoot(root.rootId) },
                         label = { Text(root.displayName) },
@@ -122,7 +121,7 @@ fun FileManagerQuickAccess(
             ) {
                 volumes.forEach { volume ->
                     val freeLabel = FileManagerLogic.formatBytes(volume.freeBytes)
-                    FilterChip(
+                    RemexFilterChip(
                         selected = volume.id == selectedRootId,
                         onClick = { onSelectVolume(volume) },
                         label = {
@@ -135,7 +134,6 @@ fun FileManagerQuickAccess(
                             )
                         },
                         leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
-                        colors = FilterChipDefaults.filterChipColors(),
                     )
                 }
             }

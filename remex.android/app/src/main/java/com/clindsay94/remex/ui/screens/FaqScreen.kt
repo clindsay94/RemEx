@@ -2,7 +2,6 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +40,10 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 private data class FaqItem(
         val questionRes: Int,
@@ -134,7 +136,7 @@ private fun FaqScreenPreview() {
 private fun FaqCard(item: FaqItem) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
 
     // Expressive motion physics: the chevron rotates on a spatial spring (slight overshoot/bounce),
     // and the card tonal-lifts on an effects spring when expanded.
@@ -154,7 +156,7 @@ private fun FaqCard(item: FaqItem) {
     // M3: Card(onClick) is the preferred M3 API over Card + clickable
     Card(
             onClick = {
-                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                haptics.perform(RemexHapticEvent.Press)
                 expanded = !expanded
             },
             modifier = Modifier.fillMaxWidth(),
@@ -230,7 +232,9 @@ private fun FaqCard(item: FaqItem) {
                                                     )
                                             )
                                     context.startActivity(intent)
-                                }
+                                },
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding
                         ) { Text(stringResource(R.string.faq_github_button)) }
                     }
                 }

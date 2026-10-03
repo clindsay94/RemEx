@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.routines
 
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -102,7 +101,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -142,6 +140,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.theme.RemexSwap
 
 /**
  * Routines (RemEx 3.0 S1d, RemEx-pp0rt.6): the list, the template gallery, the editor, history and
@@ -355,7 +359,7 @@ private fun RoutinesListPane(
         viewModel.recheckNotifications()
         onPauseOrDispose {}
     }
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     val readOnly = status.readOnly
     val canEdit = status.health == RoutineStoreHealth.OK && !readOnly
@@ -401,18 +405,21 @@ private fun RoutinesListPane(
                                 IconToggleButton(
                                     checked = paused,
                                     onCheckedChange = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        // Pausing turns every routine off; resuming turns them on.
+                                        haptics.perform(RemexHaptics.toggle(!it))
                                         viewModel.setPausedAll(it)
                                     },
                                     modifier = Modifier.onGloballyPositioned { pauseAnchor = it.boundsInWindow() },
                                 ) {
-                                    Icon(if (paused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = pauseLabel)
+                                    RemexSwap(targetState = paused, label = "pauseAllGlyph") { isPaused ->
+                                        Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = pauseLabel)
+                                    }
                                 }
                             }
                         }
                         val moreLabel = stringResource(R.string.cd_more_options)
                         RemexTooltip(moreLabel) {
-                            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, contentDescription = moreLabel) }
+                            IconButton(onClick = { menuOpen = true }, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.Default.MoreVert, contentDescription = moreLabel) }
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
@@ -478,14 +485,16 @@ private fun RoutinesListPane(
                             ToggleFloatingActionButton(
                                 checked = fabOpen,
                                 onCheckedChange = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    haptics.perform(RemexHapticEvent.Press)
                                     fabOpen = it
                                 },
                             ) {
-                                Icon(
-                                    if (fabOpen) Icons.Default.Close else Icons.Default.Add,
-                                    contentDescription = stringResource(R.string.routines_new_routine),
-                                )
+                                RemexSwap(targetState = fabOpen, label = "routinesFabGlyph") { open ->
+                                    Icon(
+                                        if (open) Icons.Default.Close else Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.routines_new_routine),
+                                    )
+                                }
                             }
                         },
                     ) {
@@ -670,7 +679,7 @@ private fun RoutinesListPane(
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         GroupHeader(stringResource(R.string.routines_recent_runs), Modifier.weight(1f))
-                                        TextButton(onClick = { onOpen(RoutineDetail.History(null)) }) {
+                                        TextButton(onClick = { onOpen(RoutineDetail.History(null)) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                                             Text(stringResource(R.string.routines_see_all))
                                         }
                                     }
@@ -796,7 +805,7 @@ internal fun NoticeCard(
             if (title != null) Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
             Text(body, style = MaterialTheme.typography.bodyMedium)
             if (actionLabel != null) {
-                TextButton(onClick = onAction, modifier = Modifier.align(Alignment.End)) { Text(actionLabel) }
+                TextButton(onClick = onAction, modifier = Modifier.align(Alignment.End), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(actionLabel) }
             }
         }
     }
@@ -835,10 +844,12 @@ private fun UnreadableState(viewModel: RoutinesViewModel, modifier: Modifier = M
         Text(stringResource(R.string.routines_unreadable_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
         Text(stringResource(R.string.routines_unreadable_body), style = MaterialTheme.typography.bodyMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilledTonalButton(onClick = { saver.launch("remex-routines.json") }) { Text(stringResource(R.string.routines_unreadable_save)) }
+            FilledTonalButton(onClick = { saver.launch("remex-routines.json") }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_unreadable_save)) }
             OutlinedButton(
                 onClick = { confirmReset = true },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.ContentPadding,
             ) { Text(stringResource(R.string.routines_unreadable_reset)) }
         }
     }
@@ -854,9 +865,11 @@ private fun UnreadableState(viewModel: RoutinesViewModel, modifier: Modifier = M
                         viewModel.resetUnreadable()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
                 ) { Text(stringResource(R.string.routines_unreadable_reset)) }
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.button_cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmReset = false }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
         )
     }
 }
@@ -900,6 +913,7 @@ private fun RoutineCard(
     val shownRun = activeRun ?: pcRun
     val running = shownRun != null
     val reduced = LocalReducedMotion.current
+    val haptics = rememberRemexHaptics()
     val context = LocalContext.current
     val locale = appLocale()
     var menuOpen by remember { mutableStateOf(false) }
@@ -951,13 +965,13 @@ private fun RoutineCard(
                 )
                 if (manual) {
                     if (running) {
-                        FilledTonalButton(onClick = onStop, modifier = Modifier.heightIn(min = 48.dp)) {
+                        FilledTonalButton(onClick = onStop, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                             Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.routines_stop))
                         }
                     } else {
-                        FilledTonalButton(onClick = onRun, enabled = item.verdict.isValid, modifier = Modifier.heightIn(min = 48.dp)) {
+                        FilledTonalButton(onClick = onRun, enabled = item.verdict.isValid, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.routines_run))
@@ -966,14 +980,17 @@ private fun RoutineCard(
                 } else {
                     androidx.compose.material3.Switch(
                         checked = routine.enabled,
-                        onCheckedChange = onEnabled,
+                        onCheckedChange = { on ->
+                            haptics.perform(RemexHaptics.toggle(on))
+                            onEnabled(on)
+                        },
                         enabled = canEdit,
                         modifier = Modifier.semantics { contentDescription = name },
                     )
                 }
                 Box {
                     val moreLabel = stringResource(R.string.routines_routine_menu, name)
-                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, contentDescription = moreLabel) }
+                    IconButton(onClick = { menuOpen = true }, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.Default.MoreVert, contentDescription = moreLabel) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         // A PC routine has a switch where a manual one has Run, so Run now and
                         // Stop live here (spec 1.6 "List overflow Run now").
@@ -1100,9 +1117,11 @@ internal fun RunConfirmDialog(item: RoutineItem, pcName: String?, onConfirm: () 
                     } else {
                         ButtonDefaults.buttonColors()
                     },
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.ContentPadding,
             ) { Text(stringResource(R.string.routines_run)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.button_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
     )
 }
 
@@ -1116,9 +1135,11 @@ internal fun DiscardChangesDialog(onDiscard: () -> Unit, onKeep: () -> Unit) {
             Button(
                 onClick = onDiscard,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.ContentPadding,
             ) { Text(stringResource(R.string.routines_discard)) }
         },
-        dismissButton = { TextButton(onClick = onKeep) { Text(stringResource(R.string.routines_keep_editing)) } },
+        dismissButton = { TextButton(onClick = onKeep, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.routines_keep_editing)) } },
     )
 }
 
@@ -1133,9 +1154,11 @@ internal fun DeleteConfirmDialog(name: String, onConfirm: () -> Unit, onDismiss:
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.ContentPadding,
             ) { Text(stringResource(R.string.routines_delete)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.button_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
     )
 }
 
@@ -1172,8 +1195,8 @@ private fun RoutinesEmptyState(
         // Above the featured cards, so both ways in are on a phone's first screen (live pass
         // 2026-09-27: below them, "Start from blank" sat under the fold).
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
-            FilledTonalButton(onClick = onBrowse, enabled = enabled) { Text(stringResource(R.string.routines_browse_templates)) }
-            TextButton(onClick = onBlank, enabled = enabled) { Text(stringResource(R.string.routines_start_blank)) }
+            FilledTonalButton(onClick = onBrowse, enabled = enabled, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_browse_templates)) }
+            TextButton(onClick = onBlank, enabled = enabled, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.routines_start_blank)) }
         }
         featured.forEachIndexed { i, template ->
             // M1: cards rise 16dp and fade in with a 50 ms stagger; all present at once when reduced.

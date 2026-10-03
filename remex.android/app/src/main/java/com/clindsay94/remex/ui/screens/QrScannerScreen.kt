@@ -46,6 +46,9 @@ import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 // A SECOND ANNOTATION RATHER THAN A SECOND ARGUMENT ABOVE, AND NOT BY PREFERENCE (RemEx-28wng).
@@ -346,7 +349,7 @@ fun QrScannerScreenContent(
                 RemexFlexibleTopBar(
                         title = stringResource(R.string.qr_scanner_title),
                         navigationIcon = {
-                            IconButton(onClick = onBack) {
+                            IconButton(onClick = onBack, shapes = rememberRemexIconButtonShapes()) {
                                 Icon(
                                         Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = stringResource(R.string.cd_back)
@@ -454,7 +457,7 @@ private fun QrPermissionRationale(onGrantPermission: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onGrantPermission) {
+        Button(onClick = onGrantPermission, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
             Text(stringResource(R.string.qr_scanner_grant_permission))
         }
     }

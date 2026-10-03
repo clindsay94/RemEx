@@ -47,7 +47,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -57,7 +56,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
-import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
 import com.clindsay94.remex.ui.screens.SplashBrand
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlinx.coroutines.flow.first
@@ -76,6 +74,8 @@ import kotlin.math.sign
 import kotlin.math.sin
 import com.clindsay94.remex.ui.splash.LiveHandshakeMotion as M
 import com.clindsay94.remex.ui.splash.LiveHandshakeTiming as T
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
 
 /** Longest the overlay holds its first frame waiting for the system splash to come off. */
 private const val SystemSplashWaitMs = 1500L
@@ -113,7 +113,7 @@ fun LiveHandshakeSplash(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val density = LocalDensity.current
     val reduced = LocalReducedMotion.current
     val scheme = MaterialTheme.colorScheme
@@ -179,7 +179,7 @@ fun LiveHandshakeSplash(
             scene.step(t, signals.state.value)
             if (!hapticDone && !reduced && scene.lockedNow(t)) {
                 hapticDone = true
-                view.hapticCommandAcknowledged()
+                haptics.perform(RemexHapticEvent.Confirm)
             }
             if (!reduced) parallax.advance(scene, t, px)
             val exit = scene.exitProgress(t)

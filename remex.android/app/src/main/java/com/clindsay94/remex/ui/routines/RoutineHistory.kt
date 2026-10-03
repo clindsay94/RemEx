@@ -65,6 +65,9 @@ import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import java.time.LocalDate
 import java.time.ZoneId
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /** Run history, newest first, grouped by day (routines spec A8, R-UX-27). */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -152,7 +155,7 @@ internal fun RoutineHistoryPane(
 @Composable
 internal fun BackButton(onBack: () -> Unit) {
     val back = stringResource(R.string.cd_back)
-    RemexTooltip(back) { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = back) } }
+    RemexTooltip(back) { IconButton(onClick = onBack, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = back) } }
 }
 
 /** Codes whose fix is in Connection settings (spec A8 "contextual fix"). */
@@ -285,7 +288,7 @@ internal fun RoutineRunPane(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (running) {
-                    OutlinedButton(onClick = { run.routineId?.let(viewModel::cancel) }) { Text(stringResource(R.string.routines_stop)) }
+                    OutlinedButton(onClick = { run.routineId?.let(viewModel::cancel) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_stop)) }
                 } else if (
                     item != null && item.verdict.isValid &&
                     (item.routine.trigger?.type == RoutineTriggerTypes.MANUAL || RoutineTriggerTypes.isHostRun(item.routine.trigger?.type))
@@ -297,12 +300,15 @@ internal fun RoutineRunPane(
                         } else {
                             viewModel.run(item.routine.id.orEmpty(), testRun = run.testRun)
                         }
-                    }) {
+                    },
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding,
+                    ) {
                         Text(stringResource(if (run.testRun) R.string.routines_test_again else R.string.routines_run_again))
                     }
                 }
                 if (item != null) {
-                    OutlinedButton(onClick = { onEdit(item.routine.id.orEmpty()) }) { Text(stringResource(R.string.routines_edit)) }
+                    OutlinedButton(onClick = { onEdit(item.routine.id.orEmpty()) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_edit)) }
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -427,7 +433,7 @@ private fun TimelineNode(
                 Text(message, style = MaterialTheme.typography.bodyMedium)
             }
             if (onFix != null) {
-                OutlinedButton(onClick = onFix) { Text(stringResource(R.string.routines_fix_connection)) }
+                OutlinedButton(onClick = onFix, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_fix_connection)) }
             }
         }
     }

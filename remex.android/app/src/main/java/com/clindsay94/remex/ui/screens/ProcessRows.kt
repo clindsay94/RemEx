@@ -26,6 +26,19 @@ internal object ProcessRows {
      */
     fun scaleMax(values: Iterable<Double>): Double = values.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
 
+    /**
+     * Whether rows glide to their new place when the list re-sorts (phase 6, RemEx-wqo7a.8). Only
+     * for the orders that hold still: by name or PID a row moves only when a process starts or
+     * ends. By CPU or memory the order reshuffles on every refresh, and a list of rows sliding past
+     * each other every few seconds is noise, so those rows just take their new places; processes
+     * coming and going still fade in and out either way.
+     */
+    fun animatesReorder(sortField: ProcessSortField): Boolean =
+        when (sortField) {
+            ProcessSortField.NAME, ProcessSortField.PID -> true
+            ProcessSortField.CPU, ProcessSortField.RAM -> false
+        }
+
     fun rowFor(process: ProcessInfo, maxCpu: Double, maxRam: Double): ProcessRowModel =
         ProcessRowModel(
             cpuText = "${process.cpu.toInt()}%",

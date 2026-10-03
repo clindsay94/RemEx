@@ -1,8 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import com.clindsay94.remex.ui.components.hapticCommandSent
-import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
-import com.clindsay94.remex.ui.components.hapticCommandFailed
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
@@ -30,7 +27,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -54,6 +50,10 @@ import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateDpAsState
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import androidx.compose.material3.ButtonDefaults
 
 /**
  * Whether an action discards the user's work, and therefore must be confirmed.
@@ -422,7 +422,7 @@ fun RemoteControlScreenContent(
         val routinesFollow =
                 visibleGroups.lastOrNull { (group, _) -> group == CommandGroup.FORCED || group == CommandGroup.STANDARD }
                         ?.first ?: CommandGroup.WAKE
-        val view = LocalView.current
+        val haptics = rememberRemexHaptics()
 
         // UNKNOWN has no reading to dock a bar about (RemEx-nmvz6's reasoning applied to layout):
         // the whole stacking/occlusion story below is driven off this one flag rather than
@@ -527,7 +527,7 @@ fun RemoteControlScreenContent(
                                 awaitingConfirmation = activeConfirmationId == confirmId,
                                 shape = MaterialTheme.shapes.large,
                                 onPrimaryClick = {
-                                    view.hapticCommandSent()
+                                    haptics.perform(RemexHapticEvent.CommandSent)
                                     if (routine.destructive) {
                                         activeConfirmationId = if (activeConfirmationId == confirmId) null else confirmId
                                     } else {
@@ -535,12 +535,12 @@ fun RemoteControlScreenContent(
                                     }
                                 },
                                 onConfirm = {
-                                    view.hapticCommandAcknowledged()
+                                    haptics.perform(RemexHapticEvent.Confirm)
                                     activeConfirmationId = null
                                     onRunRoutine(routine.id)
                                 },
                                 onCancel = {
-                                    view.hapticCommandFailed()
+                                    haptics.perform(RemexHapticEvent.Reject)
                                     activeConfirmationId = null
                                 },
                                 modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
@@ -677,7 +677,7 @@ private fun CommandCard(
         onCancel: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val localizedTitle = stringResource(card.titleRes)
     val motionScheme = MaterialTheme.motionScheme
 
@@ -746,7 +746,7 @@ private fun CommandCard(
     // neither cancel nor re-arm it - only the Confirm and Cancel buttons act.
     Surface(
             onClick = {
-                view.hapticCommandSent()
+                haptics.perform(RemexHapticEvent.CommandSent)
                 onPrimaryClick()
             },
             enabled = !isAwaitingConfirmation,
@@ -851,7 +851,7 @@ private fun CommandCard(
                             // M3: error colors for destructive confirmation button
                             Button(
                                     onClick = {
-                                        view.hapticCommandAcknowledged()
+                                        haptics.perform(RemexHapticEvent.Confirm)
                                         onConfirm()
                                     },
                                     colors =
@@ -859,15 +859,19 @@ private fun CommandCard(
                                                     containerColor = MaterialTheme.colorScheme.error,
                                                     contentColor = MaterialTheme.colorScheme.onError
                                             ),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    shapes = rememberRemexButtonShapes(),
+                                    contentPadding = ButtonDefaults.ContentPadding
                             ) { Text(stringResource(R.string.button_confirm)) }
                             TextButton(
                                     onClick = {
-                                        view.hapticCommandFailed()
+                                        haptics.perform(RemexHapticEvent.Reject)
                                         onCancel()
                                     },
                                     colors = ButtonDefaults.textButtonColors(contentColor = contentColor),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    shapes = rememberRemexButtonShapes(),
+                                    contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) { Text(stringResource(R.string.button_cancel)) }
                         }
                     }

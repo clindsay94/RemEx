@@ -49,6 +49,8 @@ import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaPlaybackStatus
 import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
 import kotlinx.coroutines.delay
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.theme.RemexSwap
 
 /**
  * Height the docked mini-player occupies, shared with [com.clindsay94.remex.ui.screens.RemoteControlScreen]
@@ -162,16 +164,17 @@ fun MediaMiniPlayer(
                         }
                     }
 
-                    IconButton(onClick = onPlayPause) {
-                        Icon(
-                                imageVector =
-                                        if (playback.status == MediaPlaybackStatus.PLAYING) {
-                                            Icons.Default.Pause
-                                        } else {
-                                            Icons.Default.PlayArrow
-                                        },
-                                contentDescription = stringResource(playPauseLabelRes(playback.status))
-                        )
+                    IconButton(onClick = onPlayPause, shapes = rememberRemexIconButtonShapes()) {
+                        // Play and pause swap with a quick scale-and-fade rather than a cut (phase 6).
+                        RemexSwap(
+                                targetState = playback.status == MediaPlaybackStatus.PLAYING,
+                                label = "miniPlayerPlayPause"
+                        ) { playing ->
+                            Icon(
+                                    imageVector = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = stringResource(playPauseLabelRes(playback.status))
+                            )
+                        }
                     }
                 }
 

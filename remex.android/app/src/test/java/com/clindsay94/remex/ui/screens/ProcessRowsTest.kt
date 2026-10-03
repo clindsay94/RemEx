@@ -31,4 +31,14 @@ class ProcessRowsTest {
         assertEquals(1f, row.cpuFraction, 0f)
         assertEquals(0f, row.ramFraction, 0f)
     }
+
+    @Test
+    fun `rows glide to new places only in the orders that hold still`() {
+        // RemEx-wqo7a.8: by name or PID a row moves only when a process starts or ends.
+        assertEquals(true, ProcessRows.animatesReorder(ProcessSortField.NAME))
+        assertEquals(true, ProcessRows.animatesReorder(ProcessSortField.PID))
+        // By CPU or memory the order reshuffles on every refresh; sliding rows would be constant noise.
+        assertEquals(false, ProcessRows.animatesReorder(ProcessSortField.CPU))
+        assertEquals(false, ProcessRows.animatesReorder(ProcessSortField.RAM))
+    }
 }

@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.routines
 
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -62,7 +61,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -102,7 +100,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -142,6 +139,12 @@ import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import com.clindsay94.remex.ui.components.RemexHapticEvent
+import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
+import com.clindsay94.remex.ui.components.RemexHaptics
+import com.clindsay94.remex.ui.components.RemexFilterChip
 
 private const val LOCK_WHEN_GONE_TEMPLATE = "tpl.home.lock"
 
@@ -189,7 +192,7 @@ internal fun RoutineEditorPane(
     LaunchedEffect(draftOrNull?.templateId, draftOrNull?.hostIdentity, sensors) { viewModel.adoptTemplateSensor() }
     val context = LocalContext.current
     val resources = LocalResources.current
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val scope = rememberCoroutineScope()
 
     val draft = draftOrNull
@@ -257,7 +260,7 @@ internal fun RoutineEditorPane(
     fun attemptSave(afterSave: ((String) -> Unit)? = null) {
         showProblems = true
         if (errors.isNotEmpty()) {
-            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            haptics.perform(RemexHapticEvent.Reject)
             val first = errors.first().target
             // Step cards report their offset inside the step list, which sits under the THEN label.
             val y =
@@ -273,7 +276,7 @@ internal fun RoutineEditorPane(
         scope.launch {
             when (val result = viewModel.saveDraft(autoName)) {
                 is RoutineSaveResult.Saved -> {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    haptics.perform(RemexHapticEvent.Confirm)
                     val id = result.routine.id.orEmpty()
                     if (afterSave != null) {
                         afterSave(id)
@@ -296,7 +299,7 @@ internal fun RoutineEditorPane(
                     }
                 }
                 else -> {
-                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                    haptics.perform(RemexHapticEvent.Reject)
                     viewModel.post(viewModel.saveFailureText(result))
                 }
             }
@@ -325,13 +328,13 @@ internal fun RoutineEditorPane(
                     },
                     navigationIcon = {
                         val close = stringResource(R.string.routines_close_editor)
-                        RemexTooltip(close) { IconButton(onClick = ::requestClose) { Icon(Icons.Default.Close, contentDescription = close) } }
+                        RemexTooltip(close) { IconButton(onClick = ::requestClose, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.Default.Close, contentDescription = close) } }
                     },
                     actions = {
                         val id = draft.base?.id
                         if (id != null && !readOnly) {
                             val more = stringResource(R.string.cd_more_options)
-                            RemexTooltip(more) { IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, contentDescription = more) } }
+                            RemexTooltip(more) { IconButton(onClick = { menuOpen = true }, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.Default.MoreVert, contentDescription = more) } }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.routines_duplicate)) },
@@ -412,6 +415,7 @@ internal fun RoutineEditorPane(
                                 enabled = !readOnly,
                                 role = Role.Switch,
                                 onValueChange = { checked ->
+                                    haptics.perform(RemexHaptics.toggle(checked))
                                     val id = draft.base?.id
                                     if (id != null && !dirty) viewModel.setEnabled(id, checked) else viewModel.updateDraft { it.copy(enabled = checked) }
                                 },
@@ -463,7 +467,7 @@ internal fun RoutineEditorPane(
                     // Spec 1.8: the leave-home warning links to "Lock my PC when I'm gone", the PC-side
                     // way to act on the PC once the phone has left (D6).
                     if (problems.any { it.code == EditorProblemCode.LEAVE_NEEDS_REACH }) {
-                        TextButton(onClick = { onOpenTemplate(LOCK_WHEN_GONE_TEMPLATE) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        TextButton(onClick = { onOpenTemplate(LOCK_WHEN_GONE_TEMPLATE) }, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                             Text(stringResource(R.string.routines_tpl_home_lock_name))
                         }
                     }
@@ -527,6 +531,8 @@ internal fun RoutineEditorPane(
                         onClick = { stepSheet = StepSheet(editIndex = null, working = null) },
                         enabled = draft.canAddStep && !readOnly,
                         modifier = Modifier.heightIn(min = 48.dp),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding,
                     ) { Text(stringResource(R.string.routines_add_step)) }
                     if (!draft.canAddStep) {
                         Text(
@@ -553,7 +559,7 @@ internal fun RoutineEditorPane(
             colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().imePadding().padding(bottom = 16.dp),
         ) {
-            TextButton(onClick = ::startTest, enabled = !readOnly && activeRun == null, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(onClick = ::startTest, enabled = !readOnly && activeRun == null, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                 Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.routines_test))
@@ -562,6 +568,8 @@ internal fun RoutineEditorPane(
                 onClick = { draft.base?.id?.let(onOpenHistory) },
                 enabled = draft.base?.id != null,
                 modifier = Modifier.heightIn(min = 48.dp),
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
             ) {
                 Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
@@ -616,9 +624,12 @@ internal fun RoutineEditorPane(
                     viewModel.updateDraft { d ->
                         d.copy(trigger = RoutineTriggerFamilies.newTrigger(type, viewModel.home.value?.id), steps = d.steps.filterIndexed { i, _ -> i !in invalid })
                     }
-                }) { Text(stringResource(R.string.routines_trigger_change_confirm)) }
+                },
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding,
+                ) { Text(stringResource(R.string.routines_trigger_change_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { pendingTriggerChange = null }) { Text(stringResource(R.string.button_cancel)) } },
+            dismissButton = { TextButton(onClick = { pendingTriggerChange = null }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
         )
     }
 
@@ -838,10 +849,19 @@ private fun TriggerParameters(
             val media = trigger.ignoreWhileMediaPlaying ?: false
             val onLabel = stringResource(R.string.routines_state_on)
             val offLabel = stringResource(R.string.routines_state_off)
+            val haptics = rememberRemexHaptics()
             Row(
                 Modifier.fillMaxWidth()
                     .heightIn(min = 56.dp)
-                    .toggleable(value = media, enabled = enabled, role = Role.Switch, onValueChange = { onChange(trigger.copy(ignoreWhileMediaPlaying = it)) })
+                    .toggleable(
+                        value = media,
+                        enabled = enabled,
+                        role = Role.Switch,
+                        onValueChange = {
+                            haptics.perform(RemexHaptics.toggle(it))
+                            onChange(trigger.copy(ignoreWhileMediaPlaying = it))
+                        },
+                    )
                     .semantics { stateDescription = if (media) onLabel else offLabel },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -854,7 +874,7 @@ private fun TriggerParameters(
             Text(stringResource(R.string.routines_trigger_session_when), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(RoutineSessionStates.LOCKED, RoutineSessionStates.UNLOCKED).forEach { state ->
-                    FilterChip(
+                    RemexFilterChip(
                         selected = trigger.sessionState == state,
                         onClick = { onChange(trigger.copy(sessionState = state)) },
                         enabled = enabled,
@@ -894,6 +914,8 @@ private fun SensorParameters(
             onClick = { picking = true },
             enabled = enabled && !sensors.isNullOrEmpty(),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shapes = rememberRemexButtonShapes(),
+            contentPadding = ButtonDefaults.ContentPadding,
         ) {
             Text(
                 label ?: stringResource(R.string.routines_trigger_sensor_choose),
@@ -943,7 +965,7 @@ private fun SensorParameters(
 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(RoutineSensorDirections.ABOVE, RoutineSensorDirections.BELOW).forEach { direction ->
-            FilterChip(
+            RemexFilterChip(
                 selected = trigger.direction == direction,
                 onClick = { onChange(trigger.copy(direction = direction)) },
                 enabled = enabled,
@@ -977,7 +999,7 @@ private fun SensorParameters(
     )
 
     var more by rememberSaveable { mutableStateOf(false) }
-    TextButton(onClick = { more = !more }, modifier = Modifier.heightIn(min = 48.dp)) {
+    TextButton(onClick = { more = !more }, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
         Text(stringResource(R.string.routines_more_options))
     }
     if (more) {
@@ -1013,7 +1035,7 @@ private fun HomeTriggerDetails(
                 }
             }
         }
-        TextButton(onClick = onOpenHome, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp)) {
+        TextButton(onClick = onOpenHome, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
             Text(stringResource(if (home == null) R.string.routines_home_set_up else R.string.routines_menu_home))
         }
     }
@@ -1093,7 +1115,7 @@ private fun StepList(
     onDelete: (Int) -> Unit,
     onPositioned: (Int, Int) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptics = rememberRemexHaptics()
     val reduced = LocalReducedMotion.current
     val latest by rememberUpdatedState(draft)
     var draggingKey by remember { mutableStateOf<Long?>(null) }
@@ -1117,7 +1139,7 @@ private fun StepList(
                             onDragStart = {
                                 draggingKey = draftStep.key
                                 dragOffset = 0f
-                                view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+                                haptics.perform(RemexHapticEvent.LongPress)
                             },
                             onDrag = { change, amount ->
                                 change.consume()
@@ -1131,21 +1153,21 @@ private fun StepList(
                                     if (dragOffset > next / 2f) {
                                         onMove(at, at + 1)
                                         dragOffset -= next + spacing
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                        haptics.perform(RemexHapticEvent.Detent)
                                     }
                                 } else if (dragOffset < 0 && at > 0) {
                                     val prev = heights[steps[at - 1].key] ?: return@detectDragGestures
                                     if (-dragOffset > prev / 2f) {
                                         onMove(at, at - 1)
                                         dragOffset += prev + spacing
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                        haptics.perform(RemexHapticEvent.Detent)
                                     }
                                 }
                             },
                             onDragEnd = {
                                 draggingKey = null
                                 dragOffset = 0f
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                haptics.perform(RemexHapticEvent.Release)
                             },
                             onDragCancel = {
                                 draggingKey = null
@@ -1259,7 +1281,7 @@ private fun StepCard(
                 }
                 Box {
                     val more = stringResource(R.string.routines_step_menu, index + 1)
-                    IconButton(onClick = { menuOpen = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, contentDescription = more) }
+                    IconButton(onClick = { menuOpen = true }, enabled = enabled, shapes = rememberRemexIconButtonShapes()) { Icon(Icons.Default.MoreVert, contentDescription = more) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         if (canDuplicate) DropdownMenuItem(text = { Text(stringResource(R.string.routines_duplicate_step)) }, onClick = { menuOpen = false; onDuplicate() })
                         if (index > 0) DropdownMenuItem(text = { Text(moveUp) }, onClick = { menuOpen = false; onMove(index, index - 1) })
@@ -1522,7 +1544,7 @@ private fun StepParameters(
                         style = MaterialTheme.typography.bodyMedium,
                         color = scheme.error,
                     )
-                    OutlinedButton(onClick = onNavigateToConnection) { Text(stringResource(R.string.routines_fix_connection)) }
+                    OutlinedButton(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_fix_connection)) }
                 }
             }
             RoutineStepTypes.WAIT_ONLINE -> {
@@ -1569,9 +1591,9 @@ private fun StepParameters(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     if (isConnected) {
-                        OutlinedButton(onClick = onRefreshApps) { Text(stringResource(R.string.routines_apps_refresh)) }
+                        OutlinedButton(onClick = onRefreshApps, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_apps_refresh)) }
                     } else {
-                        OutlinedButton(onClick = onNavigateToConnection) { Text(stringResource(R.string.routines_fix_connection)) }
+                        OutlinedButton(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(R.string.routines_fix_connection)) }
                     }
                     if (step.appLabel != null) Text(stringResource(R.string.routines_apps_current, step.appLabel), style = MaterialTheme.typography.bodySmall)
                 } else {
@@ -1641,8 +1663,8 @@ private fun StepParameters(
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-            if (onBack != null) TextButton(onClick = onBack) { Text(stringResource(R.string.cd_back)) }
-            Button(onClick = { onCommit(step) }) { Text(stringResource(if (isNew) R.string.routines_add else R.string.button_done)) }
+            if (onBack != null) TextButton(onClick = onBack, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.cd_back)) }
+            Button(onClick = { onCommit(step) }, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) { Text(stringResource(if (isNew) R.string.routines_add else R.string.button_done)) }
         }
     }
 }
@@ -1654,7 +1676,7 @@ private fun DurationChoices(choices: List<Int>, selected: Int, onPick: (Int) -> 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val all = if (selected in choices) choices else (choices + selected).sorted()
         all.forEach { seconds ->
-            FilterChip(
+            RemexFilterChip(
                 selected = seconds == selected,
                 onClick = { onPick(seconds) },
                 label = { Text(RoutineReasonText.formatDuration(context, seconds.toString())) },
@@ -1682,10 +1704,10 @@ private fun TestDialog(draft: RoutineDraft, pcName: String?, needsSave: Boolean,
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(onClick = onConfirm, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
                 Text(stringResource(if (needsSave) R.string.routines_save_and_test else R.string.routines_test))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.button_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.button_cancel)) } },
     )
 }
