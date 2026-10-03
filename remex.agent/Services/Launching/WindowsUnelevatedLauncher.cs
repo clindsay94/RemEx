@@ -338,7 +338,9 @@ public sealed class WindowsUnelevatedLauncher : IUnelevatedLauncher
             link.ShowCommand == 0 ? fallbackShowCommand : (short)link.ShowCommand);
     }
 
-    private static string Quote(string value) => "\"" + value + "\"";
+    // A trailing backslash would escape the closing quote under the usual command-line rules
+    // ("C:\x\" reads as C:\x"), so it is doubled; Windows path parsing collapses the pair again.
+    private static string Quote(string value) => "\"" + (value.EndsWith('\\') ? value + "\\" : value) + "\"";
 
     private static string CommandLine(string executable, string? arguments)
         => Quote(executable) + (string.IsNullOrEmpty(arguments) ? string.Empty : " " + arguments);

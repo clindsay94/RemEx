@@ -93,7 +93,13 @@ internal sealed class NativeShellAccess : IShellAccess
 
     public bool IsElevated => Environment.IsPrivilegedProcess;
 
-    public int CurrentSessionId { get; } = Process.GetCurrentProcess().SessionId;
+    public int CurrentSessionId { get; } = ReadCurrentSessionId();
+
+    private static int ReadCurrentSessionId()
+    {
+        using var self = Process.GetCurrentProcess();
+        return self.SessionId;
+    }
 
     nint IShellAccess.GetShellWindow() => GetShellWindow();
 
