@@ -155,6 +155,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _needsPairing = MutableStateFlow(false)
     val needsPairing: StateFlow<Boolean> = _needsPairing.asStateFlow()
 
+    /**
+     * The connection whose first `launcher_sync` has arrived, or null. The host sends it before it
+     * starts reading, so it is when [PairingAckWatch]'s grace for the ack starts.
+     */
+    private val _launcherSyncedConnection = MutableStateFlow<EstablishedConnection?>(null)
+
     /** Host/port of the connect attempt in flight, so a success can be attributed to a PC. */
     @Volatile private var pendingTarget: Pair<String, Int>? = null
 
@@ -481,12 +487,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     info?.takeIf { com.clindsay94.remex.data.HomePins.parseSupportsSync(it.json) }?.connection
                 }
         managerScope.launch {
-            PairingAckWatch.needsPairing(connectedHost, authenticatedConnection, ackingHost).collect { needs ->
+            PairingAckWatch.needsPairing(
+                    connectedHost,
+                    authenticatedConnection,
+                    ackingHost,
+                    _launcherSyncedConnection,
+            ).collect { needs ->
                 if (needs && !_needsPairing.value) {
                     Log.w(
                             "RemexManager",
-                            "Connected, but the PC has not accepted this phone's pairing after " +
-                                    "${PairingAckWatch.GRACE_MS} ms; showing 'needs pairing'."
+                            "Connected, but the PC has not accepted this phone's pairing within " +
+                                    "the grace; showing 'needs pairing'."
                     )
                 }
                 _needsPairing.value = needs
@@ -1424,6 +1435,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _authenticatedConnection.value = null
         // A new socket (or none) starts with nothing overdue; PairingAckWatch re-arms from here.
         _needsPairing.value = false
+        _launcherSyncedConnection.value = null
         // The previous connection's host_info must not describe the next one (RemEx-pp0rt.5).
         _hostInfoForConnection.value = null
         // The previous connection's pinned-sensor list must not describe the next one (RemEx-wqo7a.5):
@@ -1504,6 +1516,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onLauncherSync(launcherData: String?) {
         launcherData?.let { _launcherEntries.tryEmit(it) }
+        // Any launcher_sync (even an empty list) shows the host got past its on-open sends.
+        if (_isConnected.value) _launcherSyncedConnection.value = _connectedHost.value
     }
 
     override fun onProcessListSync(processData: String?) {
@@ -1816,6 +1830,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _isAuthenticated.value = false
         _authenticatedConnection.value = null
         _needsPairing.value = false
+        _launcherSyncedConnection.value = null
         _hostInfoForConnection.value = null
         _isConnected.value = false
         _isConnecting.value = false

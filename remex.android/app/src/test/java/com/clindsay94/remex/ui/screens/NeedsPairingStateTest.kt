@@ -66,10 +66,19 @@ class NeedsPairingStateTest {
     @Test
     fun `an Add a PC request is consumed once`() {
         assertFalse(ConnectionOpenRequests.consumeAddPc())
-        ConnectionOpenRequests.requestAddPc()
-        assertTrue(ConnectionOpenRequests.addPc.value)
-        assertTrue(ConnectionOpenRequests.consumeAddPc())
-        assertFalse(ConnectionOpenRequests.consumeAddPc())
-        assertFalse(ConnectionOpenRequests.addPc.value)
+        ConnectionOpenRequests.requestAddPc(atMs = 1_000L)
+        assertEquals(1_000L, ConnectionOpenRequests.addPc.value)
+        assertTrue(ConnectionOpenRequests.consumeAddPc(atMs = 1_400L))
+        assertFalse(ConnectionOpenRequests.consumeAddPc(atMs = 1_500L))
+        assertEquals(null, ConnectionOpenRequests.addPc.value)
+    }
+
+    @Test
+    fun `a request that never reached Connection does not open the sheet on a later visit`() {
+        ConnectionOpenRequests.requestAddPc(atMs = 1_000L)
+        // Connection is next opened long after the Pair tap: the stale request is dropped unopened.
+        assertFalse(ConnectionOpenRequests.consumeAddPc(atMs = 1_000L + ConnectionOpenRequests.MAX_AGE_MS + 1))
+        assertEquals(null, ConnectionOpenRequests.addPc.value)
+        assertFalse(ConnectionOpenRequests.consumeAddPc(atMs = 1_000L + ConnectionOpenRequests.MAX_AGE_MS + 2))
     }
 }

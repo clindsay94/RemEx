@@ -71,7 +71,37 @@ object RemexMotion {
             else -> TabScrollPlan(snapTo = null, animate = true)
         }
 
-    private val LEADING_NUMBER = Regex("""^\s*([+-]?\d+(?:[.,]\d+)?)""")
+    /**
+     * What a newly settled pager page does to the selected tab: [select] it (null: leave the
+     * selection alone), and whether the tab click's scroll target is now [reached] and can be let go.
+     */
+    data class SettledTabSync(val select: Int?, val reached: Boolean)
+
+    /**
+     * Syncs the selected tab from the pager's settled page, except while a tab click's scroll is on
+     * its way to [tabScrollTarget].
+     *
+     * A far click snaps to the target's neighbour first ([tabScrollPlan]), and the snap SETTLES the
+     * pager there; the settled page then stays on the neighbour for the whole slide. Copied into the
+     * selection, it re-keyed the tab-scroll effect, which cancelled the slide and found the pager
+     * already "on" the selected (wrong) tab: tapping Control from Home left the bar on Apps with the
+     * pager stuck between pages. So, with a target in flight, only the target settling counts; a
+     * user drag or a cancelled slide drops the target (the caller does that), and every settle syncs
+     * again.
+     *
+     * Nothing syncs while [scrollInProgress]: [settledPage] is the page a scroll STARTED from until it
+     * ends, so a drag that grabs the pager mid-slide would otherwise copy the old page into the
+     * selection, re-key the tab-scroll effect and fight the fling.
+     */
+    fun settledTabSync(settledPage: Int, tabScrollTarget: Int?, scrollInProgress: Boolean): SettledTabSync =
+        when {
+            scrollInProgress -> SettledTabSync(select = null, reached = false)
+            tabScrollTarget == null -> SettledTabSync(select = settledPage, reached = false)
+            tabScrollTarget == settledPage -> SettledTabSync(select = settledPage, reached = true)
+            else -> SettledTabSync(select = null, reached = false)
+        }
+
+    private val LEADING_NUMBER =Regex("""^\s*([+-]?\d+(?:[.,]\d+)?)""")
 
     /** The number a formatted sensor reading starts with ("45.2 °C" -> 45.2), or null when none. */
     fun leadingNumber(text: String): Double? =

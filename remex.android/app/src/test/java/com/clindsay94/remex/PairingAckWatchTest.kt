@@ -3,6 +3,7 @@
 package com.clindsay94.remex
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -15,24 +16,36 @@ import org.junit.Test
 
 /**
  * [PairingAckWatch] (sweep P3, RemEx-wqo7a.7): a connection whose reconnect proof the PC never
- * accepts reads as "needs pairing" after the grace, and an ack, a disconnect or a new connection
- * clears it. A PC too old to send the ack is never flagged. Virtual time only.
+ * accepts reads as "needs pairing" once the grace after its launcher list runs out (or the longer
+ * fallback when that list never comes), and an ack, a disconnect or a new connection clears it. A
+ * PC too old to send the ack is never flagged. Virtual time only.
  */
 class PairingAckWatchTest {
     private val a = EstablishedConnection("192.168.1.10", 5005, epoch = 1)
     private val b = EstablishedConnection("192.168.1.10", 5005, epoch = 2)
 
+    private val connected = MutableStateFlow<EstablishedConnection?>(null)
+    private val acked = MutableStateFlow<EstablishedConnection?>(null)
+    private val acking = MutableStateFlow<EstablishedConnection?>(null)
+    private val synced = MutableStateFlow<EstablishedConnection?>(null)
+
+    private fun watch(): Flow<Boolean> =
+            PairingAckWatch.needsPairing(connected, acked, acking, synced, graceMs = 1_000, fallbackMs = 4_000)
+
+    /** Connection [c] is up, its host_info says the PC acks, and its launcher list has landed. */
+    private fun upAndSynced(c: EstablishedConnection) {
+        connected.value = c
+        acking.value = c
+        synced.value = c
+    }
+
     @Test(timeout = 5_000)
-    fun `a connection the PC never acks needs pairing once the grace runs out`() = runTest {
-        val connected = MutableStateFlow<EstablishedConnection?>(null)
-        val acked = MutableStateFlow<EstablishedConnection?>(null)
-        val acking = MutableStateFlow<EstablishedConnection?>(null)
+    fun `a connection the PC never acks needs pairing once the grace after the launcher list runs out`() = runTest {
         val seen = mutableListOf<Boolean>()
-        val job = launch { PairingAckWatch.needsPairing(connected, acked, acking, graceMs = 1_000).collect { seen += it } }
+        val job = launch { watch().collect { seen += it } }
         runCurrent()
 
-        connected.value = a
-        acking.value = a
+        upAndSynced(a)
         runCurrent()
         advanceTimeBy(999)
         runCurrent()
@@ -45,12 +58,51 @@ class PairingAckWatchTest {
     }
 
     @Test(timeout = 5_000)
-    fun `an ack inside the grace never shows the warning`() = runTest {
-        val connected = MutableStateFlow<EstablishedConnection?>(a)
-        val acked = MutableStateFlow<EstablishedConnection?>(null)
-        val acking = MutableStateFlow<EstablishedConnection?>(a)
+    fun `a slow launcher list does not use up the grace`() = runTest {
+        var latest = false
+        val job = launch { watch().collect { latest = it } }
+        connected.value = a
+        acking.value = a
+        runCurrent()
+        // The host is still pushing its launcher list over a slow link: past the grace, short of
+        // the fallback, and nothing is flagged.
+        advanceTimeBy(3_000)
+        runCurrent()
+        assertFalse(latest)
+
+        // The list lands; a known phone is acked shortly after and is never flagged.
+        synced.value = a
+        runCurrent()
+        advanceTimeBy(500)
+        acked.value = a
+        runCurrent()
+        advanceTimeBy(10_000)
+        runCurrent()
+        assertFalse(latest)
+        job.cancel()
+    }
+
+    @Test(timeout = 5_000)
+    fun `a launcher list that never comes is still judged by the fallback`() = runTest {
         val seen = mutableListOf<Boolean>()
-        val job = launch { PairingAckWatch.needsPairing(connected, acked, acking, graceMs = 1_000).collect { seen += it } }
+        val job = launch { watch().collect { seen += it } }
+        connected.value = a
+        acking.value = a
+        runCurrent()
+        advanceTimeBy(3_999)
+        runCurrent()
+        assertFalse(seen.contains(true))
+        advanceTimeBy(2)
+        runCurrent()
+        assertTrue(seen.last())
+        job.cancel()
+    }
+
+    @Test(timeout = 5_000)
+    fun `an ack inside the grace never shows the warning`() = runTest {
+        upAndSynced(a)
+        val seen = mutableListOf<Boolean>()
+        val job = launch { watch().collect { seen += it } }
         runCurrent()
         advanceTimeBy(500)
         acked.value = a
@@ -63,11 +115,9 @@ class PairingAckWatchTest {
 
     @Test(timeout = 5_000)
     fun `a late ack or a disconnect clears it`() = runTest {
-        val connected = MutableStateFlow<EstablishedConnection?>(a)
-        val acked = MutableStateFlow<EstablishedConnection?>(null)
-        val acking = MutableStateFlow<EstablishedConnection?>(a)
+        upAndSynced(a)
         var latest = false
-        val job = launch { PairingAckWatch.needsPairing(connected, acked, acking, graceMs = 1_000).collect { latest = it } }
+        val job = launch { watch().collect { latest = it } }
         advanceTimeBy(1_001)
         runCurrent()
         assertTrue(latest)
@@ -79,7 +129,7 @@ class PairingAckWatchTest {
         acked.value = null
         connected.value = null
         runCurrent()
-        advanceTimeBy(5_000)
+        advanceTimeBy(10_000)
         runCurrent()
         assertFalse("nothing is connected, so nothing needs pairing", latest)
         job.cancel()
@@ -87,17 +137,15 @@ class PairingAckWatchTest {
 
     @Test(timeout = 5_000)
     fun `the previous connection's ack does not vouch for a new one`() = runTest {
-        val connected = MutableStateFlow<EstablishedConnection?>(a)
-        val acked = MutableStateFlow<EstablishedConnection?>(a)
-        val acking = MutableStateFlow<EstablishedConnection?>(a)
+        upAndSynced(a)
+        acked.value = a
         var latest = false
-        val job = launch { PairingAckWatch.needsPairing(connected, acked, acking, graceMs = 1_000).collect { latest = it } }
+        val job = launch { watch().collect { latest = it } }
         runCurrent()
         assertFalse(latest)
 
         // A host switch / reconnect: new epoch, and the old ack is still what the flow holds.
-        connected.value = b
-        acking.value = b
+        upAndSynced(b)
         runCurrent()
         advanceTimeBy(1_001)
         runCurrent()
@@ -107,18 +155,18 @@ class PairingAckWatchTest {
 
     @Test(timeout = 5_000)
     fun `a PC too old to send the ack is never flagged`() = runTest {
-        val connected = MutableStateFlow<EstablishedConnection?>(a)
-        val acked = MutableStateFlow<EstablishedConnection?>(null)
+        connected.value = a
+        synced.value = a
         // No host_info that says this PC acks, or only the previous connection's.
-        val acking = MutableStateFlow<EstablishedConnection?>(null)
         val seen = mutableListOf<Boolean>()
-        val job = launch { PairingAckWatch.needsPairing(connected, acked, acking, graceMs = 1_000).collect { seen += it } }
+        val job = launch { watch().collect { seen += it } }
         runCurrent()
         advanceTimeBy(10_000)
         runCurrent()
         assertFalse(seen.contains(true))
 
         connected.value = b
+        synced.value = b
         acking.value = a
         runCurrent()
         advanceTimeBy(10_000)

@@ -171,6 +171,8 @@ class SweepLaneKSourceShapeTest {
                 "ui/screens/sensors/SensorGridCard.kt" to listOf("outlined.PushPin"),
                 "ui/screens/HomeScreen.kt" to listOf("filled.Link"),
                 "ui/navigation/NavRoutes.kt" to listOf("filled.Wifi"),
+                // The "needs pairing" state (phase 6 sweep P3).
+                "ui/screens/CommonComponents.kt" to listOf("filled.LinkOff"),
             )
         for ((file, imports) in banned) {
             val lines = source(file).lines().map { it.trim() }

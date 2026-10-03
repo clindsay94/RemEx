@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
@@ -338,17 +339,43 @@ private fun AppNavigationContent(
         // under "Remove animations" it jumps (phase 6, RemexMotion.tabScrollPlan).
         val reducedMotion = LocalReducedMotion.current
         val tabSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+        // The tab a click is sliding to while it is on its way: the far-jump snap settles the pager on
+        // the neighbour, and that settle must not be copied back into the selection
+        // (RemexMotion.settledTabSync). A drag hands the pager back to the user, so it lets go.
+        var tabScrollTarget by remember { mutableStateOf<Int?>(null) }
+        val pagerDragged by pagerState.interactionSource.collectIsDraggedAsState()
+        LaunchedEffect(pagerDragged) {
+                if (pagerDragged) tabScrollTarget = null
+        }
         LaunchedEffect(isAtPrimary, selectedPrimaryIndex) {
-                if (isAtPrimary && pagerState.currentPage != selectedPrimaryIndex) {
-                        val plan = RemexMotion.tabScrollPlan(pagerState.currentPage, selectedPrimaryIndex, reducedMotion)
-                        plan.snapTo?.let { pagerState.scrollToPage(it) }
-                        if (plan.animate) pagerState.animateScrollToPage(selectedPrimaryIndex, animationSpec = tabSlideSpec)
+                val target = selectedPrimaryIndex
+                // Part-way counts as off the page: a tap on the page a cancelled slide stopped near
+                // must still finish the move.
+                val offPage = pagerState.currentPage != target || pagerState.currentPageOffsetFraction != 0f
+                if (isAtPrimary && offPage) {
+                        val plan = RemexMotion.tabScrollPlan(pagerState.currentPage, target, reducedMotion)
+                        tabScrollTarget = target
+                        try {
+                                plan.snapTo?.let { pagerState.scrollToPage(it) }
+                                when {
+                                        plan.animate -> pagerState.animateScrollToPage(target, animationSpec = tabSlideSpec)
+                                        pagerState.currentPage != target || pagerState.currentPageOffsetFraction != 0f ->
+                                                if (reducedMotion) pagerState.scrollToPage(target)
+                                                else pagerState.animateScrollToPage(target, animationSpec = tabSlideSpec)
+                                }
+                        } finally {
+                                // Done, or cancelled by a drag or a newer click: let the target go so the
+                                // next settle syncs, unless a newer click has already claimed it.
+                                if (tabScrollTarget == target) tabScrollTarget = null
+                        }
                 }
         }
 
-        LaunchedEffect(isAtPrimary, pagerState.settledPage) {
+        LaunchedEffect(isAtPrimary, pagerState.settledPage, pagerState.isScrollInProgress, tabScrollTarget) {
                 if (isAtPrimary) {
-                        selectedPrimaryIndex = pagerState.settledPage
+                        val sync = RemexMotion.settledTabSync(pagerState.settledPage, tabScrollTarget, pagerState.isScrollInProgress)
+                        sync.select?.let { selectedPrimaryIndex = it }
+                        if (sync.reached) tabScrollTarget = null
                 }
         }
 
