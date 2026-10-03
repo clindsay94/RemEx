@@ -4131,4 +4131,10 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Duża wartość</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Nie udało się otworzyć</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx nie mógł tego otworzyć z Twoimi zwykłymi uprawnieniami. Poczekaj chwilę i spróbuj ponownie.</value>
+  </data>
 </root>

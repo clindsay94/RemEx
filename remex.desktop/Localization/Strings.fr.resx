@@ -4130,4 +4130,10 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Grande valeur</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Impossible de l'ouvrir</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx n'a pas pu l'ouvrir avec vos autorisations habituelles. Patientez un instant, puis réessayez.</value>
+  </data>
 </root>

@@ -4130,4 +4130,10 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Valor grande</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Não foi possível abrir</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>O RemEx não conseguiu abrir isto com suas permissões normais. Aguarde um momento e tente novamente.</value>
+  </data>
 </root>

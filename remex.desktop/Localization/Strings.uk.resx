@@ -4131,4 +4131,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Велике значення</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Не вдалося відкрити</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx не зміг відкрити це з вашими звичайними дозволами. Зачекайте трохи й спробуйте ще раз.</value>
+  </data>
 </root>

@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Services.Security;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Launching;
 using Remex.Desktop.Services.Security;
 
 namespace Remex.Desktop.ViewModels;
@@ -340,13 +340,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var url = "https://github.com/clindsay94/remex";
-            var psi = new ProcessStartInfo
-            {
-                FileName = url,
-                UseShellExecute = true
-            };
-            Process.Start(psi);
+            // Normal user permissions for the browser, not this elevated host's (RemEx-pp4cm.2).
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(),
+                "https://github.com/clindsay94/remex");
         }
         catch (Exception ex)
         {
@@ -383,7 +379,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         var url = _downloadUrl ?? _updateService?.ReleasesUrl ?? "https://github.com/clindsay94/remex/releases/latest";
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
         }
         catch (Exception ex)
         {

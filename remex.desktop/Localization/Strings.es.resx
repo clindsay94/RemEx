@@ -4143,4 +4143,10 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Valor grande</value>
   </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>No se pudo abrir</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx no pudo abrirlo con tus permisos normales. Espera un momento y vuelve a intentarlo.</value>
+  </data>
 </root>

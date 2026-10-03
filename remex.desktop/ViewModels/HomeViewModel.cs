@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Messages;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Launching;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -238,7 +238,10 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     {
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            // Through UserLauncher so the browser starts with the user's normal permissions, not
+            // this elevated host's (RemEx-pp4cm.2). It never falls back to an administrator browser;
+            // if the link can't open normally the user gets a "Couldn't open it" notification.
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), url);
         }
         catch
         {

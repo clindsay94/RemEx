@@ -241,6 +241,15 @@ public static class HostBootstrapper
             sp => sp.GetRequiredService<Remex.Agent.Services.Media.MediaSessionBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
+        // Apps, links and folders RemEx opens for the user start at the user's normal permissions,
+        // not RemEx's administrator token (RemEx-pp4cm.2). AppLauncherService takes it by injection;
+        // the About/Home/Logs view models resolve it through EmbeddedHostServiceLocator. Linux has no
+        // split token to drop, so it gets the pass-through and launches exactly as before.
+        builder.Services.AddSingleton<Remex.Desktop.Services.Launching.IUnelevatedLauncher>(sp =>
+            OperatingSystem.IsWindows()
+                ? new Remex.Agent.Services.Launching.WindowsUnelevatedLauncher(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Launching.WindowsUnelevatedLauncher>>())
+                : new Remex.Agent.Services.Launching.NoOpUnelevatedLauncher());
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Agent.Services.AppLauncherService>();
         // IAppLauncherService backs both the remote "LaunchApp" WebSocket command and the desktop UI's
         // offline launch path (the UI resolves it in-process via EmbeddedHostServiceLocator). The old
