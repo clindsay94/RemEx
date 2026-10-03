@@ -13,9 +13,10 @@ class RemexHapticsTest {
 
     @Test
     fun `every event maps to the M3 haptic type the pass chose`() {
-        val expected =
+        val expected: Map<RemexHapticEvent, HapticFeedbackType?> =
             mapOf(
-                RemexHapticEvent.Press to HapticFeedbackType.KeyboardTap,
+                // Plain taps are silent: haptics mark meaning, not every touch.
+                RemexHapticEvent.Press to null,
                 RemexHapticEvent.Select to HapticFeedbackType.SegmentTick,
                 RemexHapticEvent.ToggleOn to HapticFeedbackType.ToggleOn,
                 RemexHapticEvent.ToggleOff to HapticFeedbackType.ToggleOff,

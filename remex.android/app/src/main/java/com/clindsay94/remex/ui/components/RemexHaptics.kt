@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -20,11 +21,11 @@ import kotlinx.coroutines.flow.map
  * one place that decides how it feels (3.0 motion + haptics pass, RemEx-wqo7a.8).
  *
  * Haptics mark meaning, not every touch: a switch flipping, a slider landing on a detent, a command
- * confirmed or refused, a long-press that lifts something. The light [Press] tick is only for the
- * buttons that already had one before this pass; new plain taps get nothing.
+ * confirmed or refused, a long-press that lifts something. A plain [Press] is silent: tapping a button
+ * that moves you somewhere or opens something is not news.
  */
 enum class RemexHapticEvent {
-    /** A light tick on a button that moves you somewhere or opens something. */
+    /** A plain button tap that moves you somewhere or opens something. Silent ([RemexHaptics.typeFor]). */
     Press,
 
     /** One option chosen out of several: a segment, a filter chip, a menu item, a sort order. */
@@ -67,10 +68,11 @@ object RemexHaptics {
      * How each event feels. Every type here goes through `View.performHapticFeedback` (via
      * [LocalHapticFeedback]), which honours the system "Touch feedback" setting, so turning
      * haptics off in Android settings turns all of these off. Nothing in the app uses the vibrator.
+     * Null means no haptic: plain taps stay silent so the ones that do buzz mean something.
      */
-    fun typeFor(event: RemexHapticEvent): HapticFeedbackType =
+    fun typeFor(event: RemexHapticEvent): HapticFeedbackType? =
         when (event) {
-            RemexHapticEvent.Press -> HapticFeedbackType.KeyboardTap
+            RemexHapticEvent.Press -> null
             RemexHapticEvent.Select -> HapticFeedbackType.SegmentTick
             RemexHapticEvent.ToggleOn -> HapticFeedbackType.ToggleOn
             RemexHapticEvent.ToggleOff -> HapticFeedbackType.ToggleOff
@@ -170,7 +172,7 @@ object TransferOutcomeHaptics {
 @Stable
 class RemexHapticPerformer internal constructor(private val feedback: HapticFeedback) {
     fun perform(event: RemexHapticEvent) {
-        feedback.performHapticFeedback(RemexHaptics.typeFor(event))
+        RemexHaptics.typeFor(event)?.let { feedback.performHapticFeedback(it) }
     }
 }
 
@@ -187,13 +189,19 @@ fun rememberRemexHaptics(): RemexHapticPerformer {
  * Remembers the last value it saw itself rather than reading the slider's value back, because a
  * slider whose value is saved asynchronously reports the same new step more than once before the
  * saved value catches up, and that would tick twice.
+ *
+ * Until the user first moves the slider it follows [initial], so a saved value that loads after the
+ * first composition does not make the first drag tick falsely.
  */
 @Composable
 fun rememberSliderStepHaptics(initial: Float): (Float) -> Unit {
     val haptics = rememberRemexHaptics()
     val last = remember { floatArrayOf(initial) }
+    val touched = remember { booleanArrayOf(false) }
+    SideEffect { if (!touched[0]) last[0] = initial }
     return remember(haptics, last) {
         { value ->
+            touched[0] = true
             if (RemexHaptics.steppedTo(last[0], value)) {
                 last[0] = value
                 haptics.perform(RemexHapticEvent.Step)

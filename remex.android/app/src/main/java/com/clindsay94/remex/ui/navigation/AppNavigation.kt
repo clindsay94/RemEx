@@ -958,11 +958,11 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 /** Routes that rise from the bottom edge over the screen they were opened from (QR scanner, pairing). */
 private fun androidx.navigation.NavBackStackEntry.isModalRoute(): Boolean =
         destination.hasRoute<Screen.QrScanner>() || destination.hasRoute<PairingRoute>()
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
