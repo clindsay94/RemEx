@@ -760,8 +760,9 @@ public sealed class FileTransferQueue : IDisposable
     /// sentence it replaced. (RemEx-6tvh)
     /// </para>
     /// <para>
-    /// The arm is placed after the three <see cref="IOException"/>-derived transfer exceptions — the
-    /// host refusal, the integrity failure and the backlog abandonment, all of which would otherwise be
+    /// The arm is placed after the four <see cref="IOException"/>-derived transfer exceptions — the
+    /// host refusal, the integrity failure, the backlog abandonment and the PC's own diagnosis of a
+    /// phone transfer (<see cref="PhoneTransferFailedException"/>), all of which would otherwise be
     /// swallowed by it — but that ordering does not rest on anyone remembering it: hoisting
     /// this arm is a COMPILE ERROR (CS8510, unreachable pattern), so the switch cannot silently start
     /// reporting a host refusal or a slow destination as a disk fault.
@@ -781,6 +782,8 @@ public sealed class FileTransferQueue : IDisposable
         FileTransferIntegrityException { FromPhone: true } => LocalizationService.Instance["FileTransfer_ErrPhoneIntegrity"],
         FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
         FileTransferBacklogException => LocalizationService.Instance["FileTransfer_ErrDestinationTooSlow"],
+        // The PC's own diagnosis of a transfer with a phone (RemEx-xt0af), worded here, never shown raw.
+        PhoneTransferFailedException phone => LocalizationService.Instance[phone.ResourceKey],
         TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
         IOException => LocalizationService.Instance[
             kind == FileTransferQueueKind.Download

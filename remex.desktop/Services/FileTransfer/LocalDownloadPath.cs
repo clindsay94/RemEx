@@ -50,7 +50,8 @@ public static class LocalDownloadPath
 
     /// <summary>
     /// The remote path as a local relative path with the platform's separators, or null when any
-    /// segment is unsafe: empty, <c>.</c> or <c>..</c>, rooted or drive-qualified, containing a
+    /// segment is unsafe: empty, <c>.</c> or <c>..</c>, ending in a dot or a space (which Windows
+    /// strips, so two names would collide), rooted or drive-qualified, containing a
     /// backslash or a character the file system rejects, a reserved device name, or longer than
     /// <see cref="MaxSegmentLength"/>.
     /// </summary>
@@ -82,6 +83,14 @@ public static class LocalDownloadPath
         // "." and "..", and also "..." or ". ." — Windows strips trailing dots and spaces, so a name made
         // of nothing else collapses to nothing and the next name lands one level up from where it looks.
         if (string.IsNullOrWhiteSpace(segment) || segment.Trim('.', ' ').Length == 0)
+            return false;
+
+        // A TRAILING DOT OR SPACE IS REFUSED, NOT TRIMMED. Windows drops them, so "photo.jpg." and
+        // "photo.jpg" are one file there: the second download would silently overwrite the first, and
+        // "Camera." would merge into "Camera". Refusing the name leaves it out of the folder download
+        // like every other unusable name (the queued count says how many made it), on both platforms,
+        // so a listing behaves the same on Linux as on Windows.
+        if (segment[^1] is '.' or ' ')
             return false;
         if (segment.Length > MaxSegmentLength)
             return false;

@@ -4176,4 +4176,16 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>Plik nie zgadzał się z tym, co wysłał telefon, więc został usunięty. Pobierz go ponownie.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Telefon zatrzymał przesyłanie. Sprawdź RemEx na telefonie i spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Plik jest za duży, aby go wysłać. Wybierz mniejszy plik.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Plik zmienił się podczas wysyłania. Poczekaj, aż nic go już nie zapisuje, i spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Pliku o tej nazwie nie można przesłać. Zmień nazwę pliku i spróbuj ponownie.</value>
+  </data>
 </root>

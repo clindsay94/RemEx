@@ -19,7 +19,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   shared for writing. What the PC can see is exactly what you allow on the phone under **Access from
   your PC**; the phone does not ask again, and the PC cannot rename, delete or move anything there. The
   phone still makes every connection: the PC sends the phone's existing file requests down the phone's
-  own session, and no new message types were added (`docs/API_CONTRACTS.md` §3). (RemEx-xt0af)
+  own session, and no new message types were added (`docs/API_CONTRACTS.md` §3). A download into a
+  slow drive such as a USB stick or a network share is not reported as the phone stopping responding,
+  failures are worded in your language, and a name Windows would merge with another (one ending in a
+  dot or a space) is left out of a folder download instead of overwriting its twin. (RemEx-xt0af)
 - **The phone's Home tab is filled in.** The PC card shows your PC's name, whether it's online, how
   long it has been up, and Lock and Sleep (Sleep only when the PC can do it; Wake when it's off).
   Below it are your pinned sensors, an Open Sensors card, shortcuts to Desktop, Files and Routines, and
@@ -575,8 +578,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - **The phone only opens folders you share.** When the PC asks the phone for a file, the phone now
   checks the folder against your current **Access from your PC** settings (so turning full-device
   browsing off takes effect even if Android still remembers that folder) and refuses `.` and `..` in
-  paths. This covers the older transfer path too. Replies to the PC's file requests are accepted only
-  from the phone that was asked, never from a connection on the PC itself. (RemEx-xt0af)
+  paths. This covers the older transfer path too. A new name for a rename, a new folder, a copy or move
+  destination, or an uploaded file must be a plain name: `.`, `..`, slashes and similar are refused.
+  Replies to the PC's file requests are accepted only from the phone that was asked, while it is still
+  paired, never from a connection on the PC itself. (RemEx-xt0af)
 
 ## [2.5.0] — 2026-09-10
 

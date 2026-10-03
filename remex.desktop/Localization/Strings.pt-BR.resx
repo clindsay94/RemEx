@@ -4175,4 +4175,16 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>O arquivo não correspondia ao que o celular enviou, então foi excluído. Tente baixá-lo de novo.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Seu celular interrompeu a transferência. Confira o RemEx no celular e tente outra vez.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>O arquivo é grande demais para ser enviado. Escolha um arquivo menor.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>O arquivo mudou enquanto era enviado. Espere até que nada o esteja salvando e tente outra vez.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Esse nome de arquivo não pode ser transferido. Renomeie o arquivo e tente outra vez.</value>
+  </data>
 </root>

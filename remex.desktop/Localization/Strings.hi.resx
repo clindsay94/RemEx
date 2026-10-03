@@ -4175,4 +4175,16 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>फ़ाइल फ़ोन की भेजी फ़ाइल से मेल नहीं खाती थी, इसलिए उसे हटा दिया गया। उसे दोबारा डाउनलोड करें।</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>आपके फ़ोन ने ट्रांसफ़र रोक दिया। फ़ोन पर RemEx देखें, फिर कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>फ़ाइल भेजने के लिए बहुत बड़ी है। कोई छोटी फ़ाइल चुनें।</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>भेजते समय फ़ाइल बदल गई। जब कोई प्रोग्राम उसे सेव न कर रहा हो, तब दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>इस नाम वाली फ़ाइल ट्रांसफ़र नहीं की जा सकती। फ़ाइल का नाम बदलें, फिर कोशिश करें।</value>
+  </data>
 </root>

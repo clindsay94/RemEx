@@ -28,7 +28,10 @@ internal sealed class PhoneRelayTestKit : IDisposable
     private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("remex-phone-relay-");
     private readonly List<IDisposable> _sessions = [];
 
-    public PhoneRelayTestKit(TimeSpan? requestTimeout = null, Action<TransferSessionManagerOptions>? configure = null)
+    public PhoneRelayTestKit(
+        TimeSpan? requestTimeout = null,
+        Action<TransferSessionManagerOptions>? configure = null,
+        IStagedFilePromoter? promoter = null)
     {
         Paired = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, Path.Combine(_root.FullName, "paired.json"));
         Sessions = new ClientSessionRegistry();
@@ -46,7 +49,7 @@ internal sealed class PhoneRelayTestKit : IDisposable
             resolver,
             Directory.CreateDirectory(Path.Combine(_root.FullName, "staging")).FullName,
             queue: null,
-            localPromoter: new MovingPromoter())
+            localPromoter: promoter ?? new MovingPromoter())
         {
             ReadyTimeout = options.ReadyTimeout,
             PeerIdleTimeout = options.PeerIdleTimeout,

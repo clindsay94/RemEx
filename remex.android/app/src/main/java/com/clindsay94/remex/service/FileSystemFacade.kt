@@ -129,13 +129,10 @@ class SafFileSystemFacade(
     override fun resolve(rootId: String, relativePath: String): FileNode? {
         // ONLY A ROOT THE PERSON SHARES RIGHT NOW (RemEx-xt0af). The PC can drive every request this
         // serves, and fromTreeUri would open any tree this app still holds a grant for — including the
-        // whole-device folder after the person turned whole-device browsing off.
-        if (!SharedPathPolicy.isAllowedRoot(rootId, rootsProvider.allowedRootIds())) return null
-
-        // `.` and `..` are refused outright. Empty names (`a//b`) are still skipped rather than
-        // refused here, which is what this resolver always did and what existing callers rely on.
-        val names = relativePath.trim('/').split('/').filter { it.isNotEmpty() }
-        if (names.any { !SharedPathPolicy.isSafeName(it) }) return null
+        // whole-device folder after the person turned whole-device browsing off. `.`, `..` and other
+        // unsafe names refuse the path; the rule lives in SharedPathPolicy so it is unit-tested.
+        val names = SharedPathPolicy.resolveSegments(rootId, relativePath, rootsProvider.allowedRootIds())
+            ?: return null
 
         var current = DocumentFile.fromTreeUri(context, Uri.parse(rootId)) ?: return null
         if (!current.canRead()) return null

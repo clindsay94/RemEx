@@ -4188,4 +4188,16 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>El archivo no coincidía con lo que envió el teléfono, así que se eliminó. Vuelve a descargarlo.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Tu teléfono detuvo la transferencia. Revisa RemEx en el teléfono e inténtalo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>El archivo es demasiado grande para enviarlo. Elige un archivo más pequeño.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>El archivo cambió mientras se enviaba. Espera a que nada lo esté guardando e inténtalo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Ese nombre de archivo no se puede transferir. Cambia el nombre del archivo e inténtalo de nuevo.</value>
+  </data>
 </root>

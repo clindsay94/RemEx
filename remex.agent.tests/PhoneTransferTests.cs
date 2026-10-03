@@ -132,6 +132,48 @@ public sealed class PhoneTransferTests
             Assert.Equal(bytes, await File.ReadAllBytesAsync(Path.Combine(folder, name)));
     }
 
+    /// <summary>
+    /// The phone has sent everything and said so; the PC's copy into a destination on another drive
+    /// then takes far longer than the idle window with no bytes moving. That is the PC being slow, not
+    /// the phone going quiet, so the pull must succeed rather than report "stopped responding".
+    /// </summary>
+    [Fact]
+    public async Task Download_ASlowLandingAfterThePhoneFinished_IsNotReportedAsThePhoneStoppingResponding()
+    {
+        var promoter = new SlowPromoter(TimeSpan.FromMilliseconds(1500));
+        using var kit = new PhoneRelayTestKit(
+            configure: o => o.PeerIdleTimeout = TimeSpan.FromMilliseconds(300), promoter: promoter);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var (control, channel, _) = StartPhone(kit, cts.Token);
+        var payload = RandomNumberGenerator.GetBytes(80_000);
+        control.OnMessage = message =>
+        {
+            if (message.FileTransferOffer is { } offer)
+                _ = Task.Run(() => ServeDownloadAsync(kit, control, channel, offer, payload));
+        };
+        var destination = Path.Combine(kit.LocalFolder, "slow.jpg");
+
+        await kit.Relay.DownloadAsync(PhoneA, "root", "slow.jpg", destination, null, cts.Token);
+
+        Assert.True(promoter.Finished);
+        Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
+    }
+
+    /// <summary>A promoter that lands the file only after a delay, like a copy onto a slow drive.</summary>
+    private sealed class SlowPromoter(TimeSpan delay) : Remex.Agent.Services.FileTransfer.IStagedFilePromoter
+    {
+        private volatile bool _finished;
+
+        public bool Finished => _finished;
+
+        public async Task PromoteStagedFileToPathAsync(string stagingPath, string destination, CancellationToken ct)
+        {
+            await Task.Delay(delay, ct);
+            File.Move(stagingPath, destination, overwrite: true);
+            _finished = true;
+        }
+    }
+
     [Fact]
     public async Task Download_ThePhoneDeclines_SurfacesItsReason_AndLeavesNothingBehind()
     {

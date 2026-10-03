@@ -207,7 +207,22 @@ public sealed class TransferSessionManager : IDisposable
     /// send session has finished streaming it is gone, so <see cref="IsForeignTransfer"/> no longer
     /// knows the id, and a result from any other connection would otherwise be accepted as the phone's.
     /// </remarks>
-    private sealed record PeerResultWaiter(string ClientId, TaskCompletionSource<FileTransferResult> Result);
+    private sealed record PeerResultWaiter(string ClientId, TaskCompletionSource<FileTransferResult> Result)
+    {
+        private volatile bool _peerFinished;
+
+        /// <summary>
+        /// Set once the phone has sent everything and said so (its <c>file_transfer_complete</c> for a
+        /// pull). From then on the PC is the slow side: the hash check and the copy into a destination
+        /// on another drive, a USB stick or a NAS can take minutes with no bytes moving, and the idle
+        /// timer must not call that "the phone stopped responding" (RemEx-xt0af).
+        /// </summary>
+        public bool PeerFinished
+        {
+            get => _peerFinished;
+            set => _peerFinished = value;
+        }
+    }
 
     private readonly ConcurrentDictionary<string, PeerResultWaiter> _resultWaiters = new(StringComparer.Ordinal);
 
@@ -694,7 +709,11 @@ public sealed class TransferSessionManager : IDisposable
                     TransferId = transferId,
                     Verified = false,
                     Sha256Base64 = actualBase64,
-                    Error = $"Verified but could not be saved: {ex.Message}",
+                    // A PC-started pull reports the PC's own fixed reason, which PhoneFileRelay words in
+                    // the user's language; the exception's detail is in the log line above.
+                    Error = session.LocalDestinationPath is not null
+                        ? PeerTransferFailure.SaveFailed
+                        : $"Verified but could not be saved: {ex.Message}",
                 };
             }
 
@@ -847,6 +866,10 @@ public sealed class TransferSessionManager : IDisposable
         // started it is already showing its progress, so the "received from your phone" announcement
         // below is for transfers the PHONE started.
         var pcStartedPull = pendingSession?.LocalDestinationPath is not null;
+
+        // The phone is done; whatever time the verification and promotion below take is the PC's,
+        // so the PC-started wait stops counting it as the phone going quiet.
+        MarkPeerFinished(complete.TransferId, channelKey);
 
         var result = await CompleteReceiveAsync(complete.TransferId, complete.Sha256Base64, ct);
         TryCompleteWaiter(complete.TransferId, channelKey, result);
@@ -1114,7 +1137,7 @@ public sealed class TransferSessionManager : IDisposable
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Cannot push {TransferId}: the file could not be opened.", transferId);
-                return new OutboundStart(false, "The file on this PC could not be opened.");
+                return new OutboundStart(false, PeerTransferFailure.LocalFileUnreadable);
             }
 
             // **THE OFFERED SIZE IS WHAT GOES ON THE WIRE, AND A FILE THAT NO LONGER MATCHES IT IS
@@ -1142,7 +1165,7 @@ public sealed class TransferSessionManager : IDisposable
                     "Not pushing {TransferId}: {FileName} is now {ActualSize} bytes, but {OfferedSize} "
                         + "was offered and agreed to.",
                     transferId, fileName, source.Length, offeredSize);
-                return new OutboundStart(false, "The file on this PC changed size while it was being sent.");
+                return new OutboundStart(false, PeerTransferFailure.LocalFileChanged);
             }
 
             await MessageSerializer.SendAsync(
@@ -1328,22 +1351,25 @@ public sealed class TransferSessionManager : IDisposable
         var transferId = Guid.NewGuid().ToString("N");
 
         if (string.IsNullOrWhiteSpace(clientId))
-            return PeerFailure(transferId, "A paired phone is required.");
+            return PeerFailure(transferId, PeerTransferFailure.PhoneRequired);
         if (string.IsNullOrWhiteSpace(rootId))
-            return PeerFailure(transferId, "A shared folder on the phone is required.");
+            return PeerFailure(transferId, PeerTransferFailure.RootRequired);
 
         var normalized = (remoteRelativePath ?? string.Empty).Replace('\\', '/').Trim('/');
         var cut = normalized.LastIndexOf('/');
         var directory = cut < 0 ? string.Empty : normalized[..cut];
         var fileName = cut < 0 ? normalized : normalized[(cut + 1)..];
         if (!Remex.Core.Validation.FilePathValidation.IsValidFileName(fileName, out var nameError))
-            return PeerFailure(transferId, nameError ?? "That file name cannot be downloaded.");
+        {
+            _logger.LogInformation("Not pulling {FileName} from the phone: {Reason}", fileName, nameError);
+            return PeerFailure(transferId, PeerTransferFailure.NameNotAllowed);
+        }
 
         if (string.IsNullOrWhiteSpace(localDestinationPath)
             || !Path.IsPathFullyQualified(localDestinationPath)
             || string.IsNullOrEmpty(Path.GetFileName(localDestinationPath)))
         {
-            return PeerFailure(transferId, "The destination must be a full path to a file on this PC.");
+            return PeerFailure(transferId, PeerTransferFailure.BadDestination);
         }
 
         var partialPath = PartialPathFor(transferId);
@@ -1415,7 +1441,7 @@ public sealed class TransferSessionManager : IDisposable
             if (!reply.Accepted)
             {
                 _logger.LogInformation("The phone declined to send {TransferId}: {Reason}.", transferId, reply.DeclineReason);
-                return PeerFailure(transferId, reply.DeclineReason ?? "The phone declined to send the file.");
+                return PeerFailure(transferId, reply.DeclineReason ?? PeerTransferFailure.PhoneDeclined);
             }
 
             if (!_channels.ContainsKey(clientId))
@@ -1471,15 +1497,18 @@ public sealed class TransferSessionManager : IDisposable
         var transferId = Guid.NewGuid().ToString("N");
 
         if (string.IsNullOrWhiteSpace(clientId))
-            return PeerFailure(transferId, "A paired phone is required.");
+            return PeerFailure(transferId, PeerTransferFailure.PhoneRequired);
         if (string.IsNullOrWhiteSpace(rootId))
-            return PeerFailure(transferId, "A shared folder on the phone is required.");
+            return PeerFailure(transferId, PeerTransferFailure.RootRequired);
         if (string.IsNullOrWhiteSpace(localPath) || !Path.IsPathFullyQualified(localPath) || !File.Exists(localPath))
-            return PeerFailure(transferId, "The file on this PC could not be found.");
+            return PeerFailure(transferId, PeerTransferFailure.LocalFileMissing);
 
         var fileName = Path.GetFileName(localPath);
         if (!Remex.Core.Validation.FilePathValidation.IsValidFileName(fileName, out var nameError))
-            return PeerFailure(transferId, nameError ?? "That file name cannot be sent to the phone.");
+        {
+            _logger.LogInformation("Not uploading {FileName} to the phone: {Reason}", fileName, nameError);
+            return PeerFailure(transferId, PeerTransferFailure.NameNotAllowed);
+        }
 
         long size;
         try
@@ -1489,11 +1518,11 @@ public sealed class TransferSessionManager : IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _logger.LogWarning(ex, "Could not measure {Path} for an upload to the phone.", localPath);
-            return PeerFailure(transferId, "The file on this PC could not be opened.");
+            return PeerFailure(transferId, PeerTransferFailure.LocalFileUnreadable);
         }
 
         if (size > MaxTransferBytes)
-            return PeerFailure(transferId, "The file is too large to send.");
+            return PeerFailure(transferId, PeerTransferFailure.TooLarge);
 
         var directory = (remoteDirectory ?? string.Empty).Replace('\\', '/').Trim('/');
         var waiter = new PeerResultWaiter(
@@ -1521,7 +1550,7 @@ public sealed class TransferSessionManager : IDisposable
                 ct);
 
             if (!start.Started)
-                return PeerFailure(transferId, start.FailureReason ?? "The phone did not accept the file.");
+                return PeerFailure(transferId, start.FailureReason ?? PeerTransferFailure.PhoneDidNotAccept);
 
             return await WatchPeerTransferAsync(
                 transferId,
@@ -1580,6 +1609,13 @@ public sealed class TransferSessionManager : IDisposable
                 lastProgressAt = DateTime.UtcNow;
                 progress?.Report(bytes);
             }
+            else if (waiter.PeerFinished)
+            {
+                // The phone has sent everything; the PC is verifying and landing the file. That ends
+                // in a verdict either way (CompleteReceiveAsync never hangs on the phone), so wait for
+                // it rather than reporting a slow local copy as a phone that stopped responding.
+                lastProgressAt = DateTime.UtcNow;
+            }
             else if (DateTime.UtcNow - lastProgressAt > PeerIdleTimeout)
             {
                 _logger.LogWarning("PC-started transfer {TransferId} made no progress for {Idle}; giving up.", transferId, PeerIdleTimeout);
@@ -1635,11 +1671,24 @@ public sealed class TransferSessionManager : IDisposable
         waiter.Result.TrySetResult(result);
     }
 
+    /// <summary>
+    /// Records that the peer a PC-started transfer was started with has finished its part, so the idle
+    /// timer stops running (see <see cref="PeerResultWaiter.PeerFinished"/>). Ignored from anyone else.
+    /// </summary>
+    private void MarkPeerFinished(string transferId, string channelKey)
+    {
+        if (_resultWaiters.TryGetValue(transferId, out var waiter)
+            && string.Equals(waiter.ClientId, channelKey, StringComparison.Ordinal))
+        {
+            waiter.PeerFinished = true;
+        }
+    }
+
     /// <summary>Ends a PC-started transfer's wait with a failure. A no-op once a verdict arrived.</summary>
     private void FailWaiter(string transferId, string? reason)
     {
         if (_resultWaiters.TryGetValue(transferId, out var waiter))
-            waiter.Result.TrySetResult(PeerFailure(transferId, string.IsNullOrWhiteSpace(reason) ? "The transfer failed." : reason));
+            waiter.Result.TrySetResult(PeerFailure(transferId, string.IsNullOrWhiteSpace(reason) ? PeerTransferFailure.Failed : reason));
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

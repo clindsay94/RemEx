@@ -4176,4 +4176,16 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>Файл не збігався з тим, що надіслав телефон, тому його видалено. Спробуйте завантажити його ще раз.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Телефон зупинив передавання. Перевірте RemEx на телефоні й спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Файл завеликий для надсилання. Виберіть менший файл.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Файл змінився під час надсилання. Зачекайте, доки його ніщо не зберігатиме, і спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Файл із такою назвою не можна передати. Перейменуйте файл і спробуйте ще раз.</value>
+  </data>
 </root>

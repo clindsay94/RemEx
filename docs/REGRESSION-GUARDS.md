@@ -1507,7 +1507,12 @@ rules make that safe, and each one fails SILENTLY if dropped — the screen just
 
 - **Replies from loopback or an unproven session are refused** before anything else (RemEx-4215's
   rule). Without it any local process, unelevated included, can open `/ws` on 127.0.0.1 and put its own
-  file list on screen under the phone's name.
+  file list on screen under the phone's name. The call site must pass the connection's REAL
+  `isLoopback`/`identityProven`: `PhoneRelayReplyDispatchTests.AReplyFromAPinPairedLoopbackConnection_IsNotDelivered`
+  drives a PIN-paired loopback connection through `HandleAsync` and goes red if the case block
+  hardcodes `isLoopback: false` (defect-injected in RemEx-xt0af).
+- **The sender must still be paired** when the reply arrives (`IsClientPaired`, re-checked in
+  `TryDeliverReply`), so a reply in flight across an unpair is dropped.
 - **A reply is matched only against requests sent to the SENDER's own client id** (the `continue` in
   `TryDeliverReply`'s loop). Delete it and a second paired phone that guesses a request id answers for
   the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected

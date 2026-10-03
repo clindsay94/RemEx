@@ -4179,4 +4179,16 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>Dosya telefonun gönderdiğiyle eşleşmediği için silindi. Yeniden indirmeyi deneyin.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Telefonunuz aktarımı durdurdu. Telefondaki RemEx'i kontrol edin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Dosya gönderilemeyecek kadar büyük. Daha küçük bir dosya seçin.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Dosya gönderilirken değişti. Onu kaydeden bir şey kalmayana kadar bekleyin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Bu dosya adı aktarılamaz. Dosyayı yeniden adlandırın ve tekrar deneyin.</value>
+  </data>
 </root>

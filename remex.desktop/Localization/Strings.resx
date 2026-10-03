@@ -4181,4 +4181,16 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>The file didn't match what the phone sent, so it was deleted. Try downloading it again.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Your phone stopped the transfer. Check RemEx on the phone, then try again.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>The file is too large to send. Choose a smaller file.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>The file changed while it was being sent. Wait until nothing is still saving it, then try again.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>That file name can't be transferred. Rename the file, then try again.</value>
+  </data>
 </root>

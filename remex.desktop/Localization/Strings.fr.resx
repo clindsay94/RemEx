@@ -4175,4 +4175,16 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>Le fichier ne correspondait pas à ce que le téléphone a envoyé, il a donc été supprimé. Téléchargez-le à nouveau.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Votre téléphone a arrêté le transfert. Vérifiez RemEx sur le téléphone, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Le fichier est trop volumineux pour être envoyé. Choisissez un fichier plus petit.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Le fichier a changé pendant son envoi. Attendez que plus rien ne l'enregistre, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Ce nom de fichier ne peut pas être transféré. Renommez le fichier, puis réessayez.</value>
+  </data>
 </root>

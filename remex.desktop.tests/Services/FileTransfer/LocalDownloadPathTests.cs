@@ -62,7 +62,23 @@ public sealed class LocalDownloadPathTests : IDisposable
         "LPT9.log",
         new string('a', LocalDownloadPath.MaxSegmentLength + 1),
         "Camera/" + new string('b', LocalDownloadPath.MaxSegmentLength + 1) + ".jpg",
+        // Windows strips a trailing dot or space, so these collide with "photo.jpg" and "Camera".
+        "photo.jpg.",
+        "photo.jpg ",
+        "Camera./photo.jpg",
+        "Camera /photo.jpg",
+        "Camera/photo.jpg. .",
     };
+
+    [Fact]
+    public void TwoNamesThatWindowsWouldMerge_DoNotBothResolve()
+    {
+        // The collision itself: whichever of the pair is accepted, the other must be refused rather
+        // than land on the same file.
+        LocalDownloadPath.TryResolve(_root.FullName, "Camera/a", out _).Should().BeTrue();
+        LocalDownloadPath.TryResolve(_root.FullName, "Camera/a.", out _).Should().BeFalse();
+        LocalDownloadPath.TryResolve(_root.FullName, "Camera/a ", out _).Should().BeFalse();
+    }
 
     [Theory]
     [MemberData(nameof(HostilePaths))]

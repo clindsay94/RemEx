@@ -146,6 +146,17 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             return false;
         }
 
+        // STILL PAIRED, CHECKED AGAIN NOW. A reply already in flight when the phone was unpaired comes
+        // from a session that proved its id earlier; it is not a paired phone's answer any more, and an
+        // unpaired phone's listing must not reach the PC's screen.
+        if (!_paired.IsClientPaired(senderClientId))
+        {
+            _logger.LogWarning(
+                "Dropped a {Type} from {ClientId}: that phone is no longer paired.",
+                message.Type, LogRedaction.RedactClientId(senderClientId));
+            return false;
+        }
+
         if (!RequestForReply.TryGetValue(message.Type, out var requestType))
             return false;
 
@@ -218,10 +229,11 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
     /// Turns a failed verdict into the exception the transfer queue describes best.
     /// </summary>
     /// <remarks>
-    /// The PC's OWN diagnoses (<see cref="PeerTransferFailure"/>) become types the queue already words
-    /// in the user's language. Anything else came from the phone, which writes its refusals for people
-    /// ("Destination folder not found or read-only."), and is shown as it wrote it — the same promise
-    /// <see cref="FileTransferHostException"/> makes for the PC's own host.
+    /// The PC's OWN diagnoses (<see cref="PeerTransferFailure"/>) become types the queue words in the
+    /// user's language; their English goes to the log and nowhere else. Anything else came from the
+    /// phone, which writes its refusals for people ("Destination folder not found or read-only."), and
+    /// is shown as it wrote it — the same promise <see cref="FileTransferHostException"/> makes for the
+    /// PC's own host.
     /// </remarks>
     private void ThrowIfFailed(string clientId, FileTransferResult result)
     {
@@ -235,19 +247,41 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         if (!IsReachable(clientId))
             throw new PhoneNotConnectedException();
 
-        throw result.Error switch
-        {
-            PeerTransferFailure.NoAnswer
-                or PeerTransferFailure.StoppedResponding
-                or PeerTransferFailure.StoppedAcknowledging => new TimeoutException(result.Error),
-            PeerTransferFailure.ConnectionDropped
-                or PeerTransferFailure.ChannelMissing
-                or PeerTransferFailure.Stopped => new PhoneNotConnectedException(result.Error),
-            PeerTransferFailure.Incomplete
-                or PeerTransferFailure.HashMismatch => new FileTransferIntegrityException(fromPhone: true),
-            _ => FileTransferHostException.ForHostError(result.Error, "The phone transfer failed without a reason."),
-        };
+        throw FailureFor(result.Error);
     }
+
+    /// <summary>
+    /// The exception a failed verdict's reason becomes. Every <see cref="PeerTransferFailure"/>
+    /// constant maps to a type the transfer queue localizes; only a reason the phone wrote reaches
+    /// <see cref="FileTransferHostException"/>.
+    /// </summary>
+    internal static Exception FailureFor(string? error) => error switch
+    {
+        PeerTransferFailure.NoAnswer
+            or PeerTransferFailure.StoppedResponding
+            or PeerTransferFailure.StoppedAcknowledging => new TimeoutException(error),
+        PeerTransferFailure.ConnectionDropped
+            or PeerTransferFailure.ChannelMissing
+            or PeerTransferFailure.Stopped => new PhoneNotConnectedException(error),
+        PeerTransferFailure.Incomplete
+            or PeerTransferFailure.HashMismatch => new FileTransferIntegrityException(fromPhone: true),
+        PeerTransferFailure.PhoneStopped => new PhoneTransferFailedException(PhoneTransferProblem.PhoneStopped, error),
+        PeerTransferFailure.PhoneDeclined
+            or PeerTransferFailure.PhoneDidNotAccept => new PhoneTransferFailedException(PhoneTransferProblem.PhoneRefused, error),
+        PeerTransferFailure.TooLarge => new PhoneTransferFailedException(PhoneTransferProblem.FileTooLarge, error),
+        PeerTransferFailure.LocalFileChanged => new PhoneTransferFailedException(PhoneTransferProblem.FileChanged, error),
+        PeerTransferFailure.NameNotAllowed => new PhoneTransferFailedException(PhoneTransferProblem.NameNotAllowed, error),
+        // The local file could not be read (upload) or landed (download): the queue's plain IOException
+        // arm already says which side, in the user's language.
+        PeerTransferFailure.LocalFileMissing
+            or PeerTransferFailure.LocalFileUnreadable
+            or PeerTransferFailure.SaveFailed => new IOException(error),
+        PeerTransferFailure.Failed
+            or PeerTransferFailure.PhoneRequired
+            or PeerTransferFailure.RootRequired
+            or PeerTransferFailure.BadDestination => new PhoneTransferFailedException(PhoneTransferProblem.Unknown, error),
+        _ => FileTransferHostException.ForHostError(error, "The phone transfer failed without a reason."),
+    };
 
     /// <summary>Synchronous <see cref="IProgress{T}"/>: the queue item marshals to the UI itself.</summary>
     private sealed class InlineProgress(Action<long> report) : IProgress<long>

@@ -4178,4 +4178,16 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
     <value>File tidak cocok dengan yang dikirim ponsel, jadi file dihapus. Coba unduh lagi.</value>
   </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Ponsel Anda menghentikan transfer. Periksa RemEx di ponsel, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>File terlalu besar untuk dikirim. Pilih file yang lebih kecil.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>File berubah saat sedang dikirim. Tunggu sampai tidak ada yang sedang menyimpannya, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Nama file itu tidak dapat ditransfer. Ganti nama file, lalu coba lagi.</value>
+  </data>
 </root>

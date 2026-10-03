@@ -99,4 +99,37 @@ class SharedPathPolicyTest {
         provider.granted = true
         assertEquals(setOf(dcim, "tree:all"), provider.allowedRootIds())
     }
+
+    // ── The v3 resolver's walk (SafFileSystemFacade.resolve) ─────────────────────
+
+    @Test
+    fun resolveSegments_aSharedRootAndAPlainPath_resolveToTheirNames() {
+        assertEquals(listOf("Camera", "IMG_1.jpg"), SharedPathPolicy.resolveSegments(dcim, "Camera/IMG_1.jpg", shared))
+        assertEquals(emptyList<String>(), SharedPathPolicy.resolveSegments(dcim, "", shared))
+        assertEquals(emptyList<String>(), SharedPathPolicy.resolveSegments(dcim, "/", shared))
+        assertEquals(emptyList<String>(), SharedPathPolicy.resolveSegments(dcim, null, shared))
+    }
+
+    @Test
+    fun resolveSegments_skipsEmptyNamesAsTheResolverAlwaysDid() {
+        assertEquals(listOf("Camera", "IMG_1.jpg"), SharedPathPolicy.resolveSegments(dcim, "/Camera//IMG_1.jpg/", shared))
+    }
+
+    @Test
+    fun resolveSegments_refusesARootThatIsNotSharedRightNow() {
+        assertNull(SharedPathPolicy.resolveSegments("content://com.android.externalstorage.documents/tree/primary%3A", "x", shared))
+        assertNull(SharedPathPolicy.resolveSegments(null, "x", shared))
+        assertNull(SharedPathPolicy.resolveSegments("", "x", shared))
+        assertNull(SharedPathPolicy.resolveSegments(dcim, "x", emptySet()))
+    }
+
+    @Test
+    fun resolveSegments_refusesEveryUnsafeName() {
+        for (path in listOf(
+            ".", "..", "Camera/..", "Camera/../Download", "./Camera", "Camera/./IMG_1.jpg",
+            "Camera\\..\\x", "nul\u0000byte", "Camera/" + "x".repeat(SharedPathPolicy.MAX_SEGMENT_LENGTH + 1),
+        )) {
+            assertNull("'$path' must be refused", SharedPathPolicy.resolveSegments(dcim, path, shared))
+        }
+    }
 }

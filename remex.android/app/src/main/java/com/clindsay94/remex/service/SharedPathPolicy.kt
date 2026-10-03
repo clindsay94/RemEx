@@ -54,6 +54,21 @@ object SharedPathPolicy {
         return segments(relativePath)
     }
 
+    /**
+     * The names the v3 resolver ([SafFileSystemFacade.resolve]) walks under [rootId], or null when the
+     * request must be refused: the root is not one of [allowedRootIds] (shared folders, plus the
+     * whole-device volumes while whole-device browsing is on), or a name is unsafe ([isSafeName]).
+     *
+     * EMPTY NAMES ARE SKIPPED, NOT REFUSED, unlike [segments]. `a//b` resolves as `a/b`, which is what
+     * the v3 resolver always did and what its existing callers rely on; `.`, `..` and every other
+     * unsafe name still refuse the whole path.
+     */
+    fun resolveSegments(rootId: String?, relativePath: String?, allowedRootIds: Collection<String>): List<String>? {
+        if (!isAllowedRoot(rootId, allowedRootIds)) return null
+        val names = (relativePath ?: "").trim('/').split('/').filter { it.isNotEmpty() }
+        return if (names.all { isSafeName(it) }) names else null
+    }
+
     /** True when [name] can be one name in a path under a shared root. */
     fun isSafeName(name: String): Boolean =
         name.isNotBlank() &&

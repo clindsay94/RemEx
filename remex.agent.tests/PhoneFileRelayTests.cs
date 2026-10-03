@@ -244,6 +244,24 @@ public sealed class PhoneFileRelayTests
     }
 
     [Fact]
+    public async Task Reply_StillInFlightWhenThePhoneWasUnpaired_IsDropped()
+    {
+        // The session proved its id before the unpair, and is still registered for a moment while it
+        // is torn down. A reply it sends in that window is no longer a paired phone's answer.
+        using var kit = new PhoneRelayTestKit();
+        kit.ConnectProvenPhone(PhoneA);
+        using var connection = kit.Relay.Open(PhoneA);
+        var received = new List<RemexMessage>();
+        connection.FileTransferMessageReceived += received.Add;
+        await connection.SendAsync(BrowseRequest("r1"));
+
+        kit.Paired.UnregisterClient(PhoneA);
+
+        Assert.False(kit.Relay.TryDeliverReply(PhoneA, identityProven: true, isLoopback: false, BrowseReply("r1", "a.jpg")));
+        Assert.Empty(received);
+    }
+
+    [Fact]
     public async Task Reply_ToARequestNobodySent_IsDropped()
     {
         using var kit = new PhoneRelayTestKit();
@@ -441,4 +459,66 @@ public sealed class PhoneFileRelayTests
             ],
         },
     };
+
+    // ─── Failure wording ─────────────────────────────────────────────────────────
+
+    /// <summary>Every reason the PC itself gives, read off <see cref="PeerTransferFailure"/>.</summary>
+    private static List<string> PcOwnReasonValues() =>
+        [.. typeof(PeerTransferFailure)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => field.GetRawConstantValue())
+            .OfType<string>()];
+
+    public static TheoryData<string> PcOwnReasons()
+    {
+        var data = new TheoryData<string>();
+        foreach (var value in PcOwnReasonValues())
+            data.Add(value);
+        return data;
+    }
+
+    [Fact]
+    public void ThePcsOwnReasons_AreReadOffTheConstants()
+    {
+        // Anti-vacuity: an empty list would make the theory below pass by never running.
+        Assert.True(PcOwnReasonValues().Count >= 20);
+    }
+
+    /// <summary>
+    /// The PC's own English never reaches the screen: <see cref="FileTransferHostException"/> shows its
+    /// message verbatim, so no constant may map to it. A new constant without a mapping fails here.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PcOwnReasons))]
+    public void APcOwnReason_NeverBecomesAVerbatimHostMessage(string reason)
+    {
+        var failure = PhoneFileRelay.FailureFor(reason);
+
+        Assert.IsNotType<FileTransferHostException>(failure);
+    }
+
+    [Theory]
+    [InlineData(PeerTransferFailure.PhoneStopped, PhoneTransferProblem.PhoneStopped)]
+    [InlineData(PeerTransferFailure.PhoneDeclined, PhoneTransferProblem.PhoneRefused)]
+    [InlineData(PeerTransferFailure.PhoneDidNotAccept, PhoneTransferProblem.PhoneRefused)]
+    [InlineData(PeerTransferFailure.TooLarge, PhoneTransferProblem.FileTooLarge)]
+    [InlineData(PeerTransferFailure.LocalFileChanged, PhoneTransferProblem.FileChanged)]
+    [InlineData(PeerTransferFailure.NameNotAllowed, PhoneTransferProblem.NameNotAllowed)]
+    [InlineData(PeerTransferFailure.Failed, PhoneTransferProblem.Unknown)]
+    public void APcOwnReason_MapsToItsDiagnosis(string reason, PhoneTransferProblem expected)
+    {
+        var failure = Assert.IsType<PhoneTransferFailedException>(PhoneFileRelay.FailureFor(reason));
+
+        Assert.Equal(expected, failure.Problem);
+    }
+
+    [Fact]
+    public void AReasonThePhoneWrote_IsShownAsItWroteIt()
+    {
+        var failure = Assert.IsType<FileTransferHostException>(
+            PhoneFileRelay.FailureFor("Destination folder not found or read-only."));
+
+        Assert.Equal("Destination folder not found or read-only.", failure.HostMessage);
+    }
 }
