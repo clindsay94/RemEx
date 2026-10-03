@@ -268,7 +268,13 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
         builder.Services.AddSingleton<PairedClientRegistry>();
         builder.Services.AddTransient<PairingHandler>();
-        builder.Services.AddSingleton<IFileTransferService, FileTransferService>();
+        // ONE instance under two interfaces (RemEx-xt0af). IFileTransferService is the shared-root API a
+        // phone's requests reach; IStagedFilePromoter lands a PC-started pull in a folder the person at
+        // the PC picked. Two registrations of the concrete type would build two services with two
+        // views of the shared-root list.
+        builder.Services.AddSingleton<FileTransferService>();
+        builder.Services.AddSingleton<IFileTransferService>(sp => sp.GetRequiredService<FileTransferService>());
+        builder.Services.AddSingleton<IStagedFilePromoter>(sp => sp.GetRequiredService<FileTransferService>());
         // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2: trust/consent + volume enumeration ──
         builder.Services.AddSingleton<IFileTrustService, FileTrustService>();
         builder.Services.AddSingleton<VolumeEnumerator>();
@@ -435,6 +441,17 @@ public static class HostBootstrapper
         // already creates its staging directory under %ProgramData%: this adds no new startup ordering
         // question, it joins one that was already answered.
         builder.Services.AddSingleton<TransferQueueService>();
+
+        // The PC browsing a paired phone (RemEx-xt0af): read-only file_* requests relayed down the
+        // phone's own session, and PC-started transfers over its own /ws/files channel. One instance
+        // under both desktop-declared interfaces, resolved by the File Transfer screen through
+        // App.EmbeddedHostServices, and under its own type for PingPongHandler, which hands it the
+        // phone's replies.
+        builder.Services.AddSingleton<PhoneFileRelay>();
+        builder.Services.AddSingleton<Remex.Desktop.Services.FileTransfer.IPhoneFileAccess>(
+            sp => sp.GetRequiredService<PhoneFileRelay>());
+        builder.Services.AddSingleton<Remex.Desktop.Services.FileTransfer.IPhoneFileTransfers>(
+            sp => sp.GetRequiredService<PhoneFileRelay>());
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
@@ -698,7 +715,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Theme.IPhoneThemeSnapshotStore>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.Home.IHomePinnedSensorsStore>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Home.IHomePinnedSensorsStore>(),
+                context.RequestServices.GetRequiredService<PhoneFileRelay>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

@@ -4136,4 +4136,61 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="Launch_OpenFailed_Message" xml:space="preserve">
     <value>O RemEx não conseguiu abrir isto com suas permissões normais. Aguarde um momento e tente novamente.</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Origem</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Escolha de quem são os arquivos exibidos: as pastas compartilhadas deste PC ou as de um celular conectado.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Este PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Seu celular</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Para navegar pelo seu celular aqui, conecte-o a este PC e compartilhe uma pasta no RemEx do celular, em Acesso pelo seu PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Você está navegando pelo seu celular. Você pode baixar arquivos e enviar arquivos para as pastas que o celular compartilha com permissão de escrita. Para mudar o que este PC pode ver, abra o RemEx no celular e vá até Acesso pelo seu PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Esse celular não está conectado agora. Abra o RemEx no celular, conecte-se a este PC e tente de novo.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Seu celular se desconectou, então você voltou para as pastas deste PC. Conecte o celular de novo para navegar por ele.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Seu celular não respondeu a tempo. Verifique se o RemEx está aberto e conectado no celular e tente de novo.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Seu celular não permitiu isso. Abra o RemEx no celular, vá até Acesso pelo seu PC e confira o que você está compartilhando.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Seu celular ainda não compartilha nenhuma pasta. Abra o RemEx no celular, vá até Acesso pelo seu PC e adicione uma pasta compartilhada.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>A navegação por todo o dispositivo está desativada no seu celular. Para usá-la, abra o RemEx no celular, vá até Acesso pelo seu PC e ative Permitir navegar por todo o dispositivo.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Ainda não é possível enviar pastas para um celular. Envie os arquivos que estão dentro dela.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Seu celular se desconectou antes de a transferência terminar. Conecte-o de novo e tente outra vez.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>O arquivo não correspondia ao que o celular enviou, então foi excluído. Tente baixá-lo de novo.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Seu celular interrompeu a transferência. Confira o RemEx no celular e tente outra vez.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>O arquivo é grande demais para ser enviado. Escolha um arquivo menor.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>O arquivo mudou enquanto era enviado. Espere até que nada o esteja salvando e tente outra vez.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Esse nome de arquivo não pode ser transferido. Renomeie o arquivo e tente outra vez.</value>
+  </data>
 </root>

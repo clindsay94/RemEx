@@ -4149,4 +4149,61 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="Launch_OpenFailed_Message" xml:space="preserve">
     <value>RemEx no pudo abrirlo con tus permisos normales. Espera un momento y vuelve a intentarlo.</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Origen</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Elige qué archivos mostrar: las carpetas compartidas de este PC o las de un teléfono conectado.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Este PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Tu teléfono</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Para explorar tu teléfono aquí, conéctalo a este PC y comparte una carpeta en RemEx en el teléfono, en Acceso desde tu PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Estás explorando tu teléfono. Puedes descargar archivos y subirlos a las carpetas que el teléfono comparte con permiso de escritura. Para cambiar lo que ve este PC, abre RemEx en el teléfono y ve a Acceso desde tu PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Ese teléfono no está conectado ahora. Abre RemEx en el teléfono, conéctalo a este PC y vuelve a intentarlo.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Tu teléfono se desconectó, así que has vuelto a las carpetas de este PC. Vuelve a conectar el teléfono para explorarlo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Tu teléfono no respondió a tiempo. Asegúrate de que RemEx está abierto y conectado en el teléfono y vuelve a intentarlo.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Tu teléfono no lo permitió. Abre RemEx en el teléfono, ve a Acceso desde tu PC y revisa qué compartes.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Tu teléfono todavía no comparte ninguna carpeta. Abre RemEx en el teléfono, ve a Acceso desde tu PC y añade una carpeta compartida.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>La exploración de todo el dispositivo está desactivada en tu teléfono. Para usarla, abre RemEx en el teléfono, ve a Acceso desde tu PC y activa Permitir explorar todo el dispositivo.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Todavía no se pueden subir carpetas a un teléfono. Sube los archivos que contiene.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Tu teléfono se desconectó antes de que terminara la transferencia. Vuelve a conectarlo e inténtalo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>El archivo no coincidía con lo que envió el teléfono, así que se eliminó. Vuelve a descargarlo.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Tu teléfono detuvo la transferencia. Revisa RemEx en el teléfono e inténtalo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>El archivo es demasiado grande para enviarlo. Elige un archivo más pequeño.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>El archivo cambió mientras se enviaba. Espera a que nada lo esté guardando e inténtalo de nuevo.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Ese nombre de archivo no se puede transferir. Cambia el nombre del archivo e inténtalo de nuevo.</value>
+  </data>
 </root>

@@ -372,6 +372,9 @@ class FileHostHandler(
                         node == null || !node.canWrite ->
                             sendManage(requestId, false, "File not found or access denied.")
                         newName.isBlank() -> sendManage(requestId, false, "A new name is required.")
+                        // `.`, `..`, separators, NUL: a name, not a path (RemEx-xt0af).
+                        !SharedPathPolicy.isSafeName(newName) ->
+                            sendManage(requestId, false, "That name can't be used.")
                         node.renameTo(newName) -> sendManage(requestId, true, null)
                         else -> sendManage(requestId, false, "Rename failed.")
                     }
@@ -382,6 +385,8 @@ class FileHostHandler(
                         parent == null || !parent.canWrite ->
                             sendManage(requestId, false, "Destination folder not found or read-only.")
                         newName.isBlank() -> sendManage(requestId, false, "A folder name is required.")
+                        !SharedPathPolicy.isSafeName(newName) ->
+                            sendManage(requestId, false, "That folder name can't be used.")
                         parent.findChild(newName) != null && !overwrite ->
                             sendManage(requestId, false, "A folder with that name already exists.")
                         parent.createDirectory(newName) != null -> sendManage(requestId, true, null)
@@ -423,6 +428,10 @@ class FileHostHandler(
         val destName = destinationPath.trim('/').substringAfterLast('/')
         if (destName.isBlank()) {
             sendManage(requestId, false, "A destination file name is required.")
+            return
+        }
+        if (!SharedPathPolicy.isSafeName(destName)) {
+            sendManage(requestId, false, "That destination file name can't be used.")
             return
         }
         val parent = facade.resolve(rootId, destDir)
@@ -1068,7 +1077,9 @@ class FileHostHandler(
             decline("A destination shared root is required.", PushRefusal.NoWritableSharedFolder)
             return
         }
-        if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\')) {
+        // A NAME, NOT A PATH: blank, `.`, `..`, a separator, NUL or an over-long name is refused
+        // (RemEx-xt0af). The PC can now drive uploads, so this is no longer only a push's rule.
+        if (!SharedPathPolicy.isSafeName(fileName)) {
             decline("Invalid file name.", PushRefusal.UnusableFileName)
             return
         }

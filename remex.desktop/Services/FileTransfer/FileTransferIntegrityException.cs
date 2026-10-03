@@ -19,4 +19,15 @@ public sealed class FileTransferIntegrityException : IOException
         : base("Download failed: SHA-256 integrity check failed.")
     {
     }
+
+    /// <param name="fromPhone">
+    /// True when the file came from a paired PHONE rather than this PC's own host (RemEx-xt0af), so the
+    /// queue can say which device's copy did not match.
+    /// </param>
+    public FileTransferIntegrityException(bool fromPhone)
+        : this()
+        => FromPhone = fromPhone;
+
+    /// <summary>Whether the mismatched file came from a paired phone.</summary>
+    public bool FromPhone { get; }
 }

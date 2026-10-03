@@ -71,11 +71,18 @@ only turns on when you explicitly enable it.
   so on).
 - **On Linux**, it lists the PC's mounted **volumes**.
 
-**Browsing the phone from the PC isn't available yet.** The phone already has an
-*"Access from your PC"* setting, where you would pick a folder tree with Android's
-own folder picker (that picker *is* the permission — Android itself asks you), but
-the PC's Files page can't browse a phone in this version. It is planned for a
-later update.
+**Browsing your phone from the PC.** On the PC's **Files** page, the **Source**
+picker lists **This PC** and every paired phone that is connected right now. Pick
+your phone to see the folders it shares. You can search, look at details and
+thumbnails, **download** files and folders to the PC, and **upload** files into a
+phone folder that is shared for writing.
+
+What the PC can see is decided **on the phone**, under **Settings → "Access from
+your PC"**: the folders you add there, plus the whole phone's storage only if you
+turn on *Allow full‑device browsing* (you pick that folder tree with Android's own
+folder picker, and that picker *is* the permission). The phone doesn't ask again
+while the PC browses — those settings are your answer. The PC can't rename,
+delete or move anything on the phone.
 
 **Some places are always off‑limits, even with full browse on.** RemEx permanently
 blocks the internal system folders that keep a computer running (on Linux:
@@ -84,7 +91,9 @@ never be written to, because touching them could damage the machine. This block
 can't be switched off.
 
 A quick‑access row of your drives/volumes only appears **after** you've granted
-full browse — until then, there's nothing extra to see.
+full browse — until then, there's nothing extra to see. On the PC's Files page the
+whole‑device button only shows while you're browsing a **phone** that has full
+browse turned on; for the PC itself, use File Explorer.
 
 ---
 
@@ -121,9 +130,9 @@ You stay in control. You can change your mind at any time:
 - **On the PC**, open **Settings → File-sharing trust**. Each paired phone has an
   *Allow full-device browsing* switch and a **Revoke** button. To stop uploads,
   make the folder read‑only in **Settings → Shared folders**.
-- **On the phone**, open **Settings → "Access from your PC"** to turn off
-  auto‑accept for files the PC sends (the full‑device‑browse switch there is
-  waiting for the later update mentioned in section 2).
+- **On the phone**, open **Settings → "Access from your PC"** to remove a shared
+  folder, turn off full‑device browsing, or turn off auto‑accept for files the PC
+  sends. The PC stops seeing anything you take away there straight away.
 - **Unpairing a device removes all of its file‑sharing permissions automatically.**
 
 ---

@@ -4136,4 +4136,61 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="Launch_OpenFailed_Message" xml:space="preserve">
     <value>RemEx n'a pas pu l'ouvrir avec vos autorisations habituelles. Patientez un instant, puis réessayez.</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Choisissez les fichiers à afficher : les dossiers partagés de ce PC ou ceux d'un téléphone connecté.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Ce PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Votre téléphone</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Pour parcourir votre téléphone ici, connectez-le à ce PC, puis partagez un dossier dans RemEx sur le téléphone, sous Accès depuis votre PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Vous parcourez votre téléphone. Vous pouvez télécharger des fichiers et en envoyer dans les dossiers que le téléphone partage en écriture. Pour changer ce que ce PC peut voir, ouvrez RemEx sur le téléphone et allez dans Accès depuis votre PC.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Ce téléphone n'est pas connecté pour le moment. Ouvrez RemEx sur le téléphone, connectez-le à ce PC, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Votre téléphone s'est déconnecté, vous êtes donc revenu aux dossiers de ce PC. Reconnectez le téléphone pour le parcourir à nouveau.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Votre téléphone n'a pas répondu à temps. Vérifiez que RemEx est ouvert et connecté sur le téléphone, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Votre téléphone ne l'a pas autorisé. Ouvrez RemEx sur le téléphone, allez dans Accès depuis votre PC et vérifiez ce que vous partagez.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Votre téléphone ne partage encore aucun dossier. Ouvrez RemEx sur le téléphone, allez dans Accès depuis votre PC et ajoutez un dossier partagé.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>L'exploration de tout l'appareil est désactivée sur votre téléphone. Pour l'utiliser, ouvrez RemEx sur le téléphone, allez dans Accès depuis votre PC et activez Autoriser l'exploration de tout l'appareil.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Les dossiers ne peuvent pas encore être envoyés vers un téléphone. Envoyez plutôt les fichiers qu'il contient.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Votre téléphone s'est déconnecté avant la fin du transfert. Reconnectez-le, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>Le fichier ne correspondait pas à ce que le téléphone a envoyé, il a donc été supprimé. Téléchargez-le à nouveau.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Votre téléphone a arrêté le transfert. Vérifiez RemEx sur le téléphone, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Le fichier est trop volumineux pour être envoyé. Choisissez un fichier plus petit.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Le fichier a changé pendant son envoi. Attendez que plus rien ne l'enregistre, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Ce nom de fichier ne peut pas être transféré. Renommez le fichier, puis réessayez.</value>
+  </data>
 </root>

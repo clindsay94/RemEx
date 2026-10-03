@@ -4137,4 +4137,61 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Launch_OpenFailed_Message" xml:space="preserve">
     <value>RemEx не зміг відкрити це з вашими звичайними дозволами. Зачекайте трохи й спробуйте ще раз.</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Джерело</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Виберіть, чиї файли показувати: спільні папки цього ПК або підключеного телефона.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Цей ПК</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Ваш телефон</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Щоб переглядати тут телефон, підключіть його до цього ПК, а потім надайте спільний доступ до папки в RemEx на телефоні, у розділі Доступ із вашого ПК.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Ви переглядаєте телефон. Можна завантажувати файли та надсилати їх у папки, до яких телефон надає доступ для запису. Щоб змінити, що бачить цей ПК, відкрийте RemEx на телефоні й перейдіть до розділу Доступ із вашого ПК.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Цей телефон зараз не підключено. Відкрийте RemEx на телефоні, підключіться до цього ПК і спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Телефон відключився, тому ви повернулися до папок цього ПК. Підключіть телефон знову, щоб переглядати його.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Телефон не відповів вчасно. Переконайтеся, що RemEx відкрито й підключено на телефоні, і спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Телефон цього не дозволив. Відкрийте RemEx на телефоні, перейдіть до розділу Доступ із вашого ПК і перевірте, чим ви ділитеся.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Телефон ще не надає доступу до жодної папки. Відкрийте RemEx на телефоні, перейдіть до розділу Доступ із вашого ПК і додайте спільну папку.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Перегляд усього пристрою вимкнено на телефоні. Щоб ним скористатися, відкрийте RemEx на телефоні, перейдіть до розділу Доступ із вашого ПК і ввімкніть Дозволити перегляд усього пристрою.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Папки поки не можна надсилати на телефон. Надішліть файли, що в ній містяться.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Телефон відключився до завершення передавання. Підключіть його знову й спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>Файл не збігався з тим, що надіслав телефон, тому його видалено. Спробуйте завантажити його ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Телефон зупинив передавання. Перевірте RemEx на телефоні й спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Файл завеликий для надсилання. Виберіть менший файл.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Файл змінився під час надсилання. Зачекайте, доки його ніщо не зберігатиме, і спробуйте ще раз.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Файл із такою назвою не можна передати. Перейменуйте файл і спробуйте ще раз.</value>
+  </data>
 </root>

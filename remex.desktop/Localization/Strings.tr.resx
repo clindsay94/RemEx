@@ -4140,4 +4140,61 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   <data name="Launch_OpenFailed_Message" xml:space="preserve">
     <value>RemEx bunu normal izinlerinizle açamadı. Biraz bekleyip yeniden deneyin.</value>
   </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Kaynak</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Kimin dosyalarının gösterileceğini seçin: bu PC'nin paylaşılan klasörleri ya da bağlı bir telefonunkiler.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Bu PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Telefonunuz</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Telefonunuza burada göz atmak için onu bu PC'ye bağlayın, ardından telefondaki RemEx'te PC'nizden erişim altında bir klasör paylaşın.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Telefonunuza göz atıyorsunuz. Dosya indirebilir ve telefonun yazmak için paylaştığı klasörlere dosya yükleyebilirsiniz. Bu PC'nin neleri görebileceğini değiştirmek için telefonda RemEx'i açın ve PC'nizden erişim bölümüne gidin.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Bu telefon şu anda bağlı değil. Telefonda RemEx'i açın, bu PC'ye bağlanın ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Telefonunuzun bağlantısı kesildi, bu yüzden bu PC'nin klasörlerine geri döndünüz. Tekrar göz atmak için telefonu yeniden bağlayın.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Telefonunuz zamanında yanıt vermedi. Telefonda RemEx'in açık ve bağlı olduğundan emin olun, ardından tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Telefonunuz buna izin vermedi. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve neleri paylaştığınızı kontrol edin.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Telefonunuz henüz hiçbir klasör paylaşmıyor. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve paylaşılan bir klasör ekleyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Telefonunuzda tüm cihazda gezinme kapalı. Kullanmak için telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve Tüm cihazda gezinmeye izin ver seçeneğini açın.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Klasörler henüz telefona yüklenemiyor. Bunun yerine içindeki dosyaları yükleyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Aktarım bitmeden telefonunuzun bağlantısı kesildi. Yeniden bağlayın ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>Dosya telefonun gönderdiğiyle eşleşmediği için silindi. Yeniden indirmeyi deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Telefonunuz aktarımı durdurdu. Telefondaki RemEx'i kontrol edin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Dosya gönderilemeyecek kadar büyük. Daha küçük bir dosya seçin.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Dosya gönderilirken değişti. Onu kaydeden bir şey kalmayana kadar bekleyin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Bu dosya adı aktarılamaz. Dosyayı yeniden adlandırın ve tekrar deneyin.</value>
+  </data>
 </root>

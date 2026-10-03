@@ -115,6 +115,43 @@ same way, so the meaning is fixed:
   listing from the first page (with totals) rather than failing.
 - `nextCursor` is absent on the last page and when the listing was truncated at the total-entry cap.
 
+### The PC browsing a paired phone (relay, RemEx-xt0af)
+The PC's own File Transfer screen can browse a paired phone. **The connection direction does not
+change**: the phone dials `/ws` and `/ws/files` as always, and the PC opens no socket to it. What is
+new is that the host (`PhoneFileRelay`) sends a fixed set of **existing** request types DOWN a paired
+phone's live, authenticated `/ws` session, and the phone's file host (`FileHostHandler.kt`) answers
+them exactly as it would answer any peer. No message type was added.
+
+**Relayed requests (host → phone), and nothing else:** `file_roots_request`, `file_browse_request`,
+`file_volumes_request`, `file_search_request`, `file_manifest_request`, `file_metadata_request`,
+`file_thumbnail_request`. Management (`file_manage_request`, `file_root_manage_request`), hashing and
+the legacy v2 transfer are refused by the relay before they reach the wire.
+
+Rules the host enforces, each pinned by `PhoneFileRelayTests`:
+- The target must be **paired** (`PairedClientRegistry`) **and connected** on a session that proved its
+  identity; otherwise the PC side gets `PhoneNotConnectedException`.
+- A relayed request carries **no `clientId`** (it is nulled on the way out).
+- A reply (`file_*_response` of the seven types above) is accepted only from a session with
+  `identityProven && !isLoopback`, only for a request this host sent to **that same client id**, and is
+  delivered only to the relay connection that asked. Unrequested replies are dropped; nothing is
+  broadcast. Loopback can never answer for a phone (RemEx-4215).
+- A phone that disconnects, or does not answer within the relay timeout, gets every pending request
+  completed with a failure reply (the reply type's `errorMessage`), so nothing hangs.
+
+**Transfers.** A PC-started download from the phone is an ordinary `file_transfer_offer` with
+`mode: "download"` sent to the phone (`destRoot` = the phone's root id, `destRelativePath` = the
+source FOLDER, `fileName` = the file); the phone answers `file_transfer_ready`, streams data frames on
+its own `/ws/files`, drains, and sends `file_transfer_complete`; the host verifies, lands the file in
+the folder the person picked, and answers `file_transfer_result`. A PC-started upload is a
+`file_transfer_offer` with `mode: "upload"` into a folder the phone shares for writing (the share is the
+consent, so the phone raises no prompt); the host streams, drains, sends `file_transfer_complete`, and
+waits for the phone's `file_transfer_result`. Verdicts are accepted only from the phone the transfer was
+started with. PC-started pulls are not resumable and are not written to `transfer_queue.json`.
+
+**Consent** is the phone's own **Access from your PC** settings: the shared folders, plus whole-device
+browsing only while that switch is on. The phone resolves a root id only if it is one of those right now
+(`SharedPathPolicy`), and refuses `.`/`..` path names.
+
 ---
 
 ## 4. TCP Command Ingress (External Network Listener)
