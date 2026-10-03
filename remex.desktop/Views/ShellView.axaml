@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
     xmlns:mi="using:Material.Icons.Avalonia"
@@ -32,9 +33,9 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="Foreground" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -76,8 +77,8 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
+                    <BrushTransition Property="Foreground" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -116,7 +117,7 @@
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Foreground" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -281,7 +282,7 @@
              nav item is ever unclickable while it settles in. -->
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(1)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.000" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -295,7 +296,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.018" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.018" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -309,7 +310,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.036" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.036" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -323,7 +324,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.054" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.054" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -337,7 +338,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(5)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.072" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.072" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -351,7 +352,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(6)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.090" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.090" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -365,7 +366,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(7)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.108" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.108" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -379,7 +380,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(8)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.126" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.126" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -393,7 +394,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(9)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.144" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.144" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -407,7 +408,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(10)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.162" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.162" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -421,7 +422,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(11)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.180" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.180" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -1039,7 +1040,7 @@
                         <Border Grid.Row="0" IsVisible="{Binding ShowConnectionBanner}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="0,0,0,1" Padding="16,10">
                             <Border.Transitions>
                                 <Transitions>
-                                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.Short4}" Easing="{x:Static motion:Motion.Standard}"/>
                                 </Transitions>
                             </Border.Transitions>
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
@@ -1061,7 +1062,7 @@
                         <Border Grid.Row="1" IsVisible="{Binding ShowLayoutLoadWarning}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource SystemWarningBrush}" BorderThickness="0,0,0,1" Padding="16,10">
                             <Border.Transitions>
                                 <Transitions>
-                                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.Short4}" Easing="{x:Static motion:Motion.Standard}"/>
                                 </Transitions>
                             </Border.Transitions>
                             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -1112,7 +1113,7 @@
                                 </DataTemplate>
                             </TransitioningContentControl.DataTemplates>
                             <TransitioningContentControl.PageTransition>
-                                <CrossFade Duration="0:0:0.14"/>
+                                <CrossFade Duration="{x:Static motion:Motion.Short3}" FadeInEasing="{x:Static motion:Motion.Standard}" FadeOutEasing="{x:Static motion:Motion.Standard}"/>
                             </TransitioningContentControl.PageTransition>
                         </TransitioningContentControl>
                     </Grid>
@@ -1129,7 +1130,7 @@
                     </DataTemplate>
                 </TransitioningContentControl.DataTemplates>
                 <TransitioningContentControl.PageTransition>
-                    <CrossFade Duration="0:0:0.14"/>
+                    <CrossFade Duration="{x:Static motion:Motion.Short3}" FadeInEasing="{x:Static motion:Motion.Standard}" FadeOutEasing="{x:Static motion:Motion.Standard}"/>
                 </TransitioningContentControl.PageTransition>
             </TransitioningContentControl>
 
@@ -1388,7 +1389,7 @@
                                        ReduceMotion="{Binding IsReducedMotion}" ZIndex="999">
                 <splash:SkiaSplashControl.Transitions>
                     <Transitions>
-                        <DoubleTransition Property="Opacity" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                        <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.Medium4}" Easing="{x:Static motion:Motion.Standard}"/>
                     </Transitions>
                 </splash:SkiaSplashControl.Transitions>
             </splash:SkiaSplashControl>
@@ -1399,7 +1400,7 @@
                     ZIndex="998">
                 <Border.Transitions>
                     <Transitions>
-                        <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+                        <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.InPlace}" Easing="{x:Static motion:Motion.Standard}"/>
                     </Transitions>
                 </Border.Transitions>
                 <Grid>
@@ -1468,7 +1469,7 @@
                                                                     <Ellipse Name="Pip" Width="8" Height="8" Fill="{DynamicResource TextMutedBrush}">
                                                                         <Ellipse.Transitions>
                                                                             <Transitions>
-                                                                                <BrushTransition Property="Fill" Duration="0:0:0.1"/>
+                                                                                <BrushTransition Property="Fill" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                                                                             </Transitions>
                                                                         </Ellipse.Transitions>
                                                                     </Ellipse>

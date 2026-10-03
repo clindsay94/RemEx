@@ -223,6 +223,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - The phone gives a short vibration for switches, the contrast slider's -1, 0 and 1 stops,
   long-presses, sent commands, pairing results and finished file transfers. Plain taps stay quiet,
   and it follows your phone's touch feedback setting. (RemEx-wqo7a.8)
+- The PC app moves like the phone: pages slide in and settle, the tray menu eases up as it opens,
+  and new activity on Home fades in. (RemEx-pp4cm.1)
+- Buttons, cards and menus answer hover and clicks with short, smooth feedback. (RemEx-pp4cm.1)
+- Clicking quickly through the sidebar doesn't wait for the last page to finish settling. The next
+  page starts as soon as the old one is gone. (RemEx-pp4cm.1)
+- With Reduced motion on, every animation is instant, and the switch takes effect immediately.
+  (RemEx-pp4cm.1)
 - **The phone app has five tabs: Home, Desktop, Apps, Control and More.** Labels are one word and
   always shown. Home is new: for now it has the PC card (online status, or Connect and Wake when the
   PC is offline) and an Open Sensors card, with more to come. The Sensors canvas moved into More and

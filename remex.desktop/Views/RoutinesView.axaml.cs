@@ -94,15 +94,18 @@ public partial class RoutinesView : UserControl
         }
     }
 
-    /// <summary>P-M3: the detail cross-fades over 150 ms CubicEaseOut; instant under reduced motion.</summary>
+    /// <summary>
+    /// P-M3: the detail cross-fades over <see cref="Remex.Desktop.Styles.Motion.StateChange"/> (150 ms) on the M3
+    /// standard curve; instant under reduced motion.
+    /// </summary>
     private void ApplyDetailTransition(bool reducedMotion)
     {
         DetailHost.PageTransition = reducedMotion
             ? null
-            : new CrossFade(TimeSpan.FromMilliseconds(150))
+            : new CrossFade(Remex.Desktop.Styles.Motion.StateChange)
             {
-                FadeInEasing = new CubicEaseOut(),
-                FadeOutEasing = new CubicEaseOut(),
+                FadeInEasing = Remex.Desktop.Styles.Motion.Standard,
+                FadeOutEasing = Remex.Desktop.Styles.Motion.Standard,
             };
     }
 

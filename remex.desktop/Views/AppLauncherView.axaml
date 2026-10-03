@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:material="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:converters="using:Remex.Desktop.Converters"
@@ -27,7 +28,7 @@
             <Setter Property="Opacity" Value="0.35"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
                 </Transitions>
             </Setter>
         </Style>
@@ -53,7 +54,7 @@
              reduced motion is off. -->
         <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(1)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.000" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -67,7 +68,7 @@
         </Style>
         <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -81,7 +82,7 @@
         </Style>
         <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -95,7 +96,7 @@
         </Style>
         <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.075" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -109,7 +110,7 @@
         </Style>
         <Style Selector="StackPanel#LauncherSections.entrance > :is(Control):nth-child(5)">
             <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="CubicEaseOut" FillMode="Backward">
+                <Animation Duration="0:0:0.175" Delay="0:0:0.100" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>

@@ -104,11 +104,11 @@ public class BoolToPageTransitionConverter : IValueConverter
         if (value is true)
             return null;
 
-        var easing = new CubicEaseOut();
-        return new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Horizontal)
+        // Motion tokens (RemEx-pp4cm.1): the M3 standard curve, both halves moving together.
+        return new PageSlide(Remex.Desktop.Styles.Motion.Medium1, PageSlide.SlideAxis.Horizontal)
         {
-            SlideInEasing = easing,
-            SlideOutEasing = easing,
+            SlideInEasing = Remex.Desktop.Styles.Motion.Standard,
+            SlideOutEasing = Remex.Desktop.Styles.Motion.Standard,
         };
     }
 

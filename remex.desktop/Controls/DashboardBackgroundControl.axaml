@@ -1,5 +1,6 @@
 <ContentControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -27,7 +28,7 @@
                         <Style Selector="Rectangle.palette-bg">
                             <Setter Property="Transitions">
                                 <Transitions>
-                                    <BrushTransition Property="Fill" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                                    <BrushTransition Property="Fill" Duration="{x:Static motion:Motion.Medium4}" Easing="{x:Static motion:Motion.Standard}"/>
                                 </Transitions>
                             </Setter>
                         </Style>
@@ -41,8 +42,8 @@
                         <Style Selector="Rectangle.palette-bg-gradient-base">
                             <Setter Property="Transitions">
                                 <Transitions>
-                                    <DoubleTransition Property="Opacity" Duration="0:0:1"/>
-                                    <BrushTransition Property="Fill" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.ExtraLong4}"/>
+                                    <BrushTransition Property="Fill" Duration="{x:Static motion:Motion.Medium4}" Easing="{x:Static motion:Motion.Standard}"/>
                                 </Transitions>
                             </Setter>
                         </Style>
@@ -63,7 +64,7 @@
                         <Style Selector="Grid.palette-transition-suppressed Rectangle.palette-bg-gradient-base">
                             <Setter Property="Transitions">
                                 <Transitions>
-                                    <DoubleTransition Property="Opacity" Duration="0:0:1"/>
+                                    <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.ExtraLong4}"/>
                                 </Transitions>
                             </Setter>
                         </Style>
