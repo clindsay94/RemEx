@@ -351,6 +351,10 @@ will pin, so a session key derived against a different certificate cannot valida
 - **Elevation is load-bearing.** The elevated token is what retains FullControl over the ACL-restricted
   `cert.pfx` / `paired_clients.json`; a medium-integrity start would get Administrators as *deny-only*,
   fail to read the cert, and brick every SPKI-pinned pairing. This path is intentionally unshippable.
+- **Children don't inherit the admin token.** Apps, links and folders RemEx opens for the user start
+  with the desktop shell's normal (medium) token via `IUnelevatedLauncher`; only a target that asks for
+  administrator rights, or a PC with no shell running, falls back to the elevated launch (RemEx-pp4cm.2,
+  see [ARCHITECTURE-HOST.md](ARCHITECTURE-HOST.md)).
 - No Windows Service, no Session 0, no cross-process IPC: the former `RemExLocalIPC` /
   `RemExHostControl` pipes and `LocalIpcServerService` were removed; UI↔host is in-process DI
   (`EmbeddedHostServiceLocator`). See [ARCHITECTURE-HOST.md](ARCHITECTURE-HOST.md).

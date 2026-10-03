@@ -573,6 +573,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   the base colour and Aurora looked like a flat black or white sheet. The radii are percentages
   now and the test refuses anything else. (RemEx-uil4h)
 
+### Security
+
+- Apps and links RemEx opens on your PC now run with your normal permissions instead of
+  administrator rights. That covers apps started from the phone, the Apps page or a routine, the
+  links on the Home and About pages, and the logs folder. Apps that need administrator rights still
+  start as before, and so does everything else if Windows' desktop isn't running yet. (RemEx-pp4cm.2)
+
 
 ## [2.5.0] — 2026-09-10
 

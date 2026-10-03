@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Desktop.Services.Launching;
 
 namespace Remex.Agent.Services;
 
@@ -10,12 +11,24 @@ public class AppLauncherService : IAppLauncherService
 {
     private readonly ILogger<AppLauncherService> _logger;
     private readonly ILauncherStorageService _launcherStorage;
+    private readonly IUnelevatedLauncher _unelevatedLauncher;
 
-    public AppLauncherService(ILogger<AppLauncherService> logger, ILauncherStorageService launcherStorage)
+    public AppLauncherService(
+        ILogger<AppLauncherService> logger,
+        ILauncherStorageService launcherStorage,
+        IUnelevatedLauncher unelevatedLauncher)
     {
         _logger = Guard.NotNull(logger);
         _launcherStorage = Guard.NotNull(launcherStorage);
+        _unelevatedLauncher = Guard.NotNull(unelevatedLauncher);
     }
+
+    /// <summary>
+    /// Test seam for the standard (elevated) fallback launch, so a test can prove the fallback ran
+    /// without starting a real process. <c>null</c> - always, in production - means the real
+    /// <c>Process.Start</c>.
+    /// </summary>
+    internal Action<ProcessStartInfo>? StandardStartOverride { get; init; }
 
     public async Task LaunchAppAsync(string targetPath)
     {
@@ -69,10 +82,13 @@ public class AppLauncherService : IAppLauncherService
 
         try
         {
-            // RemEx runs inside the signed-in user's interactive session, so a normal ShellExecute
-            // launches the app onto the user's desktop on every platform. The old Session-0
-            // CreateProcessAsUser bridge (via WindowsActiveSession) is gone. (RemEx-aep Phase 4)
-            LaunchStandard(fullPath);
+            // RemEx runs inside the signed-in user's interactive session, so the app lands on the
+            // user's desktop on every platform. The old Session-0 CreateProcessAsUser bridge (via
+            // WindowsActiveSession) is gone. (RemEx-aep Phase 4)
+            //
+            // De-elevation happens HERE, after every check above has passed (RemEx-pp4cm.2): a path
+            // the allowlist or the network guard rejected never reaches the launcher at all.
+            Launch(fullPath);
         }
         catch (Exception ex)
         {
@@ -163,22 +179,22 @@ public class AppLauncherService : IAppLauncherService
         }
     }
 
-    private void LaunchStandard(string targetPath)
+    private void Launch(string targetPath)
     {
         _logger.LogInformation("Launching app normally: {targetPath}", targetPath);
         var appDir = Path.GetDirectoryName(targetPath);
-        var psi = new ProcessStartInfo
-        {
-            FileName = targetPath,
-            // UseShellExecute stays true: launcher entries are added via a picker that allows
-            // "All Files", so an entry can legitimately be a non-executable document that only
-            // opens correctly through its shell file association (and folders need it too). The
-            // allowlist check above — not UseShellExecute=false — is the actual security boundary
-            // here: by the time we reach this line the path has already been proven to be a
-            // network-path-free path that matches an entry the PC's own owner persisted.
-            UseShellExecute = true,
-            WorkingDirectory = appDir ?? string.Empty
-        };
-        Process.Start(psi)?.Dispose();
+
+        // UserLauncher tries the user's normal permissions first and falls back to the old
+        // shell-execute launch (administrator rights, from this elevated host) only when the target
+        // itself needs elevation, no desktop shell is running, or the de-elevated attempt failed -
+        // so nothing that launched before stops launching. Shell execute stays the launch style in
+        // both routes: launcher entries are added via a picker that allows "All Files", so an entry
+        // can legitimately be a document that only opens through its file association (and folders
+        // need it too). The allowlist check above is the actual security boundary: by the time we
+        // reach this line the path has been proven to be a network-path-free path that matches an
+        // entry the PC's own owner persisted.
+        var route = UserLauncher.Launch(_unelevatedLauncher, targetPath, appDir, StandardStartOverride);
+        if (route == UserLaunchRoute.Standard)
+            _logger.LogInformation("App launched with RemEx's own permissions (the normal-permission route was not available).");
     }
 }

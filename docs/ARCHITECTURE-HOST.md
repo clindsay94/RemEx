@@ -43,6 +43,27 @@ start would get Administrators as *deny-only*, fail to read `cert.pfx`, and bric
 pairing. `CertificateService` includes a brick canary: it logs `Critical` and refuses to regenerate
 when an existing `cert.pfx` is present but unreadable.
 
+### What RemEx's children inherit (RemEx-pp4cm.2)
+
+RemEx stays elevated, but the apps, links and folders it opens for the user do not. Every user-facing
+launch (the app launcher from the phone, the Apps page or a routine; the Home/About links; the logs
+folder) goes through `UserLauncher.Launch` (`remex.desktop/Services/Launching/`), which asks
+`IUnelevatedLauncher` first. On Windows that is `WindowsUnelevatedLauncher`
+(`remex.agent/Services/Launching/`):
+
+- **Programs** (`.exe`, and `.lnk` shortcuts that point at one) start with `CreateProcessWithTokenW`
+  and a copy of the desktop shell's (Explorer's) normal, medium-integrity token.
+- **Everything else** (web links, documents, folders) is handed to the running shell through
+  `IShellWindows` → desktop `IShellView` → `IShellDispatch2.ShellExecute`, so it opens inside Explorer.
+
+It falls back to the old elevated shell-execute launch when the target asks for administrator rights
+(the program's manifest or compatibility setting gives `ERROR_ELEVATION_REQUIRED`, or the shortcut has
+"Run as administrator" ticked), when no shell is running, or when the de-elevated attempt fails, so an
+app that launched before still launches. Validation (the launcher allowlist and the network-path
+guard in `AppLauncherService`) runs first and is unchanged. Linux registers a pass-through and launches
+exactly as before. Internal helper processes (schtasks, netsh, PowerShell, ffmpeg) are not
+user-facing and still start directly.
+
 ## Discovery and port binding
 
 `HostBootstrapper` writes the actually-bound port into `Host:Port`; `MdnsAdvertisingService`
