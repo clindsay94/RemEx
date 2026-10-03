@@ -78,7 +78,7 @@
 
     
     <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. Go to Settings → Connection → Show QR Code\n3. On your phone, tap \'Add a PC\' on the Connection screen, then \'Scan QR Code\'\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. On its Home page, click \'Pair a phone\'\n3. On your phone, tap \'Add a PC\' on the Connection screen, then \'Scan QR Code\'\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
 
     
     <string name="status_disconnected">Disconnected</string>
@@ -371,6 +371,8 @@
     <string name="connection_known_pc_unpair_title">Unpair %1$s?</string>
     <string name="connection_known_pc_unpair_message">This phone will forget this PC, at every address it answers on. You\'ll need the PIN shown on the PC to pair again.</string>
     <string name="connection_known_pc_needs_pairing">Needs pairing</string>
+    <string name="pairing_needed_title">This PC needs pairing again</string>
+    <string name="pairing_needed_body">The PC answered, but it no longer knows this phone, so it won\'t share anything yet. Tap Pair, then scan the code from \'Pair a phone\' on the PC.</string>
     <string name="connection_known_pc_forget">Remove from list</string>
     <string name="connection_known_pc_pair_title">Pair with %1$s?</string>
     <string name="connection_known_pc_pair_message">This phone isn\'t paired at this address. Enter the 6-digit PIN shown on the PC.</string>

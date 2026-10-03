@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 import com.clindsay94.remex.R
 import kotlinx.coroutines.delay
 
@@ -233,6 +235,52 @@ fun DisconnectedFullScreen(
                         modifier = Modifier.graphicsLayer(scaleX = ctaScale, scaleY = ctaScale),
                         shape = ButtonDefaults.shape
                 ) { Text(stringResource(R.string.button_setup_connection)) }
+        }
+}
+
+/**
+ * "This PC needs pairing again" (sweep P3, RemEx-wqo7a.7), shown in place of a screen's content
+ * when the PC is connected but no longer recognises this phone ([com.clindsay94.remex
+ * .RemexClientManager.needsPairing]). Everything that screen would ask for is refused until the
+ * phone pairs again, so a spinner would wait forever; [onPair] opens Connection > Add a PC.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun NeedsPairingContent(onPair: () -> Unit, modifier: Modifier = Modifier) {
+        val view = LocalView.current
+        Column(
+                modifier = modifier.fillMaxWidth().padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+                Icon(
+                        Icons.Default.LinkOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(72.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                )
+                Spacer(Modifier.height(24.dp))
+                Text(
+                        stringResource(R.string.pairing_needed_title),
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                        stringResource(R.string.pairing_needed_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(24.dp))
+                Button(
+                        onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                onPair()
+                        },
+                        shapes = rememberRemexButtonShapes(),
+                ) { Text(stringResource(R.string.connection_known_pc_pair_confirm)) }
         }
 }
 

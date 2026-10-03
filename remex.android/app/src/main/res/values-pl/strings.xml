@@ -38,7 +38,7 @@
     <string name="tutorial_page6_title">Wszystko gotowe!</string>
     <string name="tutorial_page6_body">Jesteś gotowy, by przejąć kontrolę.\n\nOtwórz %1$s, aby śledzić odczyty z komputera na żywo. Pozostałe karty pozwalają wysyłać polecenia, uruchamiać aplikacje, sprawdzać, co działa, przeglądać udostępnione foldery i przesyłać obraz pulpitu.\n\nPrzejdź do ekranu Personalizuj, aby zmienić język, motyw, kształty kart i kolory.\n\nOtwórz FAQ w dowolnym momencie, jeśli potrzebujesz pomocy z parowaniem, transferem plików lub dostrajaniem pulpitu zdalnego.</string>
     <string name="tutorial_page_qr_title">Szybkie parowanie kodem QR</string>
-    <string name="tutorial_page_qr_body">Najszybszym sposobem na połączenie jest zeskanowanie kodu QR.\n\n1. Otwórz okno RemEx na komputerze\n2. Przejdź do Ustawienia → Połączenie → Pokaż kod QR\n3. Na telefonie dotknij „Dodaj komputer” na ekranie połączenia, a potem „Skanuj kod QR”\n4. Zeskanuj kod i potwierdź kod PIN parowania, jeśli zostaniesz o to poproszony\n\nRemEx automatycznie zapisuje dane bezpiecznego połączenia.</string>
+    <string name="tutorial_page_qr_body">Najszybszym sposobem na połączenie jest zeskanowanie kodu QR.\n\n1. Otwórz okno RemEx na komputerze\n2. Na stronie Główna kliknij „Sparuj telefon”\n3. Na telefonie dotknij „Dodaj komputer” na ekranie połączenia, a potem „Skanuj kod QR”\n4. Zeskanuj kod i potwierdź kod PIN parowania, jeśli zostaniesz o to poproszony\n\nRemEx automatycznie zapisuje dane bezpiecznego połączenia.</string>
     <string name="status_disconnected">Rozłączono</string>
     <string name="status_connected">Połączono</string>
     <string name="status_connecting">Łączenie z %1$s:%2$d…</string>
@@ -226,6 +226,8 @@
     <string name="connection_known_pc_unpair_title">Usunąć sparowanie z %1$s?</string>
     <string name="connection_known_pc_unpair_message">Ten telefon zapomni ten komputer pod wszystkimi adresami, pod którymi odpowiada. Aby sparować ponownie, potrzebny będzie PIN wyświetlony na komputerze.</string>
     <string name="connection_known_pc_needs_pairing">Wymaga sparowania</string>
+    <string name="pairing_needed_title">Ten komputer trzeba sparować ponownie</string>
+    <string name="pairing_needed_body">Komputer odpowiedział, ale nie rozpoznaje już tego telefonu, więc na razie niczego nie udostępni. Dotknij Sparuj, a potem zeskanuj kod z „Sparuj telefon” na komputerze.</string>
     <string name="connection_known_pc_forget">Usuń z listy</string>
     <string name="connection_known_pc_pair_title">Sparować z %1$s?</string>
     <string name="connection_known_pc_pair_message">Ten telefon nie jest sparowany pod tym adresem. Wprowadź 6-cyfrowy PIN wyświetlony na komputerze.</string>

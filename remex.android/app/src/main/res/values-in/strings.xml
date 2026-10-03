@@ -41,7 +41,7 @@
     <string name="tutorial_page6_title">Semua Siap!</string>
     <string name="tutorial_page6_body">Anda siap untuk memegang kendali.\n\nBuka %1$s untuk melihat pembacaan langsung PC Anda. Tab lainnya memungkinkan Anda mengirim perintah, menjalankan aplikasi, melihat apa yang sedang berjalan, menjelajahi folder bersama, dan melakukan streaming desktop.\n\nBuka Personalisasi untuk mengubah bahasa, tema, bentuk kartu, dan warna.\n\nBuka FAQ kapan saja jika Anda memerlukan bantuan dengan penyandingan, transfer file, atau penyetelan desktop jarak jauh.</string>
     <string name="tutorial_page_qr_title">Pasangkan Cepat dengan Kode QR</string>
-    <string name="tutorial_page_qr_body">Cara tercepat untuk terhubung adalah dengan memindai kode QR.\n\n1. Buka jendela RemEx di PC Anda\n2. Buka Pengaturan → Koneksi → Tampilkan Kode QR\n3. Di ponsel Anda, ketuk \'Tambah PC\' pada layar Koneksi, lalu \'Pindai Kode QR\'\n4. Pindai kode tersebut dan konfirmasi PIN pemasangan jika diminta\n\nRemEx akan menyimpan detail koneksi yang aman secara otomatis.</string>
+    <string name="tutorial_page_qr_body">Cara tercepat untuk terhubung adalah dengan memindai kode QR.\n\n1. Buka jendela RemEx di PC Anda\n2. Di halaman Beranda, klik \'Pasangkan ponsel\'\n3. Di ponsel Anda, ketuk \'Tambah PC\' pada layar Koneksi, lalu \'Pindai Kode QR\'\n4. Pindai kode tersebut dan konfirmasi PIN pemasangan jika diminta\n\nRemEx akan menyimpan detail koneksi yang aman secara otomatis.</string>
     <string name="status_disconnected">Terputus</string>
     <string name="status_connected">Terhubung</string>
     <string name="status_connecting">Menghubungkan ke %1$s:%2$d…</string>
@@ -239,6 +239,8 @@
     <string name="connection_known_pc_unpair_title">Lepas sandingan %1$s?</string>
     <string name="connection_known_pc_unpair_message">Ponsel ini akan melupakan PC ini di semua alamat yang dipakainya. Anda memerlukan PIN yang ditampilkan di PC untuk menyandingkannya lagi.</string>
     <string name="connection_known_pc_needs_pairing">Perlu penyandingan</string>
+    <string name="pairing_needed_title">PC ini perlu disandingkan lagi</string>
+    <string name="pairing_needed_body">PC menjawab, tetapi tidak lagi mengenali ponsel ini, jadi belum akan membagikan apa pun. Ketuk Sandingkan, lalu pindai kode dari \'Pasangkan ponsel\' di PC.</string>
     <string name="connection_known_pc_forget">Hapus dari daftar</string>
     <string name="connection_known_pc_pair_title">Sandingkan dengan %1$s?</string>
     <string name="connection_known_pc_pair_message">Ponsel ini belum disandingkan di alamat ini. Masukkan PIN 6 digit yang ditampilkan di PC.</string>

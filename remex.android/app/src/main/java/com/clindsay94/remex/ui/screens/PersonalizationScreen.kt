@@ -727,7 +727,8 @@ fun PersonalizationScreenContent(
                             )
                             Slider(
                                     value = themeContrast,
-                                    onValueChange = { themeContrast = it },
+                                    // Detents at -1, 0 and 1, the same rule as the PC's slider.
+                                    onValueChange = { themeContrast = ContrastDetents.snap(it) },
                                     onValueChangeFinished = {
                                         view.performHapticFeedback(
                                                 HapticFeedbackConstants.CLOCK_TICK

@@ -145,6 +145,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _isAuthenticated = MutableStateFlow(false)
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
+    /**
+     * True when the PC is connected but has not accepted this phone's pairing for
+     * [PairingAckWatch.GRACE_MS]: it no longer knows this phone, so every pairing-gated request
+     * would be refused. Home's PC card, Files, Apps and the process list say "needs pairing" from
+     * this instead of "Online" and a spinner (sweep P3, RemEx-wqo7a.7). False while disconnected,
+     * and always false for a PC too old to send the ack (see [PairingAckWatch]).
+     */
+    private val _needsPairing = MutableStateFlow(false)
+    val needsPairing: StateFlow<Boolean> = _needsPairing.asStateFlow()
+
     /** Host/port of the connect attempt in flight, so a success can be attributed to a PC. */
     @Volatile private var pendingTarget: Pair<String, Int>? = null
 
@@ -461,6 +471,28 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         startHomePinsSync(appContext, settings)
 
         startTelemetryBackgroundPause(appContext)
+
+        // Sweep P3: the host never says "not paired", so the phone notices the ack not arriving.
+        // Only from a PC that sends the ack at all: every PC that advertises the Home pins sync
+        // (RemEx-wqo7a.5) also acks a good reconnect proof (RemEx-0vpw5 landed first), while a 2.5
+        // PC sends neither and its silence must not read as "this phone is unknown".
+        val ackingHost =
+                hostInfoForConnection.map { info ->
+                    info?.takeIf { com.clindsay94.remex.data.HomePins.parseSupportsSync(it.json) }?.connection
+                }
+        managerScope.launch {
+            PairingAckWatch.needsPairing(connectedHost, authenticatedConnection, ackingHost).collect { needs ->
+                if (needs && !_needsPairing.value) {
+                    Log.w(
+                            "RemexManager",
+                            "Connected, but the PC has not accepted this phone's pairing after " +
+                                    "${PairingAckWatch.GRACE_MS} ms; showing 'needs pairing'."
+                    )
+                }
+                _needsPairing.value = needs
+            }
+        }
+
         val reconnectAllowed = startReconnectGateSignals(appContext)
         startIdleTeardown(appContext, reconnectAllowed)
 
@@ -1390,6 +1422,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // the new connection, and no reader may ever observe connected=false with authenticated=true.
         _isAuthenticated.value = false
         _authenticatedConnection.value = null
+        // A new socket (or none) starts with nothing overdue; PairingAckWatch re-arms from here.
+        _needsPairing.value = false
         // The previous connection's host_info must not describe the next one (RemEx-pp0rt.5).
         _hostInfoForConnection.value = null
         // The previous connection's pinned-sensor list must not describe the next one (RemEx-wqo7a.5):
@@ -1451,6 +1485,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // send this signal exists to deliver.
         _isAuthenticated.value = true
         _authenticatedConnection.value = _connectedHost.value
+        _needsPairing.value = false
     }
 
     fun setConnecting(isConnecting: Boolean) {
@@ -1780,6 +1815,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // with authenticated=true.
         _isAuthenticated.value = false
         _authenticatedConnection.value = null
+        _needsPairing.value = false
         _hostInfoForConnection.value = null
         _isConnected.value = false
         _isConnecting.value = false

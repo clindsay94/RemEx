@@ -87,7 +87,9 @@ data class AppLauncherUiState(
     val shapePreset: Float = 0f,
     val cornerRadius: Int = 8,
     val isConnected: Boolean = false,
-    val refreshState: LauncherRefreshState = LauncherRefreshState.Idle
+    val refreshState: LauncherRefreshState = LauncherRefreshState.Idle,
+    /** Connected, but the PC no longer recognises this phone (sweep P3, RemEx-wqo7a.7). */
+    val needsPairing: Boolean = false,
 ) {
     val isRefreshing: Boolean
         get() = refreshState == LauncherRefreshState.Refreshing
@@ -114,6 +116,7 @@ fun AppLauncherScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val refreshState by viewModel.refreshState.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
 
     val uiState = AppLauncherUiState(
         apps = apps,
@@ -121,7 +124,8 @@ fun AppLauncherScreen(
         shapePreset = shapePreset,
         cornerRadius = cornerRadius,
         isConnected = isConnected,
-        refreshState = refreshState
+        refreshState = refreshState,
+        needsPairing = isConnected && needsPairing,
     )
 
     AppLauncherScreenContent(
@@ -129,7 +133,11 @@ fun AppLauncherScreen(
         onRefreshApps = { viewModel.refreshApps() },
         onLaunchApp = { viewModel.launchApp(it) },
         onNavigateToConnection = onNavigateToConnection,
-        onDismissRefreshError = { viewModel.dismissRefreshError() }
+        onDismissRefreshError = { viewModel.dismissRefreshError() },
+        onPair = {
+            ConnectionOpenRequests.requestAddPc()
+            onNavigateToConnection()
+        },
     )
 }
 
@@ -141,7 +149,9 @@ fun AppLauncherScreenContent(
     onLaunchApp: (AppEntry) -> Unit,
     onNavigateToConnection: () -> Unit,
     modifier: Modifier = Modifier,
-    onDismissRefreshError: () -> Unit = {}
+    onDismissRefreshError: () -> Unit = {},
+    /** Connection > Add a PC, for a PC that needs pairing again. */
+    onPair: () -> Unit = onNavigateToConnection,
 ) {
     val view = LocalView.current
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -194,7 +204,8 @@ fun AppLauncherScreenContent(
             val launcherBody = appLauncherBodyFor(
                 isConnected = uiState.isConnected,
                 hasApps = uiState.apps.isNotEmpty(),
-                refreshState = uiState.refreshState
+                refreshState = uiState.refreshState,
+                needsPairing = uiState.needsPairing,
             )
             val bodyFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
             AnimatedContent(
@@ -210,6 +221,10 @@ fun AppLauncherScreenContent(
                             onNavigateToConnection = onNavigateToConnection,
                             modifier = Modifier.fillMaxSize()
                         )
+                    AppLauncherBody.NeedsPairing ->
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            NeedsPairingContent(onPair = onPair)
+                        }
                     AppLauncherBody.Loading ->
                         LauncherMessage(message = stringResource(R.string.app_launcher_loading)) {
                             RemexLoadingIndicator(contained = true)
@@ -518,18 +533,23 @@ private fun Modifier.atLeastSquare(): Modifier = layout { measurable, constraint
 }
 
 /** Which of the launcher's body states is showing (drives the AnimatedContent swap). */
-enum class AppLauncherBody { Disconnected, Loading, NoAnswer, Empty, Apps }
+enum class AppLauncherBody { Disconnected, NeedsPairing, Loading, NoAnswer, Empty, Apps }
 
 /**
- * Picks the launcher's body (RemEx-wqo7a.6). An app list the PC already sent always wins, even
- * while disconnected or after an unanswered refresh: the last list is still useful, and the grid
- * shows a banner for the unanswered case. With no list, the state says why in plain words.
+ * Picks the launcher's body (RemEx-wqo7a.6). An app list the PC already sent wins, even while
+ * disconnected or after an unanswered refresh: the last list is still useful, and the grid shows a
+ * banner for the unanswered case. With no list, the state says why in plain words.
+ *
+ * The one exception is a connected PC that no longer recognises this phone (sweep P3): it refuses
+ * every launch, so the list is replaced by "needs pairing" and its Pair action.
  */
 internal fun appLauncherBodyFor(
     isConnected: Boolean,
     hasApps: Boolean,
-    refreshState: LauncherRefreshState
+    refreshState: LauncherRefreshState,
+    needsPairing: Boolean = false,
 ): AppLauncherBody = when {
+    isConnected && needsPairing -> AppLauncherBody.NeedsPairing
     hasApps -> AppLauncherBody.Apps
     !isConnected -> AppLauncherBody.Disconnected
     refreshState == LauncherRefreshState.Refreshing -> AppLauncherBody.Loading

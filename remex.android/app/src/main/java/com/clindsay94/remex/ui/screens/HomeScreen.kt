@@ -82,6 +82,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.TelemetryDemand
 import com.clindsay94.remex.data.HomePinsState
 import com.clindsay94.remex.data.KnownPcEntry
@@ -93,12 +94,21 @@ import com.clindsay94.remex.ui.navigation.NavDestination
 import com.clindsay94.remex.ui.navigation.Screen
 import com.clindsay94.remex.ui.telemetry.SensorAccents
 import com.clindsay94.remex.ui.theme.CardShapes
+import com.clindsay94.remex.ui.theme.AnimatedValueText
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.SENSORS_CONTAINER_KEY
+import com.clindsay94.remex.ui.theme.rememberContainerTransformModifier
+import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 
 /** Everything Home draws, assembled by [HomeScreen] so [HomeScreenContent] stays previewable. */
 data class HomeUiState(
         val isConnected: Boolean = false,
         val isConnecting: Boolean = false,
+        /**
+         * Connected, but the PC no longer recognises this phone (sweep P3): the PC card says it
+         * needs pairing and offers Pair instead of "Online" and quick actions it would refuse.
+         */
+        val needsPairing: Boolean = false,
         /** What the PC card calls the connected PC; null while disconnected. */
         val pcName: String? = null,
         val uptime: PcUptime? = null,
@@ -138,6 +148,7 @@ fun HomeScreen(
 
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
     val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val host by viewModel.connectedHost.collectAsStateWithLifecycle()
     val hostMachineName by viewModel.hostMachineName.collectAsStateWithLifecycle()
     val powerVerbs by viewModel.powerVerbs.collectAsStateWithLifecycle()
@@ -167,6 +178,7 @@ fun HomeScreen(
             HomeUiState(
                     isConnected = isConnected,
                     isConnecting = isConnecting,
+                    needsPairing = isConnected && needsPairing,
                     pcName = host?.takeIf { isConnected }?.let { HomeLogic.pcName(it, knownPcRows, hostMachineName) },
                     uptime = uptime,
                     quickActions = HomeLogic.QUICK_ACTIONS.filter { HomeLogic.isQuickActionOffered(it, powerVerbs) },
@@ -186,6 +198,10 @@ fun HomeScreen(
             onSetPinned = viewModel::setHomePin,
             onNavigateToConnection = onNavigateToConnection,
             onOpenDestination = onOpenDestination,
+            onPair = {
+                ConnectionOpenRequests.requestAddPc()
+                onNavigateToConnection()
+            },
     )
 }
 
@@ -200,6 +216,8 @@ fun HomeScreenContent(
         onNavigateToConnection: () -> Unit,
         onOpenDestination: (NavDestination) -> Unit,
         snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+        /** Connection > Add a PC, for a PC that needs pairing again. */
+        onPair: () -> Unit = onNavigateToConnection,
 ) {
     val view = LocalView.current
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -226,7 +244,7 @@ fun HomeScreenContent(
                 verticalArrangement = Arrangement.spacedBy(CardShapes.CARD_SPACING_DP.dp)
         ) {
             if (state.isConnected) {
-                PcCard(state = state, shape = tileShape, onQuickAction = onQuickAction)
+                PcCard(state = state, shape = tileShape, onQuickAction = onQuickAction, onPair = onPair)
             } else {
                 ConnectCard(
                         state = state,
@@ -319,9 +337,15 @@ private fun StatusChip(@StringRes label: Int, online: Boolean) {
 }
 
 @Composable
-private fun PcCard(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape, onQuickAction: (String) -> Unit) {
+private fun PcCard(
+        state: HomeUiState,
+        shape: androidx.compose.ui.graphics.Shape,
+        onQuickAction: (String) -> Unit,
+        onPair: () -> Unit,
+) {
     val view = LocalView.current
     var confirming by rememberSaveable { mutableStateOf<String?>(null) }
+    val buttonShapes = rememberRemexButtonShapes()
 
     Card(
             modifier = Modifier.fillMaxWidth(),
@@ -330,7 +354,7 @@ private fun PcCard(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                PcBadge(online = true)
+                PcBadge(online = !state.needsPairing)
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -340,8 +364,12 @@ private fun PcCard(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                     )
-                    StatusChip(R.string.home_pc_online, online = true)
-                    state.uptime?.let { up ->
+                    if (state.needsPairing) {
+                        StatusChip(R.string.connection_known_pc_needs_pairing, online = false)
+                    } else {
+                        StatusChip(R.string.home_pc_online, online = true)
+                    }
+                    state.uptime?.takeUnless { state.needsPairing }?.let { up ->
                         Text(
                                 stringResource(R.string.home_pc_uptime, up.days, up.hours, up.minutes),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -350,7 +378,22 @@ private fun PcCard(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape
                     }
                 }
             }
-            if (state.quickActions.isNotEmpty()) {
+            if (state.needsPairing) {
+                // Lock and Sleep would be refused like everything else, so Pair takes their place.
+                Text(
+                        stringResource(R.string.pairing_needed_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Button(
+                        onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            onPair()
+                        },
+                        shapes = buttonShapes,
+                        modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.connection_known_pc_pair_confirm)) }
+            } else if (state.quickActions.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.quickActions.forEach { action ->
                         FilledTonalButton(
@@ -358,6 +401,7 @@ private fun PcCard(state: HomeUiState, shape: androidx.compose.ui.graphics.Shape
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     if (HomeLogic.needsConfirmation(action)) confirming = action else onQuickAction(action)
                                 },
+                                shapes = buttonShapes,
                                 modifier = Modifier.weight(1f)
                         ) {
                             Icon(quickActionIcon(action), contentDescription = null, modifier = Modifier.size(18.dp))
@@ -411,6 +455,7 @@ private fun ConnectCard(
         onNavigateToConnection: () -> Unit,
 ) {
     val view = LocalView.current
+    val buttonShapes = rememberRemexButtonShapes()
     Card(
             modifier = Modifier.fillMaxWidth(),
             shape = shape,
@@ -445,6 +490,7 @@ private fun ConnectCard(
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onNavigateToConnection()
                         },
+                        shapes = buttonShapes,
                         modifier = Modifier.fillMaxWidth()
                 ) { Text(stringResource(R.string.button_connect)) }
             } else {
@@ -474,6 +520,7 @@ private fun ConnectCard(
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     onConnectTo(pc)
                                 },
+                                shapes = buttonShapes,
                                 enabled = !state.isConnecting
                         ) { Text(stringResource(R.string.button_connect)) }
                     }
@@ -481,10 +528,13 @@ private fun ConnectCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                    onWakePc()
-                }) {
+                OutlinedButton(
+                        onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            onWakePc()
+                        },
+                        shapes = buttonShapes,
+                ) {
                     Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.dashboard_wake_pc))
@@ -529,6 +579,8 @@ private fun PinnedSensorsSection(state: HomeUiState, shape: androidx.compose.ui.
         val emptyText =
                 when {
                     !state.isConnected -> R.string.home_pinned_waiting
+                    // The PC sends no readings to a phone it doesn't recognise.
+                    state.needsPairing -> R.string.pairing_needed_title
                     state.pins.pinned.isEmpty() -> R.string.home_pinned_empty
                     tiles.isEmpty() -> R.string.home_pinned_none_reporting
                     else -> null
@@ -574,7 +626,8 @@ private fun PinnedTile(sensor: TelemetrySensor, shape: androidx.compose.ui.graph
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.background(accent.chip, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
             )
-            Text(
+            // Rolls up or down as the reading changes; still text while it holds (phase 6).
+            AnimatedValueText(
                     formatSensor(sensor).text,
                     style = MaterialTheme.typography.headlineSmall,
                     color = accent.series,
@@ -671,9 +724,11 @@ private fun PinSheet(state: HomeUiState, onSetPinned: (String, Boolean) -> Unit,
 @Composable
 private fun OpenSensorsCard(shape: androidx.compose.ui.graphics.Shape, onClick: () -> Unit) {
     val sensorsTitle = stringResource(R.string.screen_dashboard_title)
+    // One end of the container transform: this card grows into the Sensors route (phase 6).
+    val containerTransform = rememberContainerTransformModifier(SENSORS_CONTAINER_KEY, shape)
     Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(containerTransform),
             shape = shape,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {

@@ -13,6 +13,12 @@ enum class YourPcStatus {
     /** This phone is connected to this PC at this address right now. */
     ConnectedNow,
 
+    /**
+     * Connected right now, but the PC no longer recognises this phone, so it refuses everything
+     * until the phone pairs again (sweep P3, [com.clindsay94.remex.RemexClientManager.needsPairing]).
+     */
+    ConnectedNeedsPairing,
+
     /** A connection to this address is being made. */
     Connecting,
 
@@ -27,7 +33,7 @@ enum class YourPcStatus {
 data class YourPcCard(val entry: KnownPcEntry, val status: YourPcStatus) {
     /** The card for the connection that is up right now; it gets no Connect button. */
     val isCurrent: Boolean
-        get() = status == YourPcStatus.ConnectedNow
+        get() = status == YourPcStatus.ConnectedNow || status == YourPcStatus.ConnectedNeedsPairing
 
     /** Stable per card: the rows are deduped by address (RecentConnections.rows). */
     val key: String
@@ -52,13 +58,14 @@ object YourPcCards {
         rows: List<KnownPcEntry>,
         connected: PcEndpoint?,
         connecting: PcEndpoint?,
+        connectedNeedsPairing: Boolean = false,
     ): List<YourPcCard> {
         var currentMarked = false
         val cards = rows.map { entry ->
             val status = when {
                 !currentMarked && connected?.matches(entry) == true -> {
                     currentMarked = true
-                    YourPcStatus.ConnectedNow
+                    if (connectedNeedsPairing) YourPcStatus.ConnectedNeedsPairing else YourPcStatus.ConnectedNow
                 }
                 connecting?.matches(entry) == true -> YourPcStatus.Connecting
                 !entry.isTrusted -> YourPcStatus.NeedsPairing

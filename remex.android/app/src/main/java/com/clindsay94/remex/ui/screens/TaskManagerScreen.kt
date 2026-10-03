@@ -62,6 +62,7 @@ fun TaskManagerScreen(
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     // Polling waits for the host's reconnect ack: the list request is refused before it.
     val isAuthenticated by RemexClientManager.isAuthenticated.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val sortField by viewModel.sortField.collectAsStateWithLifecycle()
@@ -100,11 +101,33 @@ fun TaskManagerScreen(
             onClearKillError = { viewModel.clearKillError() },
             onClearLoadError = { viewModel.clearLoadError() },
             onNavigateToConnection = onNavigateToConnection,
-            headerAccessory = headerAccessory
+            headerAccessory = headerAccessory,
+            needsPairing = isConnected && needsPairing,
+            onPair = {
+                ConnectionOpenRequests.requestAddPc()
+                onNavigateToConnection()
+            },
     )
 }
 
-private enum class TaskManagerListState { DISCONNECTED, LOADING, LIST }
+internal enum class TaskManagerListState { DISCONNECTED, NEEDS_PAIRING, LOADING, LIST }
+
+/**
+ * What the process list area shows. A PC that no longer recognises this phone refuses the list
+ * request, so "Fetching processes" would never end: it says it needs pairing instead (sweep P3).
+ */
+internal fun taskManagerListState(
+        isConnected: Boolean,
+        needsPairing: Boolean,
+        hasProcesses: Boolean,
+        isRefreshing: Boolean,
+): TaskManagerListState =
+        when {
+            !isConnected && !hasProcesses -> TaskManagerListState.DISCONNECTED
+            isConnected && needsPairing -> TaskManagerListState.NEEDS_PAIRING
+            !hasProcesses && isRefreshing -> TaskManagerListState.LOADING
+            else -> TaskManagerListState.LIST
+        }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -134,6 +157,10 @@ fun TaskManagerScreenContent(
          * the Control tab's Commands | Processes switch (RemEx-wqo7a.2). Empty by default.
          */
         headerAccessory: @Composable () -> Unit = {},
+        /** Connected, but the PC no longer recognises this phone (sweep P3). */
+        needsPairing: Boolean = false,
+        /** Connection > Add a PC. */
+        onPair: () -> Unit = onNavigateToConnection,
 ) {
     val view = LocalView.current
     val motionScheme = MaterialTheme.motionScheme
@@ -222,11 +249,12 @@ fun TaskManagerScreenContent(
                 )
 
                 val listState =
-                        when {
-                            !isConnected && processes.isEmpty() -> TaskManagerListState.DISCONNECTED
-                            processes.isEmpty() && isRefreshing -> TaskManagerListState.LOADING
-                            else -> TaskManagerListState.LIST
-                        }
+                        taskManagerListState(
+                                isConnected = isConnected,
+                                needsPairing = needsPairing,
+                                hasProcesses = processes.isNotEmpty(),
+                                isRefreshing = isRefreshing,
+                        )
                 AnimatedContent(
                         targetState = listState,
                         transitionSpec = {
@@ -243,6 +271,11 @@ fun TaskManagerScreenContent(
                                     onNavigateToConnection = onNavigateToConnection,
                                     modifier = Modifier.fillMaxSize()
                             )
+                        }
+                        TaskManagerListState.NEEDS_PAIRING -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                NeedsPairingContent(onPair = onPair)
+                            }
                         }
                         TaskManagerListState.LOADING -> {
                             Box(

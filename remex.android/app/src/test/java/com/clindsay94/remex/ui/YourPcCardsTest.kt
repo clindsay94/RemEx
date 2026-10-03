@@ -37,6 +37,21 @@ class YourPcCardsTest {
     private val unpaired = row("192.168.1.42", at = 1_000L, trusted = false)
 
     @Test
+    fun theConnectedCardSaysItNeedsPairing_whenThePcNoLongerKnowsThisPhone() {
+        val cards =
+            YourPcCards.build(
+                listOf(tailscale, lan),
+                connected = PcEndpoint("192.168.1.10", 5005),
+                connecting = null,
+                connectedNeedsPairing = true,
+            )
+        // Still the current card (first, no Connect button), but it says it needs pairing (sweep P3).
+        assertEquals(YourPcStatus.ConnectedNeedsPairing, cards.first().status)
+        assertTrue(cards.first().isCurrent)
+        assertEquals(YourPcStatus.Ready, cards.last().status)
+    }
+
+    @Test
     fun oneCardPerRememberedAddress_inMostRecentOrder_whenNothingIsConnected() {
         val cards = YourPcCards.build(listOf(lan, tailscale, unpaired), connected = null, connecting = null)
         assertEquals(listOf("192.168.1.10", "100.72.10.4", "192.168.1.42"), cards.map { it.key })

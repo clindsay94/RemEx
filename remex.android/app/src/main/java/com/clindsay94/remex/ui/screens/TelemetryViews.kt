@@ -78,6 +78,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.telemetry.MetricKind
+import com.clindsay94.remex.ui.theme.AnimatedValueText
 import kotlin.math.abs
 
 /** Resolves the a11y content description for a view; a plain fun (not stringResource) so it's callable from Modifier.semantics {}. */
@@ -153,7 +154,7 @@ fun ValueTrendView(sensor: TelemetrySensor?, history: List<Float>, modifier: Mod
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(formatted.text, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        AnimatedValueText(formatted.text, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
         if (sign != 0) {
             val color = trendColor(sensor?.kind ?: MetricKind.UNKNOWN, sign)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -173,7 +174,7 @@ fun ValueSparkView(sensor: TelemetrySensor?, history: List<Float>, modifier: Mod
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLargeEmphasized)
+        AnimatedValueText(formatSensor(sensor).text, style = MaterialTheme.typography.titleLargeEmphasized)
         ChartOrCollecting(hasData = history.size >= 2) {
             val s = rememberAutoscale(history)
             val c = MaterialTheme.colorScheme.primary
@@ -224,7 +225,7 @@ fun ArcGaugeView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
             drawArc(track, 135f, 270f, false, style = stroke)
             drawArc(fill, 135f, 270f * fraction, false, style = stroke)
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleMediumEmphasized)
+        AnimatedValueText(formatSensor(sensor).text, style = MaterialTheme.typography.titleMediumEmphasized)
     }
 }
 
@@ -342,7 +343,7 @@ fun HuePulseTile(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
             .semantics { contentDescription = cdView(context, R.string.cd_view_hue_pulse, sensor) },
         contentAlignment = Alignment.Center
     ) {
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = tint)
+        AnimatedValueText(formatSensor(sensor).text, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = tint)
     }
 }
 
@@ -376,7 +377,7 @@ fun LedMeterView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
                 )
             }
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.labelLargeEmphasized)
+        AnimatedValueText(formatSensor(sensor).text, style = MaterialTheme.typography.labelLargeEmphasized)
     }
 }
 

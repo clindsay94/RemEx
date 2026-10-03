@@ -67,6 +67,7 @@ fun ConnectionScreen(
         val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
         val connectedHost by RemexClientManager.connectedHost.collectAsStateWithLifecycle()
+        val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
         val status by viewModel.connectionStatus.collectAsStateWithLifecycle()
         val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
         val isCertMismatch by viewModel.isCertMismatch.collectAsStateWithLifecycle()
@@ -119,7 +120,8 @@ fun ConnectionScreen(
                         viewModel.forgetRecentConnection(address)
                 },
                 onRefreshKnownHosts = { viewModel.refreshKnownHosts() },
-                onUnpairAddress = { context, address -> viewModel.unpairAddress(context, address) }
+                onUnpairAddress = { context, address -> viewModel.unpairAddress(context, address) },
+                connectedNeedsPairing = isConnected && needsPairing,
         )
 }
 
@@ -151,7 +153,9 @@ fun ConnectionScreenContent(
         onUnpairKnownHost: (android.content.Context, KnownHost) -> Unit,
         onForgetRecentConnection: (String) -> Unit,
         onRefreshKnownHosts: () -> Unit,
-        onUnpairAddress: (android.content.Context, String) -> Unit
+        onUnpairAddress: (android.content.Context, String) -> Unit,
+        /** The connected PC no longer recognises this phone (sweep P3): its card says so. */
+        connectedNeedsPairing: Boolean = false,
 ) {
         val view = LocalView.current
         val context = LocalContext.current
@@ -463,9 +467,15 @@ fun ConnectionScreenContent(
         val connectingEndpoint =
                 connectionPrefs?.takeIf { isConnecting && it.host.isNotBlank() }?.let { PcEndpoint(it.host, it.port) }
         val yourPcCards =
-                remember(knownPcRows, connectedEndpoint, connectingEndpoint) {
-                        YourPcCards.build(knownPcRows, connectedEndpoint, connectingEndpoint)
+                remember(knownPcRows, connectedEndpoint, connectingEndpoint, connectedNeedsPairing) {
+                        YourPcCards.build(knownPcRows, connectedEndpoint, connectingEndpoint, connectedNeedsPairing)
                 }
+
+        // Home, Files or the process list asked for Add a PC (their Pair action, sweep P3).
+        val addPcRequested by ConnectionOpenRequests.addPc.collectAsStateWithLifecycle()
+        LaunchedEffect(addPcRequested) {
+                if (ConnectionOpenRequests.consumeAddPc()) showAddPcSheet = true
+        }
 
         val scrollBehavior = rememberRemexTopBarScrollBehavior()
         Scaffold(
@@ -2088,7 +2098,7 @@ private fun YourPcStatusLabel(status: YourPcStatus) {
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                         )
-                YourPcStatus.NeedsPairing ->
+                YourPcStatus.NeedsPairing, YourPcStatus.ConnectedNeedsPairing ->
                         Text(
                                 stringResource(R.string.connection_known_pc_needs_pairing),
                                 style = MaterialTheme.typography.labelMedium,
@@ -2241,7 +2251,7 @@ private fun PcDetailsSheet(
                         )
                         YourPcStatusLabel(status)
                         Spacer(Modifier.height(8.dp))
-                        if (status != YourPcStatus.ConnectedNow) {
+                        if (status != YourPcStatus.ConnectedNow && status != YourPcStatus.ConnectedNeedsPairing) {
                                 Button(
                                         onClick = {
                                                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)

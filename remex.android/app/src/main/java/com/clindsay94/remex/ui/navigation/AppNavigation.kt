@@ -3,6 +3,8 @@ package com.clindsay94.remex.ui.navigation
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -53,6 +56,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -114,7 +119,14 @@ import com.clindsay94.remex.ui.screens.SettingsScreen
 import com.clindsay94.remex.ui.screens.ShareDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
+import com.clindsay94.remex.ui.theme.LocalRemexRouteAnimatedScope
+import com.clindsay94.remex.ui.theme.LocalRemexSharedTransitionScope
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.RemexMotion
+import com.clindsay94.remex.ui.theme.SENSORS_CONTAINER_KEY
+import com.clindsay94.remex.ui.theme.rememberContainerTransformModifier
+import com.clindsay94.remex.ui.theme.rememberRemexNavMotion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -322,9 +334,15 @@ private fun AppNavigationContent(
                 }
         }
 
+        // A tab click slides one page in tab order, as a swipe does, however far the tabs are apart;
+        // under "Remove animations" it jumps (phase 6, RemexMotion.tabScrollPlan).
+        val reducedMotion = LocalReducedMotion.current
+        val tabSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
         LaunchedEffect(isAtPrimary, selectedPrimaryIndex) {
                 if (isAtPrimary && pagerState.currentPage != selectedPrimaryIndex) {
-                        pagerState.animateScrollToPage(selectedPrimaryIndex)
+                        val plan = RemexMotion.tabScrollPlan(pagerState.currentPage, selectedPrimaryIndex, reducedMotion)
+                        plan.snapTo?.let { pagerState.scrollToPage(it) }
+                        if (plan.animate) pagerState.animateScrollToPage(selectedPrimaryIndex, animationSpec = tabSlideSpec)
                 }
         }
 
@@ -904,7 +922,7 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
@@ -928,15 +946,15 @@ private fun RemexNavHost(
         onLiveHandshakeStart: (() -> Unit)? = null,
         modifier: Modifier = Modifier,
 ) {
-        // NavHost's transition lambdas are NOT @Composable, so the motionScheme specs must be
-        // captured here in composable scope and closed over. Enters use the default (emphasized)
-        // tier, exits the fast tier — preserving the former slow-in / quick-out relationship.
-        val enterScaleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-        val exitScaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-        val enterSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-        val exitSlideSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
-        val enterFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-        val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+        // NavHost's transition lambdas are NOT @Composable, so the transitions are built here in
+        // composable scope (from MaterialTheme.motionScheme, collapsing to None under "Remove
+        // animations") and closed over (phase 6, RemexNavMotion).
+        val motion = rememberRemexNavMotion()
+        // The shared-transition scope is what lets Home's Open Sensors card grow into the Sensors
+        // route (a container transform). It draws its overlay over the NavHost with drawWithContent,
+        // not a graphicsLayer, so the stream route's SurfaceView is not put under a layer.
+        SharedTransitionLayout(modifier = modifier) {
+        CompositionLocalProvider(LocalRemexSharedTransitionScope provides this) {
         NavHost(
                 navController = navController,
                 // Always start at splash, and it plays on every fresh open of the app, including
@@ -945,36 +963,16 @@ private fun RemexNavHost(
                 // sometimes doesn't play"). A config-change recreation never replays it: the
                 // restored back stack is already past Splash, so this composable isn't reached.
                 startDestination = Screen.Splash,
-                modifier = modifier,
-                // M3 Expressive: container-transform-style enter (grow + fade in)
-                enterTransition = {
-                        scaleIn(
-                                initialScale = 0.94f,
-                                animationSpec = enterScaleSpec,
-                        ) + fadeIn(enterFadeSpec)
-                },
-                exitTransition = {
-                        scaleOut(
-                                targetScale = 1.06f,
-                                animationSpec = exitScaleSpec,
-                        ) + fadeOut(exitFadeSpec)
-                },
-                popEnterTransition = {
-                        scaleIn(
-                                initialScale = 1.06f,
-                                animationSpec = enterScaleSpec,
-                        ) + fadeIn(enterFadeSpec)
-                },
-                popExitTransition = {
-                        scaleOut(
-                                targetScale = 0.94f,
-                                animationSpec = exitScaleSpec,
-                        ) + fadeOut(exitFadeSpec)
-                },
+                // Shared-axis X for every route on top of the tabs (Sensors, Files, Routines,
+                // Settings, Connection, ...): forward comes in from the end side, Back reverses it.
+                enterTransition = { motion.enter },
+                exitTransition = { motion.exit },
+                popEnterTransition = { motion.popEnter },
+                popExitTransition = { motion.popExit },
         ) {
                 composable<Screen.Splash>(
-                        enterTransition = { fadeIn(enterFadeSpec) },
-                        exitTransition = { fadeOut(exitFadeSpec) },
+                        enterTransition = { motion.fadeIn },
+                        exitTransition = { motion.fadeOut },
                 ) {
                         fun goPastSplash() {
                                 onSelectPrimaryPage(0)
@@ -1005,8 +1003,8 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.Tutorial>(
-                        enterTransition = { fadeIn(enterFadeSpec) },
-                        exitTransition = { fadeOut(exitFadeSpec) },
+                        enterTransition = { motion.fadeIn },
+                        exitTransition = { motion.fadeOut },
                 ) {
                         TutorialScreen(
                                 onFinished = {
@@ -1025,6 +1023,8 @@ private fun RemexNavHost(
                         val onStartStream: () -> Unit = {
                                 navController.navigate(Screen.RemoteDesktop) { launchSingleTop = true }
                         }
+                        // Home's Open Sensors card is one end of a container transform.
+                        CompositionLocalProvider(LocalRemexRouteAnimatedScope provides this) {
                         if (pagerState != null) {
                                 PrimaryDestinationsPager(
                                         pagerState = pagerState,
@@ -1046,12 +1046,28 @@ private fun RemexNavHost(
                                 // on screen.
                                 homeScreenContent({ onNavigateToConnection() }, onOpenDestination)
                         }
+                        }
                 }
 
                 // The full Sensors canvas: its own route now that Home is the first tab. Always
                 // visible while it is the current route, so it always parses telemetry here.
                 composable<Screen.Dashboard> {
-                        dashboardScreenContent({ onNavigateToConnection() }, true)
+                        // The other end of Home's Open Sensors container transform: opened from
+                        // that card, the card grows into this screen; Back shrinks it home again.
+                        CompositionLocalProvider(LocalRemexRouteAnimatedScope provides this) {
+                                Box(
+                                        modifier =
+                                                Modifier.fillMaxSize()
+                                                        .then(
+                                                                rememberContainerTransformModifier(
+                                                                        SENSORS_CONTAINER_KEY,
+                                                                        RectangleShape,
+                                                                )
+                                                        )
+                                ) {
+                                        dashboardScreenContent({ onNavigateToConnection() }, true)
+                                }
+                        }
                 }
 
                 composable<Screen.Connection> {
@@ -1060,16 +1076,8 @@ private fun RemexNavHost(
 
                 composable<Screen.QrScanner>(
                         // QR scanner enters from bottom — modal feel
-                        enterTransition = {
-                                slideInVertically(enterSlideSpec) {
-                                        it
-                                } + fadeIn(enterFadeSpec)
-                        },
-                        exitTransition = {
-                                slideOutVertically(exitSlideSpec) {
-                                        it
-                                } + fadeOut(exitFadeSpec)
-                        },
+                        enterTransition = { motion.modalEnter },
+                        exitTransition = { motion.modalExit },
                 ) {
                         QrScannerScreen(
                                 onScanned = { host, port, pin ->
@@ -1088,12 +1096,8 @@ private fun RemexNavHost(
                         // No navArgument block and no `?: ""` / `?: 5005` reads: the typed route
                         // carries its arguments, so the silent fallbacks RemEx-667p refused cannot
                         // be reintroduced by a missing one (RemEx-mt43).
-                        enterTransition = {
-                                slideInVertically(enterSlideSpec) { it } + fadeIn(enterFadeSpec)
-                        },
-                        exitTransition = {
-                                slideOutVertically(exitSlideSpec) { it } + fadeOut(exitFadeSpec)
-                        }
+                        enterTransition = { motion.modalEnter },
+                        exitTransition = { motion.modalExit },
                 ) { backStackEntry ->
                         val pairing = backStackEntry.toRoute<PairingRoute>()
                         com.clindsay94.remex.ui.screens.PairingScreen(
@@ -1111,11 +1115,12 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.RemoteDesktop>(
-                        // Full-screen immersive — pure crossfade, no spatial motion
-                        enterTransition = { fadeIn(enterFadeSpec) },
-                        exitTransition = { fadeOut(exitFadeSpec) },
-                        popEnterTransition = { fadeIn(enterFadeSpec) },
-                        popExitTransition = { fadeOut(exitFadeSpec) },
+                        // Full-screen immersive — pure crossfade, no spatial motion: the SurfaceView
+                        // is never slid or scaled (docs/REGRESSION-GUARDS.md, remote desktop UI).
+                        enterTransition = { motion.fadeIn },
+                        exitTransition = { motion.fadeOut },
+                        popEnterTransition = { motion.fadeIn },
+                        popExitTransition = { motion.fadeOut },
                 ) {
                         // Opened only by the Desktop tab's "Start streaming", so it starts the
                         // stream itself rather than asking for Start a second time (RemEx-wqo7a.2).
@@ -1163,6 +1168,8 @@ private fun RemexNavHost(
                         RoutinesScreen(onNavigateToConnection = { onNavigateToConnection() })
                 }
         }
+        }
+        }
 }
 
 /**
@@ -1209,6 +1216,12 @@ private fun PrimaryDestinationsPager(
                 state = pagerState,
                 modifier = modifier,
                 beyondViewportPageCount = 0,
+                // A swipe settles on the same motion-scheme spring a tab click slides with (phase 6).
+                flingBehavior =
+                        PagerDefaults.flingBehavior(
+                                state = pagerState,
+                                snapAnimationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                        ),
                 // No tab swipe while the Desktop tab is in Trackpad mode: every drag there is meant
                 // for the PC's pointer (RemEx-wqo7a.2). Keyed on the SETTLED page, so a swipe that
                 // is on its way into Desktop is never cut off halfway; the tabs still change from

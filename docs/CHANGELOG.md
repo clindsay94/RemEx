@@ -199,6 +199,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- The tray popup's sensor cards grow to fill the popup: when you resize it, the cards in each row
+  widen to use the space instead of leaving a gap at the end. (RemEx-8tm8l)
+- The phone's contrast slider in Personalize clicks onto Standard and both ends, the same as on the
+  PC. (RemEx-4kv0g.16)
+- Phone screens slide in from the side, sensor readings roll up or down when they change, buttons
+  change shape while pressed, and the Open Sensors card grows into the Sensors screen. All of it
+  turns off with the system's "Remove animations" setting. (RemEx-wqo7a.7)
 - **The phone app has five tabs: Home, Desktop, Apps, Control and More.** Labels are one word and
   always shown. Home is new: for now it has the PC card (online status, or Connect and Wake when the
   PC is offline) and an Open Sensors card, with more to come. The Sensors canvas moved into More and
@@ -459,6 +466,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
+  takes the focus, so you can see where you are. (RemEx-a9aez)
+- When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it
+  needs pairing again and offer Pair, instead of showing the PC as online and spinning forever. A
+  PC older than 3.0 is never flagged this way. (RemEx-wqo7a.7)
+- The phone tutorial's QR step names the PC's real "Pair a phone" button. (RemEx-wqo7a.7)
 - The PC downloading a folder from the phone no longer skips or repeats files inside subfolders: the
   phone's folder listing pages the same way as the PC's (one shared cursor rule). (RemEx-pp4cm)
 - Large file transfers from older PCs no longer lose pieces when the phone is busy saving: file

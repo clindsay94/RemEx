@@ -41,7 +41,7 @@
     <string name="tutorial_page6_title">Her Şey Hazır!</string>
     <string name="tutorial_page6_body">Kontrolü ele almaya hazırsınız.\n\nBilgisayarınızın canlı değerlerini izlemek için %1$s ekranını açın. Diğer sekmelerle komut gönderebilir, uygulama başlatabilir, neyin çalıştığını görebilir, paylaşılan klasörlere göz atabilir ve masaüstünüzü yayınlayabilirsiniz.\n\nDili, temayı, kart şekillerini ve renkleri değiştirmek için Kişiselleştir bölümüne gidin.\n\nEşleştirme, dosya aktarımı veya Uzak Masaüstü ayarları hakkında yardıma ihtiyacınız olursa FAQ bölümünü dilediğiniz zaman açın.</string>
     <string name="tutorial_page_qr_title">QR Kodu ile Hızlı Eşleştirme</string>
-    <string name="tutorial_page_qr_body">Bağlanmanın en hızlı yolu bir QR kodu taramaktır.\n\n1. Bilgisayarınızda RemEx penceresini açın\n2. Ayarlar → Bağlantı → QR Kodunu Göster yolunu izleyin\n3. Telefonunuzda Bağlantı ekranındaki \'Bilgisayar ekle\' öğesine, ardından \'QR Kodunu Tara\' öğesine dokunun\n4. Kodu tarayın ve istenirse eşleştirme PIN\'ini onaylayın\n\nRemEx, güvenli bağlantı bilgilerini otomatik olarak kaydeder.</string>
+    <string name="tutorial_page_qr_body">Bağlanmanın en hızlı yolu bir QR kodu taramaktır.\n\n1. Bilgisayarınızda RemEx penceresini açın\n2. Ana Sayfa\'da \'Telefon eşleştir\' öğesine tıklayın\n3. Telefonunuzda Bağlantı ekranındaki \'Bilgisayar ekle\' öğesine, ardından \'QR Kodunu Tara\' öğesine dokunun\n4. Kodu tarayın ve istenirse eşleştirme PIN\'ini onaylayın\n\nRemEx, güvenli bağlantı bilgilerini otomatik olarak kaydeder.</string>
     <string name="status_disconnected">Bağlantı kesildi</string>
     <string name="status_connected">Bağlandı</string>
     <string name="status_connecting">%1$s:%2$d adresine bağlanılıyor…</string>
@@ -239,6 +239,8 @@
     <string name="connection_known_pc_unpair_title">%1$s eşleştirmesi kaldırılsın mı?</string>
     <string name="connection_known_pc_unpair_message">Bu telefon, yanıt verdiği tüm adreslerde bu bilgisayarı unutacak. Yeniden eşleştirmek için bilgisayarda görünen PIN gerekir.</string>
     <string name="connection_known_pc_needs_pairing">Eşleştirme gerekiyor</string>
+    <string name="pairing_needed_title">Bu bilgisayarın yeniden eşleştirilmesi gerekiyor</string>
+    <string name="pairing_needed_body">Bilgisayar yanıt verdi ama artık bu telefonu tanımıyor, bu yüzden henüz hiçbir şey paylaşmayacak. Eşleştir\'e dokunun, ardından bilgisayardaki \'Telefon eşleştir\' kodunu tarayın.</string>
     <string name="connection_known_pc_forget">Listeden kaldır</string>
     <string name="connection_known_pc_pair_title">%1$s ile eşleştirilsin mi?</string>
     <string name="connection_known_pc_pair_message">Bu telefon bu adreste eşleştirilmemiş. Bilgisayarda görünen 6 haneli PIN kodunu girin.</string>

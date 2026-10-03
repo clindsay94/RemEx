@@ -83,6 +83,7 @@ fun FileTransferScreen(
     vm: FileTransferViewModel = viewModel(),
 ) {
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val remotePath by vm.remotePath.collectAsStateWithLifecycle()
     val displayedEntries by vm.displayedEntries.collectAsStateWithLifecycle()
     val remoteRoots by vm.remoteRoots.collectAsStateWithLifecycle()
@@ -246,14 +247,31 @@ fun FileTransferScreen(
         // Connected/disconnected cross-fades instead of hard-swapping via an early return
         // (RemEx-xgc7).
         val connectionFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        // A PC that no longer recognises this phone refuses the roots request, so Files says so
+        // and offers Pair instead of spinning (sweep P3).
+        val gate =
+            when {
+                !isConnected -> FilesGate.Disconnected
+                needsPairing -> FilesGate.NeedsPairing
+                else -> FilesGate.Ready
+            }
         AnimatedContent(
-            targetState = isConnected,
+            targetState = gate,
             transitionSpec = { fadeIn(connectionFadeSpec) togetherWith fadeOut(connectionFadeSpec) },
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = padding),
             label = "file_manager_connection",
-        ) { connected ->
-            if (!connected) {
+        ) { shown ->
+            if (shown == FilesGate.Disconnected) {
                 DisconnectedContent(onNavigateToConnection)
+            } else if (shown == FilesGate.NeedsPairing) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    NeedsPairingContent(
+                        onPair = {
+                            ConnectionOpenRequests.requestAddPc()
+                            onNavigateToConnection()
+                        },
+                    )
+                }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
 
@@ -494,6 +512,9 @@ fun FileTransferScreen(
         }
     }
 }
+
+/** What the Files body shows: the browser itself, or why it can't be shown yet. */
+private enum class FilesGate { Disconnected, NeedsPairing, Ready }
 
 @Composable
 private fun DisconnectedContent(onNavigateToConnection: () -> Unit) {

@@ -41,7 +41,7 @@
     <string name="tutorial_page6_title">Tout est prêt !</string>
     <string name="tutorial_page6_body">Vous êtes prêt à prendre le contrôle.\n\nOuvrez %1$s pour suivre les relevés en direct de votre PC. Les autres onglets vous permettent d\'envoyer des commandes, de lancer des applications, de voir ce qui tourne, de parcourir les dossiers partagés et de diffuser votre bureau.\n\nRendez-vous dans Personnaliser pour changer la langue, le thème, la forme des cartes et les couleurs.\n\nOuvrez la FAQ à tout moment si vous avez besoin d\'aide pour l\'appairage, le transfert de fichiers ou le réglage du bureau à distance.</string>
     <string name="tutorial_page_qr_title">Couplage rapide par code QR</string>
-    <string name="tutorial_page_qr_body">Le moyen le plus rapide de se connecter est de scanner un code QR.\n\n1. Ouvrez la fenêtre RemEx sur votre PC\n2. Allez dans Paramètres → Connexion → Afficher le code QR\n3. Sur votre téléphone, appuyez sur \'Ajouter un PC\' sur l\'écran de connexion, puis sur \'Scanner le code QR\'\n4. Scannez le code et confirmez le code PIN de jumelage si demandé\n\nRemEx enregistre automatiquement les détails de connexion sécurisée.</string>
+    <string name="tutorial_page_qr_body">Le moyen le plus rapide de se connecter est de scanner un code QR.\n\n1. Ouvrez la fenêtre RemEx sur votre PC\n2. Sur sa page Accueil, cliquez sur \'Associer un téléphone\'\n3. Sur votre téléphone, appuyez sur \'Ajouter un PC\' sur l\'écran de connexion, puis sur \'Scanner le code QR\'\n4. Scannez le code et confirmez le code PIN de jumelage si demandé\n\nRemEx enregistre automatiquement les détails de connexion sécurisée.</string>
     <string name="status_disconnected">Déconnecté</string>
     <string name="status_connected">Connecté</string>
     <string name="status_connecting">Connexion à %1$s:%2$d…</string>
@@ -239,6 +239,8 @@
     <string name="connection_known_pc_unpair_title">Découpler %1$s ?</string>
     <string name="connection_known_pc_unpair_message">Ce téléphone oubliera ce PC, à toutes les adresses auxquelles il répond. Vous aurez besoin du code PIN affiché sur le PC pour le coupler à nouveau.</string>
     <string name="connection_known_pc_needs_pairing">Couplage requis</string>
+    <string name="pairing_needed_title">Ce PC doit être couplé à nouveau</string>
+    <string name="pairing_needed_body">Le PC a répondu, mais il ne reconnaît plus ce téléphone : il ne partagera rien pour l\'instant. Appuyez sur Coupler, puis scannez le code de \'Associer un téléphone\' sur le PC.</string>
     <string name="connection_known_pc_forget">Retirer de la liste</string>
     <string name="connection_known_pc_pair_title">Coupler avec %1$s ?</string>
     <string name="connection_known_pc_pair_message">Ce téléphone n\'est pas couplé à cette adresse. Saisissez le code PIN à 6 chiffres affiché sur le PC.</string>

@@ -41,7 +41,7 @@
     <string name="tutorial_page6_title">Está Tudo Pronto!</string>
     <string name="tutorial_page6_body">Você está pronto para assumir o controle.\n\nAbra %1$s para acompanhar as leituras ao vivo do seu PC. As outras abas permitem enviar comandos, abrir aplicativos, ver o que está rodando, navegar por pastas compartilhadas e transmitir sua área de trabalho.\n\nVá em Personalizar para mudar o idioma, o tema, os formatos de cards e as cores.\n\nAbra o FAQ a qualquer momento se precisar de ajuda com emparelhamento, transferência de arquivos ou ajuste da área de trabalho remota.</string>
     <string name="tutorial_page_qr_title">Pareamento Rápido com Código QR</string>
-    <string name="tutorial_page_qr_body">A maneira mais rápida de se conectar é digitalizando um código QR.\n\n1. Abra a janela do RemEx no seu PC\n2. Vá em Configurações → Conexão → Mostrar Código QR\n3. No seu celular, toque em \'Adicionar um PC\' na tela de Conexão e depois em \'Escanear código QR\'\n4. Digitalize o código e confirme o PIN de pareamento, se solicitado\n\nO RemEx salva os detalhes da conexão segura automaticamente.</string>
+    <string name="tutorial_page_qr_body">A maneira mais rápida de se conectar é digitalizando um código QR.\n\n1. Abra a janela do RemEx no seu PC\n2. Na página Início, clique em \'Emparelhar um telefone\'\n3. No seu celular, toque em \'Adicionar um PC\' na tela de Conexão e depois em \'Escanear código QR\'\n4. Digitalize o código e confirme o PIN de pareamento, se solicitado\n\nO RemEx salva os detalhes da conexão segura automaticamente.</string>
     <string name="status_disconnected">Desconectado</string>
     <string name="status_connected">Conectado</string>
     <string name="status_connecting">Conectando a %1$s:%2$d…</string>
@@ -239,6 +239,8 @@
     <string name="connection_known_pc_unpair_title">Desparear %1$s?</string>
     <string name="connection_known_pc_unpair_message">Este telefone vai esquecer este PC em todos os endereços em que ele responde. Você vai precisar do PIN exibido no PC para parear de novo.</string>
     <string name="connection_known_pc_needs_pairing">Precisa parear</string>
+    <string name="pairing_needed_title">Este PC precisa ser pareado de novo</string>
+    <string name="pairing_needed_body">O PC respondeu, mas não reconhece mais este celular, então ainda não vai compartilhar nada. Toque em Parear e escaneie o código de \'Emparelhar um telefone\' no PC.</string>
     <string name="connection_known_pc_forget">Remover da lista</string>
     <string name="connection_known_pc_pair_title">Parear com %1$s?</string>
     <string name="connection_known_pc_pair_message">Este telefone não está pareado neste endereço. Digite o PIN de 6 dígitos exibido no PC.</string>
