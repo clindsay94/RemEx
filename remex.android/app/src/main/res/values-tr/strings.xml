@@ -484,9 +484,15 @@
     <string name="about_whats_new_4_label">İki uygulamada tek görünüm</string>
     <string name="about_whats_new_4_body">Telefon ve bilgisayar artık aynı sözcükleri, yazı tiplerini, kartları ve renkleri kullanıyor. Yeni bir kurulum RemEx renkleriyle başlar.</string>
     <string name="about_whats_new_5_label">Dosya aktarımı düzeltmeleri</string>
-    <string name="about_whats_new_5_body">Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Dosyalar, siz Gizli öğeleri göster seçeneğini açana kadar gizli ve sistem öğelerini göstermez.</string>
+    <string name="about_whats_new_5_body">Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Dosyalar, siz Gizli öğeleri göster seçeneğini açana kadar gizli ve sistem öğelerini göstermez. Bilgisayar artık telefonunuzun paylaşılan klasörlerine de göz atabilir.</string>
     <string name="about_whats_new_6_label">Yeni başlangıç ekranı</string>
     <string name="about_whats_new_6_body">RemEx açılırken başlangıç ekranı artık sabit bir animasyon oynatmak yerine uygulamanın gerçekten başlayıp bağlandığını gösteriyor.</string>
+    <string name="about_whats_new_7_label">Telefonda sensör uyarıları</string>
+    <string name="about_whats_new_7_body">Bilgisayarda oluşturduğunuz uyarılar artık telefonunuza bildirim olarak geliyor. Bunları ikisinden de ekleyebilir, değiştirebilir veya kaldırabilirsiniz.</string>
+    <string name="about_whats_new_8_label">Telefonda bilgisayar günlükleri ve tanılama</string>
+    <string name="about_whats_new_8_body">Diğer\'de yeni bir sayfa, bilgisayarınızın neleri kaydettiğini ve bilgisayarda görünen aynı durum denetimlerini gösterir. Yalnızca okunabilir.</string>
+    <string name="about_whats_new_9_label">Telefonu kişiselleştirmenin daha fazla yolu</string>
+    <string name="about_whats_new_9_body">Bir arka plan, daha fazla kart şekli ve yedi Nerd Font seçin; Sensörler ızgarasının genişliğini belirleyin.</string>
     <string name="about_whats_new_title">%1$s sürümündeki yenilikler</string>
     <string name="app_launcher_recent">Son kullanılanlar</string>
     <string name="cd_close_settings">Ayarları kapat</string>

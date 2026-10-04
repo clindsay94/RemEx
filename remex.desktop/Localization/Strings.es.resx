@@ -1418,13 +1418,31 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>Arreglos en la transferencia de archivos</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos, en el teléfono, no muestra los elementos ocultos ni los del sistema salvo que lo pidas.</value>
+    <value>Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos, en el teléfono, no muestra los elementos ocultos ni los del sistema salvo que lo pidas. El PC ahora también puede explorar las carpetas compartidas de tu teléfono.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Una nueva pantalla de inicio</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>Al abrir RemEx, la pantalla de inicio muestra cómo arranca y se conecta de verdad, en lugar de una animación fija.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Alertas de sensores en el teléfono</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Las alertas que creas en el PC ahora llegan al teléfono como notificaciones. Puedes añadirlas, cambiarlas o quitarlas desde cualquiera de los dos.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Registros y diagnósticos del PC en el teléfono</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>En Más hay una página nueva con lo que ha registrado tu PC y las mismas comprobaciones de estado que muestra el PC. Es de solo lectura.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Más formas de personalizar el teléfono</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Elige un fondo, más formas de tarjeta y siete Nerd Fonts, y decide el ancho de la cuadrícula de Sensores.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

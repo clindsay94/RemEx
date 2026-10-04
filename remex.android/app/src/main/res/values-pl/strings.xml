@@ -477,9 +477,15 @@
     <string name="about_whats_new_4_label">Jeden wygląd w obu aplikacjach</string>
     <string name="about_whats_new_4_body">Telefon i komputer używają teraz tych samych słów, czcionek, kart i kolorów. Nowa instalacja startuje w kolorach RemEx.</string>
     <string name="about_whats_new_5_label">Poprawki przesyłania plików</string>
-    <string name="about_whats_new_5_body">Pobieranie folderu, w obie strony, nie pomija już ani nie powtarza plików. Pliki nie pokazują ukrytych i systemowych elementów, dopóki nie włączysz opcji Pokaż ukryte elementy.</string>
+    <string name="about_whats_new_5_body">Pobieranie folderu, w obie strony, nie pomija już ani nie powtarza plików. Pliki nie pokazują ukrytych i systemowych elementów, dopóki nie włączysz opcji Pokaż ukryte elementy. Komputer może teraz przeglądać też udostępnione foldery telefonu.</string>
     <string name="about_whats_new_6_label">Nowy ekran powitalny</string>
     <string name="about_whats_new_6_body">Po otwarciu RemEx ekran powitalny pokazuje, jak aplikacja naprawdę się uruchamia i łączy, zamiast odtwarzać stałą animację.</string>
+    <string name="about_whats_new_7_label">Alerty czujników w telefonie</string>
+    <string name="about_whats_new_7_body">Alerty ustawione na komputerze trafiają teraz do telefonu jako powiadomienia. Możesz je dodawać, zmieniać i usuwać na każdym z nich.</string>
+    <string name="about_whats_new_8_label">Logi i diagnostyka komputera w telefonie</string>
+    <string name="about_whats_new_8_body">W Więcej nowa strona pokazuje, co zapisał twój komputer, oraz te same kontrole stanu co na komputerze. Jest tylko do odczytu.</string>
+    <string name="about_whats_new_9_label">Więcej sposobów personalizacji telefonu</string>
+    <string name="about_whats_new_9_body">Wybierz tło, więcej kształtów kart i siedem czcionek Nerd Fonts oraz ustaw szerokość siatki Czujników.</string>
     <string name="about_whats_new_title">Nowości w wersji %1$s</string>
     <string name="app_launcher_recent">Ostatnie</string>
     <string name="cd_close_settings">Zamknij ustawienia</string>

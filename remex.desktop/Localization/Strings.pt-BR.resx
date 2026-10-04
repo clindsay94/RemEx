@@ -1414,13 +1414,31 @@ Na página Rotinas você pode vê-las, desativá-las e conferir o histórico del
     <value>Correções na transferência de arquivos</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Baixar uma pasta, em qualquer direção, não pula nem repete mais arquivos. Arquivos, no celular, esconde itens ocultos e do sistema até você pedir.</value>
+    <value>Baixar uma pasta, em qualquer direção, não pula nem repete mais arquivos. Arquivos, no celular, esconde itens ocultos e do sistema até você pedir. O PC agora também pode explorar as pastas compartilhadas do seu celular.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Uma nova tela de inicialização</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>Ao abrir o RemEx, a tela de inicialização mostra o aplicativo iniciando e se conectando de verdade, em vez de uma animação fixa.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Alertas de sensores no celular</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Os alertas que você cria no PC agora chegam ao celular como notificações. Você pode adicioná-los, alterá-los ou removê-los em qualquer um dos dois.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Logs e diagnóstico do PC no celular</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>Em Mais, uma página nova mostra o que o seu PC registrou e as mesmas verificações de integridade que o PC mostra. Ela é somente leitura.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Mais formas de personalizar o celular</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Escolha um plano de fundo, mais formas de cartão e sete Nerd Fonts, e defina a largura da grade de Sensores.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
