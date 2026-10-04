@@ -1555,4 +1555,12 @@
     <string name="dashboard_card_removed">Kart kaldırıldı</string>
     <string name="dashboard_move_earlier">Öne taşı</string>
     <string name="dashboard_move_later">Geriye taşı</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">Uzaktaki bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
+    <string name="rc_restart_warning">Uzaktaki bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
+    <string name="rc_force_shutdown_warning">Bu, uzaktaki bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
+    <string name="rc_force_restart_warning">Bu, uzaktaki bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
+    <string name="rc_reboot_uefi_warning">Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
+    <string name="relative_time_just_now">az önce</string>
+    <string name="button_open_app_settings">Ayarları aç</string>
 </resources>

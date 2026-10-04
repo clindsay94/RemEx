@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
@@ -113,13 +115,21 @@ fun FileConsentDialogHost() {
                             .verticalScroll(rememberScrollState()),
                 )
                 Spacer(Modifier.height(16.dp))
+                // The whole row is the checkbox (3.0 comb, consent-checkbox): the label is tappable,
+                // and TalkBack reads it with the box as one "Remember, checkbox" item.
                 Row(
                     modifier =
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        Modifier.fillMaxWidth()
+                            .toggleable(
+                                value = rememberChoice,
+                                role = Role.Checkbox,
+                                onValueChange = { rememberChoice = it },
+                            )
+                            .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Checkbox(checked = rememberChoice, onCheckedChange = { rememberChoice = it })
+                    Checkbox(checked = rememberChoice, onCheckedChange = null)
                     Text(
                         stringResource(R.string.file_consent_remember),
                         style = MaterialTheme.typography.bodyMedium,

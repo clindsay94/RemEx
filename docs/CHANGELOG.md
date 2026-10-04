@@ -490,6 +490,19 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
+  last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
+  Home's Connect ask for the local-network permission like the Connection screen does, and say so on
+  Home when it is refused (with an Open settings button once Android stops asking); Commands says when
+  you are offline and greys out everything but Wake; Desktop, Sensors and Commands ask you to pair
+  again when the PC no longer recognises the phone; "Discover automatically" works while connected;
+  the Connection header no longer says "Connected" over a "Needs pairing" card; connection errors are
+  plain sentences instead of developer text; tapping the tab you are already on scrolls it to the
+  top; "just now" replaces "0 minutes ago"; the first-run tutorial's battery button no longer crashes
+  on phones without that screen, and Skip clears the status bar; Home on a fresh install offers Add a
+  PC instead of Wake; shutdown, restart and UEFI confirmations say RemEx cannot reach the PC again
+  until you sign in on it; the dynamic colour switch, the file-consent checkbox and the nav badges read
+  properly in TalkBack; pushed screens have an Up arrow; PIN fields' Done key submits. (RemEx-pp4cm.3)
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

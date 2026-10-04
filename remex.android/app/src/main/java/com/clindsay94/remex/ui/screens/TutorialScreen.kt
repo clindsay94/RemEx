@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -204,6 +207,10 @@ fun TutorialScreenContent(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            // The app draws edge to edge (MainActivity), so without this Skip sat under the status
+            // bar and the camera cutout on the very first screen. The bottom row pads for the
+            // navigation bar itself.
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
     ) {
         // Skip button — top right
         Row(
@@ -470,9 +477,17 @@ private fun TutorialPageContent(
             val context = LocalContext.current
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                intent.data = Uri.parse("package:" + context.packageName)
-                context.startActivity(intent)
+                // GUARDED, like HomeCaptureSheet's copy of this button: some phones (work profiles,
+                // trimmed vendor builds) have no screen for the direct request, and an unresolved
+                // startActivity here crashed the very first run. Fall back to the battery
+                // optimisation list, and if that is missing too, do nothing rather than crash.
+                val direct = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    .setData(Uri.parse("package:" + context.packageName))
+                runCatching { context.startActivity(direct) }
+                    .recoverCatching {
+                        context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    }
+                    .onFailure { android.util.Log.w("TutorialScreen", "No battery optimisation screen on this phone", it) }
             },
                 shapes = rememberRemexButtonShapes(),
                 contentPadding = ButtonDefaults.ContentPadding,

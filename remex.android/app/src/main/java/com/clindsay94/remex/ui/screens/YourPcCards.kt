@@ -76,4 +76,28 @@ object YourPcCards {
         val (current, rest) = cards.partition { it.isCurrent }
         return current + rest
     }
+
+    /**
+     * What the "Your PCs" header says, from the same facts as the cards under it (3.0 comb,
+     * conn-header-contradicts): a connection the PC refuses reads "Needs pairing" up there too,
+     * instead of "Connected" above a card that says otherwise. Null when nothing is connected or
+     * being connected, where the view model's own line ("Disconnected", an error) stands.
+     *
+     * The connected PC may have no card yet (its address is recorded once the connection lands), so
+     * the flag counts as well as the card.
+     */
+    fun headerStatus(
+        cards: List<YourPcCard>,
+        isConnected: Boolean,
+        isConnecting: Boolean,
+        connectedNeedsPairing: Boolean,
+    ): YourPcStatus? =
+        when {
+            isConnected &&
+                (connectedNeedsPairing || cards.any { it.status == YourPcStatus.ConnectedNeedsPairing }) ->
+                YourPcStatus.ConnectedNeedsPairing
+            isConnected -> YourPcStatus.ConnectedNow
+            isConnecting -> YourPcStatus.Connecting
+            else -> null
+        }
 }
