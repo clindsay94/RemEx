@@ -113,10 +113,10 @@
     <value>Parcourir...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Démarrer</value>
+    <value>Démarrer</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Arrêter</value>
+    <value>Arrêter</value>
   </data>
 
   
@@ -165,13 +165,13 @@
     <value>Paramètres</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Accueil</value>
+    <value>Retour à l'Accueil</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Enregistrer les modifications</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Paramètres enregistrés !</value>
+    <value>Paramètres enregistrés</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Connexion</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  Processus</value>
+    <value>Processus</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>Ce qui tourne sur ce PC</value>
@@ -231,7 +231,7 @@
     <value>Programmes que votre téléphone peut lancer</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Ajouter un programme</value>
+    <value>Ajouter un programme</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>Vous n'avez encore ajouté aucun programme.</value>
@@ -254,7 +254,7 @@
     <value>Ajouter un nouveau programme</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Chemin de l'exécutable</value>
+    <value>Chemin du programme</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
     <value>Nom d'affichage</value>
@@ -269,7 +269,7 @@
     <value>C:\Chemin\Vers\App.exe</value>
   </data>
   <data name="AddProgram_WatermarkName" xml:space="preserve">
-    <value>Mon App</value>
+    <value>Mon app</value>
   </data>
   <data name="AddProgram_WatermarkColor" xml:space="preserve">
     <value>#RRGGBB</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Aperçu en direct</value>
+    <value>Capteurs</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>Nouveaux capteurs</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Ajouter une carte</value>
+    <value>Ajouter une carte</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Enregistrer</value>
@@ -324,7 +324,7 @@
     <value>Déconnecter</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Connecter</value>
+    <value>Connecter</value>
   </data>
 
   
@@ -344,7 +344,7 @@
     <value>Illimité</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Erreur de flux</value>
+    <value>Erreur de flux</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
     <value>Bureau à distance</value>
@@ -394,7 +394,7 @@
     <value>Cartes</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Épinglez un capteur sur le canevas pour l'afficher ici.</value>
+    <value>Épinglez un capteur sur la page Capteurs pour l'afficher ici.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Boutons</value>
@@ -477,10 +477,10 @@
     <value>Zoom : {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Pad : Compact</value>
+    <value>Pad : compact</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Pad : Complet</value>
+    <value>Pad : complet</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Pad de curseur compact activé</value>
@@ -592,7 +592,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Entrez d'abord une adresse MAC.</value>
+    <value>Entrez d'abord une adresse MAC.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>Envoi du paquet magique via l'hôte...</value>
@@ -601,13 +601,13 @@
     <value>Envoi du paquet magique localement...</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Paquet envoyé à {0}</value>
+    <value>Signal de réveil envoyé à {0}</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>Ça n'a pas fonctionné : {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Verrouillage envoyé</value>
@@ -641,16 +641,16 @@
     <value>Mise en route</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Ignorer ✕</value>
+    <value>Ignorer</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Précédent</value>
+    <value>Précédent</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>Suivant →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Commencer ✓</value>
+    <value>Commencer</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Ne plus afficher ce tutoriel</value>
@@ -663,7 +663,7 @@
     <value>Bienvenue sur RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx transforme votre PC en centre de commande à distance sécurisé. Depuis votre téléphone, vous pouvez surveiller les capteurs matériels, lancer des applications, gérer des fichiers et des processus, et diffuser votre bureau.
+    <value>RemEx vous permet de contrôler ce PC en toute sécurité depuis votre téléphone. Vous pouvez surveiller les capteurs matériels, lancer des applications, gérer des fichiers et des processus, et diffuser votre bureau.
 
 RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion est protégée par TLS et un appairage par code PIN.</value>
   </data>
@@ -672,26 +672,26 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>Comment ça marche</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Cette application de bureau inclut un hôte RemEx intégré qui démarre automatiquement. Votre téléphone Android s'y connecte — pas l'inverse.</value>
+    <value>RemEx fonctionne sur ce PC et démarre automatiquement. Votre téléphone Android s'y connecte — pas l'inverse.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx démarre automatiquement à votre ouverture de session sur ce PC : via une tâche d'ouverture de session sous Windows, ou une entrée de démarrage automatique sous Linux. Votre téléphone peut donc se connecter dès que votre session est ouverte. La surveillance des capteurs et les commandes d'alimentation continuent de fonctionner écran verrouillé, mais diffuser ou contrôler le bureau exige une session déverrouillée. Si le PC est éteint ou la session fermée, réveillez-le avec Wake-on-LAN et ouvrez d'abord votre session.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>Intégration HWiNFO (Recommandé)</value>
+    <value>HWiNFO (recommandé)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>Pour un monitoring matériel détaillé (plus de 300 capteurs), installez HWiNFO64 — c'est gratuit pour un usage personnel.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Téléchargez-le depuis hwinfo.com
-2. Lancez HWInfo → Settings (⚙) → Main Settings
+2. Lancez HWiNFO → Settings → Main Settings
 3. Cochez « Shared Memory Support » → OK
-4. HWInfo doit rester ouvert pour que RemEx lise ses capteurs</value>
+4. HWiNFO doit rester ouvert pour que RemEx lise ses capteurs</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ La mémoire partagée d'HWInfo se désactive après 12h (version gratuite). Réactivez-la périodiquement, ou passez à la licence Pro.</value>
+    <value>La mémoire partagée d'HWiNFO se désactive après 12h (version gratuite). Réactivez-la périodiquement, ou passez à la licence Pro.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
@@ -701,17 +701,17 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>RemEx prend en charge deux sources de télémétrie :</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo : plus de 300 capteurs — temps CPU, stats GPU, vitesses ventilo, tensions, conso. Nécessite HWInfo.</value>
+    <value>HWiNFO : plus de 300 capteurs — températures CPU, fréquences GPU, vitesses des ventilateurs, tensions, consommation. Nécessite HWiNFO en cours d'exécution.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Intégré : Capteurs de base — usage CPU, RAM, E/S disque, débits réseau. Toujours disponible, sans logiciel tiers.</value>
+    <value>Intégré : capteurs de base — usage CPU, RAM, E/S disque, débits réseau. Toujours disponible, sans logiciel tiers.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Épinglez vos capteurs favoris sur l'Accueil depuis Personnaliser → Mise en page → Capteurs épinglés.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Configurer les Applications</value>
+    <value>Configurer les applications</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>La page Applications vous permet de lancer des programmes de votre PC depuis votre téléphone. Ajoutez-les d'abord ici.</value>
@@ -744,7 +744,7 @@ Linux : ip addr  ou  hostname -I</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>Appairage par QR Code</value>
+    <value>Appairage par code QR</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
     <value>La façon la plus rapide de connecter votre téléphone est de scanner un QR code. L'hôte génère un code d'appairage qui contient tout ce dont votre application mobile a besoin.</value>
@@ -753,7 +753,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>1. Ouvrez Paramètres → Connexion sur le PC
 2. Cliquez sur « Associer un téléphone » pour afficher le code QR
 3. Ouvrez l'application mobile RemEx
-4. Touchez l'icône du scanner QR sur l'écran de connexion
+4. Sur l'écran Connexion, touchez « Ajouter un PC », puis « Scanner le code QR »
 5. Pointez l'appareil photo vers le code : la connexion se fait automatiquement !</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
@@ -865,7 +865,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Aide</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Revoir le tutoriel</value>
+    <value>Revoir le tutoriel</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Regarder à nouveau le tutoriel de démarrage</value>
@@ -877,7 +877,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Choisissez quels dossiers de ce PC apparaissent dans Fichiers. Les dossiers en lecture seule permettent de parcourir et de télécharger, tandis que les dossiers modifiables acceptent aussi les envois depuis votre téléphone.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Ajouter un dossier</value>
+    <value>Ajouter un dossier</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Restaurer les valeurs par défaut</value>
@@ -1150,7 +1150,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Mode Stylet : tap = clic instantané, glisser = cliquer-glisser</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Réinitialiser le zoom</value>
+    <value>Réinitialiser le zoom</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Stylet : pression = clic, bouton barillet = clic droit</value>
@@ -1165,10 +1165,10 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Activer/désactiver pad compact</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>Activer/désactiver Pad de curseur</value>
+    <value>Afficher ou masquer le pad de curseur</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Plein écran</value>
+    <value>Activer ou quitter le plein écran</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Stylet</value>
@@ -1191,7 +1191,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Redémarrer vers UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Épingler/Désépingler de l'Accueil</value>
+    <value>Épingler à l'Accueil ou désépingler</value>
   </data>
 
   
@@ -1206,7 +1206,7 @@ Linux : ip addr  ou  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 App Android  →  se connecte à  →  🖥️ Hôte PC (cette machine)</value>
+    <value>Votre téléphone  →  se connecte à  →  ce PC</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Passer le tutoriel — vous pouvez le revoir dans les Paramètres</value>
@@ -1230,10 +1230,10 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Inspectez les processus en cours sur l'hôte, triez par utilisation et terminez les tâches bloquées sans quitter votre siège.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossaire : Canevas de capteurs</value>
+    <value>Glossaire : Capteurs</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Construisez un mur de télémétrie en direct en épinglant des capteurs, en redimensionnant les cartes et en les arrangeant sur le canevas libre.</value>
+    <value>Construisez un mur de télémétrie en direct en épinglant des capteurs, en redimensionnant les cartes et en les disposant librement sur la page Capteurs.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Glossaire : Fichiers</value>
@@ -1319,46 +1319,46 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Arrêter — Êtes-vous sûr ?</value>
+    <value>Arrêter ce PC ?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Le PC distant va s'arrêter. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Ce PC va s'arrêter. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Arrêter</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Redémarrer — Êtes-vous sûr ?</value>
+    <value>Redémarrer ce PC ?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Le PC distant va redémarrer. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Ce PC va redémarrer. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Redémarrer</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Arrêt forcé — Êtes-vous sûr ?</value>
+    <value>Forcer l'arrêt de ce PC ?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Cela arrêtera immédiatement le PC distant. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Cela arrêtera immédiatement ce PC. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Arrêt forcé</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Redémarrage forcé — Êtes-vous sûr ?</value>
+    <value>Forcer le redémarrage de ce PC ?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Cela redémarrera immédiatement le PC distant. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Cela redémarrera immédiatement ce PC. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Redémarrage forcé</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Redémarrer vers UEFI — Êtes-vous sûr ?</value>
+    <value>Redémarrer ce PC vers l'UEFI ?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Le PC distant redémarrera directement dans les paramètres du firmware UEFI. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Ce PC redémarrera directement dans les paramètres du firmware UEFI. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Redémarrer vers UEFI</value>
@@ -1468,7 +1468,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Réduisez le curseur Qualité.
-• Réduisez les FPS cibles — 15-20 suffisent généralement.
+• Réduisez les FPS cibles. Le téléphone démarre à 120, un plafond et non une promesse. Si l'image saccade encore, 30–60 FPS suffisent en Wi-Fi.
 • Réduisez l'Échelle.
 • Utilisez un réseau local rapide. Le Wi-Fi 5 GHz ou une connexion filaire est préférable — c'est la cause de latence la plus fréquente.
 • Vous n'avez rien à configurer pour la capture d'écran. RemEx choisit automatiquement la méthode la plus rapide prise en charge par votre PC.</value>
@@ -1477,7 +1477,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Qu'est-ce que Wake-on-LAN (WOL) ?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN vous permet d'allumer votre PC à distance. Activez-le dans votre BIOS/UEFI et dans les propriétés de la carte réseau. Entrez ensuite l'adresse MAC de votre PC dans l'écran de connexion.&#xD;&#xA;&#xD;&#xA;Allumer le PC n'est pas la même chose que retrouver l'accès. Wake-on-LAN démarre la machine, qui s'arrête à l'écran de connexion ; RemEx ne démarre que lorsque quelqu'un ouvre une session sur le PC lui-même.</value>
+    <value>Wake-on-LAN vous permet d'allumer votre PC à distance. Activez-le dans votre BIOS/UEFI et dans les propriétés de la carte réseau. Votre téléphone récupère généralement l'adresse MAC de ce PC tout seul une fois connecté. Ne la saisissez sur l'écran Connexion du téléphone que si elle manque.&#xD;&#xA;&#xD;&#xA;Allumer le PC n'est pas la même chose que retrouver l'accès. Wake-on-LAN démarre la machine, qui s'arrête à l'écran de connexion ; RemEx ne démarre que lorsque quelqu'un ouvre une session sur le PC lui-même.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Comment transférer des fichiers ?</value>
@@ -1562,7 +1562,7 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Journaux d'application en direct</value>
   </data>
   <data name="Logs_VerbosityFilter" xml:space="preserve">
-    <value>Filtro de verbosité :</value>
+    <value>Filtre de verbosité :</value>
   </data>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Actualiser</value>
@@ -1642,7 +1642,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Naviguer</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Canevas de Capteurs</value>
+    <value>Capteurs</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Commandes</value>
@@ -1654,7 +1654,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Processus</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
-    <value>Bureau à Distance</value>
+    <value>Bureau à distance</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
     <value>Fichiers</value>
@@ -1663,25 +1663,25 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Paramètres</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Basculer le panneau de paramètres</value>
+    <value>Afficher ou masquer Personnaliser</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Interface</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Fermer le panneau de paramètres</value>
+    <value>Fermer Personnaliser</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Basculer le tiroir de navigation</value>
+    <value>Afficher ou masquer la barre latérale</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Annuler la modification du canevas</value>
+    <value>Annuler la modification de la mise en page</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Canevas</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Rétablir la modification du canevas</value>
+    <value>Rétablir la modification de la mise en page</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
     <value>Masquer la bannière de connexion</value>
@@ -1690,13 +1690,13 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Statut</value>
   </data>
   <data name="Palette_AboutWhatsNew" xml:space="preserve">
-    <value>À propos et Nouveautés</value>
+    <value>À propos et nouveautés</value>
   </data>
   <data name="PaletteCategory_Help" xml:space="preserve">
     <value>Aide</value>
   </data>
   <data name="Palette_TutorialGlossary" xml:space="preserve">
-    <value>Tutoriel et Glossaire</value>
+    <value>Tutoriel et glossaire</value>
   </data>
   <data name="Palette_LockPc" xml:space="preserve">
     <value>Verrouiller le PC</value>
@@ -1738,13 +1738,13 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Connecter</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Bureau - Exécution à Distance</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
-    <value>Palette de Commandes</value>
+    <value>Palette de commandes</value>
   </data>
   <data name="CommandPalette_SearchWatermark" xml:space="preserve">
     <value>Rechercher des commandes…</value>
@@ -1753,10 +1753,10 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Définir l'alerte de capteur</value>
   </data>
   <data name="SetAlert_Header" xml:space="preserve">
-    <value>Alerte de Capteur</value>
+    <value>Alerte de capteur</value>
   </data>
   <data name="SetAlert_ThresholdValue" xml:space="preserve">
-    <value>Valeur de Seuil</value>
+    <value>Valeur de seuil</value>
   </data>
   <data name="SetAlert_TriggerDirection" xml:space="preserve">
     <value>Déclencher lorsque la valeur est</value>
@@ -1855,7 +1855,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Alertes des capteurs</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>Aucune alerte configurée. Faites un clic droit sur une carte de capteur dans le canevas pour en définir une.</value>
+    <value>Aucune alerte configurée. Faites un clic droit sur une carte de capteur dans la page Capteurs pour en définir une.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Modifier</value>
@@ -1915,7 +1915,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Rétablir (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Basculer la minicarte</value>
+    <value>Afficher ou masquer la minicarte</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Enregistrer le canevas en PNG dans le dossier Images</value>
@@ -1954,7 +1954,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Ouvrir la palette de commandes (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Basculer la barre latérale</value>
+    <value>Afficher ou masquer la barre latérale</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Besoin de revoir le guide ?</value>
@@ -1993,7 +1993,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Ouvrir les transferts</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Appairer un appareil</value>
+    <value>Associer un téléphone</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Ouvrir le dossier des journaux</value>
@@ -2680,7 +2680,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Wake-on-LAN vous permet de basculer ce PC sur votre réseau — même quand il est en veille ou complètement éteint. Cela fonctionne en envoyant un petit « paquet magique » qui dit à cet ordinateur de s'allumer.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>Pour le configurer : ouvrez l'application RemEx sur votre téléphone, allez dans Paramètres → Wake-on-LAN, et entrez l'adresse ci-dessus. Votre téléphone peut alors réveiller ce PC n'importe quand qu'il est sur le même réseau.</value>
+    <value>Votre téléphone récupère généralement cette adresse tout seul une fois connecté. Si elle manque, ouvrez l'application RemEx sur votre téléphone, allez sur l'écran Connexion, ouvrez la carte de ce PC, touchez Modifier les détails de connexion et entrez l'adresse ci-dessus. Votre téléphone pourra alors réveiller ce PC à tout moment tant qu'il est sur le même réseau.</value>
   </data>
   <data name="Remote_WakeTitle" xml:space="preserve">
     <value>Réveiller ce PC depuis votre téléphone</value>
@@ -2698,7 +2698,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Choisir une deuxième métrique</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Supprimer — Êtes-vous sûr ?</value>
+    <value>Supprimer définitivement ?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>« {0} » sera supprimé définitivement. Cette action est irréversible.</value>
@@ -2769,25 +2769,25 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Effacer le journal de diagnostic ? Les entrées affichées ici seront supprimées. Les fichiers journaux déjà enregistrés sur le disque ne sont pas affectés.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Terminer le processus — Êtes-vous sûr ?</value>
+    <value>Terminer ce processus ?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Supprimer le programme — Êtes-vous sûr ?</value>
+    <value>Retirer ce programme ?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Supprimer</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Arrêter le partage — Êtes-vous sûr ?</value>
+    <value>Arrêter de partager ce dossier ?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Révoquer l'accès — Êtes-vous sûr ?</value>
+    <value>Révoquer l'accès aux fichiers ?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Restaurer les valeurs par défaut — Êtes-vous sûr ?</value>
+    <value>Restaurer les dossiers par défaut ?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Effacer les journaux — Êtes-vous sûr ?</value>
+    <value>Effacer le journal ?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID : {0}</value>
@@ -2883,10 +2883,10 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Rien n'a été terminé. « {0} » (PID {1}) s'est fermé pendant que vous décidiez, et ce PID peut désormais appartenir à un autre programme. La liste a été actualisée : retrouvez le programme et réessayez.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Déconnexion — Êtes-vous sûr ?</value>
+    <value>Fermer la session sur ce PC ?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Tout ce qui est ouvert sur le PC distant sera fermé et le travail non enregistré sera perdu. Le PC restera allumé, mais RemEx sera déconnecté et ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
+    <value>Tout ce qui est ouvert sur ce PC sera fermé et le travail non enregistré sera perdu. Le PC restera allumé, mais RemEx sera déconnecté et ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Déconnexion</value>
@@ -3924,7 +3924,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Aucune routine ne s'exécute encore sur ce PC</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Les routines se créent dans l'application RemEx de votre téléphone, dans Routines. Celles qui s'exécutent sur ce PC apparaissent ici.</value>
+    <value>Les routines se créent dans l'application RemEx de votre téléphone, sous Plus, puis Routines. Celles qui s'exécutent sur ce PC apparaissent ici.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>En savoir plus sur les routines</value>

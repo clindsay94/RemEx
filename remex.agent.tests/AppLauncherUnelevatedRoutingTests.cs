@@ -48,7 +48,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     [Fact]
     public async Task AnAllowedLaunchGoesThroughTheUnelevatedLauncherWithTheAppsOwnFolder()
     {
-        _unelevated.Result = UnelevatedLaunchResult.Launched;
+        _unelevated.NextResult = UnelevatedLaunchResult.Launched;
 
         await Service(_target).LaunchAppAsync(_target);
 
@@ -68,7 +68,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     {
         // "Nothing that works today stops working": an app whose manifest needs administrator
         // rights, or a PC with no Explorer running, still launches the way it always did.
-        _unelevated.Result = declined;
+        _unelevated.NextResult = declined;
 
         await Service(_target).LaunchAppAsync(_target);
 
@@ -85,7 +85,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
         // Failed is the shell route giving up (Explorer unreachable after the retry and the
         // explorer.exe last resort). Falling back here would run the target as administrator, which
         // is the bug RemEx-pp4cm.2 fixes, so the failure goes back to the caller instead.
-        _unelevated.Result = UnelevatedLaunchResult.Failed;
+        _unelevated.NextResult = UnelevatedLaunchResult.Failed;
 
         await Assert.ThrowsAsync<UserLaunchFailedException>(() => Service(_target).LaunchAppAsync(_target));
 
@@ -96,7 +96,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     [Fact]
     public async Task APathNotOnTheAllowlistNeverReachesEitherLauncher()
     {
-        _unelevated.Result = UnelevatedLaunchResult.Launched;
+        _unelevated.NextResult = UnelevatedLaunchResult.Launched;
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => Service(/* nothing allowed */).LaunchAppAsync(_target));
@@ -109,7 +109,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     public async Task ANetworkPathNeverReachesEitherLauncherEvenWhenAllowlisted()
     {
         const string unc = @"\\attacker\share\evil.exe";
-        _unelevated.Result = UnelevatedLaunchResult.Launched;
+        _unelevated.NextResult = UnelevatedLaunchResult.Launched;
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => Service(unc).LaunchAppAsync(unc));
 
@@ -121,7 +121,7 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
     public async Task AMissingTargetNeverReachesEitherLauncher()
     {
         var missing = Path.Combine(_dir, "gone.exe");
-        _unelevated.Result = UnelevatedLaunchResult.Launched;
+        _unelevated.NextResult = UnelevatedLaunchResult.Launched;
 
         await Assert.ThrowsAsync<FileNotFoundException>(() => Service(missing).LaunchAppAsync(missing));
 
@@ -152,14 +152,14 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
 
     private sealed class FakeUnelevatedLauncher : IUnelevatedLauncher
     {
-        public UnelevatedLaunchResult Result { get; set; }
+        public UnelevatedLaunchResult NextResult { get; set; }
 
         public List<(string Target, string? Arguments, string? WorkingDirectory)> Calls { get; } = [];
 
         public UnelevatedLaunchResult TryLaunch(string target, string? arguments, string? workingDirectory)
         {
             Calls.Add((target, arguments, workingDirectory));
-            return Result;
+            return NextResult;
         }
     }
 

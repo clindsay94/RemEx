@@ -31,7 +31,7 @@ public sealed class UserLauncherTests : IDisposable
     [Fact]
     public void WhenTheUnelevatedRouteLaunchesTheOldLaunchNeverRuns()
     {
-        _fake.Result = UnelevatedLaunchResult.Launched;
+        _fake.NextResult = UnelevatedLaunchResult.Launched;
 
         var route = UserLauncher.Launch(_fake, @"C:\Apps\tool.exe", @"C:\Apps", _standardStarts.Add);
 
@@ -47,7 +47,7 @@ public sealed class UserLauncherTests : IDisposable
     [InlineData(UnelevatedLaunchResult.ProgramRouteUnavailable)]
     public void WhenTheUnelevatedRouteDeclinesTheOldShellExecuteLaunchRuns(UnelevatedLaunchResult declined)
     {
-        _fake.Result = declined;
+        _fake.NextResult = declined;
 
         var route = UserLauncher.Launch(_fake, "https://example.org/", null, _standardStarts.Add);
 
@@ -64,7 +64,7 @@ public sealed class UserLauncherTests : IDisposable
         // Security review of RemEx-pp4cm.2: Failed means the shell route gave up (Explorer
         // restarting, busy, or an elevated/foreign shell). Falling back would open an administrator
         // browser - the original bug - so it throws and starts nothing.
-        _fake.Result = UnelevatedLaunchResult.Failed;
+        _fake.NextResult = UnelevatedLaunchResult.Failed;
 
         var act = () => UserLauncher.Launch(_fake, "https://example.org/", null, _standardStarts.Add);
 
@@ -75,7 +75,7 @@ public sealed class UserLauncherTests : IDisposable
     [Fact]
     public void ThePcAppsLinksTellTheUserInsteadOfOpeningElevated()
     {
-        _fake.Result = UnelevatedLaunchResult.Failed;
+        _fake.NextResult = UnelevatedLaunchResult.Failed;
         var notified = new List<(string Title, string Message)>();
 
         var opened = UserLauncher.LaunchOrNotify(
@@ -91,7 +91,7 @@ public sealed class UserLauncherTests : IDisposable
     [Fact]
     public void LaunchOrNotifyStaysQuietWhenTheLinkOpens()
     {
-        _fake.Result = UnelevatedLaunchResult.Launched;
+        _fake.NextResult = UnelevatedLaunchResult.Launched;
         var notified = 0;
 
         UserLauncher.LaunchOrNotify(_fake, "https://example.org/", _standardStarts.Add, (_, _) => notified++)
@@ -165,7 +165,7 @@ public sealed class UserLauncherTests : IDisposable
 
     private void InstallFake()
     {
-        _fake.Result = UnelevatedLaunchResult.Launched;
+        _fake.NextResult = UnelevatedLaunchResult.Launched;
         App.EmbeddedHostServices = new ServiceCollection()
             .AddSingleton<IUnelevatedLauncher>(_fake)
             .BuildServiceProvider();
@@ -173,14 +173,14 @@ public sealed class UserLauncherTests : IDisposable
 
     private sealed class FakeUnelevatedLauncher : IUnelevatedLauncher
     {
-        public UnelevatedLaunchResult Result { get; set; }
+        public UnelevatedLaunchResult NextResult { get; set; }
 
         public List<(string Target, string? Arguments, string? WorkingDirectory)> Calls { get; } = [];
 
         public UnelevatedLaunchResult TryLaunch(string target, string? arguments, string? workingDirectory)
         {
             Calls.Add((target, arguments, workingDirectory));
-            return Result;
+            return NextResult;
         }
     }
 }

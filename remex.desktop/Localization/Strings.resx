@@ -93,7 +93,7 @@
     <value>Files</value>
   </data>
   <data name="Nav_RemoteDesktop" xml:space="preserve">
-    <value>Remote Desktop</value>
+    <value>Remote desktop</value>
   </data>
 
   
@@ -113,10 +113,10 @@
     <value>Browse...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Start</value>
+    <value>Start</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Stop</value>
+    <value>Stop</value>
   </data>
 
   
@@ -145,7 +145,7 @@
     <value>MAC address copied — paste it into the RemEx app on your phone.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>To set it up: open the RemEx app on your phone, go to Settings → Wake-on-LAN, and enter the address above. Your phone can then wake this PC anytime it's on the same network.</value>
+    <value>Your phone usually picks up this address by itself once it has connected. If it's missing, open the RemEx app on your phone, go to the Connection screen, open this PC's card, tap Edit connection details and enter the address above. Your phone can then wake this PC anytime it's on the same network.</value>
   </data>
   <data name="Remote_Forced" xml:space="preserve">
     <value>Forced — unsaved work is lost</value>
@@ -183,25 +183,25 @@
     <value>Settings</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Home</value>
+    <value>Back to Home</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
-    <value>Save Changes</value>
+    <value>Save changes</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Settings Saved!</value>
+    <value>Settings saved</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Connection</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
-    <value>Snap to Grid</value>
+    <value>Snap to grid</value>
   </data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve">
     <value>Cards snap to the nearest grid line when dropped</value>
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
-    <value>Grid Size</value>
+    <value>Grid size</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
     <value>Pinned sensors</value>
@@ -220,7 +220,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  Processes</value>
+    <value>Processes</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>What's running on this PC</value>
@@ -229,7 +229,7 @@
     <value>Search by name or PID...</value>
   </data>
   <data name="TaskMgr_KillProcess" xml:space="preserve">
-    <value>Kill Process</value>
+    <value>End process</value>
   </data>
   <data name="TaskMgr_SortName" xml:space="preserve">
     <value>Name</value>
@@ -249,16 +249,16 @@
     <value>Programs your phone can start</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Add Program</value>
+    <value>Add a program</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>You haven't added any programs yet.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
-    <value>Move Left</value>
+    <value>Move left</value>
   </data>
   <data name="AppLauncher_MoveRight" xml:space="preserve">
-    <value>Move Right</value>
+    <value>Move right</value>
   </data>
   <data name="AppLauncher_Remove" xml:space="preserve">
     <value>Remove</value>
@@ -266,28 +266,28 @@
 
   
   <data name="AddProgram_Title" xml:space="preserve">
-    <value>Add Program</value>
+    <value>Add a program</value>
   </data>
   <data name="AddProgram_Header" xml:space="preserve">
-    <value>Add New Program</value>
+    <value>Add a new program</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Executable Path</value>
+    <value>Program path</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
-    <value>Display Name</value>
+    <value>Display name</value>
   </data>
   <data name="AddProgram_AccentColor" xml:space="preserve">
     <value>Accent colour (hex)</value>
   </data>
   <data name="AddProgram_IconPreview" xml:space="preserve">
-    <value>Icon Preview</value>
+    <value>Icon preview</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
     <value>C:\Path\To\App.exe</value>
   </data>
   <data name="AddProgram_WatermarkName" xml:space="preserve">
-    <value>My App</value>
+    <value>My app</value>
   </data>
   <data name="AddProgram_WatermarkColor" xml:space="preserve">
     <value>#RRGGBB</value>
@@ -295,7 +295,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Live Glance</value>
+    <value>Sensors</value>
   </data>
 
   
@@ -324,7 +324,7 @@
     <value>New sensors</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Add Card</value>
+    <value>Add card</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Save</value>
@@ -342,7 +342,7 @@
     <value>Disconnect</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Connect</value>
+    <value>Connect</value>
   </data>
 
   
@@ -359,10 +359,10 @@
     <value>FPS:</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Stream Error</value>
+    <value>Stream error</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
-    <value>Remote Desktop</value>
+    <value>Remote desktop</value>
   </data>
   <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve">
     <value>Connect and press Start to begin streaming.</value>
@@ -394,13 +394,13 @@
 
   
   <data name="Custom_CornerRadius" xml:space="preserve">
-    <value>Corner Radius</value>
+    <value>Corner radius</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
     <value>Card opacity</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Window opacity</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
     <value>Tray pop-up</value>
@@ -415,7 +415,7 @@
     <value>Cards</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Pin a sensor on the canvas to show it here.</value>
+    <value>Pin a sensor on the Sensors page to show it here.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Buttons</value>
@@ -427,22 +427,22 @@
     <value>Add apps on the Apps page to pick shortcuts.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
-    <value>Glow Strength</value>
+    <value>Glow strength</value>
   </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
-    <value>Background Mode</value>
+    <value>Background mode</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Reset to Theme Defaults</value>
+    <value>Reset to theme defaults</value>
   </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
-    <value>Page Title Font</value>
+    <value>Page title font</value>
   </data>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Font for large page titles. Includes the app's display fonts and any font installed on this system.</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
-    <value>Content Font</value>
+    <value>Content font</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
     <value>Font for body and content text — descriptions, labels, and the Sensors page. Fixed-width data readouts keep their monospace font.</value>
@@ -519,10 +519,10 @@
     <value>Zoom: {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Pad: Compact</value>
+    <value>Pad: compact</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Pad: Full</value>
+    <value>Pad: full</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Compact cursor pad enabled</value>
@@ -634,7 +634,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Enter a MAC address first.</value>
+    <value>Enter a MAC address first.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>Sending wake signal via PC…</value>
@@ -643,13 +643,13 @@
     <value>Sending wake signal locally…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Packet sent to {0}</value>
+    <value>Wake signal sent to {0}</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>That didn't work: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Lock sent</value>
@@ -667,7 +667,7 @@
     <value>Force restart sent</value>
   </data>
   <data name="Wol_RebootUefiSent" xml:space="preserve">
-    <value>Restart to UEFI sent</value>
+    <value>Reboot to UEFI sent</value>
   </data>
   <data name="Wol_SleepSent" xml:space="preserve">
     <value>Sleep sent</value>
@@ -683,16 +683,16 @@
     <value>Getting started</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Skip ✕</value>
+    <value>Skip</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Back</value>
+    <value>Back</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>Next →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Get Started ✓</value>
+    <value>Get started</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Don't show this tutorial again</value>
@@ -705,55 +705,55 @@
     <value>Welcome to RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx turns your PC into a secure remote command center. From your phone you can monitor hardware sensors, launch apps, manage files and processes, and stream your desktop.
+    <value>RemEx lets you control this PC securely from your phone. You can monitor hardware sensors, launch apps, manage files and processes, and stream your desktop.
 
 RemEx runs on this PC and your phone connects to it. Every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
-    <value>How It Works</value>
+    <value>How it works</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>This desktop app includes an embedded RemEx PC that starts automatically. Your Android phone connects to it — not the other way around.</value>
+    <value>RemEx runs on this PC and starts automatically. Your Android phone connects to it — not the other way around.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx starts automatically when you sign in to this PC — a logon task on Windows, an autostart entry on Linux — so your phone can connect whenever you are signed in. Sensor monitoring and power commands keep working when the screen locks, but streaming or controlling the desktop needs the session unlocked. If the PC is switched off or signed out, wake it with Wake-on-LAN and sign in first.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>HWInfo Integration (Recommended)</value>
+    <value>HWiNFO (recommended)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>For detailed hardware monitoring (300+ sensors), install HWiNFO64 — it's free for personal use.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
+2. Run HWiNFO → Settings → Main Settings
 3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+4. HWiNFO must be running for RemEx to read its sensors</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ HWInfo's Shared Memory auto-disables after 12 hours (free version). Re-enable it periodically, or consider the Pro license.</value>
+    <value>HWiNFO's Shared Memory auto-disables after 12 hours (free version). Re-enable it periodically, or consider the Pro license.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
-    <value>Sensor Monitoring</value>
+    <value>Sensor monitoring</value>
   </data>
   <data name="Tutorial_P5_Body1" xml:space="preserve">
     <value>RemEx supports two telemetry sources:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ sensors — CPU temps, GPU clocks, fan speeds, voltages, power draw. Requires HWInfo running.</value>
+    <value>HWiNFO: 300+ sensors — CPU temps, GPU clocks, fan speeds, voltages, power draw. Requires HWiNFO running.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Built-in: Basic sensors — CPU usage, RAM, disk I/O, network rates. Always available, no extra software.</value>
+    <value>Built-in: basic sensors — CPU usage, RAM, disk I/O, network rates. Always available, no extra software.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Pin your favourite sensors to Home from Personalize → Layout → Pinned sensors.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Setting Up Apps</value>
+    <value>Setting up apps</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>The Apps page lets you start programs on your PC from your phone. Add them here first.</value>
@@ -769,7 +769,7 @@ RemEx runs on this PC and your phone connects to it. Every connection is protect
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
-    <value>Connecting Your Phone</value>
+    <value>Connecting your phone</value>
   </data>
   <data name="Tutorial_P7_Body1" xml:space="preserve">
     <value>Your Android app finds this PC automatically using mDNS. Both devices must be on the same Wi-Fi / LAN.</value>
@@ -786,7 +786,7 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>QR code pairing</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
     <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
@@ -795,14 +795,14 @@ Linux: ip addr  or  hostname -I</value>
     <value>1. Open Settings → Connection on the PC
 2. Click "Pair a phone" to show the QR code
 3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
+4. On the Connection screen, tap "Add a PC", then "Scan QR code"
 5. Point your camera at the code — you'll connect automatically!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Files &amp; Shared Folders</value>
+    <value>Files &amp; shared folders</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
     <value>Files only shows the folders this PC has shared. Set them up in Settings on this PC so your phone sees the right places.</value>
@@ -816,7 +816,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>On your phone, browse a shared folder, tap a file to download it, or upload from Android into any writable folder.</value>
   </data>
   <data name="Tutorial_P10_Title" xml:space="preserve">
-    <value>You're All Set!</value>
+    <value>You're all set!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
     <value>Use the sidebar to move between Home, Sensors, Commands, Routines, Apps, Processes, Files, Logs &amp; Diagnostics, Settings, and About. Personalize is at the bottom of the sidebar.</value>
@@ -842,7 +842,7 @@ Linux: ip addr  or  hostname -I</value>
 
   
   <data name="Home_QrCodeButton" xml:space="preserve">
-    <value>QR Code</value>
+    <value>QR code</value>
   </data>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Pair a phone</value>
@@ -907,7 +907,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Help</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Replay Tutorial</value>
+    <value>Replay tutorial</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Re-watch the getting-started and glossary walkthrough</value>
@@ -919,10 +919,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Choose which folders on this PC appear in Files. Read-only folders allow browsing and downloads, while writable folders also accept uploads from your phone.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Add Folder</value>
+    <value>Add folder</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
-    <value>Restore Defaults</value>
+    <value>Restore defaults</value>
   </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Allow uploads</value>
@@ -960,7 +960,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folders your phone can browse and send to</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
-    <value>Shared Folder</value>
+    <value>Shared folder</value>
   </data>
   <data name="FileTransfer_ReloadTooltip" xml:space="preserve">
     <value>Reload shared folders</value>
@@ -975,13 +975,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Refresh current folder</value>
   </data>
   <data name="FileTransfer_UploadBtn" xml:space="preserve">
-    <value>Upload File</value>
+    <value>Upload file</value>
   </data>
   <data name="FileTransfer_UploadTooltip" xml:space="preserve">
     <value>Choose a local file and upload it to this remote folder</value>
   </data>
   <data name="FileTransfer_DownloadBtn" xml:space="preserve">
-    <value>Download Selected</value>
+    <value>Download selected</value>
   </data>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Choose where to save the selected remote file</value>
@@ -1052,7 +1052,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Deleted {0} items.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Select All</value>
+    <value>Select all</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
     <value>Select all files and folders in the current directory</value>
@@ -1177,7 +1177,7 @@ Linux: ip addr  or  hostname -I</value>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
-    <value>Exit Fullscreen</value>
+    <value>Exit full screen</value>
   </data>
   <data name="RemoteDesktop_Host" xml:space="preserve">
     <value>PC:</value>
@@ -1192,7 +1192,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Pen Mode: tap = instant click, drag = click-and-drag</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Reset Zoom</value>
+    <value>Reset zoom</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Stylus: press = click, barrel button = right-click</value>
@@ -1207,10 +1207,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Toggle compact cursor pad</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>Toggle Cursor Pad</value>
+    <value>Show or hide cursor pad</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Toggle Fullscreen</value>
+    <value>Enter or exit full screen</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Pen</value>
@@ -1233,7 +1233,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Reboot to UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Toggle Pin to Home</value>
+    <value>Pin to Home or unpin</value>
   </data>
 
   
@@ -1248,13 +1248,13 @@ Linux: ip addr  or  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Android App  →  connects to  →  🖥️ Your PC (this machine)</value>
+    <value>Your phone  →  connects to  →  this PC</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Skip the tutorial — you can replay it from Settings</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>Glossary: Command palette</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
     <value>Press Ctrl+K to jump to screens, trigger quick actions, and search RemEx instantly.</value>
@@ -1272,10 +1272,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>Glossary: Sensors</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them freely on the Sensors page.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Glossary: Files</value>
@@ -1284,7 +1284,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>Glossary: Remote desktop</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
     <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
@@ -1315,16 +1315,16 @@ You can see them, switch them off and check their history on the Routines page.<
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Unnamed app</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Select an application</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
     <value>Applications</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>All files</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
     <value>Unknown</value>
@@ -1353,7 +1353,7 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Browse releases, report issues, and star the project if RemEx helps you.</value>
   </data>
   <data name="About_ViewGitHub" xml:space="preserve">
-    <value>View Source on GitHub</value>
+    <value>View source on GitHub</value>
   </data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Made with ❤️ in Denver, Colorado</value>
@@ -1361,46 +1361,46 @@ You can see them, switch them off and check their history on the Routines page.<
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Shut Down — Are you sure?</value>
+    <value>Shut down this PC?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>The remote PC will shut down. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</value>
+    <value>This PC will shut down. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
-    <value>Shut Down</value>
+    <value>Shut down</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Are you sure?</value>
+    <value>Restart this PC?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>The remote PC will restart. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
+    <value>This PC will restart. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Restart</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Force Shutdown — Are you sure?</value>
+    <value>Force this PC to shut down?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>This will immediately shut down the remote PC. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</value>
+    <value>This will immediately shut down this PC. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Force Shutdown</value>
+    <value>Force shutdown</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Force Restart — Are you sure?</value>
+    <value>Force this PC to restart?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>This will immediately restart the remote PC. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
+    <value>This will immediately restart this PC. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Force Restart</value>
+    <value>Force restart</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Reboot to UEFI — Are you sure?</value>
+    <value>Reboot this PC to UEFI?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
+    <value>This PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reboot to UEFI</value>
@@ -1411,22 +1411,22 @@ You can see them, switch them off and check their history on the Routines page.<
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Keyboard shortcuts</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Command palette</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Undo layout edit</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Redo layout edit</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Close overlays and panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>What's new?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
     <value>Routines</value>
@@ -1510,7 +1510,7 @@ You can see them, switch them off and check their history on the Routines page.<
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Lower the Quality slider.
-• Reduce Target FPS — 15-20 is usually plenty.
+• Lower the Target FPS. The phone starts at 120, which is a ceiling rather than a promise. If the picture still stutters, 30–60 FPS is plenty on Wi-Fi.
 • Lower the Scale.
 • Use a fast local network. 5 GHz Wi-Fi or a wired connection is best — this is the most common cause of lag.
 • You don't need to set up screen capture. RemEx picks the fastest method your PC supports, automatically.</value>
@@ -1519,7 +1519,7 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>What is Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.&#xD;&#xA;&#xD;&#xA;Waking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</value>
+    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Your phone usually learns this PC's MAC address by itself once it has connected. Only type it in on the phone's Connection screen if it's missing.&#xD;&#xA;&#xD;&#xA;Waking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>How do I transfer files?</value>
@@ -1550,7 +1550,7 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Redo</value>
   </data>
   <data name="Canvas_ResetView" xml:space="preserve">
-    <value>Reset View</value>
+    <value>Reset view</value>
   </data>
   <data name="Canvas_Map" xml:space="preserve">
     <value>Map</value>
@@ -1583,7 +1583,7 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Intense</value>
   </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
-    <value>Splash Screen</value>
+    <value>Splash screen</value>
   </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Reduced motion</value>
@@ -1601,16 +1601,16 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Logs &amp; Diagnostics</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
-    <value>Live Application Logs</value>
+    <value>Live application logs</value>
   </data>
   <data name="Logs_VerbosityFilter" xml:space="preserve">
-    <value>Verbosity Filter:</value>
+    <value>Verbosity filter:</value>
   </data>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Refresh</value>
   </data>
   <data name="Logs_CopySelected" xml:space="preserve">
-    <value>Copy Selected</value>
+    <value>Copy selected</value>
   </data>
   <data name="Logs_CopyMessage" xml:space="preserve">
     <value>Copy message</value>
@@ -1628,10 +1628,10 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>Open folder</value>
   </data>
   <data name="Logs_Clear" xml:space="preserve">
-    <value>Clear Logs</value>
+    <value>Clear logs</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>System Event Logs</value>
+    <value>System event logs</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Latest event logs query from Windows Event Viewer or Linux systemd journal.</value>
@@ -1657,7 +1657,7 @@ This is normal — RemEx only writes here for serious startup problems, so an em
 That is expected on desktops that start RemEx directly from XDG autostart rather than through systemd — the OS never captures its output there. The {0} above is RemEx's own record and works everywhere.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Query System Event Logs</value>
+    <value>Query system event logs</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
     <value>Preset:</value>
@@ -1681,28 +1681,28 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Export</value>
   </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
-    <value>Export Logs</value>
+    <value>Export logs</value>
   </data>
   <data name="Logs_PresetAll" xml:space="preserve">
     <value>All</value>
   </data>
   <data name="Logs_PresetErrors" xml:space="preserve">
-    <value>Errors &amp; Warnings</value>
+    <value>Errors &amp; warnings</value>
   </data>
   <data name="Logs_PresetConnection" xml:space="preserve">
-    <value>Connection &amp; Pairing</value>
+    <value>Connection &amp; pairing</value>
   </data>
   <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
-    <value>Remote Desktop</value>
+    <value>Remote desktop</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
     <value>File transfers</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
-    <value>Input &amp; Commands</value>
+    <value>Input &amp; commands</value>
   </data>
   <data name="Logs_PresetStartup" xml:space="preserve">
-    <value>Startup &amp; Elevation</value>
+    <value>Startup &amp; elevation</value>
   </data>
   <data name="Logs_ScopeCurrentView" xml:space="preserve">
     <value>Current view</value>
@@ -1741,7 +1741,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Navigate</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Sensor Canvas</value>
+    <value>Sensors</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Commands</value>
@@ -1753,7 +1753,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Processes</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
-    <value>Remote Desktop</value>
+    <value>Remote desktop</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
     <value>Files</value>
@@ -1762,40 +1762,40 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Settings</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Toggle Settings Panel</value>
+    <value>Show or hide Personalize</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Interface</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Close Settings Panel</value>
+    <value>Close Personalize</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Toggle Navigation Drawer</value>
+    <value>Show or hide sidebar</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Undo Canvas Edit</value>
+    <value>Undo layout edit</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Canvas</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Redo Canvas Edit</value>
+    <value>Redo layout edit</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
-    <value>Dismiss Connection Banner</value>
+    <value>Dismiss connection banner</value>
   </data>
   <data name="PaletteCategory_Status" xml:space="preserve">
     <value>Status</value>
   </data>
   <data name="Palette_AboutWhatsNew" xml:space="preserve">
-    <value>About &amp; What's New</value>
+    <value>About &amp; what's new</value>
   </data>
   <data name="PaletteCategory_Help" xml:space="preserve">
     <value>Help</value>
   </data>
   <data name="Palette_TutorialGlossary" xml:space="preserve">
-    <value>Tutorial &amp; Glossary</value>
+    <value>Tutorial &amp; glossary</value>
   </data>
   <data name="Palette_LockPc" xml:space="preserve">
     <value>Lock PC</value>
@@ -1810,19 +1810,19 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Hibernate PC</value>
   </data>
   <data name="Palette_SignOutPc" xml:space="preserve">
-    <value>Sign Out PC</value>
+    <value>Sign out PC</value>
   </data>
   <data name="Palette_ShutdownPc" xml:space="preserve">
-    <value>Shutdown PC</value>
+    <value>Shut down PC</value>
   </data>
   <data name="Palette_ForceShutdownPc" xml:space="preserve">
-    <value>Force Shutdown PC</value>
+    <value>Force shutdown PC</value>
   </data>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Restart PC</value>
   </data>
   <data name="Palette_ForceRestartPc" xml:space="preserve">
-    <value>Force Restart PC</value>
+    <value>Force restart PC</value>
   </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Restart PC to UEFI</value>
@@ -1837,34 +1837,34 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Connect</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Desktop - Remote Execution</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Command palette</value>
   </data>
   <data name="CommandPalette_SearchWatermark" xml:space="preserve">
     <value>Search commands…</value>
   </data>
   <data name="SetAlert_Title" xml:space="preserve">
-    <value>Set Sensor Alert</value>
+    <value>Set sensor alert</value>
   </data>
   <data name="SetAlert_Header" xml:space="preserve">
-    <value>Sensor Alert</value>
+    <value>Sensor alert</value>
   </data>
   <data name="SetAlert_ThresholdValue" xml:space="preserve">
-    <value>Threshold Value</value>
+    <value>Threshold value</value>
   </data>
   <data name="SetAlert_TriggerDirection" xml:space="preserve">
-    <value>Trigger When Value Is</value>
+    <value>Trigger when value is</value>
   </data>
   <data name="SetAlert_Severity" xml:space="preserve">
     <value>Severity</value>
   </data>
   <data name="SetAlert_SetAlertBtn" xml:space="preserve">
-    <value>Set Alert</value>
+    <value>Set alert</value>
   </data>
   <data name="Btn_Clear" xml:space="preserve">
     <value>Clear</value>
@@ -2014,7 +2014,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Personalize</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
-    <value>About &amp; Help</value>
+    <value>About &amp; help</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx on GitHub</value>
@@ -2053,7 +2053,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Sensor alerts</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>No alerts configured. Right-click a sensor card on the canvas to set one.</value>
+    <value>No alerts configured. Right-click a sensor card on the Sensors page to set one.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Edit</value>
@@ -2113,7 +2113,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Redo (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Toggle Minimap</value>
+    <value>Show or hide minimap</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Save canvas as PNG to Pictures folder</value>
@@ -2149,16 +2149,16 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Grid placement increment bounds in absolute pixels</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Open Command Palette (Ctrl+K)</value>
+    <value>Open command palette (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Toggle Sidebar</value>
+    <value>Show or hide sidebar</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Need to see the walkthrough again?</value>
   </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
-    <value>Show Main Window</value>
+    <value>Show main window</value>
   </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Exit</value>
@@ -2191,7 +2191,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Open transfers</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Pair a device</value>
+    <value>Pair a phone</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Open logs folder</value>
@@ -2230,7 +2230,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Dual metric</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
-    <value>Second Metric</value>
+    <value>Second metric</value>
   </data>
   <data name="Canvas_ActionPin" xml:space="preserve">
     <value>Pin</value>
@@ -2257,7 +2257,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Replay the dashboard tips</value>
   </data>
   <data name="SecondMetric_Title" xml:space="preserve">
-    <value>Choose Second Metric</value>
+    <value>Choose a second metric</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
     <value>Overlay a second sensor on</value>
@@ -2275,7 +2275,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Rename...</value>
   </data>
   <data name="Canvas_ShowValueOverlay" xml:space="preserve">
-    <value>Show Value Overlay</value>
+    <value>Show value overlay</value>
   </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Set Alert...</value>
@@ -2302,10 +2302,10 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Export everything RemEx remembers — your canvas layout, launcher apps, shared folders, and theme — into a single file, or import one to restore it. Pairings and certificates are never included; you'll need to re-pair your phone after a restore.</value>
   </data>
   <data name="Settings_ExportButton" xml:space="preserve">
-    <value>Export Settings</value>
+    <value>Export settings</value>
   </data>
   <data name="Settings_ImportButton" xml:space="preserve">
-    <value>Import Settings</value>
+    <value>Import settings</value>
   </data>
   <data name="Settings_ExportDone" xml:space="preserve">
     <value>Settings exported.</value>
@@ -2320,10 +2320,10 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>That file isn't a valid RemEx savefile.</value>
   </data>
   <data name="Settings_SavefileType" xml:space="preserve">
-    <value>RemEx Savefile</value>
+    <value>RemEx save file</value>
   </data>
   <data name="Restore_PromptTitle" xml:space="preserve">
-    <value>Restore Previous Settings?</value>
+    <value>Restore previous settings?</value>
   </data>
   <data name="Restore_PromptMessage" xml:space="preserve">
     <value>We found an automatic backup from {0}. Would you like to restore your canvas layout, launcher apps, and settings from it?</value>
@@ -2332,7 +2332,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Restore</value>
   </data>
   <data name="Restore_Skip" xml:space="preserve">
-    <value>Start Fresh</value>
+    <value>Start fresh</value>
   </data>
   <data name="AppLauncher_Sort" xml:space="preserve">
     <value>Sort</value>
@@ -2350,10 +2350,10 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Drag to reorder is disabled while searching. Use the arrow buttons instead.</value>
   </data>
   <data name="AddProgram_EditTitle" xml:space="preserve">
-    <value>Edit Program</value>
+    <value>Edit program</value>
   </data>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
-    <value>Refresh Icon</value>
+    <value>Refresh icon</value>
   </data>
 
   <!-- ═══ 2.1 File Sharing Overhaul — file manager ═══ -->
@@ -2391,7 +2391,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Icon size</value>
   </data>
   <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
-    <value>New Folder</value>
+    <value>New folder</value>
   </data>
   <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
     <value>Create a new folder here.</value>
@@ -2567,7 +2567,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
 
   <!-- ═══ 2.1 File Sharing Overhaul — consent dialog ═══ -->
   <data name="FileConsent_WindowTitle" xml:space="preserve">
-    <value>Permission Request</value>
+    <value>Permission request</value>
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Allow full device browsing?</value>
@@ -2674,7 +2674,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Personalize appearance</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
-    <value>Software Update</value>
+    <value>Software update</value>
   </data>
   <data name="About_Update_Checking" xml:space="preserve">
     <value>Checking for updates…</value>
@@ -2704,7 +2704,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Makes one anonymous request to GitHub at startup. No personal data is sent.</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Delete — Are you sure?</value>
+    <value>Delete permanently?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>This will permanently delete “{0}”. This cannot be undone.</value>
@@ -2775,25 +2775,25 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
     <value>Clear the diagnostic log? The entries listed here are discarded. Log files already written to disk are not affected.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Kill Process — Are you sure?</value>
+    <value>End this process?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Remove Program — Are you sure?</value>
+    <value>Remove this program?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Remove</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Stop Sharing — Are you sure?</value>
+    <value>Stop sharing this folder?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Revoke Access — Are you sure?</value>
+    <value>Revoke file access?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Restore Defaults — Are you sure?</value>
+    <value>Restore the default folders?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Clear Logs — Are you sure?</value>
+    <value>Clear the log?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2889,13 +2889,13 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
     <value>Nothing was ended. “{0}” (PID {1}) closed while you were deciding, and that PID may now belong to a different program. The list has been refreshed — find the program again and try once more.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Sign Out — Are you sure?</value>
+    <value>Sign out of this PC?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Everything open on the remote PC will close and unsaved work will be lost. The PC stays on, but RemEx will disconnect and cannot reach it again until you sign in on the PC itself.</value>
+    <value>Everything open on this PC will close and unsaved work will be lost. The PC stays on, but RemEx will disconnect and cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
-    <value>Sign Out</value>
+    <value>Sign out</value>
   </data>
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Could not create a pairing PIN</value>
@@ -2994,7 +2994,7 @@ You can change:
     <value>Can I watch the tutorial again?</value>
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
-    <value>Yes. Open Settings and use "Replay Tutorial" in the Help section. You can do this as often as you like.</value>
+    <value>Yes. Open Settings and use "Replay tutorial" in the Help section. You can do this as often as you like.</value>
   </data>
   <data name="Faq_Q17_Question" xml:space="preserve">
     <value>What are routines?</value>
@@ -3327,7 +3327,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Import JSON</value>
   </data>
   <data name="Custom_PaletteFileType" xml:space="preserve">
-    <value>RemEx Palette</value>
+    <value>RemEx palette</value>
   </data>
   <data name="Notification_PaletteCopied_Title" xml:space="preserve">
     <value>Palette copied</value>
@@ -3576,7 +3576,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Bold subtitles</value>
   </data>
   <data name="Custom_SubtitleFont" xml:space="preserve">
-    <value>Subtitle Font</value>
+    <value>Subtitle font</value>
   </data>
   <data name="Custom_SubtitleFontTip" xml:space="preserve">
     <value>Font for the line under each page title. Defaults to the page title font.</value>
@@ -3930,7 +3930,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>No routines run on this PC yet</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Routines are made in the RemEx app on your phone, under Routines. The ones that run on this PC show up here.</value>
+    <value>Routines are made in the RemEx app on your phone, under More, then Routines. The ones that run on this PC show up here.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>Learn about routines</value>

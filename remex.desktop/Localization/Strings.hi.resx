@@ -113,10 +113,10 @@
     <value>ब्राउज़...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ शुरू करें</value>
+    <value>शुरू करें</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ रोकें</value>
+    <value>रोकें</value>
   </data>
 
   
@@ -165,13 +165,13 @@
     <value>सेटिंग्स</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← होम</value>
+    <value>होम पर वापस जाएँ</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>बदलाव सहेजें</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>सेटिंग्स सहेजी गईं!</value>
+    <value>सेटिंग्स सहेजी गईं</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>कनेक्शन</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  प्रक्रियाएँ</value>
+    <value>प्रक्रियाएँ</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>इस पीसी पर क्या चल रहा है</value>
@@ -231,7 +231,7 @@
     <value>प्रोग्राम जिन्हें आपका फ़ोन शुरू कर सकता है</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ प्रोग्राम जोड़ें</value>
+    <value>प्रोग्राम जोड़ें</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>आपने अभी तक कोई प्रोग्राम नहीं जोड़ा है।</value>
@@ -254,7 +254,7 @@
     <value>नया प्रोग्राम जोड़ें</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>एक्जीक्यूटेबल पथ</value>
+    <value>प्रोग्राम पथ</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
     <value>प्रदर्शन नाम</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>लाइव ग्लेंस</value>
+    <value>सेंसर</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>नए सेंसर</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ कार्ड जोड़ें</value>
+    <value>कार्ड जोड़ें</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>सहेजें</value>
@@ -324,7 +324,7 @@
     <value>डिसकनेक्ट</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ कनेक्ट</value>
+    <value>कनेक्ट</value>
   </data>
 
   
@@ -344,7 +344,7 @@
     <value>असीमित</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ स्ट्रीम त्रुटि</value>
+    <value>स्ट्रीम त्रुटि</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
     <value>रिमोट डेस्कटॉप</value>
@@ -394,7 +394,7 @@
     <value>कार्ड</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>इसे यहां दिखाने के लिए कैनवास पर एक सेंसर पिन करें।</value>
+    <value>इसे यहां दिखाने के लिए सेंसर पेज पर एक सेंसर पिन करें।</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>बटन</value>
@@ -592,7 +592,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ पहले MAC पता दर्ज करें।</value>
+    <value>पहले MAC पता दर्ज करें।</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>होस्ट के माध्यम से मैजिक पैकेट भेज रहे हैं…</value>
@@ -601,13 +601,13 @@
     <value>स्थानीय रूप से मैजिक पैकेट भेज रहे हैं…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ {0} को पैकेट भेजा गया</value>
+    <value>{0} को वेक सिग्नल भेजा गया</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>यह नहीं हो पाया: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>लॉक भेजा गया</value>
@@ -641,16 +641,16 @@
     <value>शुरू करें</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>छोड़ें ✕</value>
+    <value>छोड़ें</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← पीछे</value>
+    <value>पीछे</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>अगला →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>शुरू करें ✓</value>
+    <value>शुरू करें</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>यह ट्यूटोरियल दोबारा न दिखाएं</value>
@@ -663,7 +663,7 @@
     <value>RemEx में आपका स्वागत है</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx आपके पीसी को एक सुरक्षित रिमोट कमांड सेंटर बना देता है। अपने फ़ोन से आप हार्डवेयर सेंसर देख सकते हैं, ऐप्स खोल सकते हैं, फ़ाइलें और प्रोसेस प्रबंधित कर सकते हैं, और अपना डेस्कटॉप स्ट्रीम कर सकते हैं।
+    <value>RemEx से आप अपने फ़ोन से इस पीसी को सुरक्षित रूप से नियंत्रित कर सकते हैं। आप हार्डवेयर सेंसर देख सकते हैं, ऐप्स खोल सकते हैं, फ़ाइलें और प्रोसेस प्रबंधित कर सकते हैं, और अपना डेस्कटॉप स्ट्रीम कर सकते हैं।
 
 RemEx इस पीसी पर चलता है और आपका फ़ोन उससे कनेक्ट होता है। हर कनेक्शन TLS और PIN-आधारित पेयरिंग से सुरक्षित रहता है।</value>
   </data>
@@ -672,26 +672,26 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>यह कैसे काम करता है</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>इस डेस्कटॉप ऐप में एक एम्बेडेड RemEx होस्ट शामिल है जो स्वचालित रूप से शुरू होता है। आपका Android फोन इससे कनेक्ट होता है — इसका उल्टा नहीं।</value>
+    <value>RemEx इस पीसी पर चलता है और अपने आप शुरू होता है। आपका Android फ़ोन इससे कनेक्ट होता है — इसका उल्टा नहीं।</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>जब आप इस पीसी में साइन इन करते हैं, RemEx अपने आप शुरू हो जाता है — Windows पर लॉगऑन टास्क के ज़रिए, Linux पर ऑटोस्टार्ट एंट्री के ज़रिए। इसलिए जब तक आप साइन इन हैं, आपका फ़ोन कभी भी कनेक्ट हो सकता है। स्क्रीन लॉक होने पर भी सेंसर मॉनिटरिंग और पावर कमांड काम करते रहते हैं, लेकिन डेस्कटॉप स्ट्रीम या नियंत्रित करने के लिए सेशन अनलॉक होना चाहिए। अगर पीसी बंद है या साइन आउट है, तो उसे Wake-on-LAN से जगाएँ और पहले साइन इन करें।</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>HWInfo एकीकरण (अनुशंसित)</value>
+    <value>HWiNFO (अनुशंसित)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>विस्तृत हार्डवेयर निगरानी (300+ सेंसर) के लिए, HWiNFO64 इंस्टॉल करें — यह व्यक्तिगत उपयोग के लिए निःशुल्क है।</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. hwinfo.com से डाउनलोड करें
-2. HWInfo चलाएँ → Settings (⚙) → Main Settings
+2. HWiNFO चलाएँ → Settings → Main Settings
 3. 'Shared Memory Support' चुनें → OK
-4. RemEx को सेंसर पढ़ने के लिए HWInfo चालू रहना चाहिए</value>
+4. RemEx को सेंसर पढ़ने के लिए HWiNFO चालू रहना चाहिए</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ HWInfo की साझा मेमोरी 12 घंटों (मुफ्त संस्करण) के बाद स्वतः अक्षम हो जाती है। इसे समय-समय पर पुनः सक्षम करें, या प्रो लाइसेंस पर विचार करें।</value>
+    <value>HWiNFO की साझा मेमोरी 12 घंटों (मुफ्त संस्करण) के बाद स्वतः अक्षम हो जाती है। इसे समय-समय पर पुनः सक्षम करें, या प्रो लाइसेंस पर विचार करें।</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
@@ -701,10 +701,10 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>RemEx दो टेलीमेट्री स्रोतों का समर्थन करता है:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ सेंसर — CPU तापमान, GPU घड़ियाँ, पंखे की गति, वोल्टेज, बिजली की खपत। HWInfo का चलना आवश्यक है।</value>
+    <value>HWiNFO: 300+ सेंसर — CPU तापमान, GPU घड़ियाँ, पंखे की गति, वोल्टेज, बिजली की खपत। HWiNFO का चलना आवश्यक है।</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं।</value>
+    <value>बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं।</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>वैयक्तिकृत करें → लेआउट → पिन किए गए सेंसर से अपने पसंदीदा सेंसर होम पर पिन करें।</value>
@@ -753,7 +753,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>1. PC पर सेटिंग्स → कनेक्शन खोलें
 2. QR कोड दिखाने के लिए "फ़ोन पेयर करें" पर क्लिक करें
 3. RemEx मोबाइल ऐप खोलें
-4. कनेक्शन स्क्रीन पर QR स्कैनर आइकन टैप करें
+4. कनेक्शन स्क्रीन पर "पीसी जोड़ें" टैप करें, फिर "QR कोड स्कैन करें"
 5. कैमरे को कोड की ओर करें — कनेक्शन अपने आप हो जाएगा!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
@@ -865,7 +865,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>सहायता</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 ट्यूटोरियल फिर से चलाएं</value>
+    <value>ट्यूटोरियल फिर से चलाएं</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>शुरुआती ट्यूटोरियल फिर से देखें</value>
@@ -877,7 +877,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>चुनें कि इस पीसी के कौन-से फ़ोल्डर फ़ाइलें में दिखें। केवल-पढ़ने वाले फ़ोल्डर ब्राउज़ करने और डाउनलोड की अनुमति देते हैं, जबकि लिखने योग्य फ़ोल्डर आपके फ़ोन से अपलोड भी स्वीकार करते हैं।</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ फ़ोल्डर जोड़ें</value>
+    <value>फ़ोल्डर जोड़ें</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>डिफ़ॉल्ट पुनर्स्थापित करें</value>
@@ -1150,7 +1150,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पेन मोड: टैप = तुरंत क्लिक, ड्रैग = क्लिक-और-ड्रैग</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 ज़ूम रीसेट करें</value>
+    <value>ज़ूम रीसेट करें</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / स्टायलस: दबाएं = क्लिक, बैरल बटन = राइट-क्लिक</value>
@@ -1165,10 +1165,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>कॉम्पैक्ट कर्सर पैड टॉगल करें</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>कर्सर पैड टॉगल करें</value>
+    <value>कर्सर पैड दिखाएँ या छिपाएँ</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>पूर्ण स्क्रीन टॉगल करें</value>
+    <value>पूर्ण स्क्रीन चालू या बंद करें</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>पेन</value>
@@ -1191,7 +1191,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>UEFI में रीबूट करें</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>होम पर पिन टॉगल करें</value>
+    <value>होम पर पिन करें या हटाएँ</value>
   </data>
 
   
@@ -1206,7 +1206,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Android ऐप → कनेक्ट होता है → 🖥️ पीसी होस्ट (यह मशीन) से</value>
+    <value>आपका फ़ोन  →  कनेक्ट होता है  →  इस पीसी से</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>ट्यूटोरियल छोड़ें — आप इसे सेटिंग्स से फिर से चला सकते हैं</value>
@@ -1230,10 +1230,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>PC पर चल रही प्रक्रियाएँ देखें, उपयोग के अनुसार क्रमबद्ध करें और अटके हुए कार्य अपनी कुर्सी से उठे बिना बंद करें।</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>शब्दावली: सेंसर कैनवास</value>
+    <value>शब्दावली: सेंसर</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>सेंसर पिन करके, कार्ड का आकार बदलकर और उन्हें मुक्त कैनवास पर व्यवस्थित करके एक लाइव टेलीमेट्री वॉल बनाएँ।</value>
+    <value>सेंसर पिन करके, कार्ड का आकार बदलकर और उन्हें सेंसर पेज पर अपनी मर्ज़ी से व्यवस्थित करके एक लाइव टेलीमेट्री वॉल बनाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>शब्दावली: फ़ाइलें</value>
@@ -1319,46 +1319,46 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>शटडाउन — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी को शटडाउन करें?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>रिमोट पीसी शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>यह पीसी शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>शटडाउन करें</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>रीस्टार्ट — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी को रीस्टार्ट करें?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>रिमोट पीसी रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>यह पीसी रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>रीस्टार्ट करें</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>फोर्स शटडाउन — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी को फोर्स शटडाउन करें?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>इससे रिमोट पीसी तुरंत शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>इससे यह पीसी तुरंत शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>फोर्स शटडाउन करें</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>फोर्स रीस्टार्ट — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी को फोर्स रीस्टार्ट करें?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>इससे रिमोट पीसी तुरंत रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>इससे यह पीसी तुरंत रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>फोर्स रीस्टार्ट करें</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>UEFI में रीस्टार्ट — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी को UEFI में रीस्टार्ट करें?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>रिमोट पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>यह पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI में रीस्टार्ट करें</value>
@@ -1468,7 +1468,7 @@ Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• गुणवत्ता स्लाइडर कम करें।
-• लक्ष्य FPS घटाएँ — 15-20 आमतौर पर पर्याप्त है।
+• लक्ष्य FPS घटाएँ। फ़ोन 120 से शुरू होता है, जो एक ऊपरी सीमा है, वादा नहीं। अगर तस्वीर अब भी अटकती है, तो वाई-फ़ाई पर 30–60 FPS काफ़ी है।
 • स्केल कम करें।
 • तेज़ लोकल नेटवर्क का उपयोग करें। 5 GHz वाई-फ़ाई या वायर्ड कनेक्शन सबसे अच्छा है — लैग का सबसे आम कारण यही है।
 • आपको स्क्रीन कैप्चर सेट अप करने की ज़रूरत नहीं है। RemEx अपने आप वह सबसे तेज़ तरीका चुन लेता है जो आपका पीसी समर्थित करता है।</value>
@@ -1477,7 +1477,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Wake-on-LAN (WOL) क्या है?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN से आप अपने पीसी को दूर से चालू कर सकते हैं। इसे अपने BIOS/UEFI और नेटवर्क अडैप्टर के गुणों में चालू करें। फिर कनेक्शन स्क्रीन में अपने पीसी का MAC पता डालें।&#xD;&#xA;&#xD;&#xA;PC चालू करना और उस तक दोबारा पहुँच पाना एक ही बात नहीं है। Wake-on-LAN मशीन चालू करता है और वह साइन-इन स्क्रीन पर रुक जाती है; RemEx तभी शुरू होता है जब कोई PC पर साइन इन करता है।</value>
+    <value>Wake-on-LAN से आप अपने पीसी को दूर से चालू कर सकते हैं। इसे अपने BIOS/UEFI और नेटवर्क अडैप्टर के गुणों में चालू करें। कनेक्ट होने के बाद आपका फ़ोन आमतौर पर इस पीसी का MAC पता अपने आप जान लेता है। इसे फ़ोन की कनेक्शन स्क्रीन पर तभी डालें जब यह मौजूद न हो।&#xD;&#xA;&#xD;&#xA;PC चालू करना और उस तक दोबारा पहुँच पाना एक ही बात नहीं है। Wake-on-LAN मशीन चालू करता है और वह साइन-इन स्क्रीन पर रुक जाती है; RemEx तभी शुरू होता है जब कोई PC पर साइन इन करता है।</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>मैं फ़ाइलें कैसे स्थानांतरित करूँ?</value>
@@ -1642,7 +1642,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>नेविगेट करें</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>सेंसर कैनवास</value>
+    <value>सेंसर</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>कमांड</value>
@@ -1663,25 +1663,25 @@ Linux: ip addr  या  hostname -I</value>
     <value>सेटिंग्स</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>सेटिंग्स पैनल टॉगल करें</value>
+    <value>वैयक्तिकृत करें पैनल दिखाएँ या छिपाएँ</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>इंटरफ़ेस</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>सेटिंग्स पैनल बंद करें</value>
+    <value>वैयक्तिकृत करें पैनल बंद करें</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>नेविगेशन ड्रावर टॉगल करें</value>
+    <value>साइडबार दिखाएँ या छिपाएँ</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>कैनवास संपादन पूर्ववत करें</value>
+    <value>लेआउट बदलाव पूर्ववत करें</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>कैनवास</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>कैनवास संपादन दोहराएं</value>
+    <value>लेआउट बदलाव फिर से करें</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
     <value>कनेक्शन बैनर हटाएं</value>
@@ -1738,7 +1738,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>कनेक्ट करें</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>रेमेक्स डेस्कटॉप - रिमोट निष्पादन</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
@@ -1855,7 +1855,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>सेंसर अलर्ट</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>कोई अलर्ट कॉन्फ़िगर नहीं किया गया है। एक सेट करने के लिए कैनवस पर सेंसर कार्ड पर राइट-क्लिक करें।</value>
+    <value>कोई अलर्ट कॉन्फ़िगर नहीं किया गया है। एक सेट करने के लिए सेंसर पेज पर किसी सेंसर कार्ड पर राइट-क्लिक करें।</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>संपादित करें</value>
@@ -1915,7 +1915,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>दोहराएं (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>मिनीमैप टॉगल करें</value>
+    <value>मिनीमैप दिखाएँ या छिपाएँ</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>कैनवास को चित्र फ़ोल्डर में पीएनजी के रूप में सहेजें</value>
@@ -1954,7 +1954,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>कमांड पैलेट खोलें (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>साइडबार टॉगल करें</value>
+    <value>साइडबार दिखाएँ या छिपाएँ</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>क्या आपको फिर से वॉकथ्रू देखने की आवश्यकता है?</value>
@@ -1993,7 +1993,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>ट्रांसफ़र खोलें</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>डिवाइस पेयर करें</value>
+    <value>फ़ोन पेयर करें</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>लॉग फ़ोल्डर खोलें</value>
@@ -2080,7 +2080,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>वह फ़ाइल एक मान्य RemEx सेवफ़ाइल नहीं है।</value>
   </data>
   <data name="Settings_SavefileType" xml:space="preserve">
-    <value>RemEx सेवफ़ाइल</value>
+    <value>RemEx सेव फ़ाइल</value>
   </data>
   <data name="Restore_PromptTitle" xml:space="preserve">
     <value>पिछली सेटिंग्स पुनर्स्थापित करें?</value>
@@ -2479,7 +2479,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>MAC पता कॉपी किया गया — इसे अपने फ़ोन पर RemEx ऐप में पेस्ट करें।</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>इसे सेट करने के लिए: अपने फ़ोन पर RemEx ऐप खोलें, सेटिंग्स → Wake-on-LAN पर जाएं।</value>
+    <value>कनेक्ट होने के बाद आपका फ़ोन आमतौर पर यह पता अपने आप ले लेता है। अगर यह मौजूद न हो, तो अपने फ़ोन पर RemEx ऐप खोलें, कनेक्शन स्क्रीन पर जाएँ, इस पीसी का कार्ड खोलें, कनेक्शन विवरण बदलें पर टैप करें और ऊपर दिया गया पता डालें। इसके बाद एक ही नेटवर्क पर होने पर आपका फ़ोन इस पीसी को कभी भी चालू कर सकता है।</value>
   </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>पेज शीर्षक फ़ॉन्ट</value>
@@ -2530,10 +2530,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>सभी</value>
   </data>
   <data name="Logs_PresetErrors" xml:space="preserve">
-    <value>त्रुटियां &amp; चेतावनियां</value>
+    <value>त्रुटियां और चेतावनियां</value>
   </data>
   <data name="Logs_PresetConnection" xml:space="preserve">
-    <value>कनेक्शन &amp; पेयरिंग</value>
+    <value>कनेक्शन और पेयरिंग</value>
   </data>
   <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
     <value>रिमोट डेस्कटॉप</value>
@@ -2542,10 +2542,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>फ़ाइल ट्रांसफ़र</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
-    <value>इनपुट &amp; कमांड</value>
+    <value>इनपुट और कमांड</value>
   </data>
   <data name="Logs_PresetStartup" xml:space="preserve">
-    <value>शुरुआत &amp; उन्नयन</value>
+    <value>शुरुआत और उन्नयन</value>
   </data>
   <data name="Logs_ScopeCurrentView" xml:space="preserve">
     <value>वर्तमान दृश्य</value>
@@ -2635,7 +2635,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>व्यक्तिगत करें</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
-    <value>के बारे में &amp; मदद</value>
+    <value>के बारे में और मदद</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>GitHub पर RemEx</value>
@@ -2698,7 +2698,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>आइकन आकार</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>हटाएँ — क्या आप निश्चित हैं?</value>
+    <value>स्थायी रूप से हटाएँ?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>"{0}" स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।</value>
@@ -2769,25 +2769,25 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>डायग्नोस्टिक लॉग साफ़ करें? यहां दिखाई गई प्रविष्टियां हटा दी जाएंगी। डिस्क पर पहले सहेजी गई लॉग फ़ाइलें प्रभावित नहीं होंगी।</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>प्रोसेस बंद करें — क्या आप निश्चित हैं?</value>
+    <value>यह प्रोसेस बंद करें?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>प्रोग्राम हटाएँ — क्या आप निश्चित हैं?</value>
+    <value>यह प्रोग्राम हटाएँ?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>हटाएँ</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>साझा करना बंद करें — क्या आप निश्चित हैं?</value>
+    <value>इस फ़ोल्डर को साझा करना बंद करें?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>पहुंच निरस्त करें — क्या आप निश्चित हैं?</value>
+    <value>फ़ाइल पहुंच निरस्त करें?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>डिफ़ॉल्ट पुनर्स्थापित करें — क्या आप निश्चित हैं?</value>
+    <value>डिफ़ॉल्ट फ़ोल्डर पुनर्स्थापित करें?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>लॉग साफ़ करें — क्या आप निश्चित हैं?</value>
+    <value>लॉग साफ़ करें?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2883,10 +2883,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>कुछ भी बंद नहीं किया गया। आपके निर्णय लेते समय "{0}" (PID {1}) बंद हो गया, और वह PID अब किसी दूसरे प्रोग्राम का हो सकता है। सूची ताज़ा कर दी गई है — प्रोग्राम फिर से खोजें और दोबारा कोशिश करें।</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>साइन आउट — क्या आप निश्चित हैं?</value>
+    <value>इस पीसी से साइन आउट करें?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>रिमोट पीसी पर खुला सब कुछ बंद हो जाएगा और बिना सहेजा गया काम खो जाएगा। पीसी चालू रहेगा, लेकिन RemEx का कनेक्शन टूट जाएगा और जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक दोबारा कनेक्ट नहीं हो पाएगा।</value>
+    <value>इस पीसी पर खुला सब कुछ बंद हो जाएगा और बिना सहेजा गया काम खो जाएगा। पीसी चालू रहेगा, लेकिन RemEx का कनेक्शन टूट जाएगा और जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>साइन आउट करें</value>
@@ -2988,7 +2988,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>क्या मैं ट्यूटोरियल दोबारा देख सकता हूँ?</value>
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
-    <value>हाँ। सेटिंग्स खोलें और सहायता अनुभाग में «ट्यूटोरियल दोबारा चलाएँ» चुनें। आप इसे जितनी बार चाहें कर सकते हैं।</value>
+    <value>हाँ। सेटिंग्स खोलें और सहायता अनुभाग में «ट्यूटोरियल फिर से चलाएं» चुनें। आप इसे जितनी बार चाहें कर सकते हैं।</value>
   </data>
   <data name="Faq_Q17_Question" xml:space="preserve">
     <value>रूटीन क्या हैं?</value>
@@ -3924,7 +3924,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>इस PC पर अभी कोई रूटीन नहीं चलता</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>रूटीन आपके फ़ोन के RemEx ऐप में, रूटीन सेक्शन में बनाए जाते हैं। जो इस PC पर चलते हैं, वे यहां दिखते हैं।</value>
+    <value>रूटीन आपके फ़ोन के RemEx ऐप में, अधिक और फिर रूटीन में जाकर बनाए जाते हैं। जो इस PC पर चलते हैं, वे यहां दिखते हैं।</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>रूटीन के बारे में जानें</value>

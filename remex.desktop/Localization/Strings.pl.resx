@@ -113,10 +113,10 @@
     <value>Przeglądaj...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Uruchom</value>
+    <value>Uruchom</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Zatrzymaj</value>
+    <value>Zatrzymaj</value>
   </data>
 
   
@@ -165,13 +165,13 @@
     <value>Ustawienia</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Główna</value>
+    <value>Wróć do strony głównej</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Zapisz zmiany</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Ustawienia zapisane!</value>
+    <value>Ustawienia zapisane</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Połączenie</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  Procesy</value>
+    <value>Procesy</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>Co działa na tym komputerze</value>
@@ -231,7 +231,7 @@
     <value>Programy, które telefon może uruchomić</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Dodaj program</value>
+    <value>Dodaj program</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>Nie dodano jeszcze żadnego programu.</value>
@@ -254,7 +254,7 @@
     <value>Dodaj nowy program</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Ścieżka do pliku wykonywalnego</value>
+    <value>Ścieżka programu</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
     <value>Nazwa wyświetlana</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Szybki podgląd</value>
+    <value>Czujniki</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>Nowe czujniki</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Dodaj kartę</value>
+    <value>Dodaj kartę</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Zapisz</value>
@@ -324,7 +324,7 @@
     <value>Rozłącz</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Połącz</value>
+    <value>Połącz</value>
   </data>
 
   
@@ -344,7 +344,7 @@
     <value>Bez ograniczeń</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Błąd strumienia</value>
+    <value>Błąd strumienia</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
     <value>Zdalny pulpit</value>
@@ -447,10 +447,10 @@
     <value>Zoom: {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Pad: Kompaktowy</value>
+    <value>Pad: kompaktowy</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Pad: Pełny</value>
+    <value>Pad: pełny</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Kompaktowy pad kursora aktywny</value>
@@ -547,7 +547,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Najpierw podaj adres MAC.</value>
+    <value>Najpierw podaj adres MAC.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>Wysyłanie pakietu magic przez hosta…</value>
@@ -556,13 +556,13 @@
     <value>Wysyłanie pakietu magic lokalnie…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Pakiet wysłany do {0}</value>
+    <value>Sygnał wybudzenia wysłany do {0}</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>Nie udało się: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Blokada wysłana</value>
@@ -596,23 +596,23 @@
     <value>Wprowadzenie</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Pomiń ✕</value>
+    <value>Pomiń</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Wstecz</value>
+    <value>Wstecz</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>Dalej →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Rozpocznij ✓</value>
+    <value>Rozpocznij</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
     <value>Witaj w RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx zamienia Twój komputer w bezpieczne centrum zdalnego sterowania. Z telefonu możesz obserwować czujniki sprzętowe, uruchamiać aplikacje, zarządzać plikami i procesami oraz przesyłać obraz pulpitu.
+    <value>RemEx pozwala bezpiecznie sterować tym komputerem z telefonu. Możesz obserwować czujniki sprzętowe, uruchamiać aplikacje, zarządzać plikami i procesami oraz przesyłać obraz pulpitu.
 
 RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączenie jest chronione TLS-em i parowaniem za pomocą kodu PIN.</value>
   </data>
@@ -621,26 +621,26 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>Jak to działa</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Ta aplikacja desktopowa zawiera wbudowanego hosta RemEx, który uruchamia się automatycznie. Twój telefon z Androidem łączy się z nim — nie na odwrót.</value>
+    <value>RemEx działa na tym komputerze i uruchamia się automatycznie. Twój telefon z Androidem łączy się z nim — nie na odwrót.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx uruchamia się automatycznie, gdy zalogujesz się na tym komputerze — przez zadanie logowania w Windows lub wpis autostartu w Linuksie. Dzięki temu telefon może połączyć się w dowolnym momencie, gdy jesteś zalogowany. Monitorowanie czujników i polecenia zasilania działają także przy zablokowanym ekranie, ale przesyłanie obrazu pulpitu i zdalne sterowanie wymagają odblokowanej sesji. Jeśli komputer jest wyłączony lub nikt nie jest zalogowany, wybudź go przez Wake-on-LAN i najpierw się zaloguj.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>Integracja z HWiNFO (Zalecane)</value>
+    <value>HWiNFO (zalecane)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>Dla szczegółowego monitorowania sprzętu (ponad 300 czujników), zainstaluj HWiNFO64 — jest darmowy do użytku osobistego.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Pobierz z hwinfo.com
-2. Uruchom HWInfo → Settings (⚙) → Main Settings
+2. Uruchom HWiNFO → Settings → Main Settings
 3. Zaznacz „Shared Memory Support” → OK
-4. HWInfo musi być uruchomiony, aby RemEx odczytywał jego czujniki</value>
+4. HWiNFO musi być uruchomiony, aby RemEx odczytywał jego czujniki</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ Pamięć współdzielona HWiNFO wyłącza się automatycznie po 12 godzinach (wersja darmowa). Włączaj ją okresowo lub rozważ licencję Pro.</value>
+    <value>Pamięć współdzielona HWiNFO wyłącza się automatycznie po 12 godzinach (wersja darmowa). Włączaj ją okresowo lub rozważ licencję Pro.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
@@ -650,17 +650,17 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>RemEx obsługuje dwa źródła telemetrii:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWiNFO: ponad 300 czujników — temperatury CPU, taktowanie GPU, prędkości wentylatorów, napięcia, pobór mocy. Wymaga działającego HWiNFO.</value>
+    <value>HWiNFO: ponad 300 czujników — temperatury CPU, taktowanie GPU, prędkości wentylatorów, napięcia, pobór mocy. Wymaga działającego HWiNFO.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Wbudowane: Podstawowe czujniki — użycie CPU, RAM, I/O dysku, prędkość sieci. Zawsze dostępne, bez dodatkowego oprogramowania.</value>
+    <value>Wbudowane: podstawowe czujniki — użycie CPU, RAM, I/O dysku, prędkość sieci. Zawsze dostępne, bez dodatkowego oprogramowania.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Przypnij ulubione czujniki do strony Główna w Personalizuj → Układ → Przypięte czujniki.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Konfiguracja Aplikacji</value>
+    <value>Konfiguracja aplikacji</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>Strona Aplikacje pozwala uruchamiać programy na komputerze z telefonu. Najpierw dodaj je tutaj.</value>
@@ -798,7 +798,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Pomoc</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Powtórz samouczek</value>
+    <value>Powtórz samouczek</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Obejrzyj ponownie samouczek wprowadzający</value>
@@ -810,7 +810,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Wybierz, które foldery tego komputera mają być widoczne w Plikach. Foldery tylko do odczytu można przeglądać i pobierać z nich pliki, a foldery z prawem zapisu przyjmują też pliki wysłane z telefonu.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Dodaj folder</value>
+    <value>Dodaj folder</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Przywróć ustawienia domyślne</value>
@@ -1083,7 +1083,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Tryb pióra: dotknięcie = kliknięcie, przeciągnięcie = kliknij i przeciągnij</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Resetuj zoom</value>
+    <value>Resetuj zoom</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Rysik: naciśnięcie = kliknięcie, przycisk boczny = prawy przycisk myszy</value>
@@ -1098,10 +1098,10 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Przełącz kompaktowy pad kursora</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>Przełącz pad kursora</value>
+    <value>Pokaż lub ukryj pad kursora</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Przełącz pełny ekran</value>
+    <value>Włącz lub wyłącz pełny ekran</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Pióro</value>
@@ -1124,7 +1124,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Uruchom do UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Przypnij/Odepnij od strony głównej</value>
+    <value>Przypnij do strony głównej lub odepnij</value>
   </data>
 
   
@@ -1139,7 +1139,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Aplikacja Android → łączy się z → 🖥️ Your PC (ten komputer)</value>
+    <value>Twój telefon  →  łączy się z  →  tym komputerem</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Pomiń samouczek — możesz go powtórzyć w Ustawieniach</value>
@@ -1240,7 +1240,7 @@ Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Zmniejsz suwak Jakości.
-• Zmniejsz docelową liczbę klatek (FPS) — zwykle wystarczy 15-20.
+• Zmniejsz docelową liczbę klatek (FPS). Telefon zaczyna od 120, czyli od górnego limitu, a nie obietnicy. Jeśli obraz nadal się zacina, przez Wi-Fi wystarczy 30–60 FPS.
 • Zmniejsz Skalę.
 • Korzystaj z szybkiej sieci lokalnej. Najlepsze jest Wi-Fi 5 GHz lub połączenie przewodowe — to najczęstsza przyczyna opóźnień.
 • Nie musisz konfigurować przechwytywania ekranu. RemEx automatycznie wybiera najszybszą metodę obsługiwaną przez Twój komputer.</value>
@@ -1402,7 +1402,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Nawigacja</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Obszar sensorów</value>
+    <value>Czujniki</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Polecenia</value>
@@ -1423,25 +1423,25 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Ustawienia</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Przełącz panel ustawień</value>
+    <value>Pokaż lub ukryj panel Personalizuj</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Interfejs</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Zamknij panel ustawień</value>
+    <value>Zamknij panel Personalizuj</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Przełącz szufladę nawigacji</value>
+    <value>Pokaż lub ukryj pasek boczny</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Cofnij edycję obszaru</value>
+    <value>Cofnij edycję układu</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Obszar roboczy</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Ponów edycję obszaru</value>
+    <value>Ponów edycję układu</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
     <value>Odrzuć baner połączenia</value>
@@ -1498,7 +1498,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Połącz</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Pulpit - Zdalne uruchamianie</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
@@ -1615,7 +1615,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Alerty czujników</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>Nie skonfigurowano żadnych alertów. Kliknij prawym przyciskiem myszy kartę czujnika na płótnie, aby ustawić alert.</value>
+    <value>Nie skonfigurowano żadnych alertów. Kliknij prawym przyciskiem myszy kartę czujnika na stronie Czujniki, aby ustawić alert.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Edytuj</value>
@@ -1675,7 +1675,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Ponów (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Przełącz minimapę</value>
+    <value>Pokaż lub ukryj minimapę</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Zapisz obszar jako PNG w folderze Obrazy</value>
@@ -1714,7 +1714,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Otwórz paletę poleceń (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Przełącz pasek boczny</value>
+    <value>Pokaż lub ukryj pasek boczny</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Czy chcesz ponownie zobaczyć samouczek?</value>
@@ -1753,7 +1753,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Otwórz transfery</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Sparuj urządzenie</value>
+    <value>Sparuj telefon</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Otwórz folder dzienników</value>
@@ -2231,7 +2231,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Karty</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Przypnij czujnik na płótnie, aby wyświetlić go tutaj.</value>
+    <value>Przypnij czujnik na stronie Czujniki, aby wyświetlić go tutaj.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Przyciski</value>
@@ -2276,7 +2276,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>1. Otwórz Ustawienia → Połączenie na PC
 2. Kliknij "Sparuj telefon", aby wyświetlić kod QR
 3. Otwórz aplikację RemEx
-4. Dotknij ikony skanera QR na ekranie połączenia
+4. Na ekranie Połączenie dotknij "Dodaj komputer", a potem "Skanuj kod QR"
 5. Skieruj kamerę na kod — połączysz się automatycznie!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
@@ -2316,46 +2316,46 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Co nowego?</value>
   </data>
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Wyłączanie — czy na pewno?</value>
+    <value>Wyłączyć ten komputer?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Zdalny komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>Ten komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Wyłącz</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — czy na pewno?</value>
+    <value>Uruchomić ponownie ten komputer?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Zdalny komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>Ten komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Restartuj</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Wymuś wyłączenie — czy na pewno?</value>
+    <value>Wymusić wyłączenie tego komputera?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>To spowoduje natychmiastowe wyłączenie zdalnego komputera. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>To spowoduje natychmiastowe wyłączenie tego komputera. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Wymuś wyłączenie</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Wymuś restart — czy na pewno?</value>
+    <value>Wymusić restart tego komputera?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>To spowoduje natychmiastowy restart zdalnego komputera. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>To spowoduje natychmiastowy restart tego komputera. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Wymuś restart</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Uruchom do UEFI — czy na pewno?</value>
+    <value>Uruchomić ten komputer do UEFI?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>Ten komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Uruchom do UEFI</value>
@@ -2382,10 +2382,10 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Sprawdzaj uruchomione procesy komputera, sortuj po użyciu i kończ utknięte zadania bez wstawania z kanapy.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Słownik: Kanwa sensorów</value>
+    <value>Słownik: Czujniki</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Zbuduj żywą ścianę telemetrii, przypinając czujniki, zmieniając rozmiar kart i rozmieszczając je na wolnej kanwie.</value>
+    <value>Zbuduj żywą ścianę telemetrii, przypinając czujniki, zmieniając rozmiar kart i swobodnie rozmieszczając je na stronie Czujniki.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Słownik: Pliki</value>
@@ -2447,7 +2447,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Co to jest Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN pozwala na zdalne włączenie komputera. Włącz to w BIOS/UEFI i właściwościach karty sieciowej. Następnie wprowadź adres MAC komputera na ekranie Połączenia.&#xD;&#xA;&#xD;&#xA;Włączenie komputera to nie to samo co odzyskanie do niego dostępu. Wake-on-LAN uruchamia maszynę, która zatrzymuje się na ekranie logowania; RemEx startuje dopiero, gdy ktoś zaloguje się na samym komputerze.</value>
+    <value>Wake-on-LAN pozwala na zdalne włączenie komputera. Włącz to w BIOS/UEFI i właściwościach karty sieciowej. Telefon zwykle sam poznaje adres MAC tego komputera po połączeniu. Wpisz go na ekranie Połączenie w telefonie tylko wtedy, gdy go brakuje.&#xD;&#xA;&#xD;&#xA;Włączenie komputera to nie to samo co odzyskanie do niego dostępu. Wake-on-LAN uruchamia maszynę, która zatrzymuje się na ekranie logowania; RemEx startuje dopiero, gdy ktoś zaloguje się na samym komputerze.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Jak przesyłać pliki?</value>
@@ -2681,7 +2681,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Wake-on-LAN pozwala telefonowi zdalnie włączyć ten komputer przez sieć — nawet gdy jest uśpiony lub całkowicie wyłączony. Działa to poprzez wysłanie małego "magicznego pakietu", który nakazuje temu komputerowi się uruchomić.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>Aby to skonfigurować: otwórz aplikację RemEx na telefonie, przejdź do Ustawienia → Wake-on-LAN i wprowadź powyższy adres. Telefon będzie mógł wtedy obudzić ten komputer, gdy tylko znajdzie się w tej samej sieci.</value>
+    <value>Telefon zwykle sam pobiera ten adres po połączeniu. Jeśli go brakuje, otwórz aplikację RemEx na telefonie, przejdź do ekranu Połączenie, otwórz kartę tego komputera, dotknij Edytuj dane połączenia i wprowadź powyższy adres. Telefon będzie mógł wtedy obudzić ten komputer, gdy tylko znajdzie się w tej samej sieci.</value>
   </data>
   <data name="Remote_WakeTitle" xml:space="preserve">
     <value>Obudź ten komputer z telefonu</value>
@@ -2699,7 +2699,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Wybierz drugi wskaźnik</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Usuwanie — czy na pewno?</value>
+    <value>Usunąć na stałe?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>Element "{0}" zostanie trwale usunięty. Tej operacji nie można cofnąć.</value>
@@ -2770,25 +2770,25 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Wyczyścić log diagnostyczny? Wpisy wyświetlane tutaj zostaną odrzucone. Pliki logów już zapisane na dysku nie zostaną zmienione.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Kończenie procesu — czy na pewno?</value>
+    <value>Zakończyć ten proces?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Usuwanie programu — czy na pewno?</value>
+    <value>Usunąć ten program?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Usuń</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Zakończenie udostępniania — czy na pewno?</value>
+    <value>Przestać udostępniać ten folder?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Cofanie dostępu — czy na pewno?</value>
+    <value>Cofnąć dostęp do plików?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Przywracanie ustawień domyślnych — czy na pewno?</value>
+    <value>Przywrócić domyślne foldery?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Czyszczenie logów — czy na pewno?</value>
+    <value>Wyczyścić log?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2884,10 +2884,10 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Nic nie zostało zakończone. Proces "{0}" (PID {1}) zakończył się w trakcie podejmowania decyzji, a ten PID może teraz należeć do innego programu. Lista została odświeżona — znajdź program ponownie i spróbuj jeszcze raz.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Wylogowanie — czy na pewno?</value>
+    <value>Wylogować z tego komputera?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Wszystko otwarte na zdalnym komputerze zostanie zamknięte, a niezapisana praca utracona. Komputer pozostanie włączony, ale RemEx rozłączy się i nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
+    <value>Wszystko otwarte na tym komputerze zostanie zamknięte, a niezapisana praca utracona. Komputer pozostanie włączony, ale RemEx rozłączy się i nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Wyloguj</value>
@@ -3925,7 +3925,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Na tym komputerze nie działają jeszcze żadne rutyny</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Rutyny tworzy się w aplikacji RemEx na telefonie, w sekcji Rutyny. Te, które działają na tym komputerze, pojawiają się tutaj.</value>
+    <value>Rutyny tworzy się w aplikacji RemEx na telefonie, w sekcji Więcej, a potem Rutyny. Te, które działają na tym komputerze, pojawiają się tutaj.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>Dowiedz się więcej o rutynach</value>
