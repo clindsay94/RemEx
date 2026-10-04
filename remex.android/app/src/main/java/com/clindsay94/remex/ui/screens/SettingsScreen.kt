@@ -49,6 +49,8 @@ import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.clindsay94.remex.ui.components.LocalRemexUpAction
 import androidx.compose.runtime.key
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -140,13 +142,24 @@ fun SettingsScreen(
         detailPane = {
             AnimatedPane {
                 val category = navigator.currentDestination?.contentKey ?: SettingsCategory.CONNECTION
-                SettingsDetailContent(
-                    category = category,
-                    onReplayTutorial = onReplayTutorial,
-                    onNavigateToAbout = onNavigateToAbout,
-                    onNavigateToQrScanner = onNavigateToQrScanner,
-                    onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
-                )
+                // Up on a detail pane goes back to the list when the list is hidden (a phone), and
+                // there is no arrow at all when both panes show (3.0 comb, no-up-arrow). Left to the
+                // route's own Up, it would have closed Settings from inside one of its pages.
+                val paneUp: (() -> Unit)? =
+                    if (navigator.canNavigateBack()) {
+                        { scope.launch { navigator.navigateBack() } }
+                    } else {
+                        null
+                    }
+                CompositionLocalProvider(LocalRemexUpAction provides paneUp) {
+                    SettingsDetailContent(
+                        category = category,
+                        onReplayTutorial = onReplayTutorial,
+                        onNavigateToAbout = onNavigateToAbout,
+                        onNavigateToQrScanner = onNavigateToQrScanner,
+                        onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
+                    )
+                }
             }
         }
     )

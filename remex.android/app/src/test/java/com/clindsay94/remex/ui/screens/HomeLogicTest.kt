@@ -136,4 +136,12 @@ class HomeLogicTest {
         assertEquals("TOWER-01", HomeLogic.pcName("10.0.0.6", listOf(unnamed), "TOWER-01"))
         assertEquals("10.0.0.7", HomeLogic.pcName("10.0.0.7", emptyList(), " "))
     }
+
+    @Test
+    fun `the disconnected PC card offers Wake only when a PC is paired (RemEx-pp4cm_3 home-firstrun-card)`() {
+        // A fresh install has nothing to wake; the attempt's error sent a new user to a MAC setting.
+        assertFalse(HomeLogic.connectCardOffersWake(0))
+        assertTrue(HomeLogic.connectCardOffersWake(1))
+        assertTrue(HomeLogic.connectCardOffersWake(3))
+    }
 }

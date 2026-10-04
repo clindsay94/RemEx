@@ -33,6 +33,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.clindsay94.remex.ui.routines.findActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -85,10 +88,20 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
         )
     }
 
+    // Android stops showing the camera prompt after the second refusal, and a relaunch then returns
+    // "denied" without asking - so "Grant permission" did nothing at all (3.0 comb, qr-perm-deadend).
+    // Straight after a refusal, "no rationale" is how that state shows; from then on the button opens
+    // the app's settings page, the one place the permission can still be given.
+    var cameraPermanentlyDenied by rememberSaveable { mutableStateOf(false) }
     val permissionLauncher =
             rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted
                 ->
                 hasCameraPermission = granted
+                cameraPermanentlyDenied =
+                        !granted &&
+                                context.findActivity()?.let {
+                                    !ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA)
+                                } == true
             }
 
     DisposableEffect(lifecycleOwner) {
@@ -129,7 +142,11 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
         hasCameraPermission = hasCameraPermission,
         errorMessage = errorMessage,
         onBack = onBack,
-        onGrantPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+        onGrantPermission = {
+            if (cameraPermanentlyDenied) openAppPermissionSettings(context)
+            else permissionLauncher.launch(Manifest.permission.CAMERA)
+        },
+        permissionOpensSettings = cameraPermanentlyDenied,
         cameraView = {
             AndroidView(
                     factory = { ctx ->
@@ -342,7 +359,9 @@ fun QrScannerScreenContent(
     errorMessage: String?,
     onBack: () -> Unit,
     onGrantPermission: () -> Unit,
-    cameraView: @Composable () -> Unit
+    cameraView: @Composable () -> Unit,
+    /** Android has stopped asking for the camera, so the button opens the app's settings instead. */
+    permissionOpensSettings: Boolean = false,
 ) {
     Scaffold(
             topBar = {
@@ -373,7 +392,7 @@ fun QrScannerScreenContent(
             if (cameraGranted) {
                 QrCameraContent(errorMessage = errorMessage, cameraView = cameraView)
             } else {
-                QrPermissionRationale(onGrantPermission = onGrantPermission)
+                QrPermissionRationale(onGrantPermission = onGrantPermission, opensSettings = permissionOpensSettings)
             }
         }
     }
@@ -438,7 +457,7 @@ private fun QrCameraContent(errorMessage: String?, cameraView: @Composable () ->
 }
 
 @Composable
-private fun QrPermissionRationale(onGrantPermission: () -> Unit) {
+private fun QrPermissionRationale(onGrantPermission: () -> Unit, opensSettings: Boolean = false) {
     // Permission denied / not yet granted
     Column(
             modifier = Modifier.fillMaxSize(),
@@ -458,7 +477,12 @@ private fun QrPermissionRationale(onGrantPermission: () -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = onGrantPermission, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.ContentPadding) {
-            Text(stringResource(R.string.qr_scanner_grant_permission))
+            Text(
+                    stringResource(
+                            if (opensSettings) R.string.button_open_app_settings
+                            else R.string.qr_scanner_grant_permission
+                    )
+            )
         }
     }
 }

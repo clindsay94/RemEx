@@ -1388,16 +1388,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 } else {
                     val json = JSONObject(result)
                     if (!json.optBoolean("success", false)) {
-                        // Surface the native failure reason instead of silently stopping the
-                        // spinner with no error shown to the user. The native reason (like the
-                        // pairing diagnostics above) is always English and untranslatable at the
-                        // source, so only the fallback for a blank reason is localized here.
+                        // Say something instead of silently stopping the spinner. The native
+                        // reason is English developer text, so it goes to the log and the person
+                        // gets the localized message for its kind (3.0 comb, raw-errors); only a
+                        // certificate problem keeps its text, for the screen to recognise.
+                        val reason = json.optString("reason").ifBlank { json.optString("message") }
+                        Log.w("RemexManager", "InitRemex failed for $host:$port: $reason")
+                        val res =
+                                if (reason.isBlank()) R.string.connection_error_generic
+                                else ConnectionFailures.messageRes(ConnectionFailures.classify(reason))
                         _connectionError.tryEmit(
-                                json.optString("reason").ifBlank {
-                                    context.applicationContext.getString(
-                                            R.string.connection_error_generic
-                                    )
-                                }
+                                res?.let { context.applicationContext.getString(it) } ?: reason
                         )
                         _isConnecting.value = false
                     }
@@ -1835,7 +1836,18 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _isConnected.value = false
         _isConnecting.value = false
         _connectedHost.value = null
-        reason?.let { _connectionError.tryEmit(it) }
+        reason?.let { raw ->
+            // The native reason is a .NET exception message: English, and written for developers.
+            // It goes to the log; the person gets a localized message (3.0 comb, raw-errors). A
+            // certificate problem keeps its text, because the Connection screen spots it from the text
+            // and swaps in its own message and repair button.
+            Log.w("RemexManager", "Connection failed: $raw")
+            val message =
+                    ConnectionFailures.messageRes(ConnectionFailures.classify(raw))?.let { res ->
+                        settingsManager?.context?.applicationContext?.getString(res)
+                    }
+            _connectionError.tryEmit(message ?: raw)
+        }
     }
 
     override fun onPairingProgress(phase: String?) {

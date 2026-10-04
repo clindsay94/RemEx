@@ -1550,4 +1550,12 @@
     <string name="dashboard_card_removed">कार्ड हटाया गया</string>
     <string name="dashboard_move_earlier">पहले ले जाएँ</string>
     <string name="dashboard_move_later">बाद में ले जाएँ</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">रिमोट पीसी शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
+    <string name="rc_restart_warning">रिमोट पीसी रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
+    <string name="rc_force_shutdown_warning">इससे रिमोट पीसी तुरंत शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
+    <string name="rc_force_restart_warning">इससे रिमोट पीसी तुरंत रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
+    <string name="rc_reboot_uefi_warning">रिमोट पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
+    <string name="relative_time_just_now">अभी-अभी</string>
+    <string name="button_open_app_settings">सेटिंग्स खोलें</string>
 </resources>
