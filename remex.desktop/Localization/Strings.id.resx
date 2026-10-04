@@ -4176,7 +4176,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
     <value>Penelusuran seluruh perangkat dimatikan di ponsel Anda. Untuk menggunakannya, buka RemEx di ponsel, buka Akses dari PC Anda, dan nyalakan Izinkan penelusuran seluruh perangkat.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Folder belum dapat diunggah ke ponsel. Unggah file di dalamnya saja.</value>
+    <value>Folder belum bisa diunggah ke ponsel ini. Di ponsel, buka RemEx, masuk ke Akses dari PC Anda, aktifkan Izinkan PC Anda mengubah file, lalu tekan Muat ulang folder bersama. Atau unggah file di dalam folder tersebut.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Ponsel Anda terputus sebelum transfer selesai. Hubungkan lagi, lalu coba lagi.</value>
@@ -4231,5 +4231,14 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>Tidak dapat memuat ulang daftar proses. Daftar di bawah adalah yang terakhir diterima RemEx, dan RemEx akan terus mencoba.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Ponsel Anda tidak mengizinkan PC ini mengubah file-nya. Di ponsel, buka RemEx, masuk ke Akses dari PC Anda, lalu aktifkan Izinkan PC Anda mengubah file. Setelah itu tekan Muat ulang folder bersama di sini.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>Ini akan menghapus “{0}” dari ponsel Anda secara permanen. File tidak dipindahkan ke tempat sampah dan tindakan ini tidak dapat dibatalkan.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>Ini akan menghapus {0} item ({1}) dari ponsel Anda secara permanen. Item tidak dipindahkan ke tempat sampah dan tindakan ini tidak dapat dibatalkan.</value>
   </data>
 </root>

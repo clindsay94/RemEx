@@ -1695,4 +1695,6 @@
     <string name="personalization_background_intensity">Intensywność: %1$d%%</string>
     <string name="cd_background_intensity">Intensywność tła</string>
     <string name="personalization_background_note">Animowane tła zatrzymują się, gdy aplikacja działa w tle, gdy włączony jest Oszczędzacz baterii lub gdy animacje są wyłączone.</string>
+    <string name="settings_ft_pc_changes_title">Pozwól komputerowi zmieniać pliki</string>
+    <string name="settings_ft_pc_changes_desc">Komputer będzie mógł zmieniać nazwy, przenosić, kopiować i usuwać pliki w udostępnionych folderach oraz tworzyć nowe foldery. Usunięte pliki znikają na zawsze. Foldery udostępnione tylko do odczytu nigdy się nie zmieniają.</string>
 </resources>

@@ -13,6 +13,17 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Change files on your phone from the PC.** In File Transfer, with your phone chosen as the source, you can now
+  make a new folder, rename, move, copy, cut, paste and delete files on the phone, and upload a whole folder to
+  it. It stays off until you allow it on the phone: **Settings > Access from your PC > Let your PC change
+  files**, which is off by default. With it off the phone refuses every change, and the PC does not show the
+  buttons (turn it on, then press Reload shared folders on the PC). Folders you share as read-only never change,
+  the shared folder itself can't be deleted, renamed or moved from the PC, and names and paths are checked on both
+  sides (no `/`, no `..`, 255 characters at most). Deleting on a phone asks first and says it is permanent on the
+  phone. Which folders the phone shares is still only ever changed on the phone. No new message type: the PC sends
+  the existing `file_manage_request` down the phone's own connection, only to a phone whose own folder list said
+  `pcChanges: true`. Folder upload now also hands its files to the host's phone transfer (before, a folder dropped
+  on a phone queued nothing it could send). (RemEx-fgmne)
 - **Choose how wide the Sensors grid is.** In Sensors edit mode there is a new **Grid width** control under the
   hint: **Auto**, **2**, **3** or **4** columns. Auto is what it always was (2 columns on a phone, 4 on a wide
   screen); the others pin the count, so you can fit more small cards across a phone or give them more room on a

@@ -20,11 +20,15 @@ back, because that only happens when a tool regenerates them:
 - `remex.android` is the **only** network client (Kotlin + Compose + JNI → `libRemexCore.so`). The
   connection always runs Android → PC and is never loopback. Any loopback on the PC side is local UI
   plumbing, not a client.
-  - The PC may send read-only `file_*` requests (roots, browse, volumes, search, manifest, metadata,
-    thumbnail) and PC-started transfer offers DOWN a paired phone's existing session, so its File
-    Transfer screen can browse the phone (`PhoneFileRelay`, RemEx-xt0af). The direction is unchanged:
-    the phone still opens every socket, and no message type was added. Replies count only from a
-    proven, non-loopback session of the phone that was asked. See `docs/API_CONTRACTS.md` §3.
+  - The PC may send `file_*` requests (roots, browse, volumes, search, manifest, metadata, thumbnail,
+    and `file_manage_request`) and PC-started transfer offers DOWN a paired phone's existing session, so
+    its File Transfer screen can browse the phone (`PhoneFileRelay`, RemEx-xt0af) and, only while the
+    phone's owner has turned on **Let your PC change files** (off by default; reported as
+    `fileCapabilities.pcChanges`, re-checked by the phone on every request), rename, move, copy, delete and
+    make folders there (RemEx-fgmne). `file_root_manage_request` is never relayed: what a phone shares is the
+    phone's call. The direction is unchanged: the phone still opens every socket, and no message type was
+    added. Replies count only from a proven, non-loopback session of the phone that was asked. See
+    `docs/API_CONTRACTS.md` §3.
 - `remex.desktop/` holds PC-side UI code only (Views, ViewModels, Localization). It's compiled into
   `remex.agent` through a real `<ProjectReference>`, and the UI reaches host services in-process via DI
   (`EmbeddedHostServiceLocator`), not a socket.

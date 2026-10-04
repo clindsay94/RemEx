@@ -150,11 +150,20 @@ class FileHostHandlerTest {
         override fun loadThumbnailJpeg(node: FileNode, maxDim: Int, maxBytes: Int): ByteArray? = null
     }
 
-    private class FakeRoots(val granted: Boolean, val roots: List<RootDescriptor>) : SharedRootsProvider {
+    private class FakeRoots(
+        val granted: Boolean,
+        val roots: List<RootDescriptor>,
+        /** "Let your PC change files" (RemEx-fgmne). A test flips it to prove it is read per request. */
+        @Volatile var pcChangeAllowed: Boolean = true,
+    ) : SharedRootsProvider {
         override fun sharedRoots() = roots
         override fun fullBrowseVolumes(): List<VolumeDescriptor> = emptyList()
         override fun isFullBrowseGranted() = granted
+        override fun isPcChangeAllowed() = pcChangeAllowed
     }
+
+    /** The provider behind the handler most recently built, so a test can flip the switch afterwards. */
+    private var lastRoots: FakeRoots? = null
 
     private class CapturingSender : ControlMessageSender {
         val sent = mutableListOf<String>()
@@ -278,8 +287,10 @@ class FileHostHandlerTest {
         channel: FileFrameChannel? = null,
         /** Lower the unacked cap so the backpressure branch is reachable without 8 MB (RemEx-68wwl). */
         maxUnackedBytes: Long = FileTransferLimits.MAX_UNACKED_BYTES.toLong(),
+        /** The person's "Let your PC change files" switch. On by default so the older manage tests still run. */
+        pcChangesAllowed: Boolean = true,
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
-        val provider = FakeRoots(granted, roots)
+        val provider = FakeRoots(granted, roots, pcChangesAllowed).also { lastRoots = it }
         val facade = FakeFacade(root, roots)
         val sender = CapturingSender()
         val mutator = FakeMutator()
@@ -498,6 +509,207 @@ class FileHostHandlerTest {
             """{"type":"file_manage_request","fileManageRequest":{"requestId":"c2","rootId":"root1","relativePath":"Docs/report.txt","operation":"copy","destinationPath":"Docs/copy.txt","overwrite":false}}"""
         )
         assertFalse(sender.last().getJSONObject("fileManageResponse").getBoolean("success"))
+    }
+
+    // ── "Let your PC change files" (RemEx-fgmne) ────────────────────────────────
+
+    private fun succeeded(sender: CapturingSender) =
+        sender.last().getJSONObject("fileManageResponse").getBoolean("success")
+
+    private fun refusalText(sender: CapturingSender) =
+        sender.last().getJSONObject("fileManageResponse").optString("errorMessage")
+
+    private val mkdirBody = """"relativePath":"Docs","operation":"mkdir","newName":"Fresh""""
+    private val renameBody = """"relativePath":"Docs/report.txt","operation":"rename","newName":"renamed.txt""""
+    private val deleteBody = """"relativePath":"Docs/report.txt","operation":"delete""""
+    private val copyBody = """"relativePath":"Docs/report.txt","operation":"copy","destinationPath":"Docs/copy.txt""""
+    private val moveBody = """"relativePath":"Docs/report.txt","operation":"move","destinationPath":"moved.txt""""
+
+    /** The five operations, each aimed at something that exists in [sampleTree]. */
+    private val manageBodies = listOf(
+        "mkdir" to mkdirBody,
+        "rename" to renameBody,
+        "delete" to deleteBody,
+        "copy" to copyBody,
+        "move" to moveBody,
+    )
+
+    private fun snapshot(node: FakeNode): List<String> =
+        node.children.values.flatMap { child ->
+            listOf(child.name + ":" + String(child.content)) + snapshot(child).map { "${child.name}/$it" }
+        }
+
+    @Test
+    fun rootsRequest_reportsWhetherThePcMayChangeFiles() = runBlocking {
+        for (allowed in listOf(true, false)) {
+            val (h, sender, _) = build(sampleTree(), pcChangesAllowed = allowed)
+            h.handleControlMessage("""{"type":"file_roots_request"}""")
+            val caps = sender.last().getJSONObject("fileRootsResponse").getJSONObject("fileCapabilities")
+            assertEquals("pcChanges must mirror the switch", allowed, caps.getBoolean("pcChanges"))
+        }
+    }
+
+    @Test
+    fun everyManageOperation_withTheSwitchOff_isRefusedWithAPlainReasonAndChangesNothing() = runBlocking {
+        for ((operation, body) in manageBodies) {
+            val tree = sampleTree()
+            val before = snapshot(tree)
+            val (h, sender, _) = build(tree, pcChangesAllowed = false)
+
+            h.handleControlMessage(manage("off", body))
+
+            assertFalse("$operation must be refused while the switch is off", succeeded(sender))
+            assertEquals("$operation must say how to turn it on", PC_CHANGES_OFF_MESSAGE, refusalText(sender))
+            assertEquals("$operation must leave every file alone", before, snapshot(tree))
+        }
+    }
+
+    @Test
+    fun theSwitch_isReadOnEveryRequest_notOnceAtStartup() = runBlocking {
+        val tree = sampleTree()
+        val (h, sender, _) = build(tree, pcChangesAllowed = false)
+        h.handleControlMessage(manage("a", mkdirBody))
+        assertFalse(succeeded(sender))
+
+        lastRoots!!.pcChangeAllowed = true
+        h.handleControlMessage(manage("b", mkdirBody))
+        assertTrue("turning the switch on takes effect without a restart", succeeded(sender))
+        assertNotNull((tree.children["Docs"] as FakeNode).children["Fresh"])
+
+        lastRoots!!.pcChangeAllowed = false
+        h.handleControlMessage(manage("c", deleteBody))
+        assertFalse("turning it off again stops the very next request", succeeded(sender))
+        assertNotNull((tree.children["Docs"] as FakeNode).children["report.txt"])
+    }
+
+    @Test
+    fun withTheSwitchOn_allFiveOperationsWork() = runBlocking {
+        val tree = sampleTree()
+        val docs = tree.children["Docs"] as FakeNode
+        val (h, sender, _) = build(tree)
+
+        h.handleControlMessage(manage("1", mkdirBody))
+        assertTrue(succeeded(sender))
+        assertNotNull(docs.children["Fresh"])
+
+        h.handleControlMessage(manage("2", copyBody))
+        assertTrue(succeeded(sender))
+        assertEquals("hello", String(docs.children["copy.txt"]!!.content))
+
+        h.handleControlMessage(manage("3", renameBody))
+        assertTrue(succeeded(sender))
+        assertNull(docs.children["report.txt"])
+        assertNotNull(docs.children["renamed.txt"])
+
+        h.handleControlMessage(
+            manage("4", """"relativePath":"Docs/renamed.txt","operation":"move","destinationPath":"moved.txt""""),
+        )
+        assertTrue(succeeded(sender))
+        assertNotNull(tree.children["moved.txt"])
+        assertNull(docs.children["renamed.txt"])
+
+        h.handleControlMessage(manage("5", """"relativePath":"moved.txt","operation":"delete""""))
+        assertTrue(succeeded(sender))
+        assertNull(tree.children["moved.txt"])
+    }
+
+    @Test
+    fun aReadOnlyShare_refusesEveryOperationEvenWithTheSwitchOn() = runBlocking {
+        for ((operation, body) in manageBodies) {
+            val tree = sampleTree()
+            // A read-only SAF tree reports every document under it as unwritable, so the fake does too.
+            val docs = tree.children["Docs"] as FakeNode
+            docs.children["report.txt"]!!.writable = false
+            docs.writable = false
+            tree.writable = false
+            val before = snapshot(tree)
+            val (h, sender, _) = build(tree)
+
+            h.handleControlMessage(manage("ro", body))
+
+            assertFalse("$operation must fail on a read-only share", succeeded(sender))
+            assertEquals("$operation must leave every file alone", before, snapshot(tree))
+        }
+    }
+
+    @Test
+    fun aRootThatIsNotShared_isRefusedForEveryOperation() = runBlocking {
+        for ((operation, body) in manageBodies) {
+            val tree = sampleTree()
+            val before = snapshot(tree)
+            val (h, sender, _) = build(tree)
+
+            h.handleControlMessage(
+                """{"type":"file_manage_request","fileManageRequest":{"requestId":"x","rootId":"somewhere-else",$body}}""",
+            )
+
+            assertFalse("$operation must fail for a root nobody shared", succeeded(sender))
+            assertEquals("$operation must leave every file alone", before, snapshot(tree))
+        }
+    }
+
+    @Test
+    fun aTraversalOrMalformedPath_isRefusedBeforeAnythingIsResolved() = runBlocking {
+        val badPaths = listOf("../outside", "Docs/../..", "Docs\\report.txt", "Docs//report.txt", "Docs/nul\u0000.txt")
+        for (path in badPaths) {
+            for (operation in listOf("delete", "rename")) {
+                val tree = sampleTree()
+                val before = snapshot(tree)
+                val (h, sender, _) = build(tree)
+
+                h.handleControlMessage(
+                    manage("t", """"relativePath":${JSONObject.quote(path)},"operation":"$operation","newName":"x.txt""""),
+                )
+
+                assertFalse("$operation of '$path' must be refused", succeeded(sender))
+                assertEquals("$operation of '$path' must leave every file alone", before, snapshot(tree))
+            }
+        }
+        for (destination in listOf("../escape.txt", "Docs/../../escape.txt", "Docs\\escape.txt")) {
+            val tree = sampleTree()
+            val before = snapshot(tree)
+            val (h, sender, _) = build(tree)
+
+            h.handleControlMessage(
+                manage("d", """"relativePath":"Docs/report.txt","operation":"move","destinationPath":${JSONObject.quote(destination)}"""),
+            )
+
+            assertFalse("move to '$destination' must be refused", succeeded(sender))
+            assertEquals("move to '$destination' must leave every file alone", before, snapshot(tree))
+        }
+    }
+
+    @Test
+    fun theSharedFolderItself_cannotBeDeletedRenamedMovedOrCopied() = runBlocking {
+        for (path in listOf("", "/")) {
+            for (body in listOf(
+                """"relativePath":${JSONObject.quote(path)},"operation":"delete"""",
+                """"relativePath":${JSONObject.quote(path)},"operation":"rename","newName":"gone"""",
+                """"relativePath":${JSONObject.quote(path)},"operation":"move","destinationPath":"elsewhere"""",
+                """"relativePath":${JSONObject.quote(path)},"operation":"copy","destinationPath":"elsewhere"""",
+            )) {
+                val tree = sampleTree()
+                val before = snapshot(tree)
+                val (h, sender, _) = build(tree)
+
+                h.handleControlMessage(manage("root", body))
+
+                assertFalse(succeeded(sender))
+                assertEquals(SHARED_FOLDER_ITSELF_MESSAGE, refusalText(sender))
+                assertEquals(before, snapshot(tree))
+            }
+        }
+    }
+
+    @Test
+    fun aNewFolderInTheSharedFolderItself_isAllowed() = runBlocking {
+        val tree = sampleTree()
+        val (h, sender, _) = build(tree)
+
+        h.handleControlMessage(manage("mk", """"relativePath":"","operation":"mkdir","newName":"Top""""))
+
+        assertTrue(succeeded(sender))
+        assertNotNull(tree.children["Top"])
     }
 
     @Test

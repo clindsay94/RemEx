@@ -168,4 +168,99 @@ public static class FilePathValidation
 
         return true;
     }
+
+    /// <summary>
+    /// The longest single name a phone's storage accepts (NAME_MAX on ext4/f2fs). Mirrors
+    /// <c>SharedPathPolicy.MAX_SEGMENT_LENGTH</c> on the phone, so both sides refuse the same names.
+    /// </summary>
+    public const int MaxRemoteNameLength = 255;
+
+    /// <summary>The most segments a path sent to a phone may have; far past anything a real tree needs.</summary>
+    public const int MaxRemotePathSegments = 64;
+
+    /// <summary>
+    /// Validates a single NAME for a file or folder on ANOTHER device — the phone — before the PC asks
+    /// for it to be created or renamed there (RemEx-fgmne). Mirrors the phone's own
+    /// <c>SharedPathPolicy.isSafeName</c>, and both sides run it: the phone is the one that cannot be
+    /// talked around, and this one stops the PC sending what it already knows will be refused.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately NOT <see cref="IsValidFileName"/>. That one applies THIS machine's invalid-character
+    /// list, which on Windows would refuse <c>:</c>, <c>?</c> and <c>"</c> — all ordinary in an Android
+    /// file name — while checking nothing about length. What matters for a name headed to a phone is
+    /// that it is a NAME and not a path: no separator, no <c>.</c>/<c>..</c>, no NUL or control
+    /// character, and no longer than the phone's filesystem takes.
+    /// </remarks>
+    public static bool IsValidRemoteName(string? name, out string? error)
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            error = "Name cannot be empty.";
+            return false;
+        }
+
+        if (name is "." or "..")
+        {
+            error = "Name cannot be '.' or '..'.";
+            return false;
+        }
+
+        if (name.Length > MaxRemoteNameLength)
+        {
+            error = "Name is too long.";
+            return false;
+        }
+
+        if (name.IndexOf('/') >= 0 || name.IndexOf('\\') >= 0)
+        {
+            error = "Name cannot contain a path separator.";
+            return false;
+        }
+
+        foreach (var c in name)
+        {
+            if (char.IsControl(c))
+            {
+                error = "Name contains invalid characters.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Validates a '/'-separated path under a phone's shared folder: empty (the folder itself) is fine;
+    /// every segment must be a real name (<see cref="IsValidRemoteName"/>), so <c>..</c>, a backslash,
+    /// a NUL, an empty middle segment (<c>a//b</c>) or a segment over the cap refuses the whole path.
+    /// One leading and one trailing '/' run is trimmed first, because a root-relative path may be
+    /// written either way.
+    /// </summary>
+    public static bool IsValidRemoteRelativePath(string? relativePath, out string? error)
+    {
+        error = null;
+        var trimmed = (relativePath ?? string.Empty).Trim('/');
+        if (trimmed.Length == 0)
+            return true;
+
+        var segments = trimmed.Split('/');
+        if (segments.Length > MaxRemotePathSegments)
+        {
+            error = "Path is too deep.";
+            return false;
+        }
+
+        foreach (var segment in segments)
+        {
+            if (!IsValidRemoteName(segment, out var segmentError))
+            {
+                error = segmentError;
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

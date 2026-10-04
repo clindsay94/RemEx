@@ -4179,7 +4179,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Whole-device browsing is turned off on your phone. To use it, open RemEx on the phone, go to Access from your PC, and turn on Allow full-device browsing.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Folders can't be uploaded to a phone yet. Upload the files inside it instead.</value>
+    <value>Folders can't be uploaded to this phone yet. On the phone, open RemEx, go to Access from your PC, and turn on Let your PC change files, then press Reload shared folders. Or upload the files inside the folder instead.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Your phone disconnected before the transfer finished. Reconnect it, then try again.</value>
@@ -4234,5 +4234,14 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>Couldn't refresh the process list. The list below is the last one RemEx received, and it will keep trying.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Your phone isn't letting this PC change its files. On the phone, open RemEx, go to Access from your PC, and turn on Let your PC change files. Then press Reload shared folders here.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>This will permanently delete “{0}” from your phone. It is not moved to a recycle bin, and this cannot be undone.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>This will permanently delete {0} items ({1}) from your phone. They are not moved to a recycle bin, and this cannot be undone.</value>
   </data>
 </root>

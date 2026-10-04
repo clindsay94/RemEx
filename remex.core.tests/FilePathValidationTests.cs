@@ -138,4 +138,71 @@ public class FilePathValidationTests
         // '\0' is in Path.GetInvalidFileNameChars() on every platform.
         Assert.False(FilePathValidation.IsValidFileName("a\0b", out _));
     }
+
+    // ─── Names and paths sent to ANOTHER device, the phone (RemEx-fgmne) ───────────────────
+
+    [Theory]
+    [InlineData("IMG_0001.jpg", true)]
+    [InlineData("Holiday 2026", true)]
+    // Ordinary on Android, invalid on Windows: this is not THIS machine's file-name rule.
+    [InlineData("a:b?c\"d.txt", true)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(".", false)]
+    [InlineData("..", false)]
+    [InlineData("a/b", false)]
+    [InlineData("a\\b", false)]
+    [InlineData("a\0b", false)]
+    [InlineData("a\nb", false)]
+    [InlineData("a\tb", false)]
+    public void IsValidRemoteName_AcceptsANameAndRefusesAPathOrAControlCharacter(string name, bool expectedValid)
+    {
+        Assert.Equal(expectedValid, FilePathValidation.IsValidRemoteName(name, out var error));
+        Assert.Equal(expectedValid, error is null);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_NullName_IsInvalid()
+    {
+        Assert.False(FilePathValidation.IsValidRemoteName(null, out var error));
+        Assert.NotNull(error);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_EnforcesTheLengthCapExactly()
+    {
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('x', FilePathValidation.MaxRemoteNameLength), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('x', FilePathValidation.MaxRemoteNameLength + 1), out var error));
+        Assert.NotNull(error);
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData("/", true)]
+    [InlineData("DCIM", true)]
+    [InlineData("/DCIM/Camera/", true)]
+    [InlineData("DCIM/Camera/IMG_1.jpg", true)]
+    [InlineData("../outside", false)]
+    [InlineData("DCIM/../..", false)]
+    [InlineData("DCIM/..", false)]
+    [InlineData("DCIM\\Camera", false)]
+    [InlineData("DCIM//Camera", false)]
+    [InlineData("DCIM/a\0b", false)]
+    public void IsValidRemoteRelativePath_RefusesTraversalAndMalformedSegments(string? path, bool expectedValid)
+    {
+        Assert.Equal(expectedValid, FilePathValidation.IsValidRemoteRelativePath(path, out var error));
+        Assert.Equal(expectedValid, error is null);
+    }
+
+    [Fact]
+    public void IsValidRemoteRelativePath_RefusesAnOverlongSegmentAndAnAbsurdDepth()
+    {
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("a/" + new string('x', FilePathValidation.MaxRemoteNameLength + 1), out _));
+
+        var deepEnough = string.Join('/', Enumerable.Repeat("d", FilePathValidation.MaxRemotePathSegments));
+        var tooDeep = deepEnough + "/d";
+        Assert.True(FilePathValidation.IsValidRemoteRelativePath(deepEnough, out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath(tooDeep, out _));
+    }
 }

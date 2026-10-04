@@ -4177,7 +4177,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>Telefonunuzda tüm cihazda gezinme kapalı. Kullanmak için telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve Tüm cihazda gezinmeye izin ver seçeneğini açın.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Klasörler henüz telefona yüklenemiyor. Bunun yerine içindeki dosyaları yükleyin.</value>
+    <value>Klasörler bu telefona henüz yüklenemiyor. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin, PC'nizin dosyaları değiştirmesine izin ver seçeneğini açın ve Paylaşılan klasörleri yenile düğmesine basın. Ya da klasörün içindeki dosyaları yükleyin.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Aktarım bitmeden telefonunuzun bağlantısı kesildi. Yeniden bağlayın ve tekrar deneyin.</value>
@@ -4232,5 +4232,14 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>İşlem listesi yenilenemedi. Aşağıdaki liste RemEx'in aldığı son listedir ve denemeye devam edecek.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Telefonunuz bu PC'nin dosyalarını değiştirmesine izin vermiyor. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve PC'nizin dosyaları değiştirmesine izin ver seçeneğini açın. Ardından burada Paylaşılan klasörleri yenile düğmesine basın.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>“{0}” telefonunuzdan kalıcı olarak silinecek. Geri dönüşüm kutusuna taşınmaz ve bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>{0} öğe ({1}) telefonunuzdan kalıcı olarak silinecek. Geri dönüşüm kutusuna taşınmazlar ve bu işlem geri alınamaz.</value>
   </data>
 </root>

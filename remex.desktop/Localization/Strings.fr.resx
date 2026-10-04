@@ -4173,7 +4173,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>L'exploration de tout l'appareil est désactivée sur votre téléphone. Pour l'utiliser, ouvrez RemEx sur le téléphone, allez dans Accès depuis votre PC et activez Autoriser l'exploration de tout l'appareil.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Les dossiers ne peuvent pas encore être envoyés vers un téléphone. Envoyez plutôt les fichiers qu'il contient.</value>
+    <value>Impossible d'envoyer des dossiers vers ce téléphone pour le moment. Sur le téléphone, ouvrez RemEx, allez dans Accès depuis votre PC et activez Autoriser votre PC à modifier les fichiers, puis appuyez sur Recharger les dossiers partagés. Vous pouvez aussi envoyer les fichiers qu'il contient.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Votre téléphone s'est déconnecté avant la fin du transfert. Reconnectez-le, puis réessayez.</value>
@@ -4228,5 +4228,14 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>Impossible d'actualiser la liste des processus. La liste ci-dessous est la dernière reçue par RemEx, qui continuera d'essayer.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Votre téléphone ne permet pas à ce PC de modifier ses fichiers. Sur le téléphone, ouvrez RemEx, allez dans Accès depuis votre PC et activez Autoriser votre PC à modifier les fichiers. Appuyez ensuite sur Recharger les dossiers partagés ici.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>« {0} » sera supprimé définitivement de votre téléphone. Il n'est pas placé dans une corbeille et cette action est irréversible.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>{0} éléments ({1}) seront supprimés définitivement de votre téléphone. Ils ne sont pas placés dans une corbeille et cette action est irréversible.</value>
   </data>
 </root>

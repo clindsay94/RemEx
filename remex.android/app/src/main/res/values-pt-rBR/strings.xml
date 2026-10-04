@@ -1671,4 +1671,6 @@
     <string name="personalization_background_intensity">Intensidade: %1$d%%</string>
     <string name="cd_background_intensity">Intensidade do plano de fundo</string>
     <string name="personalization_background_note">Os planos de fundo animados pausam quando o app está em segundo plano, quando a Economia de bateria está ativada ou quando as animações estão desativadas.</string>
+    <string name="settings_ft_pc_changes_title">Permitir que seu PC altere arquivos</string>
+    <string name="settings_ft_pc_changes_desc">Seu PC poderá renomear, mover, copiar e excluir arquivos nas pastas que você compartilha e criar pastas novas. Arquivos excluídos somem para sempre. Pastas compartilhadas somente para leitura nunca mudam.</string>
 </resources>

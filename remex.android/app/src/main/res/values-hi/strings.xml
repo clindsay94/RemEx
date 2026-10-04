@@ -1671,4 +1671,6 @@
     <string name="personalization_background_intensity">तीव्रता: %1$d%%</string>
     <string name="cd_background_intensity">पृष्ठभूमि की तीव्रता</string>
     <string name="personalization_background_note">ऐप के बैकग्राउंड में होने पर, बैटरी सेवर चालू होने पर या एनिमेशन बंद होने पर एनिमेटेड पृष्ठभूमि रुक जाती है।</string>
+    <string name="settings_ft_pc_changes_title">अपने PC को फ़ाइलें बदलने दें</string>
+    <string name="settings_ft_pc_changes_desc">आपका PC आपके साझा किए गए फ़ोल्डरों में फ़ाइलों का नाम बदल सकेगा, उन्हें ले जा सकेगा, कॉपी कर सकेगा और हटा सकेगा, और नए फ़ोल्डर बना सकेगा। हटाई गई फ़ाइलें हमेशा के लिए चली जाती हैं। केवल-पढ़ने योग्य साझा फ़ोल्डर कभी नहीं बदलते।</string>
 </resources>

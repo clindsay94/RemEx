@@ -93,6 +93,20 @@ enum class PushRefusal {
 internal fun pushDestinationRoot(roots: List<RootDescriptor>): String? =
     roots.firstOrNull { it.isWritable && it.rootId.isNotBlank() }?.rootId
 
+/**
+ * What the PC is told when it asks to change files and the person has not allowed it (RemEx-fgmne).
+ * Written for a person, because the PC shows it as written: it says what to turn on and where.
+ */
+internal const val PC_CHANGES_OFF_MESSAGE =
+    "Your phone isn't letting your PC change files. In RemEx on the phone, open Settings, go to Access from your PC, and turn on Let your PC change files."
+
+/**
+ * What the PC is told when it names a shared folder itself as the thing to delete, rename, move or copy.
+ * The folder the person chose to share is theirs to remove, on the phone, and never a "file in it".
+ */
+internal const val SHARED_FOLDER_ITSELF_MESSAGE =
+    "That is the shared folder itself, so it can't be changed from your PC. Remove it from Access from your PC on the phone instead."
+
 /** Sends a control-plane JSON envelope to the peer over the native `/ws` socket. */
 fun interface ControlMessageSender {
     fun send(json: String)
@@ -298,6 +312,10 @@ class FileHostHandler(
             )
             put("fullBrowse", rootsProvider.isFullBrowseGranted())
             put("push", true)
+            // Whether a PC is ALLOWED to use the ops above (RemEx-fgmne): the person's switch, read fresh on
+            // every roots request so a PC that reloads sees a change made a moment ago. Absent on a phone
+            // that predates it, which the PC reads as "no".
+            put("pcChanges", rootsProvider.isPcChangeAllowed())
         }
 
     private fun handleBrowse(req: JSONObject?) {
@@ -354,6 +372,33 @@ class FileHostHandler(
         val newName = req.optString("newName")
         val destinationPath = if (req.has("destinationPath")) req.optString("destinationPath") else null
         val overwrite = req.optBoolean("overwrite", false)
+
+        // THE PERSON'S SWITCH, CHECKED ON EVERY REQUEST AND BEFORE ANYTHING IS RESOLVED (RemEx-fgmne).
+        // The PC hides its buttons when this is off, but a screen can be stale and a request can be
+        // forged, so this is the check that cannot be talked around: with the switch off, nothing here
+        // touches a file, however writable the shared folder is. Every operation, including mkdir.
+        if (!rootsProvider.isPcChangeAllowed()) {
+            sendManage(requestId, false, PC_CHANGES_OFF_MESSAGE)
+            return
+        }
+
+        // PATHS ARE NAMES TO WALK, NOT STRINGS TO TRUST: `..`, a backslash, a NUL, an empty segment or an
+        // over-long name refuses the whole request here, before any resolver sees it. The resolver
+        // checks again; this is the layer that does not depend on what a SAF provider does with a name.
+        if (SharedPathPolicy.segments(relativePath) == null ||
+            (destinationPath != null && SharedPathPolicy.segments(destinationPath) == null)
+        ) {
+            sendManage(requestId, false, "That path can't be used.")
+            return
+        }
+
+        // The shared folder ITSELF is never "a file in it": delete, rename, copy and move of the root
+        // would take the whole share (or its place in the Access list) with them.
+        val namesRoot = relativePath.trim('/').isEmpty()
+        if (namesRoot && operation != FileManageOperations.MKDIR) {
+            sendManage(requestId, false, SHARED_FOLDER_ITSELF_MESSAGE)
+            return
+        }
 
         try {
             when (operation) {

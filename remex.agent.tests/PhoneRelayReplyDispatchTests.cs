@@ -164,6 +164,101 @@ public sealed class PhoneRelayReplyDispatchTests
             Assert.Equal("a.jpg", Assert.Single(received[0].FileBrowseResponse!.Entries).Name);
     }
 
+    private static RemexMessage RootsReplyAllowingChanges() => new()
+    {
+        Type = MessageTypes.FileRootsResponse,
+        FileRootsResponse = new FileRootsResponse
+        {
+            Roots = [new FileSharedRoot { RootId = "root", DisplayName = "DCIM", IsWritable = true }],
+            FileCapabilities = new FileCapabilities { Protocol = 3, Ops = ["mkdir"], PcChanges = true },
+        },
+    };
+
+    private static RemexMessage ManageRequest(string requestId) => new()
+    {
+        Type = MessageTypes.FileManageRequest,
+        FileManageRequest = new FileManageRequest
+        {
+            RequestId = requestId, RootId = "root", RelativePath = "DCIM", Operation = FileManageOperations.Mkdir, NewName = "Trip",
+        },
+    };
+
+    private static RemexMessage ManageReply(string requestId) => new()
+    {
+        Type = MessageTypes.FileManageResponse,
+        FileManageResponse = new FileManageResponse { RequestId = requestId, Success = true },
+    };
+
+    /// <summary>
+    /// RemEx-fgmne: the phone's roots reply (the capability) and its manage reply both travel the
+    /// handler's relay case block. Drop <c>FileManageResponse</c> from that block and the PC's
+    /// New folder button waits out its timeout against a phone that answered.
+    /// </summary>
+    [Fact]
+    public async Task AManageReplyFromAPinPairedLanPhone_IsDelivered()
+    {
+        using var factory = new RemexHostFactory().WithServices(
+            services => services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>());
+        var relay = factory.Services.GetRequiredService<PhoneFileRelay>();
+        var sessions = factory.Services.GetRequiredService<ClientSessionRegistry>();
+        var phoneId = $"phone-{Guid.NewGuid():N}";
+
+        using var phone = await ConnectAsync(factory);
+        await PairAsync(phone, factory.Services.GetRequiredService<PairingService>(), phoneId);
+        await WaitForAsync(() => sessions.IsConnected(phoneId), "the paired phone never became reachable");
+
+        using var connection = relay.Open(phoneId);
+        var received = new List<RemexMessage>();
+        connection.FileTransferMessageReceived += message => { lock (received) received.Add(message); };
+
+        await connection.SendAsync(new RemexMessage { Type = MessageTypes.FileRootsRequest });
+        Assert.NotNull(await ReceiveOfTypeAsync(phone, MessageTypes.FileRootsRequest));
+        await MessageSerializer.SendAsync(phone, RootsReplyAllowingChanges(), CancellationToken.None);
+        await WaitForAsync(() => { lock (received) return received.Count == 1; }, "the phone's roots reply was never delivered");
+
+        await connection.SendAsync(ManageRequest("m1"));
+        var asked = await ReceiveOfTypeAsync(phone, MessageTypes.FileManageRequest);
+        Assert.Equal("m1", asked?.FileManageRequest?.RequestId);
+        await MessageSerializer.SendAsync(phone, ManageReply("m1"), CancellationToken.None);
+
+        await WaitForAsync(() => { lock (received) return received.Count == 2; }, "the phone's manage reply was never delivered");
+        lock (received)
+            Assert.True(received[1].FileManageResponse!.Success);
+    }
+
+    [Fact]
+    public async Task AManageReplyFromAPinPairedLoopbackConnection_IsNotDelivered()
+    {
+        using var factory = new RemexHostFactory();
+        var relay = factory.Services.GetRequiredService<PhoneFileRelay>();
+        var sessions = factory.Services.GetRequiredService<ClientSessionRegistry>();
+        var phoneId = $"phone-{Guid.NewGuid():N}";
+
+        using var local = await ConnectAsync(factory);
+        await PairAsync(local, factory.Services.GetRequiredService<PairingService>(), phoneId);
+
+        var phoneSocket = new FakePhoneSocket();
+        using var phoneSession = sessions.Register("192.168.1.50", phoneSocket);
+        sessions.Identify(phoneSession, phoneId, null);
+        sessions.MarkAuthenticated(phoneSession, identityProven: true);
+
+        using var connection = relay.Open(phoneId);
+        var received = new List<RemexMessage>();
+        connection.FileTransferMessageReceived += received.Add;
+        await connection.SendAsync(new RemexMessage { Type = MessageTypes.FileRootsRequest });
+        Assert.True(relay.TryDeliverReply(phoneId, identityProven: true, isLoopback: false, RootsReplyAllowingChanges()));
+        received.Clear();
+        await connection.SendAsync(ManageRequest("m1"));
+
+        // A local process that PIN-paired under the phone's id answers the PC's manage request.
+        await MessageSerializer.SendAsync(local, ManageReply("m1"), CancellationToken.None);
+        await RoundTripAsync(local);
+
+        Assert.Empty(received);
+        Assert.True(relay.TryDeliverReply(phoneId, identityProven: true, isLoopback: false, ManageReply("m1")));
+        Assert.Single(received);
+    }
+
     /// <summary>
     /// A ping and its pong: the handler processes one connection's messages in order, so once the
     /// pong is back, everything sent before the ping has been dispatched.

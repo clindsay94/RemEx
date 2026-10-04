@@ -674,6 +674,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
     val fullBrowseRoot by settingsManager.fullBrowseRootUriFlow.collectAsStateWithLifecycle(initialValue = null)
     val autoAcceptFlow = remember(deviceId) { settingsManager.fileTrustAutoAcceptFlow(deviceId) }
     val autoAccept by autoAcceptFlow.collectAsStateWithLifecycle(initialValue = false)
+    val pcMayChangeFiles by settingsManager.pcMayChangeFilesFlow.collectAsStateWithLifecycle(initialValue = false)
     val haptics = rememberRemexHaptics()
 
     val fullBrowseLauncher = rememberLauncherForActivityResult(
@@ -789,6 +790,40 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                 }
                 Switch(
                         checked = autoAccept,
+                        onCheckedChange = null
+                )
+            }
+
+            HorizontalDivider()
+
+            // Let the PC rename, move, copy and delete files in the shared folders (RemEx-fgmne). Off
+            // until the person turns it on; the description says plainly that deletes are permanent.
+            Row(
+                    modifier = Modifier.fillMaxWidth()
+                            .toggleable(
+                                    value = pcMayChangeFiles,
+                                    role = Role.Switch,
+                                    onValueChange = { enabled ->
+                                        haptics.perform(RemexHaptics.toggle(enabled))
+                                        scope.launch { settingsManager.setPcMayChangeFiles(enabled) }
+                                    }
+                            ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                            text = stringResource(R.string.settings_ft_pc_changes_title),
+                            style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                            text = stringResource(R.string.settings_ft_pc_changes_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                        checked = pcMayChangeFiles,
                         onCheckedChange = null
                 )
             }

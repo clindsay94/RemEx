@@ -259,6 +259,24 @@ public sealed record FileCapabilities
     [JsonPropertyName("fullBrowse")] public bool FullBrowse { get; init; }
     /// <summary>True when the host accepts pushed (client-initiated) incoming files.</summary>
     [JsonPropertyName("push")] public bool Push { get; init; }
+
+    /// <summary>
+    /// True only while the person on THIS host has turned on "Let your PC change files" (RemEx-fgmne).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ADDITIVE AND DEFAULT-FALSE, so no <c>protocolVersion</c> bump, and the default is the point: a
+    /// phone that predates the switch never sends the field, which reads as "the PC may not change
+    /// anything here". <see cref="Ops"/> says what the host can DO; this says whether it is ALLOWED
+    /// to for a PC, which is the person's call and can change while a screen is open.
+    /// </para>
+    /// <para>
+    /// The PC relays <c>file_manage_request</c> to a phone only after the phone's own roots reply carried
+    /// this as true, and the phone re-checks the switch on every request. Both checks matter: this one
+    /// keeps the buttons honest, the phone's is the one that cannot be talked around.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("pcChanges")] public bool PcChanges { get; init; }
 }
 
 // ── v3 transfer negotiation (replaces base64 start/chunk/end for v3 peers) ──

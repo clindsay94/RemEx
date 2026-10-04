@@ -1695,4 +1695,6 @@
     <string name="personalization_background_intensity">Інтенсивність: %1$d%%</string>
     <string name="cd_background_intensity">Інтенсивність тла</string>
     <string name="personalization_background_note">Анімовані тла призупиняються, коли застосунок працює у фоні, коли ввімкнено режим енергозбереження або коли анімації вимкнено.</string>
+    <string name="settings_ft_pc_changes_title">Дозволити ПК змінювати файли</string>
+    <string name="settings_ft_pc_changes_desc">Ваш ПК зможе перейменовувати, переміщувати, копіювати й видаляти файли в папках, до яких ви надали доступ, і створювати нові папки. Видалені файли зникають назавжди. Папки лише для читання ніколи не змінюються.</string>
 </resources>

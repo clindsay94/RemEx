@@ -46,6 +46,15 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
         public FakePhoneConnection? Last { get; private set; }
         public bool FullBrowse { get; init; } = true;
 
+        /// <summary>Whether the phone says its owner lets the PC change files (RemEx-fgmne).</summary>
+        public bool PcChanges { get; init; }
+
+        /// <summary>The phone's refusal text for every manage request, or null to accept them.</summary>
+        public string? ManageRefusal { get; set; }
+
+        /// <summary>When set, sending a manage request throws this, as the relay does for a phone that said no.</summary>
+        public Exception? ManageThrows { get; set; }
+
         public event Action? AvailabilityChanged;
 
         public IReadOnlyList<PhoneFileSource> AvailablePhones() => [.. Phones];
@@ -54,15 +63,16 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
         {
             if (Phones.All(p => p.ClientId != clientId))
                 throw new PhoneNotConnectedException();
-            return Last = new FakePhoneConnection(clientId, FullBrowse);
+            return Last = new FakePhoneConnection(clientId, FullBrowse, this);
         }
 
         public void RaiseAvailabilityChanged() => AvailabilityChanged?.Invoke();
     }
 
-    private sealed class FakePhoneConnection(string clientId, bool fullBrowse) : IPhoneFileConnection
+    private sealed class FakePhoneConnection(string clientId, bool fullBrowse, FakePhoneAccess owner) : IPhoneFileConnection
     {
         public ConcurrentQueue<string> SentTypes { get; } = new();
+        public ConcurrentQueue<FileManageRequest> ManageRequests { get; } = new();
         public string ClientId { get; } = clientId;
         public bool IsConnected { get; private set; } = true;
         public bool Disposed { get; private set; }
@@ -73,6 +83,8 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
         public Task SendAsync(RemexMessage message)
         {
             SentTypes.Enqueue(message.Type);
+            if (message.Type == MessageTypes.FileManageRequest && owner.ManageThrows is { } thrown)
+                throw thrown;
             RemexMessage? reply = message.Type switch
             {
                 MessageTypes.FileRootsRequest => new RemexMessage
@@ -86,8 +98,9 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
                             Protocol = 3,
                             Binary = true,
                             FullBrowse = fullBrowse,
-                            // The phone advertises management ops; the PC must still not offer them.
+                            // The phone advertises management ops; the PC offers them only when pcChanges is true.
                             Ops = ["delete", "rename", "copy", "move", "mkdir", "search", "manifest"],
+                            PcChanges = owner.PcChanges,
                         },
                     },
                 },
@@ -112,12 +125,28 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
                             : [],
                     },
                 },
+                MessageTypes.FileManageRequest => ManageAnswer(message.FileManageRequest!),
                 _ => null,
             };
 
             if (reply is not null)
                 FileTransferMessageReceived?.Invoke(reply);
             return Task.CompletedTask;
+        }
+
+        private RemexMessage ManageAnswer(FileManageRequest request)
+        {
+            ManageRequests.Enqueue(request);
+            return new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = request.RequestId,
+                    Success = owner.ManageRefusal is null,
+                    ErrorMessage = owner.ManageRefusal,
+                },
+            };
         }
 
         public void Disconnect()
@@ -229,6 +258,8 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
         vm.SetSelectedEntries([vm.SelectedRemoteEntry]);
 
         vm.CanManageFiles.Should().BeFalse();
+        vm.CanChangeFiles.Should().BeFalse();
+        vm.PhoneAllowsChanges.Should().BeFalse();
         vm.SupportsCopyMove.Should().BeFalse();
         vm.SupportsMkdir.Should().BeFalse();
         vm.DeleteRemoteCommand.CanExecute(null).Should().BeFalse();
@@ -407,5 +438,208 @@ public sealed class FileTransferPhoneSourceTests : IDisposable
 
         transfers.Uploads.Should().BeEmpty();
         vm.StatusText.Should().Be(LocalizationService.Instance["FileTransfer_PhoneFolderUploadUnavailable"]);
+    }
+
+    // ─── Changing files on a phone that allows it (RemEx-fgmne) ───────────────────
+
+    private static async Task<FileTransferViewModel> PhoneThatAllowsChangesAsync(
+        FakePhoneAccess access, FakePhoneTransfers? transfers = null)
+    {
+        var vm = NewViewModel(access, transfers);
+        await SelectPhoneAsync(vm);
+        vm.SelectedRemoteEntry = new FileEntry { Name = "IMG_1.jpg", IsDirectory = false };
+        vm.SetSelectedEntries([vm.SelectedRemoteEntry]);
+        return vm;
+    }
+
+    [Fact]
+    public async Task APhoneThatAllowsChanges_OffersTheChangeButtons_AndStillHidesPinRemoveAndHash()
+    {
+        using var vm = await PhoneThatAllowsChangesAsync(new FakePhoneAccess { PcChanges = true });
+
+        vm.PhoneAllowsChanges.Should().BeTrue();
+        vm.CanChangeFiles.Should().BeTrue();
+        vm.SupportsMkdir.Should().BeTrue();
+        vm.SupportsCopyMove.Should().BeTrue();
+        vm.DeleteRemoteCommand.CanExecute(null).Should().BeTrue();
+        vm.StartRenameCommand.CanExecute(null).Should().BeTrue();
+        vm.NewFolderCommand.CanExecute(null).Should().BeTrue();
+        vm.CopySelectionCommand.CanExecute(null).Should().BeTrue();
+        vm.CutSelectionCommand.CanExecute(null).Should().BeTrue();
+        vm.UploadFolderCommand.CanExecute(null).Should().BeTrue();
+
+        // What the PC never does to a phone, whatever the switch says: the phone's shared-folder list is
+        // the phone's, and hashing is not part of the relay.
+        vm.CanManageFiles.Should().BeFalse();
+        vm.PinCurrentFolderCommand.CanExecute(null).Should().BeFalse();
+        vm.RemoveCurrentRootCommand.CanExecute(null).Should().BeFalse();
+        vm.VerifyHashCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task APhoneThatDoesNotAllowChanges_OffersNoChangeButtons_EvenThoughItAdvertisesTheOps()
+    {
+        using var vm = await PhoneThatAllowsChangesAsync(new FakePhoneAccess { PcChanges = false });
+
+        vm.CanChangeFiles.Should().BeFalse();
+        vm.SupportsMkdir.Should().BeFalse();
+        vm.SupportsCopyMove.Should().BeFalse();
+        vm.DeleteRemoteCommand.CanExecute(null).Should().BeFalse();
+        vm.StartRenameCommand.CanExecute(null).Should().BeFalse();
+        vm.NewFolderCommand.CanExecute(null).Should().BeFalse();
+        vm.UploadFolderCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReturningToThisPc_DropsThePhonesPermission()
+    {
+        using var vm = await PhoneThatAllowsChangesAsync(new FakePhoneAccess { PcChanges = true });
+        vm.CanChangeFiles.Should().BeTrue();
+
+        vm.SelectedSource = vm.Sources.First(s => s.IsThisPc);
+
+        vm.IsPhoneSource.Should().BeFalse();
+        vm.PhoneAllowsChanges.Should().BeFalse();
+        vm.CanManageFiles.Should().BeTrue("This PC's own folders keep every button");
+        vm.CanChangeFiles.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeletingOnAPhone_ConfirmsThatItIsPermanentOnThePhone_ThenAsksThePhone()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        string? shown = null;
+        vm.OnConfirmationRequested = (_, message, _) =>
+        {
+            shown = message;
+            return Task.FromResult(true);
+        };
+
+        await vm.DeleteRemoteCommand.ExecuteAsync(null);
+
+        shown.Should().Be(string.Format(LocalizationService.Instance["Confirm_DeleteRemote_PhoneSingleFormat"], "IMG_1.jpg"));
+        var sent = access.Last!.ManageRequests.Should().ContainSingle().Subject;
+        sent.Operation.Should().Be(FileManageOperations.Delete);
+        sent.RootId.Should().Be(PhoneRoot.RootId);
+        sent.RelativePath.Should().Be("IMG_1.jpg");
+    }
+
+    [Fact]
+    public async Task DecliningTheDeleteConfirmation_SendsNothingToThePhone()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(false);
+
+        await vm.DeleteRemoteCommand.ExecuteAsync(null);
+
+        access.Last!.ManageRequests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RenamingOnAPhone_SendsTheNewName()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        vm.StartRenameCommand.Execute(null);
+        vm.RenameInputText = "holiday.jpg";
+
+        await vm.ConfirmRenameCommand.ExecuteAsync(null);
+
+        var sent = access.Last!.ManageRequests.Should().ContainSingle().Subject;
+        sent.Operation.Should().Be(FileManageOperations.Rename);
+        sent.NewName.Should().Be("holiday.jpg");
+    }
+
+    [Fact]
+    public async Task NewFolderOnAPhone_AsksThePhoneToMakeIt_UnderTheOpenFolder()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        vm.RemotePath = "/Camera";
+        vm.NewFolderCommand.Execute(null);
+        vm.NewFolderName = "Trip";
+
+        await vm.ConfirmNewFolderCommand.ExecuteAsync(null);
+
+        var sent = access.Last!.ManageRequests.Should().ContainSingle().Subject;
+        sent.Operation.Should().Be(FileManageOperations.Mkdir);
+        sent.RelativePath.Should().Be("Camera");
+        sent.NewName.Should().Be("Trip");
+    }
+
+    [Fact]
+    public async Task AFolderUploadToAPhone_MakesTheFoldersFirst_ThenUploadsEachFile()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        var transfers = new FakePhoneTransfers();
+        using var vm = await PhoneThatAllowsChangesAsync(access, transfers);
+        var folder = Directory.CreateDirectory(Path.Combine(_local.FullName, "Trip"));
+        Directory.CreateDirectory(Path.Combine(folder.FullName, "Day1"));
+        await File.WriteAllTextAsync(Path.Combine(folder.FullName, "Day1", "a.txt"), "a");
+        await File.WriteAllTextAsync(Path.Combine(folder.FullName, "b.txt"), "b");
+
+        await vm.EnqueueFolderUploadAsync(folder.FullName);
+
+        await WaitForAsync(() => transfers.Uploads.Count == 2, "both files should be handed to the host");
+        access.Last!.ManageRequests.Select(r => (r.Operation, r.RelativePath, r.NewName)).Should().Equal(
+            (FileManageOperations.Mkdir, "", "Trip"),
+            (FileManageOperations.Mkdir, "Trip", "Day1"));
+        transfers.Uploads.Select(u => u.RemoteDirectory).Should().BeEquivalentTo(["Trip", "Trip/Day1"]);
+    }
+
+    [Fact]
+    public async Task AFolderUploadToAPhoneThatDoesNotAllowChanges_IsDeclined_AndSendsNothing()
+    {
+        var access = new FakePhoneAccess { PcChanges = false };
+        var transfers = new FakePhoneTransfers();
+        using var vm = await PhoneThatAllowsChangesAsync(access, transfers);
+
+        await vm.EnqueueFolderUploadAsync(_local.FullName);
+
+        transfers.Uploads.Should().BeEmpty();
+        access.Last!.ManageRequests.Should().BeEmpty();
+        vm.StatusText.Should().Be(LocalizationService.Instance["FileTransfer_PhoneFolderUploadUnavailable"]);
+    }
+
+    [Fact]
+    public async Task APhoneThatRefusesAChange_ShowsItsOwnWords()
+    {
+        var access = new FakePhoneAccess { PcChanges = true, ManageRefusal = "A file with that name already exists." };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        vm.StartRenameCommand.Execute(null);
+        vm.RenameInputText = "taken.jpg";
+
+        await vm.ConfirmRenameCommand.ExecuteAsync(null);
+
+        vm.StatusText.Should().Be("A file with that name already exists.");
+    }
+
+    [Fact]
+    public async Task APhoneWhoseSwitchWasTurnedOffMeanwhile_IsReportedInPlainWords()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        access.ManageThrows = new PhoneChangesNotAllowedException();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(true);
+
+        await vm.DeleteRemoteCommand.ExecuteAsync(null);
+
+        vm.StatusText.Should().Be(LocalizationService.Instance["FileTransfer_PhoneChangesOff"]);
+    }
+
+    [Fact]
+    public async Task APhoneThatGoesAwayMidChange_IsReportedAsOffline()
+    {
+        var access = new FakePhoneAccess { PcChanges = true };
+        using var vm = await PhoneThatAllowsChangesAsync(access);
+        access.ManageThrows = new PhoneNotConnectedException();
+        vm.StartRenameCommand.Execute(null);
+        vm.RenameInputText = "x.jpg";
+
+        await vm.ConfirmRenameCommand.ExecuteAsync(null);
+
+        vm.StatusText.Should().Be(LocalizationService.Instance["FileTransfer_PhoneDisconnected"]);
     }
 }

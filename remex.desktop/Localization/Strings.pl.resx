@@ -4174,7 +4174,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Przeglądanie całego urządzenia jest wyłączone na telefonie. Aby z niego skorzystać, otwórz RemEx na telefonie, przejdź do sekcji Dostęp z komputera i włącz opcję Zezwól na przeglądanie całego urządzenia.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Nie można jeszcze wysyłać folderów na telefon. Zamiast tego wyślij znajdujące się w nim pliki.</value>
+    <value>Foldery nie mogą jeszcze być wysyłane na ten telefon. Na telefonie otwórz RemEx, przejdź do Dostęp z komputera, włącz Pozwól komputerowi zmieniać pliki, a potem naciśnij Odśwież foldery udostępnione. Możesz też wysłać pliki znajdujące się w folderze.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Telefon rozłączył się przed zakończeniem przesyłania. Połącz go ponownie i spróbuj jeszcze raz.</value>
@@ -4229,5 +4229,14 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>Nie udało się odświeżyć listy procesów. Poniższa lista jest ostatnią, jaką odebrał RemEx. Aplikacja będzie dalej próbować.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Telefon nie pozwala temu komputerowi zmieniać swoich plików. Na telefonie otwórz RemEx, przejdź do Dostęp z komputera i włącz Pozwól komputerowi zmieniać pliki. Następnie naciśnij tutaj Odśwież foldery udostępnione.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>„{0}” zostanie trwale usunięty z telefonu. Nie trafi do kosza i tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>Elementy w liczbie {0} ({1}) zostaną trwale usunięte z telefonu. Nie trafią do kosza i tej operacji nie można cofnąć.</value>
   </data>
 </root>

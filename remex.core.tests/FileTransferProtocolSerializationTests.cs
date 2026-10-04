@@ -566,6 +566,37 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_FileCapabilities_PreservesPcChanges()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileRootsResponse,
+            FileRootsResponse = new FileRootsResponse
+            {
+                Roots = [],
+                FileCapabilities = new FileCapabilities { Protocol = 3, Ops = ["mkdir"], PcChanges = true },
+            },
+        });
+
+        Assert.True(back.FileRootsResponse!.FileCapabilities!.PcChanges);
+    }
+
+    [Fact]
+    public void FileCapabilities_FromAPhoneThatPredatesTheSwitch_ReadsAsNotAllowed()
+    {
+        // THE DEFAULT IS THE SECURITY PROPERTY (RemEx-fgmne): an older phone never sends pcChanges, and
+        // the PC must read that as "may not change anything", not as "no opinion".
+        const string json = """
+            {"type":"file_roots_response","fileRootsResponse":{"roots":[],
+             "fileCapabilities":{"protocol":3,"binary":true,"ops":["delete","rename","mkdir"],"fullBrowse":true,"push":true}}}
+            """;
+
+        var message = MessageSerializer.Deserialize(System.Text.Encoding.UTF8.GetBytes(json));
+
+        Assert.False(message!.FileRootsResponse!.FileCapabilities!.PcChanges);
+    }
+
+    [Fact]
     public void RoundTrip_ExtendedFileManageRequest_PreservesNewFields()
     {
         var back = RoundTrip(new RemexMessage

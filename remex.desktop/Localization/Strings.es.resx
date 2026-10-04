@@ -4185,7 +4185,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>La exploración de todo el dispositivo está desactivada en tu teléfono. Para usarla, abre RemEx en el teléfono, ve a Acceso desde tu PC y activa Permitir explorar todo el dispositivo.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Todavía no se pueden subir carpetas a un teléfono. Sube los archivos que contiene.</value>
+    <value>Todavía no se pueden subir carpetas a este teléfono. En el teléfono, abre RemEx, ve a Acceso desde tu PC y activa Permitir que tu PC cambie archivos; luego pulsa Recargar carpetas compartidas. También puedes subir los archivos que contiene.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Tu teléfono se desconectó antes de que terminara la transferencia. Vuelve a conectarlo e inténtalo de nuevo.</value>
@@ -4240,5 +4240,14 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>No se pudo actualizar la lista de procesos. La lista de abajo es la última que recibió RemEx, y seguirá intentándolo.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Tu teléfono no permite que este PC cambie sus archivos. En el teléfono, abre RemEx, ve a Acceso desde tu PC y activa Permitir que tu PC cambie archivos. Después pulsa Recargar carpetas compartidas aquí.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>Esto eliminará “{0}” de tu teléfono de forma permanente. No se mueve a una papelera y no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>Esto eliminará {0} elementos ({1}) de tu teléfono de forma permanente. No se mueven a una papelera y no se puede deshacer.</value>
   </data>
 </root>
