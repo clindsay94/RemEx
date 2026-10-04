@@ -39,6 +39,12 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.splash.FilmBeat
+import com.clindsay94.remex.ui.splash.FilmStyle
+import com.clindsay94.remex.ui.splash.SplashFilmStill
+import com.clindsay94.remex.ui.splash.drawFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmPalette
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.PI
 import kotlin.math.sin
@@ -54,16 +60,22 @@ import kotlinx.coroutines.launch
  * androidx.graphics.shapes Morph/RoundedPolygon API — the same idiom SplashBackgroundFx uses) into
  * the icon's precise chevron/cursor, the signal cross-fades into the white "R", and the whole thing
  * resolves into the full terminal-window brand mark, then the "RemEx" wordmark rises and it zooms
- * out with a fade. Fixed brand colors, Victor Mono — never theme-adaptive. See
- * docs/superpowers/specs/2026-07-06-splash-screen-revamp-design.md → "Pong".
+ * out with a fade. Victor Mono.
+ *
+ * Since RemEx-pp4cm.11 the rally plays on a phosphor CRT court (the film field): glowing rails and
+ * net that heat up with the rally, and every contact is a beat that ripples the court, building to
+ * the mark assembling. Colours come from the app's scheme ([rememberFilmPalette]); the brand mark
+ * keeps its art. Under reduced motion it shows its designed still frame ([SplashFilmStill]).
  */
 @Composable
 fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
-    // Reduce motion: no pong rally choreography — static terminal frame, finish now.
+    // Reduce motion: no pong rally choreography — the designed still frame instead.
     if (LocalReducedMotion.current) {
-        SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+        SplashFilmStill(FilmStyle.Pong, onFinished, skipRequested, onSkipConsumed)
         return
     }
+    val field = rememberFilmField()
+    val palette = rememberFilmPalette()
     val scope = rememberCoroutineScope()
     val view = LocalView.current
     val density = LocalDensity.current
@@ -117,8 +129,8 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
     }
     val tagFontSize = with(density) { 13.dp.toSp() }
     val tagTracking = with(density) { 2.dp.toSp() }
-    val tagStyle = remember(tagFontSize, tagTracking) {
-        TextStyle(color = SplashBrand.OffWhite, fontFamily = SplashBrand.VictorMonoBold, fontSize = tagFontSize, letterSpacing = tagTracking)
+    val tagStyle = remember(tagFontSize, tagTracking, palette) {
+        TextStyle(color = palette.ink, fontFamily = SplashBrand.VictorMonoBold, fontSize = tagFontSize, letterSpacing = tagTracking)
     }
     val cmdStr = stringResource(R.string.splash_command_your)
     val pcStr = stringResource(R.string.splash_pc)
@@ -187,7 +199,7 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(SplashBrand.WindowFill).graphicsLayer { alpha = skipAlpha.value }
+        modifier = Modifier.fillMaxSize().background(palette.bg0).graphicsLayer { alpha = skipAlpha.value }
     ) {
         Canvas(
             modifier = Modifier.fillMaxSize().graphicsLayer {
@@ -203,7 +215,6 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
             redrawOnFrame(particleFrame)
             val w = size.width
             val h = size.height
-            drawRect(brush = SplashBrand.backdropBrush(size))
 
             val leftX = w * 0.30f
             val rightX = w * 0.70f
@@ -212,6 +223,21 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
             val introA = intro.value
             val fin = finaleP.value
             val comp = completeP.value
+
+            // The court (RemEx-pp4cm.11): heat builds over the rally; each contact is a beat from the
+            // paddle that struck, and the mark assembling is the last and biggest one. Contact times
+            // are the LaunchedEffect's: intro 0.30 s, then one every 0.45 s.
+            val pong = when {
+                comp > 0f -> FilmBeat(w * 0.5f, h * 0.40f, 2.27f, 1.2f)
+                elapsed >= 1.65f -> FilmBeat(rightX, rallyYFracs[3] * h, 1.65f, 0.95f)
+                elapsed >= 1.20f -> FilmBeat(leftX, rallyYFracs[2] * h, 1.20f, 0.8f)
+                elapsed >= 0.75f -> FilmBeat(rightX, rallyYFracs[1] * h, 0.75f, 0.65f)
+                else -> FilmBeat.None
+            }
+            drawFilmField(
+                field, FilmStyle.Pong, palette, elapsed, density.density, Offset(cxMid, midY),
+                ((elapsed - 0.30f) / 1.35f).coerceIn(0f, 1f), pong,
+            )
 
             // Assembled-mark layout + the icon-space -> screen transform (matches drawRemexIcon).
             val markCenter = Offset(w * 0.5f, h * 0.40f)
@@ -264,16 +290,17 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
                     val a = f * 0.9f * introA
                     if (a <= 0.01f) continue
                     val rad = lerpF(2.2f, 6.5f, f) * (h / 2400f).coerceAtLeast(0.6f)
-                    drawCircle(SplashBrand.Amber.copy(alpha = a * 0.35f), rad * 2.4f, p)
-                    drawCircle(if (i == 0) SplashBrand.OffWhite else SplashBrand.Amber, rad, p)
+                    drawCircle(palette.accent.copy(alpha = a * 0.35f), rad * 2.4f, p)
+                    drawCircle(if (i == 0) palette.ink else palette.accent, rad, p)
                 }
             } else {
                 // signal streaks to the R spot and fades as the R resolves in
                 val sp = lerpO(Offset(rightX, y3), rSpot, fin)
                 val sigA = (1f - fin)
                 if (sigA > 0.01f) {
-                    drawCircle(SplashBrand.Amber.copy(alpha = sigA * 0.35f), 14f, sp)
-                    drawCircle(SplashBrand.OffWhite.copy(alpha = sigA), 5f, sp)
+                    // dp x density (bd: splash-canvas-density-trap): raw 14/5 px vanished on a 3x phone.
+                    drawCircle(palette.accent.copy(alpha = sigA * 0.35f), 14.dp.toPx() * 0.45f, sp)
+                    drawCircle(palette.ink.copy(alpha = sigA), 5.dp.toPx() * 0.45f, sp)
                 }
                 if (comp < 1f) {
                     withTransform({
@@ -281,7 +308,7 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
                         scale(s108, s108, pivot = Offset.Zero)
                         scale(0.8f, 0.8f, pivot = Offset(54f, 54f))
                     }) {
-                        with(SplashBrand) { drawRGlyph(opacity = fin * (1f - comp), holeColor = SplashBrand.BackdropStart) }
+                        with(SplashBrand) { drawRGlyph(opacity = fin * (1f - comp), holeColor = palette.bg0) }
                     }
                 }
             }
@@ -307,25 +334,26 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
                 val tagFullW = commandMeasured.size.width + yourPcMeasured.size.width
                 val ty = wy + wordmarkMeasured.size.height + 10.dp.toPx()
                 val tx = w / 2f - tagFullW / 2f
-                drawText(commandMeasured, color = SplashBrand.SlateLo, topLeft = Offset(tx, ty + rise), alpha = wmA)
-                drawText(yourPcMeasured, color = SplashBrand.Amber, topLeft = Offset(tx + commandMeasured.size.width, ty + rise), alpha = wmA)
+                drawText(commandMeasured, color = palette.muted, topLeft = Offset(tx, ty + rise), alpha = wmA)
+                drawText(yourPcMeasured, color = palette.accent, topLeft = Offset(tx + commandMeasured.size.width, ty + rise), alpha = wmA)
             }
 
             // ── Chrome: version (bottom-center) + tap-to-skip hint ──
             val versionT = ((elapsed - 0.2f) / 0.5f).coerceIn(0f, 1f)
             if (versionT > 0f) {
-                drawText(versionMeasured, color = SplashBrand.OffWhite.copy(alpha = versionT * 0.4f),
+                drawText(versionMeasured, color = palette.ink.copy(alpha = versionT * 0.4f),
                     topLeft = Offset((w - versionMeasured.size.width) / 2f, h - 32.dp.toPx() - versionMeasured.size.height))
             }
             val skipT = ((elapsed - 0.8f) / 0.5f).coerceIn(0f, 1f)
             if (skipT > 0f && !isSkipping) {
-                drawText(skipMeasured, color = SplashBrand.OffWhite.copy(alpha = skipT * 0.5f),
+                drawText(skipMeasured, color = palette.ink.copy(alpha = skipT * 0.5f),
                     topLeft = Offset((w - skipMeasured.size.width) / 2f, h - 56.dp.toPx() - skipMeasured.size.height))
             }
 
             // ── Exit fade ──
             if (fadeOverlay.value > 0f) {
-                drawRect(color = SplashBrand.WindowFill.copy(alpha = fadeOverlay.value), size = size)
+                // Out to the app's own background: the hand-off is one colour.
+                drawRect(color = palette.exit.copy(alpha = fadeOverlay.value), size = size)
             }
         }
     }

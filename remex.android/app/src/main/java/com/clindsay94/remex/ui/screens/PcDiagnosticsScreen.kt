@@ -33,15 +33,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
-import androidx.compose.material.icons.filled.Lan
-import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
@@ -49,8 +45,6 @@ import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.VerifiedUser
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -86,7 +80,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -100,6 +93,12 @@ import com.clindsay94.remex.ui.components.RemexSegmentedSwitch
 import com.clindsay94.remex.ui.components.RemexTooltip
 import com.clindsay94.remex.ui.components.rememberRemexCollapsingScrollBehavior
 import com.clindsay94.remex.ui.components.rememberRemexHaptics
+import com.clindsay94.remex.ui.components.AdminPanelSettingsGlyph
+import com.clindsay94.remex.ui.components.KeyboardDoubleArrowDownGlyph
+import com.clindsay94.remex.ui.components.LanGlyph
+import com.clindsay94.remex.ui.components.MemoryGlyph
+import com.clindsay94.remex.ui.components.VerifiedUserGlyph
+import com.clindsay94.remex.ui.components.WarningAmberGlyph
 import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -455,7 +454,7 @@ private fun JumpToLatestButton(visible: Boolean, onClick: () -> Unit, modifier: 
                     haptics.perform(RemexHapticEvent.Press)
                     onClick()
                 },
-                icon = { Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = null) },
+                icon = { Icon(KeyboardDoubleArrowDownGlyph, contentDescription = null) },
                 text = { Text(stringResource(R.string.pc_diag_jump_latest)) },
         )
     }
@@ -515,14 +514,14 @@ private fun LogRow(line: PcLogLine) {
     Column(Modifier.fillMaxWidth()) {
         Text(
                 text = "$time  ${line.level.tag}  ${line.category}",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                 color = color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
         )
         Text(
                 text = line.message,
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 color = color
         )
     }
@@ -602,13 +601,13 @@ private data class RowStyle(@get:StringRes val labelRes: Int?, val icon: ImageVe
 
 private fun styleFor(key: String): RowStyle =
         when (key) {
-            "listener" -> RowStyle(R.string.pc_diag_row_listener, Icons.Default.Lan)
-            "certificate" -> RowStyle(R.string.pc_diag_row_certificate, Icons.Default.VerifiedUser)
+            "listener" -> RowStyle(R.string.pc_diag_row_listener, LanGlyph)
+            "certificate" -> RowStyle(R.string.pc_diag_row_certificate, VerifiedUserGlyph)
             "firewall" -> RowStyle(R.string.pc_diag_row_firewall, Icons.Default.Security)
-            "elevation" -> RowStyle(R.string.pc_diag_row_elevation, Icons.Default.AdminPanelSettings)
+            "elevation" -> RowStyle(R.string.pc_diag_row_elevation, AdminPanelSettingsGlyph)
             "autostart" -> RowStyle(R.string.pc_diag_row_autostart, Icons.Default.PlayCircle)
             "capture" -> RowStyle(R.string.pc_diag_row_capture, Icons.AutoMirrored.Filled.ScreenShare)
-            "encoder" -> RowStyle(R.string.pc_diag_row_encoder, Icons.Default.Memory)
+            "encoder" -> RowStyle(R.string.pc_diag_row_encoder, MemoryGlyph)
             "version" -> RowStyle(R.string.pc_diag_row_version, Icons.Default.Info)
             "uptime" -> RowStyle(R.string.pc_diag_row_uptime, Icons.Default.Schedule)
             else -> RowStyle(null, Icons.Default.Info)
@@ -620,7 +619,7 @@ private fun SummaryRow(row: PcSummaryRow) {
     val (stateIcon, stateColor, stateRes) =
             when (row.state) {
                 PcRowState.Ok -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, R.string.pc_diag_state_ok)
-                PcRowState.Warn -> Triple(Icons.Default.WarningAmber, MaterialTheme.colorScheme.tertiary, R.string.pc_diag_state_warn)
+                PcRowState.Warn -> Triple(WarningAmberGlyph, MaterialTheme.colorScheme.tertiary, R.string.pc_diag_state_warn)
                 PcRowState.Error -> Triple(Icons.Default.ErrorOutline, MaterialTheme.colorScheme.error, R.string.pc_diag_state_error)
             }
     Row(

@@ -33,6 +33,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.splash.FilmBeat
+import com.clindsay94.remex.ui.splash.FilmStyle
+import com.clindsay94.remex.ui.splash.SplashFilmStill
+import com.clindsay94.remex.ui.splash.drawFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmPalette
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.PI
 import kotlinx.coroutines.delay
@@ -44,26 +50,30 @@ import kotlinx.coroutines.launch
  * brand mark → lightning-strike impact (with camera shake, elastic punch, chromatic bloom, white
  * flash) → "RemEx" wordmark + Command Center tagline reveal → exit fade.
  *
- * Colors are the fixed [SplashBrand] palette (no `MaterialTheme` reads) — the splash is a brand
- * moment rendered identically regardless of the active app theme. Motion/timing/easings are
- * unchanged from the original CosmicZoom; only the hero art, wordmark, and colors were rebranded.
+ * It plays in deep space (RemEx-pp4cm.11): the film field draws a seed-tinted nebula and three
+ * star layers that stretch into a warp as the zoom builds, and the strike is a beat that splits
+ * chroma through the field. Colours come from the app's scheme ([rememberFilmPalette]): ground,
+ * lights and the amber accent follow seed, mode, contrast and monochrome; the hero mark keeps its
+ * brand art. Motion/timing/easings are unchanged from the original CosmicZoom. Under reduced motion
+ * it shows its designed still frame ([SplashFilmStill]).
  * The orchestrator hands down [skipRequested]; this variant runs the original skip fade then
  * [onFinished], calling [onSkipConsumed] last.
  */
 @Composable
 fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
-        // Reduce motion: no starfield/zoom choreography — static terminal frame, finish now.
+        // Reduce motion: no starfield/zoom choreography — the designed still frame instead.
         if (LocalReducedMotion.current) {
-                SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+                SplashFilmStill(FilmStyle.Cosmic, onFinished, skipRequested, onSkipConsumed)
                 return
         }
         val view = LocalView.current
+        val field = rememberFilmField()
+        val palette = rememberFilmPalette()
         var elapsed by remember { mutableStateOf(0f) }
         var completed by remember { mutableStateOf(false) }
 
-        // Fixed brand palette comes from SplashBrand (no MaterialTheme reads) — the splash renders
-        // identically regardless of the active app theme. Roles: backdrop = diagonal gradient,
-        // HUD rings/crosshair/accents = Amber, primary text = OffWhite, muted text = SlateLo.
+        // Roles (RemEx-pp4cm.11): backdrop = the film field, HUD rings/crosshair/accents = the
+        // palette accent (brand amber unless it fails contrast), text = palette ink, muted = muted.
 
         // Text Measurement
         val density = LocalDensity.current
@@ -86,9 +96,9 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         // Tagline beneath the wordmark — Victor Mono Bold + muted slate, wording unchanged.
         val cosmicSubFontSize = with(density) { 11.dp.toSp() }
         val cosmicSubTracking = with(density) { 1.dp.toSp() }
-        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking) {
+        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking, palette) {
                 TextStyle(
-                        color = SplashBrand.SlateLo,
+                        color = palette.muted,
                         fontSize = cosmicSubFontSize,
                         fontWeight = FontWeight.Medium,
                         fontFamily = SplashBrand.VictorMonoBold,
@@ -211,7 +221,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         Box(
                 modifier =
                         Modifier.fillMaxSize()
-                                .background(SplashBrand.BackdropStart)
+                                .background(palette.bg0)
                                 .graphicsLayer { alpha = skipAlpha.value },
                 contentAlignment = Alignment.Center
         ) {
@@ -223,14 +233,21 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
 
                         // ── COSMIC ZOOM ANIMATION ──
 
-                        // Fixed brand backdrop: full-bleed diagonal gradient (replaces the themed fill).
-                        drawRect(brush = SplashBrand.backdropBrush(size))
+                        // Deep space: the warp builds with the zoom and peaks at the strike; the strike
+                        // is the beat, from the mark's resting centre (RemEx-pp4cm.11).
+                        val warpCy = cy - 30f * 4.0f * pixelDensity
+                        val warp = if (elapsed < 1.8f) (elapsed / 1.8f) * (elapsed / 1.8f)
+                                else (1f - (elapsed - 1.8f) / 0.6f).coerceAtLeast(0.12f)
+                        drawFilmField(
+                                field, FilmStyle.Cosmic, palette, elapsed, pixelDensity, Offset(cx, warpCy), warp,
+                                FilmBeat(cx, warpCy, 1.8f, 1.2f),
+                        )
 
                         // Draw Cosmic Starfield
                         drawCosmicZoomStarfield(particles)
 
                         // Target rings / circular HUD lines in background
-                        val radColor = SplashBrand.Amber.copy(alpha = 0.05f)
+                        val radColor = palette.accent.copy(alpha = 0.07f)
                         val maxRad = kotlin.math.min(width, height) * 0.45f
                         for (rf in listOf(0.25f, 0.45f, 0.65f, 0.85f)) {
                                 drawCircle(
@@ -262,7 +279,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 val shockOpacity = 1f - waveT
 
                                 drawCircle(
-                                        color = SplashBrand.Amber.copy(alpha = shockOpacity * 0.6f),
+                                        color = palette.accent.copy(alpha = shockOpacity * 0.6f),
                                         radius = shockRadius,
                                         center = Offset(cx, cy),
                                         style = Stroke(width = (3f + (1f - waveT) * 8f).dp.toPx())
@@ -361,7 +378,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 )
                                 drawText(
                                         commandCenterCosmicMeasured,
-                                        color = SplashBrand.SlateLo.copy(alpha = taglineIn),
+                                        color = palette.muted.copy(alpha = taglineIn),
                                         topLeft = Offset(taglineX, taglineY + (1f - taglineIn) * rise)
                                 )
                         }
@@ -384,7 +401,9 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 val bloomRadius = 40.dp.toPx() + bloomT * 360.dp.toPx()
                                 val split = (1f - bloomT) * 16.dp.toPx()
                                 val bloomStroke = Stroke(width = (2f + (1f - bloomT) * 7f).dp.toPx())
-                                val bloomCy = cy - 30f * restScale
+                                // dp x density like the hero it rings (bd: splash-canvas-density-trap):
+                                // without it the bloom sat below the resting mark on a 3x phone.
+                                val bloomCy = cy - 30f * restScale * pixelDensity
                                 drawCircle(
                                         color = Color(0xFFFF2D55).copy(alpha = bloomAlpha),
                                         radius = bloomRadius,
@@ -413,7 +432,8 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         }
                         if (fadeOverlayVal > 0f) {
                                 drawRect(
-                                        color = SplashBrand.BackdropStart.copy(alpha = fadeOverlayVal),
+                                        // Out to the app's own background: the hand-off is one colour.
+                                        color = palette.exit.copy(alpha = fadeOverlayVal),
                                         size = size
                                 )
                         }
@@ -422,21 +442,22 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         // Text Hints (Version, Tap to Skip) — shared chrome, current positions
                         // ═════════════════════════════════════════════════════════════
                         // Version label at bottom center
-                        val versionT = ((elapsed - 0.2f) / 0.5f).coerceIn(0f, 1f)
+                        // The chrome leaves with the exit fade rather than sitting on the app's colour.
+                        val versionT = ((elapsed - 0.2f) / 0.5f).coerceIn(0f, 1f) * (1f - fadeOverlayVal)
                         if (versionT > 0f) {
                                 drawText(
                                         versionMeasured,
-                                        color = SplashBrand.OffWhite.copy(alpha = versionT * 0.4f),
+                                        color = palette.ink.copy(alpha = versionT * 0.4f),
                                         topLeft = Offset((width - versionMeasured.size.width) / 2f, height - 32.dp.toPx() - versionMeasured.size.height)
                                 )
                         }
 
                         // Tap to skip hint at 0.8s
-                        val skipT = ((elapsed - 0.8f) / 0.5f).coerceIn(0f, 1f)
+                        val skipT = ((elapsed - 0.8f) / 0.5f).coerceIn(0f, 1f) * (1f - fadeOverlayVal)
                         if (skipT > 0f && !isSkipping) {
                                 drawText(
                                         skipMeasured,
-                                        color = SplashBrand.OffWhite.copy(alpha = skipT * 0.5f),
+                                        color = palette.ink.copy(alpha = skipT * 0.5f),
                                         topLeft = Offset((width - skipMeasured.size.width) / 2f, height - 56.dp.toPx() - skipMeasured.size.height)
                                 )
                         }

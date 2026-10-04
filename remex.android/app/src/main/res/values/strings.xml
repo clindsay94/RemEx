@@ -84,15 +84,11 @@
     <string name="status_disconnected">Disconnected</string>
     <string name="status_connected">Connected</string>
     <string name="status_connecting">Connecting to %1$s:%2$d…</string>
-    <string name="status_awaiting_metadata">Waiting for PC details</string>
     <string name="status_metadata_unavailable">PC details unavailable</string>
     <string name="status_native_lib_not_loaded">RemEx couldn\'t start its connection engine</string>
     <string name="error_no_host_found">No RemEx PC found on the network</string>
-    <string name="error_discovery_failed">Couldn\'t search for your PC: %1$s</string>
     
     <string name="error_local_network_permission_denied">Local Network access was denied. RemEx cannot connect to your PC without this permission on Android 17+. Please grant it in App Settings.</string>
-    <string name="capability_desktop_available">desktop available</string>
-    <string name="capability_desktop_unavailable">desktop unavailable</string>
 
     
     <string name="connection_error_cert_changed">This PC\'s security identity has changed. If you reinstalled RemEx on the PC, remove the pairing and pair again.</string>
@@ -797,6 +793,7 @@
     <string name="rd_err_handshake_timeout">Your PC at %1$s answered but then stopped responding while checking this device. It may have gone to sleep. Try connecting again.</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="pairing_error_timeout">The PC didn’t respond. Check that it’s turned on and connected to the same network, then try again.</string>
+    <string name="connection_error_timeout_vpn">The PC didn’t respond. Check that Tailscale (or your VPN) is turned on for both this phone and the PC, then try again.</string>
     <string name="host_discovered_snackbar">PC found: %1$s</string>
     <string name="file_transfer_service_title">RemEx file transfers</string>
     <string name="file_transfer_service_active">Syncing files with your PC…</string>
@@ -1725,6 +1722,8 @@
     <string name="sensor_alert_remove">Remove alert</string>
     <string name="sensor_alert_blocked_not_connected">Connect to your PC to set alerts.</string>
     <string name="sensor_alert_blocked_pc_too_old">Update RemEx on your PC to set alerts from your phone.</string>
+    <string name="sensor_alert_save_failed">The alert wasn’t sent to your PC. Check that your phone is still connected to it, then try again.</string>
+    <string name="sensor_alert_refused_snackbar">Your PC didn’t keep the alert for %1$s. It may not recognise that sensor any more.</string>
     <string name="sensor_alert_blocked_too_many">Your PC already has as many alerts as it can keep. Remove one first.</string>
     <string name="sensor_alerts_title">PC alerts</string>
     <string name="sensor_alerts_empty">No alerts yet. Open a sensor card\'s options and choose Alert me… to add one.</string>

@@ -42,14 +42,10 @@
     <string name="status_disconnected">Rozłączono</string>
     <string name="status_connected">Połączono</string>
     <string name="status_connecting">Łączenie z %1$s:%2$d…</string>
-    <string name="status_awaiting_metadata">Oczekiwanie na szczegóły PC</string>
     <string name="status_metadata_unavailable">Szczegóły PC niedostępne</string>
     <string name="status_native_lib_not_loaded">RemEx nie mógł uruchomić mechanizmu połączenia</string>
     <string name="error_no_host_found">Nie znaleziono PC z RemEx w sieci</string>
-    <string name="error_discovery_failed">Nie udało się wyszukać komputera: %1$s</string>
     <string name="error_local_network_permission_denied">Odmówiono dostępu do sieci lokalnej. RemEx nie może połączyć się z komputerem bez tego uprawnienia w systemie Android 17+. Nadaj je w Ustawieniach aplikacji.</string>
-    <string name="capability_desktop_available">pulpit dostępny</string>
-    <string name="capability_desktop_unavailable">pulpit niedostępny</string>
     <string name="screen_task_manager_title">Procesy</string>
     <string name="task_manager_search_hint">Szukaj nazwy procesu lub PID</string>
     <string name="sort_by">Sortuj według:</string>
@@ -581,6 +577,7 @@
     <string name="rd_err_handshake_timeout">Komputer pod adresem %1$s odpowiedział, ale przestał reagować podczas sprawdzania tego urządzenia. Mógł przejść w stan uśpienia. Spróbuj połączyć się ponownie.</string>
     <string name="cd_clear_search">Wyczyść wyszukiwanie</string>
     <string name="pairing_error_timeout">Komputer nie odpowiedział. Sprawdź, czy jest włączony i połączony z tą samą siecią, a następnie spróbuj ponownie.</string>
+    <string name="connection_error_timeout_vpn">Komputer nie odpowiedział. Sprawdź, czy Tailscale (lub Twój VPN) jest włączony zarówno na tym telefonie, jak i na komputerze, a następnie spróbuj ponownie.</string>
     <string name="host_discovered_snackbar">Znaleziono komputer: %1$s</string>
     <string name="widget_refresh">Odśwież</string>
     <string name="widget_toast_refreshing">Odświeżanie…</string>
@@ -1649,6 +1646,8 @@
     <string name="sensor_alert_remove">Usuń alert</string>
     <string name="sensor_alert_blocked_not_connected">Połącz się z komputerem, aby ustawić alerty.</string>
     <string name="sensor_alert_blocked_pc_too_old">Zaktualizuj RemEx na komputerze, aby ustawiać alerty z telefonu.</string>
+    <string name="sensor_alert_save_failed">Alert nie został wysłany do komputera. Sprawdź, czy telefon nadal jest z nim połączony, a następnie spróbuj ponownie.</string>
+    <string name="sensor_alert_refused_snackbar">Komputer nie zachował alertu dla: %1$s. Być może już nie rozpoznaje tego czujnika.</string>
     <string name="sensor_alert_blocked_too_many">Komputer ma już tyle alertów, ile może przechowywać. Najpierw usuń jeden.</string>
     <string name="sensor_alerts_title">Alerty z komputera</string>
     <string name="sensor_alerts_empty">Brak alertów. Otwórz opcje karty czujnika i wybierz Powiadom mnie…, aby dodać alert.</string>

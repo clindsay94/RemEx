@@ -587,10 +587,16 @@ each time it connects.
 
 `sensor_alert_rules` (host → phone, envelope property `sensorAlertRules`, payload
 `SensorAlertRules { rules, revision, updatedUtc }`, each rule `SensorAlertRule { sensorName, displayName,
-unit, currentValue, threshold, direction, severity }`) is the one reply to `sensor_alerts_get`,
-`sensor_alert_set` and `sensor_alert_remove`. It is also sent whenever the PC's rules change by any other
-route, so it carries the whole list every time. It is not a new kind of request; it is how the PC answers
-the ones above.
+unit, currentValue, threshold, direction, severity }`) is how the PC answers `sensor_alerts_get`,
+`sensor_alert_set` and `sensor_alert_remove`, but it is a broadcast, not a reply to the asker: the host
+sends it to every paired, identity-proven phone that is connected (never loopback), each send under a
+5 second limit and all of them at once, so one stalled phone does not delay the rest. It is also sent
+whenever the PC's rules change by any other route, and once when the PC's UI first starts answering
+(a `sensor_alerts_get` that arrived before then is not lost). It carries the whole list every time, and
+close-together requests may be answered by one publish. If the PC's UI is not running its alert bridge,
+a request is dropped and nothing is sent, so a phone should treat a missing answer as "no change".
+A session may make at most 10 alert requests in any 10 seconds; past that a request is not applied, and
+the phone is sent the unchanged rules instead, so its optimistic edit is put back.
 
 Every alert type starts with `sensor_alert_`. The Android native router forwards that whole prefix to
 `RemexCallback.onSensorAlertMessage` in one place; a new host → phone type must keep the prefix or it is

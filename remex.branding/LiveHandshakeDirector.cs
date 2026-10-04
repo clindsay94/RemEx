@@ -98,7 +98,12 @@ public readonly record struct HandshakeLine(
 /// </remarks>
 public static class LiveHandshakeDirector
 {
-    public const float Floor = 1.4f;
+    /// <summary>
+    /// The shortest a splash plays. 1.9 s since RemEx-pp4cm.11 (was 1.4 s): with readiness now landing
+    /// almost at once, a 1.4 s hand-off cut the second pulse at birth (it starts at 1.32 s) and the
+    /// console's last line before it was readable. 1.9 s lets that pulse roll half the screen.
+    /// </summary>
+    public const float Floor = 1.9f;
     public const float Grace = 1.2f;
     public const float Cap = 3.0f;
     public const float LockHold = 0.7f;
@@ -192,7 +197,18 @@ public static class LiveHandshakeDirector
     public static float? LockShownBy(in HandshakeTimeline e, float handoff) =>
         LockShown(e, handoff) is { } l && l <= handoff ? l : null;
 
-    /// <summary>The spec's <c>candidate(known)</c>: only events at or before <paramref name="now"/> count.</summary>
+    /// <summary>
+    /// The spec's <c>candidate(known)</c>: only events at or before <paramref name="now"/> count.
+    /// </summary>
+    /// <remarks>
+    /// A target that has ANSWERED the probe but not linked yet is awake and mid-handshake, so the
+    /// splash waits for its lock (up to CAP) instead of handing off after GRACE, and before any
+    /// "failed" evidence counts (RemEx-pp4cm.11). On the AVD paired with a real PC the probe answered,
+    /// readiness was at once, and Android's connect signal reported a failure at t = 0 (the native
+    /// connect reports "disconnected" while it replaces the socket, which clears isConnecting with
+    /// nothing connected yet), so the old rule handed off at FLOOR and the lock-on beat never played.
+    /// A real failure against an awake PC now costs at most the wait to CAP.
+    /// </remarks>
     public static float Candidate(in HandshakeTimeline e, float now)
     {
         float c;
@@ -203,25 +219,39 @@ public static class LiveHandshakeDirector
             float ready = At(e.ReadyAt);
             if (e.Peers == 0 || !Known(e.TargetAt, now)) c = Math.Max(Floor, ready);
             else if (LockShown(e, now) is { } lockShown) c = Math.Max(Math.Max(lockShown + LockHold, Floor), ready);
+            else if (Known(TargetAnsweredAt(e), now)) c = Cap;
             else if (Known(e.FailedAt, now)) c = Math.Max(Math.Max(Floor, ready), At(e.FailedAt));
             else c = Math.Max(Floor, Math.Min(ready + Grace, Cap));
         }
         return Math.Min(c, Cap);
     }
 
+    /// <summary>When the target's own probe answer was heard (its earliest), or null.</summary>
+    public static float? TargetAnsweredAt(in HandshakeTimeline e)
+    {
+        float? first = null;
+        var answers = e.Answers;
+        if (answers is null) return null;
+        int n = Math.Min(answers.Count, MaxAnswers);
+        for (int i = 0; i < n; i++)
+            if (answers[i].Target && (first is null || answers[i].At < first)) first = answers[i].At;
+        return first;
+    }
+
     /// <summary>
     /// The hand-off time if it has happened by <paramref name="now"/>, else null. Exact rather than
     /// sampled: the first instant where <c>now &gt;= candidate(known)</c>. The candidate only changes
-    /// when an event it reads becomes known (answers only move it through the target, whose answer is
-    /// known by its link), so each interval between those event times is checked once. Later events
-    /// cannot move an earlier answer, which is the "fixed once it starts" rule.
+    /// when an event it reads becomes known (answers move it through the target: its link, and its own
+    /// probe answer), so each interval between those event times is checked once. Later events cannot
+    /// move an earlier answer, which is the "fixed once it starts" rule.
     /// </summary>
     public static float? Handoff(in HandshakeTimeline e, float now)
     {
-        Span<float> starts = stackalloc float[6];
+        Span<float> starts = stackalloc float[7];
         int n = 0;
         starts[n++] = 0f;
         AddIfKnown(starts, ref n, e.TargetAt, now);
+        AddIfKnown(starts, ref n, TargetAnsweredAt(e), now);
         AddIfKnown(starts, ref n, e.ReadyAt, now);
         AddIfKnown(starts, ref n, e.LinkedAt, now);
         AddIfKnown(starts, ref n, e.FailedAt, now);

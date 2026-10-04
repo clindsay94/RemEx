@@ -208,6 +208,17 @@ fun ConnectionScreenContent(
         // Tailscale/VPN target needs no LAN permission, so a refusal there never blocks it.
         val permissionGate = rememberConnectPermissionGate(onLocalNetworkRefused)
 
+        // Points the form at another PC. The Wake-on-LAN MAC is typed for ONE PC, so it follows the
+        // host: kept only when it was entered for this address, cleared otherwise. Without this a
+        // failed card connect left PC A's MAC in the field and the next manual Connect saved it as
+        // PC B's (RemEx-pp4cm.3).
+        fun retargetForm(newHost: String) {
+                hostInput = newHost
+                macInput = connectionPrefs?.let {
+                        SettingsManager.macInputFor(it.macAddress, it.macManualHost, newHost)
+                } ?: ""
+        }
+
         fun doConnect() {
                 val p = portInput.toIntOrNull() ?: 5005
                 onConnect(
@@ -243,7 +254,7 @@ fun ConnectionScreenContent(
          */
         fun startKnownPcConnect(entry: KnownPcEntry, pin: String) {
                 // Fill the form as well as connect: it shows what was tapped.
-                hostInput = entry.address
+                retargetForm(entry.address)
                 portInput = entry.port.toString()
                 permissionGate.connect(entry.address) { onConnectToKnownPc(entry, pin) }
         }
@@ -256,7 +267,9 @@ fun ConnectionScreenContent(
                         if (hostInput.isEmpty() && connectionPrefs.host.isNotEmpty()) hostInput =
                             connectionPrefs.host
                         if (portInput.isEmpty()) portInput = connectionPrefs.port.toString()
-                        if (macInput.isEmpty()) macInput = connectionPrefs.macAddress
+                        if (macInput.isEmpty()) macInput = SettingsManager.macInputFor(
+                            connectionPrefs.macAddress, connectionPrefs.macManualHost, hostInput
+                        )
                         if (broadcastInput.isEmpty()) broadcastInput = connectionPrefs.broadcastIp
                         if (subnetInput.isEmpty()) subnetInput = connectionPrefs.subnetMask
                 }
@@ -280,7 +293,7 @@ fun ConnectionScreenContent(
                 // replaced: that one named a machine, and a machine reached at three addresses could
                 // only offer whichever of them it happened to have stored.
                 knownPcRows.firstOrNull { it.hasEverConnected }?.let { mostRecent ->
-                        hostInput = mostRecent.address
+                        retargetForm(mostRecent.address)
                         portInput = mostRecent.port.toString()
                 }
         }
@@ -293,7 +306,7 @@ fun ConnectionScreenContent(
         // (RemEx-wqo7a.6), which is where the old screen pointed: "fields filled in below".
         LaunchedEffect(discoveredHost) {
                 discoveredHost?.let {
-                        hostInput = it.host
+                        retargetForm(it.host)
                         portInput = it.port.toString()
                         val discoveredHostName = it.host
                         onConsumeDiscoveredHost()
@@ -333,7 +346,7 @@ fun ConnectionScreenContent(
          */
         fun openConnectionForm(mode: ConnectionFormMode, entry: KnownPcEntry?) {
                 if (entry != null) {
-                        hostInput = entry.address
+                        retargetForm(entry.address)
                         portInput = entry.port.toString()
                 }
                 connectionForm = ConnectionFormRequest(mode, entry)
@@ -382,11 +395,14 @@ fun ConnectionScreenContent(
                                 contentAlignment = Alignment.Center
                         ) { RemexLoadingIndicator(contained = true) }
                 } else {
+                        val connectionScroll = rememberScrollState()
+                        // Tapping the tab you are on goes back to the top (RemEx-pp4cm.3).
+                        com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Connection) { connectionScroll.animateScrollTo(0) }
                         Column(
                                 modifier =
                                         Modifier.fillMaxSize()
                                                 .padding(padding)
-                                                .verticalScroll(rememberScrollState())
+                                                .verticalScroll(connectionScroll)
                                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {

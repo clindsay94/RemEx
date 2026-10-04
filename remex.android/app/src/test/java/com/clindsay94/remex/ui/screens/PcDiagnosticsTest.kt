@@ -204,4 +204,39 @@ class PcDiagnosticsTest {
         assertNotNull(PcLogLevel.fromWire("critical"))
         assertNull(PcLogLevel.fromWire("INFORMATION"))
     }
+
+    // The screen's LazyColumns key rows by seq and by summary key; a repeat from the PC would be a
+    // duplicate key, which crashes the list (RemEx-pp4cm.13).
+
+    @Test
+    fun `a repeated sequence number keeps only its first line`() {
+        val result = PcDiagnostics.parseLogs(logsResult(listOf(entry(1), entry(2, message = "first"), entry(2, message = "second"), entry(3))))!!
+
+        assertEquals(listOf(1L, 2L, 3L), result.lines.map { it.seq })
+        assertEquals("first", result.lines[1].message)
+    }
+
+    @Test
+    fun `a repeated summary key keeps only its first row`() {
+        val json =
+                JSONObject()
+                        .put("type", "diagnostic_summary_result")
+                        .put(
+                                "diagnosticSummaryResponse",
+                                JSONObject()
+                                        .put(
+                                                "items",
+                                                JSONArray()
+                                                        .put(JSONObject().put("key", "listener").put("state", "ok").put("detail", "first"))
+                                                        .put(JSONObject().put("key", "firewall").put("state", "ok"))
+                                                        .put(JSONObject().put("key", "listener").put("state", "error").put("detail", "second"))
+                                        )
+                        )
+                        .toString()
+
+        val rows = PcDiagnostics.parseSummary(json)!!.rows
+
+        assertEquals(listOf("listener", "firewall"), rows.map { it.key })
+        assertEquals("first", rows[0].detail)
+    }
 }

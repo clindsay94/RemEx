@@ -45,14 +45,10 @@
     <string name="status_disconnected">डिस्कनेक्ट हो गया</string>
     <string name="status_connected">कनेक्ट हो गया</string>
     <string name="status_connecting">%1$s:%2$d से कनेक्ट हो रहा है…</string>
-    <string name="status_awaiting_metadata">पीसी के विवरण की प्रतीक्षा है</string>
     <string name="status_metadata_unavailable">पीसी के विवरण उपलब्ध नहीं हैं</string>
     <string name="status_native_lib_not_loaded">RemEx अपना कनेक्शन इंजन शुरू नहीं कर सका</string>
     <string name="error_no_host_found">नेटवर्क पर कोई RemEx पीसी नहीं मिला</string>
-    <string name="error_discovery_failed">आपका पीसी खोजा नहीं जा सका: %1$s</string>
     <string name="error_local_network_permission_denied">लोकल नेटवर्क एक्सेस से इनकार कर दिया गया था। RemEx Android 17+ पर इस अनुमति के बिना आपके पीसी से कनेक्ट नहीं हो सकता है। कृपया इसे ऐप सेटिंग्स में दें।</string>
-    <string name="capability_desktop_available">डेस्कटॉप उपलब्ध</string>
-    <string name="capability_desktop_unavailable">डेस्कटॉप अनुपलब्ध</string>
     <string name="notification_channel_name">RemEx कनेक्शन</string>
     <string name="notification_channel_description">आपके पीसी से कनेक्शन बनाए रखता है</string>
     <string name="notification_title_connected">पीसी से कनेक्ट हो गया</string>
@@ -588,6 +584,7 @@
     <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="connection_error_timeout_vpn">पीसी ने जवाब नहीं दिया। जांचें कि Tailscale (या आपका VPN) इस फ़ोन और पीसी, दोनों पर चालू है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
     <string name="widget_refresh">रिफ़्रेश करें</string>
     <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>
@@ -1625,6 +1622,8 @@
     <string name="sensor_alert_remove">चेतावनी हटाएँ</string>
     <string name="sensor_alert_blocked_not_connected">चेतावनियाँ सेट करने के लिए अपने PC से जुड़ें।</string>
     <string name="sensor_alert_blocked_pc_too_old">अपने फ़ोन से चेतावनियाँ सेट करने के लिए अपने PC पर RemEx अपडेट करें।</string>
+    <string name="sensor_alert_save_failed">चेतावनी आपके PC को नहीं भेजी गई। जांचें कि आपका फ़ोन अब भी उससे जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="sensor_alert_refused_snackbar">आपके PC ने %1$s की चेतावनी नहीं रखी। हो सकता है कि वह अब उस सेंसर को न पहचानता हो।</string>
     <string name="sensor_alert_blocked_too_many">आपके PC में उतनी चेतावनियाँ हैं जितनी वह रख सकता है। पहले कोई एक हटाएँ।</string>
     <string name="sensor_alerts_title">PC की चेतावनियाँ</string>
     <string name="sensor_alerts_empty">अभी कोई चेतावनी नहीं है। किसी सेंसर कार्ड के विकल्प खोलें और जोड़ने के लिए मुझे बताएँ… चुनें।</string>

@@ -55,6 +55,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   button. It opens Settings with the QR code and PIN already on screen. The sidebar status menu, the
   tray menu, the tray panel and the command palette do the same, so pairing takes one click instead of
   two. (RemEx-pp4cm.5)
+- **The other splash styles got their own worlds, on the PC and the phone.** Original Scan plays on a
+  command deck (a grid floor rolling toward you, falling data columns), Cosmic Zoom in deep space (a
+  nebula and stars that stretch into a warp before the strike), and Signal Pong on a glowing CRT
+  court that ripples on every hit. Each builds to a beat, follows your theme's colours (light, dark,
+  contrast and monochrome), and fades out into the app's own background. With reduced motion on, each
+  shows a still frame of its world for a moment instead of a blank. (RemEx-pp4cm.11)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder
@@ -535,6 +541,39 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A refused alert Save now says why.** Pressing Save on a sensor alert used to close the sheet whether or
+  not anything was sent. The sheet now stays open with the reason when the alert could not be sent (not
+  connected, PC too old, or the PC already holds as many alerts as it allows), and if the PC accepts it and
+  then answers without keeping it, a message names the sensor. (RemEx-pp4cm.12)
+- **PC logs screen and alert sheets, review fixes.** The PC logs rows, "latest" button and the alert remove
+  button now use local icon glyphs instead of adding more uses of the deprecated extended icon set; the log
+  text takes its size from the theme instead of a fixed 11/12 sp; a repeated log sequence number or summary
+  key from the PC can no longer crash the list; and a PC cancelling a download now has a test proving the
+  running download's wait ends. (RemEx-pp4cm.13)
+- **Download notifications show up again on Samsung phones.** The file-transfer notification channel was
+  low importance, which One UI files under "Silent" with no status-bar icon, so downloads were announced but
+  looked like nothing happened. Transfers now use a new channel (`remex_file_transfer_v2`) at default
+  importance with sound and vibration off, so the icon and progress show without ever making a noise. The
+  old channel is deleted on startup. (RemEx-pp4cm.8)
+- **Phone comb review fixes.** The battery-settings button now has one tested launcher shared by the first-run
+  tutorial and the routines notice (it falls back to the battery list and never crashes on a phone with no such
+  screen). The address form no longer keeps one PC's Wake-on-LAN address when you connect to another, so a
+  failed card connect followed by a manual Connect can't save PC A's address for PC B. Tapping the tab you are
+  on now scrolls Settings, Files, Routines, Sensors and Connection back to the top, like the other tabs. A
+  timeout against a Tailscale or `*.ts.net` address now says to check Tailscale on both devices instead of
+  "same network". (RemEx-pp4cm.3)
+- **A phone can no longer flood the PC with alert requests, and one stuck phone no longer delays
+  alerts to the others.** A phone asking for the PC's alert rules in a loop now costs the PC one
+  refresh, not one per message, and a phone making more than 10 alert requests in 10 seconds has the
+  extras ignored (it is sent the PC's unchanged rules). Alerts and rule updates now go to all connected
+  phones at once with a 5 second limit per phone. A phone that asked for the rules just before the PC
+  finished starting is answered as soon as the PC is ready. `docs/API_CONTRACTS.md` section 11 now
+  says the rules are sent to every connected phone, not only the one that asked. (RemEx-pp4cm.12)
+- **Two-finger scroll works again in Remote desktop, including in portrait (RemEx-pp4cm.10).**
+  Portrait opens the PC picture fitted to the screen height, which is zoomed in, and a zoomed view used
+  to treat every two-finger drag as "move the picture", so nothing reached the PC. Two fingers now
+  always scroll the PC at any zoom. Pinching still zooms, and moving your fingers while you pinch
+  moves the zoomed picture; the picture also follows the cursor when it nears an edge.
 - **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
   last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
   Home's Connect ask for the local-network permission like the Connection screen does, and say so on
@@ -590,6 +629,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   for the file, stops waiting after 90 seconds of silence, and ends the wait when the PC says it has
   let the transfer go. (`FileTransferEngine.kt`, `EarlyFrameSink.kt`, `DownloadStreamWait.kt`;
   RemEx-pp4cm.9)
+- The Live Handshake splash plays its full show again. On the phone it opened before your PC had
+  finished the handshake, so the lock-on (the reticle snapping shut, the beam, the haptic tick and the
+  portal opening out of your PC) was skipped and the console said your PC was "not answering" right
+  before saying it answered. It now waits for a PC that answered, up to 3 seconds. On both apps the
+  shortest splash is now 1.9 seconds, so the second pulse and the console are actually seen, and on the
+  PC every splash style starts when the window is first drawn rather than while it is still hidden.
+  Cosmic Zoom's colour burst now rings the mark on high-density phones. (RemEx-pp4cm.11)
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

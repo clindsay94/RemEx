@@ -1,6 +1,7 @@
 package com.clindsay94.remex
 
 import androidx.annotation.StringRes
+import com.clindsay94.remex.security.TransportTrust
 
 /** What a failed connection attempt comes down to, as far as the person holding the phone cares. */
 enum class ConnectionFailureKind {
@@ -51,15 +52,26 @@ object ConnectionFailures {
      *
      * NULL FOR THE CERTIFICATE CASE ON PURPOSE: the screens detect it from the text and show their own
      * message with a repair button, so the text has to survive until it reaches them.
+     *
+     * [host] is the address that was tried, when the caller knows it. A timeout against a Tailscale
+     * address or a `*.ts.net` name gets VPN advice: the usual "same network" line is wrong there,
+     * because the phone and PC are meant to be on different networks and the thing to check is that
+     * Tailscale is running on both (RemEx-pp4cm.3).
      */
     @StringRes
-    fun messageRes(kind: ConnectionFailureKind): Int? =
+    fun messageRes(kind: ConnectionFailureKind, host: String? = null): Int? =
         when (kind) {
             ConnectionFailureKind.CertificateProblem -> null
-            ConnectionFailureKind.TimedOut -> R.string.pairing_error_timeout
+            ConnectionFailureKind.TimedOut ->
+                if (host != null && isVpnAddress(host)) R.string.connection_error_timeout_vpn
+                else R.string.pairing_error_timeout
             ConnectionFailureKind.Unreachable -> R.string.pairing_error_reach_failed
             ConnectionFailureKind.Unknown -> R.string.connection_error_generic
         }
+
+    /** A Tailscale (100.64.0.0/10, fd7a:115c:a1e0::/48) address or MagicDNS (`*.ts.net`) name. */
+    internal fun isVpnAddress(host: String): Boolean =
+        TransportTrust.isTailscaleAddress(host) || TransportTrust.isTailscaleHostname(host)
 
     private val CERTIFICATE_WORDS = listOf("spki", "certificate", "ssl")
     private val TIMEOUT_WORDS = listOf("timed out", "timeout", "time out")

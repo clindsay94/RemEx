@@ -32,9 +32,9 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
         AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "LiveHandshake");
 
     /// <summary>
-    /// The user's reduced-motion preference (ShellViewModel.IsReducedMotion). Live Handshake honours
-    /// it: a static frame and a short fade instead of pulses and a portal. The fixed films ignore it,
-    /// exactly as before.
+    /// The user's reduced-motion preference (ShellViewModel.IsReducedMotion). Every style honours it:
+    /// Live Handshake shows a static frame and a short fade instead of pulses and a portal, and each
+    /// film shows its designed still frame instead of the film (RemEx-pp4cm.11).
     /// </summary>
     public static readonly StyledProperty<bool> ReduceMotionProperty =
         AvaloniaProperty.Register<SkiaSplashControl, bool>(nameof(ReduceMotion));
@@ -81,8 +81,8 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
     private ISplashVariant _variant = new LiveHandshakeVariant();
     private LiveHandshakeFeed? _feed;
     private double _lastPoll = double.NegativeInfinity;
-    // Elapsed splash time lives in the clock: fixed films run from attach exactly as before; Live
-    // Handshake waits for its first rendered frame and clamps each step (SplashClock).
+    // Elapsed splash time lives in the clock: every style waits for its first rendered frame and
+    // clamps each step (SplashClock), so a cold start's slow first present no longer eats the film.
     private readonly SplashClock _clock = new();
     private bool _completed;
     private bool _skipping;
@@ -116,32 +116,34 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
             _skipping = false;
             _skipElapsed = 0;
         }
-        else if (change.Property == ReduceMotionProperty && _variant is ILiveSplashVariant live)
+        else if (change.Property == ReduceMotionProperty && _variant is IFieldSplashVariant fielded)
         {
-            live.ReducedMotion = ReduceMotion;
+            fielded.ReducedMotion = ReduceMotion;
         }
     }
 
     /// <summary>
-    /// Swaps in <paramref name="variant"/>. A live variant gets a fresh feed (its clock restarts at 0
-    /// with the variant) and the current reduced-motion setting. The old variant is NOT disposed here:
-    /// a draw op already queued on the render thread may still be painting it, and disposing its
-    /// paints under that frame would be a native use-after-free. Its Skia wrappers finalize with it.
+    /// Swaps in <paramref name="variant"/>: its clock restarts at 0 and waits for the first frame, it
+    /// gets the current reduced-motion setting, and a live variant gets a fresh feed. The old variant
+    /// is NOT disposed here: a draw op already queued on the render thread may still be painting it,
+    /// and disposing its paints under that frame would be a native use-after-free. Its Skia wrappers
+    /// finalize with it.
     /// </summary>
     private void SetVariant(ISplashVariant variant)
     {
         _variant = variant;
         _lastPoll = double.NegativeInfinity;
-        _clock.Reset(live: variant is ILiveSplashVariant);
+        _clock.Reset();
         _firstFrameRaised = false;
-        if (variant is ILiveSplashVariant live)
+        if (variant is IFieldSplashVariant fielded) fielded.ReducedMotion = ReduceMotion;
+        if (variant is ILiveSplashVariant)
         {
             LiveHandshakeField.WarmUp();
             _feed = new LiveHandshakeFeed();
-            live.ReducedMotion = ReduceMotion;
         }
         else
         {
+            SplashFilmField.WarmUp();
             _feed = null;
         }
     }
@@ -361,11 +363,11 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
             {
                 canvas.ClipRect(new SKRect(0, 0, w, h));
 
-                // The Live Handshake field is a runtime shader: GPU-only. A raster lease (software
-                // fallback) has no GrContext and would spend ~200 ms a frame on it, so the variant
-                // draws its gradient fallback there instead (RemEx-8g6n0).
-                if (variant is ILiveSplashVariant live)
-                    live.FieldEnabled = lease.GrContext is not null;
+                // The splash fields are runtime shaders: GPU-only. A raster lease (software fallback)
+                // has no GrContext and would spend ~200 ms a frame on one, so the variant draws its
+                // gradient fallback there instead (RemEx-8g6n0, RemEx-pp4cm.11).
+                if (variant is IFieldSplashVariant fielded)
+                    fielded.FieldEnabled = lease.GrContext is not null;
 
                 variant.Render(canvas, w, h, t, dt);
 

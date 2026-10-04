@@ -5,7 +5,7 @@ namespace Remex.Tools.BrandAssetGen;
 
 /// <summary>
 /// Renders a single splash-variant frame to a PNG for visual verification — no Avalonia app needed
-/// (the variants are pure SkiaSharp). Usage: BrandAssetGen splash &lt;style&gt; &lt;timeMs&gt; &lt;out.png&gt; [w] [h]
+/// (the variants are pure SkiaSharp). Usage: BrandAssetGen splash &lt;style&gt; &lt;timeMs&gt; &lt;out.png&gt; [w] [h] [reduced]
 /// </summary>
 internal static class SplashPreview
 {
@@ -40,26 +40,31 @@ internal static class SplashPreview
                 return 0;
             }
 
-            ISplashVariant variant = style switch
+            IFieldSplashVariant variant = style switch
             {
                 "CosmicZoom" => new CosmicZoomVariant(),
                 "Pong" => new PongVariant(),
                 _ => new RemexCommandVariant(),
             };
+            // Optional 7th argument "reduced": the film's reduced-motion still frame (RemEx-pp4cm.11).
+            variant.ReducedMotion = args.Length > 6 && args[6] == "reduced";
 
             using var surface = SKSurface.Create(new SKImageInfo(w, h, SKColorType.Rgba8888, SKAlphaType.Premul));
             var canvas = surface.Canvas;
             canvas.Clear(SKColors.Black);
 
             // Step from 0 to t so mutable state (particles, phases) is correct; the opaque backdrop each
-            // frame means the final frame is clean regardless of prior overdraw.
+            // frame means the final frame is clean regardless of prior overdraw. The field shader runs on
+            // the CPU here, so only the frame that is kept pays for it.
             const float dt = 1f / 60f;
             float acc = 0f;
+            variant.FieldEnabled = t <= 0f;
             if (t <= 0f) variant.Render(canvas, w, h, 0f, 0f);
             while (acc < t)
             {
                 float step = MathF.Min(dt, t - acc);
                 acc += step;
+                variant.FieldEnabled = acc >= t;
                 variant.Render(canvas, w, h, acc, step);
             }
 

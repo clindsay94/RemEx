@@ -42,9 +42,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.screens.openBatteryOptimisationSettings
 import com.clindsay94.remex.routines.home.HomeCaptureProbe
 import com.clindsay94.remex.routines.home.HomeCaptureRefusal
 import com.clindsay94.remex.routines.home.HomeFacts
@@ -217,12 +217,7 @@ internal fun BackgroundRestrictedNotice(modifier: Modifier = Modifier) {
         body = stringResource(R.string.routines_home_background_restricted),
         actionLabel = stringResource(R.string.tutorial_battery_action),
         onAction = {
-            runCatching {
-                context.startActivity(
-                    android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                        .setData("package:${context.packageName}".toUri()),
-                )
-            }
+            openBatteryOptimisationSettings(context, context::startActivity)
         },
         modifier = modifier,
     )

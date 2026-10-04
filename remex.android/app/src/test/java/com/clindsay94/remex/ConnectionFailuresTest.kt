@@ -30,6 +30,28 @@ class ConnectionFailuresTest {
     }
 
     @Test
+    fun `a timeout on a vpn address gets vpn advice instead of same-network advice`() {
+        // The usual line tells someone on Tailscale to put both devices on one network, which is the
+        // opposite of why they use it. RemEx-pp4cm.3.
+        for (host in listOf("100.64.0.1", "100.101.102.103", "100.127.255.254", "pc.tail1234.ts.net", "fd7a:115c:a1e0::1")) {
+            assertEquals(
+                host,
+                R.string.connection_error_timeout_vpn,
+                ConnectionFailures.messageRes(ConnectionFailureKind.TimedOut, host))
+        }
+    }
+
+    @Test
+    fun `a timeout on a normal address or with no known host keeps the same-network advice`() {
+        for (host in listOf("192.168.1.20", "100.128.0.1", "100.63.255.255", "mypc.local", "evil.ts.net.attacker.com", null)) {
+            assertEquals(
+                host,
+                R.string.pairing_error_timeout,
+                ConnectionFailures.messageRes(ConnectionFailureKind.TimedOut, host))
+        }
+    }
+
+    @Test
     fun `a certificate problem keeps its text for the screen to recognise`() {
         assertNull(ConnectionFailures.messageRes(ConnectionFailureKind.CertificateProblem))
         assertTrue(ConnectionFailures.isCertificateProblem("spki mismatch"))

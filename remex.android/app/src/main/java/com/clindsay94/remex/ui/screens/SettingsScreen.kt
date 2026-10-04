@@ -222,6 +222,9 @@ private fun SettingsCategoryList(
     selectedCategory: SettingsCategory?,
     onCategoryClick: (SettingsCategory) -> Unit
 ) {
+    val categoryListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Tapping Settings while on Settings goes back to the top (RemEx-pp4cm.3).
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { if (categoryListState.canScrollBackward) categoryListState.animateScrollToItem(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
@@ -234,6 +237,7 @@ private fun SettingsCategoryList(
         }
     ) { innerPadding ->
         LazyColumn(
+            state = categoryListState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
@@ -375,6 +379,8 @@ private fun InputTab() {
                     initialValue = SettingsManager.RemoteDesktopPreferences()
             )
 
+    val tabScrollState = rememberScrollState()
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
@@ -390,7 +396,7 @@ private fun InputTab() {
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(tabScrollState),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Card(
@@ -514,6 +520,8 @@ private fun FileTransferSettingsTab() {
         }
     }
 
+    val tabScrollState = rememberScrollState()
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
             modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
@@ -529,7 +537,7 @@ private fun FileTransferSettingsTab() {
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(tabScrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
@@ -801,6 +809,8 @@ private fun NotificationsTab() {
     val haptics = rememberRemexHaptics()
     val enabled by settingsManager.pcAlertsEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
 
+    val tabScrollState = rememberScrollState()
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
             modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
@@ -816,7 +826,7 @@ private fun NotificationsTab() {
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(tabScrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(

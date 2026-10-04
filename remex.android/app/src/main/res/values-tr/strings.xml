@@ -45,14 +45,10 @@
     <string name="status_disconnected">Bağlantı kesildi</string>
     <string name="status_connected">Bağlandı</string>
     <string name="status_connecting">%1$s:%2$d adresine bağlanılıyor…</string>
-    <string name="status_awaiting_metadata">PC ayrıntıları bekleniyor</string>
     <string name="status_metadata_unavailable">PC ayrıntıları mevcut değil</string>
     <string name="status_native_lib_not_loaded">RemEx bağlantı motorunu başlatamadı</string>
     <string name="error_no_host_found">Ağda RemEx çalıştıran bir PC bulunamadı</string>
-    <string name="error_discovery_failed">Bilgisayarınız aranamadı: %1$s</string>
     <string name="error_local_network_permission_denied">Yerel Ağ erişimi reddedildi. Android 17+ sürümlerinde RemEx bu izin olmadan bilgisayarınıza bağlanamaz. Lütfen Uygulama Ayarları\'ndan izin verin.</string>
-    <string name="capability_desktop_available">masaüstü kullanılabilir</string>
-    <string name="capability_desktop_unavailable">masaüstü kullanılamıyor</string>
     <string name="notification_channel_name">RemEx Bağlantısı</string>
     <string name="notification_channel_description">Bilgisayarınızla olan bağlantıyı açık tutar</string>
     <string name="notification_title_connected">Bilgisayara bağlandı</string>
@@ -588,6 +584,7 @@
     <string name="rd_err_handshake_timeout">%1$s adresindeki bilgisayarınız yanıt verdi ama bu cihazı doğrularken durdu. Uyku moduna geçmiş olabilir. Yeniden bağlanmayı deneyin.</string>
     <string name="cd_clear_search">Aramayı temizle</string>
     <string name="pairing_error_timeout">PC yanıt vermedi. Açık olduğundan ve aynı ağa bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
+    <string name="connection_error_timeout_vpn">PC yanıt vermedi. Tailscale\'in (veya VPN\'inizin) hem bu telefonda hem de PC\'de açık olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="host_discovered_snackbar">PC bulundu: %1$s</string>
     <string name="widget_refresh">Yenile</string>
     <string name="widget_toast_refreshing">Yenileniyor…</string>
@@ -1627,6 +1624,8 @@
     <string name="sensor_alert_remove">Uyarıyı kaldır</string>
     <string name="sensor_alert_blocked_not_connected">Uyarı ayarlamak için PC\'nize bağlanın.</string>
     <string name="sensor_alert_blocked_pc_too_old">Telefonunuzdan uyarı ayarlamak için PC\'nizde RemEx\'i güncelleyin.</string>
+    <string name="sensor_alert_save_failed">Uyarı PC\'nize gönderilmedi. Telefonunuzun hâlâ PC\'ye bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
+    <string name="sensor_alert_refused_snackbar">PC\'niz %1$s uyarısını kaydetmedi. Bu sensörü artık tanımıyor olabilir.</string>
     <string name="sensor_alert_blocked_too_many">PC\'niz saklayabileceği kadar uyarıya zaten sahip. Önce birini kaldırın.</string>
     <string name="sensor_alerts_title">PC uyarıları</string>
     <string name="sensor_alerts_empty">Henüz uyarı yok. Bir sensör kartının seçeneklerini açın ve eklemek için Beni uyar… seçeneğini seçin.</string>

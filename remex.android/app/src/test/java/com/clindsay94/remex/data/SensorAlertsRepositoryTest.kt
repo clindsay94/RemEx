@@ -1,5 +1,10 @@
 package com.clindsay94.remex.data
 
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,6 +19,7 @@ import org.junit.Test
  * per connection, an edit is optimistic and sent as one rule, the PC's next list is the answer, and an
  * older PC is never sent a message. Fake send; no socket.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SensorAlertsRepositoryTest {
 
     private val sent = ArrayList<String>()
@@ -227,5 +233,75 @@ class SensorAlertsRepositoryTest {
 
         assertTrue(repo.state.value.supported)
         assertTrue(repo.state.value.canEdit)
+    }
+
+    // A refused phone Save used to close the sheet and say nothing (RemEx-pp4cm.12). The PC answers
+    // every set with its whole list, so a list that lacks the rule just sent IS the refusal.
+
+    private fun TestScope.collectRefusals(): List<String> {
+        val got = ArrayList<String>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { repo.refusals.toList(got) }
+        return got
+    }
+
+    @Test
+    fun `a list that lacks the rule just sent reports it refused`() = runTest {
+        val refusals = collectRefusals()
+        connect()
+        repo.onRulesMessage(rules(1, rule("CPU")), 1)
+        assertTrue(repo.setRule("GPU", "GPU temperature", "°C", 80.0, SensorAlertDirection.ABOVE, SensorAlertSeverity.WARNING))
+
+        repo.onRulesMessage(rules(1, rule("CPU")), 1)
+
+        assertEquals(listOf("GPU temperature"), refusals)
+    }
+
+    @Test
+    fun `a list that keeps the rule just sent is not a refusal`() = runTest {
+        val refusals = collectRefusals()
+        connect()
+        repo.onRulesMessage(rules(1, rule("CPU")), 1)
+        assertTrue(repo.setRule("GPU", "GPU temperature", "°C", 80.0, SensorAlertDirection.ABOVE, SensorAlertSeverity.WARNING))
+
+        repo.onRulesMessage(rules(2, rule("CPU"), rule("GPU", 80.0)), 1)
+
+        assertTrue(refusals.isEmpty())
+    }
+
+    @Test
+    fun `a list that holds the sensor with different values is a refusal too`() = runTest {
+        val refusals = collectRefusals()
+        connect()
+        repo.onRulesMessage(rules(1, rule("CPU", 70.0)), 1)
+        assertTrue(repo.setRule("CPU", "CPU", "°C", 95.0, SensorAlertDirection.ABOVE, SensorAlertSeverity.WARNING))
+
+        repo.onRulesMessage(rules(1, rule("CPU", 70.0)), 1)
+
+        assertEquals(listOf("CPU"), refusals)
+    }
+
+    @Test
+    fun `a refusal is reported once and a later list does not repeat it`() = runTest {
+        val refusals = collectRefusals()
+        connect()
+        repo.onRulesMessage(rules(1), 1)
+        assertTrue(repo.setRule("GPU", "GPU", "°C", 80.0, SensorAlertDirection.ABOVE, SensorAlertSeverity.WARNING))
+
+        repo.onRulesMessage(rules(1), 1)
+        repo.onRulesMessage(rules(2), 1)
+
+        assertEquals(listOf("GPU"), refusals)
+    }
+
+    @Test
+    fun `a set that was never sent reports no refusal`() = runTest {
+        val refusals = collectRefusals()
+        repo.onConnected(1)
+        repo.onHostInfo(1, """{"supportsHomePinsSync":true}""")
+
+        assertFalse(repo.setRule("CPU", "CPU", "°C", 90.0, SensorAlertDirection.ABOVE, SensorAlertSeverity.WARNING))
+        repo.onRulesMessage(rules(1), 1)
+
+        assertTrue(refusals.isEmpty())
     }
 }
