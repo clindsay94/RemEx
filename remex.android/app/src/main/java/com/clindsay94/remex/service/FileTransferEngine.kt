@@ -77,6 +77,12 @@ object FileTransferEngine {
     private val resultWaiters = ConcurrentHashMap<String, CompletableDeferred<ResultInfo>>()
     private val completeWaiters = ConcurrentHashMap<String, CompletableDeferred<String>>()
 
+    /**
+     * A running download's "the stream is over" signal, by transferId, so a `cancel` the PC sends
+     * (it gives up on a peer that stopped acknowledging) ends the wait instead of being ignored.
+     */
+    private val downloadAborts = ConcurrentHashMap<String, CompletableDeferred<Boolean>>()
+
     /** Callback the foreground service sets so it can stop itself once the queue is idle. */
     @Volatile var onQueueIdle: (() -> Unit)? = null
 
@@ -281,7 +287,7 @@ object FileTransferEngine {
             // The controller already moved the row to Negotiating when it claimed the drain slot.
             if (!ensureChannel()) {
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = "Not connected.") }
-                if (t.mode == FileTransferModes.DOWNLOAD) discardEmptyDownloadTarget(t)
+                if (t.mode == FileTransferModes.DOWNLOAD) abandonDownload(t)
                 return
             }
             when (t.mode) {
@@ -303,7 +309,7 @@ object FileTransferEngine {
             FileTransferChannelClient.invalidate()
             // A push/upload that dies mid-stream (thrown here, not via runUpload's own terminal
             // branches) still owes the user a Share-to-PC result, same as runDownload's notify.
-            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t) else discardEmptyDownloadTarget(t)
+            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t) else abandonDownload(t)
         }
     }
 
@@ -413,6 +419,21 @@ object FileTransferEngine {
         }
     }
 
+    /**
+     * Cleans up after a download that ended without a file, and says so (RemEx-pp4cm.8).
+     *
+     * **A FAILED DOWNLOAD USED TO BE SILENT.** A success posts "Downloaded x" and an upload failure
+     * posts "Could not send x", but nothing ever reported a download that failed, so a download that
+     * never worked looked exactly like one that never showed a notification. Only a row that really is
+     * Failed is announced: a user's cancel or pause already says what happened and is not an error.
+     */
+    private fun abandonDownload(t: QueuedTransfer) {
+        discardEmptyDownloadTarget(t)
+        if (_queue.value.firstOrNull { it.id == t.id }?.state != TransferState.Failed) return
+        val message = appContext.getString(R.string.file_transfer_notification_download_failed, t.fileName)
+        FileTransferNotificationManager.showTransferFailed(appContext, message)
+    }
+
     /** Posts a Share-to-PC failure notification for [t]; the body names the file via localized text. */
     private fun notifyUploadFailed(t: QueuedTransfer) {
         val message = appContext.getString(R.string.file_transfer_notification_upload_failed, t.fileName)
@@ -424,9 +445,19 @@ object FileTransferEngine {
         // and announces file_transfer_complete straight away - before this side used to start
         // listening, so the message was dropped and every empty file cost the full complete timeout.
         completeWaiters[t.id] = CompletableDeferred()
+        // THE DATA SINK TOO (RemEx-pp4cm.9). The PC streams the instant it answers ready, on a
+        // different socket, so a sink registered after the ready is processed can lose the first
+        // frames ("No sink for transfer"), and a frame lost that way is never acknowledged. The early
+        // sink holds them until runDownloadStream arms it.
+        val done = CompletableDeferred<Boolean>()
+        val early = EarlyFrameSink(DOWNLOAD_EARLY_FRAME_LIMIT)
+        downloadAborts[t.id] = done
+        FileTransferChannelClient.registerSink(t.id, early)
         try {
-            runDownloadStream(t)
+            runDownloadStream(t, early, done)
         } finally {
+            FileTransferChannelClient.unregisterSink(t.id)
+            downloadAborts.remove(t.id)
             completeWaiters.remove(t.id)
             // No download partial outlives its run, whatever ended it (success, failure, cancel,
             // pause). The host always serves a download from offset 0 - the offer carries no receiver
@@ -438,7 +469,7 @@ object FileTransferEngine {
         }
     }
 
-    private suspend fun runDownloadStream(t: QueuedTransfer) {
+    private suspend fun runDownloadStream(t: QueuedTransfer, early: EarlyFrameSink, done: CompletableDeferred<Boolean>) {
         val partial = File(downloadDir(), TransferLocalFiles.partialFileName(t.id))
         downloadDir().mkdirs()
         val existing = if (partial.exists()) partial.length() else 0L
@@ -446,12 +477,12 @@ object FileTransferEngine {
         val ready = negotiate(t, resumeRequested = resume)
         if (ready == null) {
             // negotiate() already marked the transfer Failed ("Peer did not respond.").
-            discardEmptyDownloadTarget(t)
+            abandonDownload(t)
             return
         }
         if (!ready.accepted) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = ready.declineReason ?: "Declined.") }
-            discardEmptyDownloadTarget(t)
+            abandonDownload(t)
             return
         }
         val startOffset = TransferResumeLogic.receiverResumeOffset(ready.startOffset, t.size)
@@ -475,9 +506,10 @@ object FileTransferEngine {
             }
         }
 
-        val done = CompletableDeferred<Boolean>()
         val received = java.util.concurrent.atomic.AtomicLong(startOffset)
         val lastAcked = java.util.concurrent.atomic.AtomicLong(startOffset)
+        // Stamped on arm and on every frame: the stream is "quiet" from the last of these.
+        val lastFrameAt = java.util.concurrent.atomic.AtomicLong(SystemClock.elapsedRealtime())
         // Perf audit P4-6: the write, hash and ack below run on this worker, NOT on the OkHttp reader
         // thread that delivers the frame, so the socket keeps being read while a frame is on its way
         // to disk. Still strictly serial and still ack-after-write. Sized to the sender's unacked
@@ -509,6 +541,7 @@ object FileTransferEngine {
         val sink =
             object : FileFrameSink {
                 override fun onFrame(envelope: FileFrameEnvelope, payload: ByteArray) {
+                    lastFrameAt.set(SystemClock.elapsedRealtime())
                     if (envelope.kind != FileFrameKinds.DATA) {
                         if (envelope.kind == FileFrameKinds.ERROR) done.complete(false)
                         return
@@ -522,7 +555,8 @@ object FileTransferEngine {
                     if (!done.isCompleted) done.complete(false)
                 }
             }
-        FileTransferChannelClient.registerSink(t.id, sink)
+        // Replays whatever the early sink caught while the ready was being processed, then goes live.
+        early.arm(sink)
         // Nothing left to receive (an empty file, or a partial that already holds every byte): the host
         // sends no frame at all, so there is no Final frame to wait for (live-check C3).
         // That skip trusts the listing size, so the host's complete must then confirm it: see
@@ -531,7 +565,15 @@ object FileTransferEngine {
         if (skippedFrameWait) done.complete(true)
         try {
             // The PC sender's file_transfer_complete carries the authoritative full-file hash.
-            val streamedOk = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { done.await() } ?: false
+            // Bounded by silence as well as by the ceiling: see awaitDownloadStream.
+            val streamedOk =
+                awaitDownloadStream(
+                    done = done,
+                    ceilingMs = TRANSFER_TIMEOUT_MS,
+                    stallMs = DOWNLOAD_STALL_MS,
+                    lastActivityMs = { lastFrameAt.get() },
+                    clockMs = { SystemClock.elapsedRealtime() },
+                )
             // Stop the writer BEFORE raf is synced and closed below: on a failed or timed-out stream
             // it may still be mid-write. On success it is already idle - done completes from inside
             // the handler, after the final frame was written.
@@ -544,7 +586,9 @@ object FileTransferEngine {
             }
             try { raf.fd.sync() } catch (e: Exception) {}
             raf.close()
-            val expectedSha = awaitComplete(t.id)
+            // A stream that did not finish has no complete coming that could save it; waiting the full
+            // negotiate window for one only held the drain slot for another 30 seconds.
+            val expectedSha = if (streamedOk) awaitComplete(t.id) else null
             val actualSha = Base64.encodeToString(digest.digest(), Base64.NO_WRAP)
             val verified = TransferResumeLogic.downloadVerified(streamedOk, skippedFrameWait, expectedSha, actualSha)
             if (verified && commitDownload(partial, t.localUri)) {
@@ -561,7 +605,7 @@ object FileTransferEngine {
                     else "SHA-256 mismatch."
                 sendResult(t.id, false, actualSha, err)
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = err) }
-                discardEmptyDownloadTarget(t)
+                abandonDownload(t)
             }
         } finally {
             FileTransferChannelClient.unregisterSink(t.id)
@@ -681,6 +725,15 @@ object FileTransferEngine {
                 val p = obj.optJSONObject("fileTransferComplete") ?: return
                 val id = p.optString("transferId")
                 completeWaiters[id]?.complete(p.optString("sha256"))
+            }
+            "file_transfer_control" -> {
+                // The PC releasing a transfer it has given up on (it stopped getting acks, or the
+                // user cancelled it on the PC). Only a running DOWNLOAD listens: an upload's ack wait
+                // already fails on its own clock, and nothing else here is waiting on the PC's word.
+                val p = obj.optJSONObject("fileTransferControl") ?: return
+                if (p.optString("action") == FileTransferControlActions.CANCEL) {
+                    downloadAborts[p.optString("transferId")]?.complete(false)
+                }
             }
         }
     }
@@ -860,8 +913,16 @@ object FileTransferEngine {
     private const val NEGOTIATE_TIMEOUT_MS = 30_000L
     private const val TRANSFER_TIMEOUT_MS = 6L * 60 * 60 * 1000 // 6h ceiling for a single transfer
 
+    // A download that has received nothing for this long is not slow, it is stuck. Longer than the
+    // PC's own 60 s ack-idle window, so the PC's cancel (handled above) normally lands first.
+    private const val DOWNLOAD_STALL_MS = 90_000L
+
     // P4-6: the sender never has more than MAX_UNACKED_BYTES in flight, so at full-size frames this
     // many can ever be waiting for the writer.
     private const val DOWNLOAD_WRITE_QUEUE_FRAMES =
         FileTransferLimits.MAX_UNACKED_BYTES / FileTransferLimits.DATA_PAYLOAD_BYTES
+
+    // Frames the early sink will hold before the transfer is armed: twice what the sender may have
+    // in flight unacked, so a sender that respects its window can never overflow it.
+    private const val DOWNLOAD_EARLY_FRAME_LIMIT = DOWNLOAD_WRITE_QUEUE_FRAMES * 2
 }

@@ -537,6 +537,21 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
     page while it retries no longer throws behind your back.
   - Tab and Escape no longer also act on the RemEx window while a Remote Desktop stream is forwarding
     them to the other PC.
+- **A download that fails now tells you, and the Files screen asks for notification permission.**
+  A finished download posted "Downloaded" and a failed upload posted "Could not send", but a failed
+  download posted nothing, and a phone that had never allowed notifications showed no transfer
+  notification of any kind. A failed download now says "Could not download" in your language, the
+  Files screen asks once per run for the notification permission when it is missing, and the app
+  logs it when the system refuses to start the transfer job. (`FileTransferEngine.kt`,
+  `TransferNotificationPermission.kt`, `FileTransferJobService.kt`; RemEx-pp4cm.8)
+- **A folder download no longer stops after a file or two, and Resume works again.** The PC starts
+  sending a file the moment it agrees to it, and the phone only got ready to receive a moment later,
+  so the first part of a file could be thrown away. A file missing its last part was never
+  acknowledged, the PC gave up after a minute, and the phone kept waiting for data that was not
+  coming while every other file in the folder sat on Queued. The phone now gets ready before it asks
+  for the file, stops waiting after 90 seconds of silence, and ends the wait when the PC says it has
+  let the transfer go. (`FileTransferEngine.kt`, `EarlyFrameSink.kt`, `DownloadStreamWait.kt`;
+  RemEx-pp4cm.9)
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

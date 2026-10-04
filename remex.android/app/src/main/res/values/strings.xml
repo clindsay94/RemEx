@@ -596,6 +596,7 @@
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
     <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
     <string name="file_transfer_notification_upload_failed">Could not send %1$s</string>
+    <string name="file_transfer_notification_download_failed">Could not download %1$s</string>
     <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer failed</string>
 
