@@ -56,6 +56,7 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.shapeSafeArea
+import com.clindsay94.remex.ui.theme.AppFonts
 import com.clindsay94.remex.ui.theme.ShapeSwatch
 import com.clindsay94.remex.ui.theme.isDarkThemeFor
 import com.clindsay94.remex.ui.theme.rememberPaletteColorScheme
@@ -839,19 +840,7 @@ fun PersonalizationScreenContent(
                     )
 
                     var fontExpanded by remember { mutableStateOf(false) }
-                    val fontOptions = listOf(
-                            "default" to stringResource(R.string.personalization_system_default),
-                            "roboto" to stringResource(R.string.font_roboto),
-                            "lato" to stringResource(R.string.font_lato),
-                            "montserrat" to stringResource(R.string.font_montserrat),
-                            "poppins" to stringResource(R.string.font_poppins),
-                            "inter" to stringResource(R.string.font_inter_premium),
-                            "outfit" to stringResource(R.string.font_outfit_modern),
-                            "space_grotesk" to stringResource(R.string.font_space_grotesk_cyber),
-                            "syne" to stringResource(R.string.font_syne_expressive),
-                            "lexend" to stringResource(R.string.font_lexend_fluent),
-                            "jetbrains_mono" to stringResource(R.string.font_jetbrains_mono_tech)
-                    )
+                    val fontOptions = AppFonts.options.map { it.key to stringResource(it.labelRes) }
 
                     ExposedDropdownMenuBox(
                             expanded = fontExpanded,
@@ -879,7 +868,8 @@ fun PersonalizationScreenContent(
                         ) {
                             fontOptions.forEach { (key, name) ->
                                 DropdownMenuItem(
-                                        text = { Text(name) },
+                                        // Each name is drawn in its own typeface, so the list is a preview.
+                                        text = { Text(name, fontFamily = AppFonts.familyFor(key)) },
                                         onClick = {
                                             haptics.perform(RemexHapticEvent.Select)
                                             fontFamily = key

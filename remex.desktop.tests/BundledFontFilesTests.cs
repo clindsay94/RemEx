@@ -82,6 +82,21 @@ public class BundledFontFilesTests
         File.ReadAllText(path).Should().Contain("SIL Open Font License");
     }
 
+    /// <summary>
+    /// The phone also bundles three Nerd Font families (RemEx-pp4cm.15). Each carries its licence in
+    /// assets/licenses; Hack is MIT, the other two are OFL.
+    /// </summary>
+    [Theory]
+    [InlineData("OFL-CaskaydiaCoveNerdFont.txt", "SIL Open Font License")]
+    [InlineData("OFL-IosevkaNerdFont.txt", "SIL Open Font License")]
+    [InlineData("LICENSE-HackNerdFont.txt", "MIT License")]
+    public void EveryBundledNerdFontHasItsLicence(string fileName, string expectedText)
+    {
+        var path = Path.Combine(RepoRoot(), "remex.android", "app", "src", "main", "assets", "licenses", fileName);
+
+        File.Exists(path).Should().BeTrue("a bundled font's licence has to travel with it");
+        File.ReadAllText(path).Should().Contain(expectedText);
+    }
     private static IEnumerable<string> BundledFonts() =>
         FontDirectories
             .Select(d => Path.Combine(RepoRoot(), d))

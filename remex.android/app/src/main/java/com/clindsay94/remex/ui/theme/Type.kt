@@ -1,8 +1,10 @@
 package com.clindsay94.remex.ui.theme
 
+import androidx.annotation.StringRes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font as ResourceFont
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
@@ -25,6 +27,74 @@ fun getGoogleFontFamily(fontName: String): FontFamily {
     )
 }
 
+/** One entry of the font picker: the stored key and the (untranslated) family name to show. */
+data class AppFontOption(val key: String, @StringRes val labelRes: Int)
+
+/**
+ * The fonts the app can draw in (RemEx-pp4cm.15). Labels are plain family names, never translated.
+ * Two sources: Google Fonts, downloaded on demand through the Play Services provider, and the Nerd
+ * Fonts, which Google Fonts does not carry, so they ship in `res/font` as Latin, Latin-Extended,
+ * Greek, Cyrillic, punctuation, arrows, box-drawing and Powerline subsets (the full files are about
+ * 3 MB each; Iosevka's is 14 MB). Their licences travel in `assets/licenses`.
+ */
+object AppFonts {
+    /** What the picker offers, in order. Every key resolves through [familyFor]. */
+    val options: List<AppFontOption> = listOf(
+        AppFontOption("default", R.string.personalization_system_default),
+        AppFontOption("roboto", R.string.font_roboto),
+        AppFontOption("lato", R.string.font_lato),
+        AppFontOption("montserrat", R.string.font_montserrat),
+        AppFontOption("poppins", R.string.font_poppins),
+        AppFontOption("inter", R.string.font_inter),
+        AppFontOption("outfit", R.string.font_outfit),
+        AppFontOption("space_grotesk", R.string.font_space_grotesk),
+        AppFontOption("syne", R.string.font_syne),
+        AppFontOption("lexend", R.string.font_lexend),
+        AppFontOption("jetbrains_mono", R.string.font_jetbrains_mono),
+        AppFontOption("caskaydia_cove_nerd", R.string.font_caskaydia_cove_nerd),
+        AppFontOption("hack_nerd", R.string.font_hack_nerd),
+        AppFontOption("iosevka_nerd", R.string.font_iosevka_nerd),
+    )
+
+    /** The bundled Nerd Fonts: key to (regular, bold) resource ids. */
+    internal val bundled: Map<String, Pair<Int, Int>> = mapOf(
+        "caskaydia_cove_nerd" to (R.font.caskaydia_cove_nerd_regular to R.font.caskaydia_cove_nerd_bold),
+        "hack_nerd" to (R.font.hack_nerd_regular to R.font.hack_nerd_bold),
+        "iosevka_nerd" to (R.font.iosevka_nerd_regular to R.font.iosevka_nerd_bold),
+    )
+
+    /**
+     * The family for a stored key. Also answers keys that earlier versions offered and the picker no
+     * longer lists (Oswald, Playfair, serif...), so a saved choice keeps its look; an unknown key is
+     * the system default.
+     */
+    fun familyFor(key: String): FontFamily {
+        val k = key.lowercase()
+        bundled[k]?.let { (regular, bold) ->
+            return FontFamily(ResourceFont(regular, FontWeight.Normal), ResourceFont(bold, FontWeight.Bold))
+        }
+        return when (k) {
+            "sans" -> FontFamily.SansSerif
+            "serif" -> FontFamily.Serif
+            "mono" -> FontFamily.Monospace
+            "cursive" -> FontFamily.Cursive
+            "roboto" -> getGoogleFontFamily("Roboto")
+            "lato" -> getGoogleFontFamily("Lato")
+            "montserrat" -> getGoogleFontFamily("Montserrat")
+            "oswald" -> getGoogleFontFamily("Oswald")
+            "poppins" -> getGoogleFontFamily("Poppins")
+            "playfair" -> getGoogleFontFamily("Playfair Display")
+            "merriweather" -> getGoogleFontFamily("Merriweather")
+            "inter" -> getGoogleFontFamily("Inter")
+            "outfit" -> getGoogleFontFamily("Outfit")
+            "space_grotesk" -> getGoogleFontFamily("Space Grotesk")
+            "syne" -> getGoogleFontFamily("Syne")
+            "lexend" -> getGoogleFontFamily("Lexend")
+            "jetbrains_mono" -> getGoogleFontFamily("JetBrains Mono")
+            else -> FontFamily.Default
+        }
+    }
+}
 /**
  * Ceiling for the COMBINED font scale (system accessibility scale x in-app scale). The in-app
  * scale multiplies role sizes that are emitted in .sp, and .sp is scaled again by the system
@@ -79,26 +149,8 @@ val Typography = Typography(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun typographyForFontFamily(fontFamilyKey: String, fontScale: Float = 1.0f): Typography {
-    val family = when (fontFamilyKey.lowercase()) {
-        "sans" -> FontFamily.SansSerif
-        "serif" -> FontFamily.Serif
-        "mono" -> FontFamily.Monospace
-        "cursive" -> FontFamily.Cursive
-        "roboto" -> getGoogleFontFamily("Roboto")
-        "lato" -> getGoogleFontFamily("Lato")
-        "montserrat" -> getGoogleFontFamily("Montserrat")
-        "oswald" -> getGoogleFontFamily("Oswald")
-        "poppins" -> getGoogleFontFamily("Poppins")
-        "playfair" -> getGoogleFontFamily("Playfair Display")
-        "merriweather" -> getGoogleFontFamily("Merriweather")
-        "inter" -> getGoogleFontFamily("Inter")
-        "outfit" -> getGoogleFontFamily("Outfit")
-        "space_grotesk" -> getGoogleFontFamily("Space Grotesk")
-        "syne" -> getGoogleFontFamily("Syne")
-        "lexend" -> getGoogleFontFamily("Lexend")
-        "jetbrains_mono" -> getGoogleFontFamily("JetBrains Mono")
-        else -> FontFamily.Default
-    }
+    val family = AppFonts.familyFor(fontFamilyKey)
+
 
     fun TextStyle.scaled(scale: Float): TextStyle {
         return this.copy(
