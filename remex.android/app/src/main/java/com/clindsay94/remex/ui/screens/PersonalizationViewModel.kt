@@ -30,7 +30,17 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
     // Pending save state — debounced to avoid a DataStore write on every slider frame.
     private val _pendingSave = MutableStateFlow<SettingsManager.PersonalizationPreferences?>(null)
 
+    // The app background is saved on its own path (RemEx-pp4cm.17): a style tap and an intensity
+    // drag share one short debounce, and neither rewrites the rest of the appearance settings.
+    private val _pendingBackground = MutableStateFlow<Pair<String, Float>?>(null)
+
     init {
+        viewModelScope.launch {
+            _pendingBackground
+                .filterNotNull()
+                .debounce(300L)
+                .collectLatest { (style, intensity) -> settingsManager.saveBackground(style, intensity) }
+        }
         viewModelScope.launch {
             _pendingSave
                 .filterNotNull()
@@ -63,6 +73,11 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
     /** Immediate (non-debounced) write — a switch flip should persist instantly (RemEx-9429). */
     fun setDynamicColor(enabled: Boolean) {
         viewModelScope.launch { settingsManager.setDynamicColor(enabled) }
+    }
+
+    /** Queues the app background choice for saving (debounced, so a slider drag is one write). */
+    fun setBackground(style: String, intensity: Float) {
+        _pendingBackground.value = style to intensity
     }
 
     fun save(

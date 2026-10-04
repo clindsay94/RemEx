@@ -1678,4 +1678,21 @@
     <string name="rc_reboot_uefi_warning">Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
     <string name="relative_time_just_now">przed chwilą</string>
     <string name="button_open_app_settings">Otwórz ustawienia</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Tło</string>
+    <string name="personalization_background_textures">Tekstury</string>
+    <string name="personalization_background_animated">Animowane</string>
+    <string name="personalization_background_none">Brak</string>
+    <string name="personalization_background_grain">Ziarno</string>
+    <string name="personalization_background_dots">Kropki</string>
+    <string name="personalization_background_grid">Siatka</string>
+    <string name="personalization_background_topographic">Topograficzne</string>
+    <string name="personalization_background_hexagons">Sześciokąty</string>
+    <string name="personalization_background_carbon">Karbon</string>
+    <string name="personalization_background_aurora">Dryfująca zorza</string>
+    <string name="personalization_background_mesh">Dryfująca siatka kolorów</string>
+    <string name="personalization_background_starfield">Pole gwiazd</string>
+    <string name="personalization_background_intensity">Intensywność: %1$d%%</string>
+    <string name="cd_background_intensity">Intensywność tła</string>
+    <string name="personalization_background_note">Animowane tła zatrzymują się, gdy aplikacja działa w tle, gdy włączony jest Oszczędzacz baterii lub gdy animacje są wyłączone.</string>
 </resources>

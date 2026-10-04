@@ -1754,4 +1754,21 @@
     <string name="rc_reboot_uefi_warning">The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</string>
     <string name="relative_time_just_now">just now</string>
     <string name="button_open_app_settings">Open settings</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Background</string>
+    <string name="personalization_background_textures">Textures</string>
+    <string name="personalization_background_animated">Animated</string>
+    <string name="personalization_background_none">None</string>
+    <string name="personalization_background_grain">Grain</string>
+    <string name="personalization_background_dots">Dots</string>
+    <string name="personalization_background_grid">Grid</string>
+    <string name="personalization_background_topographic">Topographic</string>
+    <string name="personalization_background_hexagons">Hexagons</string>
+    <string name="personalization_background_carbon">Carbon</string>
+    <string name="personalization_background_aurora">Aurora drift</string>
+    <string name="personalization_background_mesh">Mesh drift</string>
+    <string name="personalization_background_starfield">Starfield</string>
+    <string name="personalization_background_intensity">Intensity: %1$d%%</string>
+    <string name="cd_background_intensity">Background intensity</string>
+    <string name="personalization_background_note">Animated backgrounds pause when the app is in the background, when Battery Saver is on, or when animations are turned off.</string>
 </resources>
