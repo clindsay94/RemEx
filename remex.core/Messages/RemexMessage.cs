@@ -487,6 +487,32 @@ public sealed record RemexMessage
     [JsonPropertyName("diagnosticSummaryResponse")]
     [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.DiagnosticSummaryResponse>))]
     public Remex.Core.Models.DiagnosticSummaryResponse? DiagnosticSummaryResponse { get; init; }
+
+    // ── Phone telemetry alerts (RemEx-pp4cm.12). Optional additions; no protocolVersion bump. ──
+    //
+    // LENIENT FOR THE SAME REASON AS THE HOME-PINS SLOTS ABOVE: a wrong-typed field (a threshold sent
+    // as text, a direction that is not Above or Below) nulls this slot only and the handler drops the
+    // message, instead of nulling the envelope and dropping the session.
+
+    /// <summary>The PC's alert rules, for <see cref="MessageTypes.SensorAlertRules"/> (host → phone).</summary>
+    [JsonPropertyName("sensorAlertRules")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.SensorAlertRules>))]
+    public Remex.Core.Models.SensorAlertRules? SensorAlertRules { get; init; }
+
+    /// <summary>A rule firing, for <see cref="MessageTypes.SensorAlertFired"/> (host → phone).</summary>
+    [JsonPropertyName("sensorAlertFired")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.SensorAlertFiredEvent>))]
+    public Remex.Core.Models.SensorAlertFiredEvent? SensorAlertFired { get; init; }
+
+    /// <summary>One phone-requested rule, for <see cref="MessageTypes.SensorAlertSet"/> (phone → host).</summary>
+    [JsonPropertyName("sensorAlertChange")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.SensorAlertChange>))]
+    public Remex.Core.Models.SensorAlertChange? SensorAlertChange { get; init; }
+
+    /// <summary>One phone-requested removal, for <see cref="MessageTypes.SensorAlertRemove"/> (phone → host).</summary>
+    [JsonPropertyName("sensorAlertRemoval")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.SensorAlertRemoval>))]
+    public Remex.Core.Models.SensorAlertRemoval? SensorAlertRemoval { get; init; }
 }
 
 /// <summary>
@@ -792,4 +818,31 @@ public static class MessageTypes
 
     /// <summary>Host -> phone: the PC's status rows.</summary>
     public const string DiagnosticSummaryResult = "diagnostic_summary_result";
+
+    // ── Phone telemetry alerts (RemEx-pp4cm.12) ──
+    //
+    // NAMING RULE, LIKE home_pins_ ABOVE: every HOST -> PHONE type starts with "sensor_alert_", so the
+    // single prefix forward in AndroidNativeExports.OnNativeMessageReceived carries all of them to
+    // RemexCallback.onSensorAlertMessage. The phone -> host set / remove types match the prefix too and
+    // never arrive on the phone side; sensor_alerts_get does not match it and is never routed there.
+    // Do not add a host -> phone sensor-alert type outside the prefix.
+
+    /// <summary>Host -> phone: a rule just fired on the PC. Sent only when the PC itself notifies.</summary>
+    public const string SensorAlertFired = "sensor_alert_fired";
+
+    /// <summary>
+    /// Host -> phone: the PC's whole rule list. The reply to <see cref="SensorAlertsGet"/>,
+    /// <see cref="SensorAlertSet"/> and <see cref="SensorAlertRemove"/>, accepted or refused, and
+    /// pushed whenever the PC's rules change by any other route.
+    /// </summary>
+    public const string SensorAlertRules = "sensor_alert_rules";
+
+    /// <summary>Phone -> host: send me the rule list. The reply is <see cref="SensorAlertRules"/>.</summary>
+    public const string SensorAlertsGet = "sensor_alerts_get";
+
+    /// <summary>Phone -> host: add a rule, or replace the sensor's existing one. The reply is <see cref="SensorAlertRules"/>.</summary>
+    public const string SensorAlertSet = "sensor_alert_set";
+
+    /// <summary>Phone -> host: remove a sensor's rule. The reply is <see cref="SensorAlertRules"/>.</summary>
+    public const string SensorAlertRemove = "sensor_alert_remove";
 }

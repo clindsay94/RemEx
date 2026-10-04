@@ -160,6 +160,12 @@ public static class MessageAudience
         [MessageTypes.RoutineRunReport] = ClientSurface.AndroidControl,
         [MessageTypes.RoutineStepResult] = ClientSurface.AndroidControl,
         [MessageTypes.RoutineSyncResult] = ClientSurface.AndroidControl,
+        // The PC's alert rules firing on the phone (RemEx-pp4cm.12). The phone only: the PC's own UI
+        // raises its alerts in-process from the same tracker, so sending these over loopback would be a
+        // second evaluator's worth of noise. Both reach Kotlin through the sensor_alert_ prefix forward;
+        // declaring them here is what makes that forward impossible to delete in silence.
+        [MessageTypes.SensorAlertFired] = ClientSurface.AndroidControl,
+        [MessageTypes.SensorAlertRules] = ClientSurface.AndroidControl,
         [MessageTypes.Telemetry] = ClientSurface.AndroidControl | ClientSurface.PcUi,
     };
 }

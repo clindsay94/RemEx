@@ -390,6 +390,16 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.Home.IHomePinnedSensorsStore>(
             sp => new Remex.Agent.Services.Home.HomePinnedSensorsStore(sp.GetRequiredService<TimeProvider>()));
 
+        // The PC's sensor alerts, mirrored to paired phones (RemEx-pp4cm.12): PingPongHandler takes a
+        // phone's requests, and the desktop's PhoneSensorAlertsBridge (via App.EmbeddedHostServices)
+        // publishes the PC's firings and rules through the same instance. Holds no rules.
+        builder.Services.AddSingleton<Remex.Core.Services.Alerts.IPhoneSensorAlerts>(
+            sp => new Remex.Agent.Services.Alerts.PhoneSensorAlerts(
+                sp.GetRequiredService<ClientSessionRegistry>(),
+                sp.GetRequiredService<PairedClientRegistry>(),
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Agent.Services.Alerts.PhoneSensorAlerts>>(),
+                sp.GetRequiredService<TimeProvider>()));
+
         // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
         // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
         // name the host's types without a project-reference cycle.
@@ -729,7 +739,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Home.IHomePinnedSensorsStore>(),
                 context.RequestServices.GetRequiredService<PhoneFileRelay>(),
-                context.RequestServices.GetRequiredService<Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService>());
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Alerts.IPhoneSensorAlerts>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

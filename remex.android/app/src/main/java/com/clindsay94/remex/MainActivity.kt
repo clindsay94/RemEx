@@ -20,6 +20,7 @@ import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.ui.components.FileConsentDialogHost
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
+import com.clindsay94.remex.alerts.SensorAlertOpenRequests
 import com.clindsay94.remex.ui.routines.RoutineOpenRequests
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.compose.ui.geometry.Rect
@@ -74,6 +75,8 @@ class MainActivity : ComponentActivity() {
         // A routine notification's Open / "See what happened" (RemEx-pp0rt.6); AppNavigation
         // takes it to Routines once the splash has passed.
         RoutineOpenRequests.offer(intent)
+        // A PC alert notification's tap (RemEx-pp4cm.12); AppNavigation takes it to Sensors.
+        SensorAlertOpenRequests.offer(intent)
 
         // One-time move of every upgrading user onto Live Handshake (RemEx-8g6n0). The read path applies the
         // same rule already, so this only makes it durable; it does not gate anything.
@@ -147,6 +150,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         RoutineOpenRequests.offer(intent)
+        SensorAlertOpenRequests.offer(intent)
     }
 
     /**

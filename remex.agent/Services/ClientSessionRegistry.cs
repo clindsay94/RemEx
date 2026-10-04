@@ -203,6 +203,22 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
         return entry is not null && entry.Socket.State == WebSocketState.Open ? entry.Socket : null;
     }
 
+    /// <summary>
+    /// The distinct client ids that hold an open, PROVEN session right now (RemEx-pp4cm.12), for a push
+    /// that goes to every connected phone.
+    /// </summary>
+    /// <remarks>
+    /// PROVEN, on the same rule as <see cref="Find"/>: a loopback or unpaired connection that merely
+    /// named a phone is never in this list, so it can neither receive a broadcast nor make one go to a
+    /// phone that is not there. Callers still send through <see cref="TrySendAsync"/>, which re-applies
+    /// the rule per client.
+    /// </remarks>
+    public IReadOnlyList<string> ProvenOpenClientIds() =>
+        [.. _sessions.Values
+            .Where(e => e.IdentityProven && e.Socket.State == WebSocketState.Open && e.ClientId is { Length: > 0 })
+            .Select(e => e.ClientId!)
+            .Distinct(StringComparer.Ordinal)];
+
     /// <summary>Records whether a client can be asked for consent on its own screen (RemEx-220r).</summary>
     /// <remarks>
     /// Set from <c>clientCapabilities.supportsConsentPrompt</c> on any message that carries it

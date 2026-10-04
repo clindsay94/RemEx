@@ -172,6 +172,9 @@ class SettingsManager(val context: Context) {
                 // First-run Home Base coach marks: true once the user has seen or dismissed the
                 // dashboard coaching overlay. Reset re-arms it as first-run (RemEx-km0i.10).
                 val DASHBOARD_COACH_SEEN_KEY = booleanPreferencesKey("dashboard_coach_seen")
+                // "Alerts from your PC" (RemEx-pp4cm.12): whether the PC's sensor alerts show as notifications.
+                // On unless switched off. Not exported: it is how this phone behaves, not a layout to carry over.
+                val PC_ALERTS_ENABLED_KEY = booleanPreferencesKey("pc_alerts_enabled")
                 // Routines first-visit coach marks (routines spec 5.3) and the More "New" badge that
                 // shows until Routines is first opened (spec 1.2, R-UX-05). RemEx-pp0rt.6.
                 val ROUTINES_COACH_SEEN_KEY = booleanPreferencesKey("routines_coach_seen")
@@ -331,6 +334,16 @@ class SettingsManager(val context: Context) {
                 context.dataStore.data.map { preferences ->
                         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
                 }
+
+        /** Whether the PC's sensor alerts are shown as notifications on this phone; true until switched off (RemEx-pp4cm.12). */
+        val pcAlertsEnabledFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[PC_ALERTS_ENABLED_KEY] ?: true
+                }
+
+        suspend fun setPcAlertsEnabled(enabled: Boolean) {
+                context.dataStore.edit { it[PC_ALERTS_ENABLED_KEY] = enabled }
+        }
 
         // First-run Home Base coach marks; false (unseen) until markDashboardCoachSeen (RemEx-km0i.10).
         val dashboardCoachSeenFlow: Flow<Boolean> =

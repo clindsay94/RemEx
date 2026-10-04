@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Alerts;
 using Remex.Core.Services.Home;
 using Remex.Core.Services.Theme;
 using Remex.Core.Validation;
@@ -59,7 +60,11 @@ public sealed class PingPongHandler(
     Remex.Agent.Services.FileTransfer.PhoneFileRelay? phoneFileRelay = null,
     // The phone's read-only look at the PC's logs and status (RemEx-pp4cm.13): diagnostic_logs_get and
     // diagnostic_summary_get. Optional and last for the same reason; null answers both "refused".
-    Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService? phoneDiagnostics = null) : IDisposable
+    Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService? phoneDiagnostics = null,
+    // The PC's sensor alerts on the phone (RemEx-pp4cm.12): sensor_alerts_get / sensor_alert_set /
+    // sensor_alert_remove in. Optional and last for the same reason as the five above; null means
+    // those requests are logged and ignored.
+    Remex.Core.Services.Alerts.IPhoneSensorAlerts? phoneSensorAlerts = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -675,6 +680,52 @@ public sealed class PingPongHandler(
                             webSocket,
                             await phoneDiagnostics.HandleAsync(message, diagnosticsGate, isLoopback, identityProven, ct),
                             ct);
+                        break;
+
+                    // ── The PC's sensor alerts on the phone (RemEx-pp4cm.12) ──
+                    // Three phone requests: get the rule list, set one rule, remove one. Pairing-gated by
+                    // RequiresPairing's default and scoped to a PROVEN, non-loopback session, like
+                    // home_pins_change: the PC's own UI edits rules in-process, and loopback can claim
+                    // any client id. Nothing is decided here beyond shape: the desktop applies a request
+                    // through SensorAlertStore on its UI thread and ANSWERS BY PUBLISHING THE RULES,
+                    // accepted or refused, so the phone hears back through sensor_alert_rules. Input that
+                    // fails the shape check is dropped with a warning, and the unchanged rules are sent
+                    // anyway so the phone's optimistic edit is put back.
+                    case MessageTypes.SensorAlertsGet:
+                    case MessageTypes.SensorAlertSet:
+                    case MessageTypes.SensorAlertRemove:
+                        if (phoneSensorAlerts is null || isLoopback || !identityProven)
+                        {
+                            logger.LogWarning(
+                                "Ignored {Type}: phone alerts are not available on this connection.", message.Type);
+                            break;
+                        }
+
+                        var alertClientId = connectionClientId ?? string.Empty;
+                        if (message.Type == MessageTypes.SensorAlertSet
+                            && SensorAlertValidation.IsWellFormedChange(message.SensorAlertChange))
+                        {
+                            phoneSensorAlerts.RequestFromPhone(new PhoneSensorAlertRequest(
+                                PhoneSensorAlertRequestKind.Set, alertClientId, Change: message.SensorAlertChange));
+                        }
+                        else if (message.Type == MessageTypes.SensorAlertRemove
+                            && SensorAlertValidation.IsWellFormedRemoval(message.SensorAlertRemoval))
+                        {
+                            phoneSensorAlerts.RequestFromPhone(new PhoneSensorAlertRequest(
+                                PhoneSensorAlertRequestKind.Remove, alertClientId, SensorName: message.SensorAlertRemoval!.SensorName));
+                        }
+                        else
+                        {
+                            if (message.Type != MessageTypes.SensorAlertsGet)
+                            {
+                                logger.LogWarning(
+                                    "Ignored malformed {Type} from {ClientId}.", message.Type, connectionClientId);
+                            }
+
+                            phoneSensorAlerts.RequestFromPhone(new PhoneSensorAlertRequest(
+                                PhoneSensorAlertRequestKind.Get, alertClientId));
+                        }
+
                         break;
 
                     // ── 3.0 Routines: PC-run routines (RemEx-pp0rt.9, spec §7.3.1, §7.3.8, §7.4.2) ──

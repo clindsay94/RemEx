@@ -558,3 +558,56 @@ envelope, and the host answers `invalid_request`.
   `autostart`, `capture`, `encoder`, `version`, `uptime`; `state` is `ok`, `warn` or `error`; `detail` is a short
   redacted value. The phone translates the key and keeps an unknown key as plain text.
 - **Errors.** `error` is null on success, otherwise `refused`, `rate_limited`, `invalid_request` or `unavailable`.
+---
+
+## 11. Phone telemetry alerts
+
+The phone shows and edits the same sensor alert rules as the PC, and the PC's alerts reach the phone's
+notification shade while the phone is connected. The PC is the single owner: the rules are
+`DashboardProfile.SensorAlerts` (`SensorAlertStore`), and they are evaluated only by the PC's
+`SensorAlertTracker`, so the phone never compares a reading with a threshold. Payload records:
+`remex.core/Models/SensorAlertWire.cs`; validation: `remex.core/Validation/SensorAlertValidation.cs`.
+
+**Transport and gating.** `RemexMessage` on the authenticated `/ws` channel, `protocolVersion` stays `2`.
+The host sends these only to paired phones that hold an open session which proved its identity, never to
+a loopback session, and accepts the three requests only from an authenticated, non-loopback session. A
+phone that is not connected is simply not told: there is no queue, and the phone asks for the rules again
+each time it connects.
+
+| Record | Field | Type | Meaning |
+| :--- | :--- | :--- | :--- |
+| `HostCapabilities` | `supportsSensorAlerts` | `bool` | The PC sends the alert messages below and accepts the three requests. Absent: the phone hides its alert controls |
+
+| `type` | Direction | Envelope property | Payload record |
+| :--- | :--- | :--- | :--- |
+| `sensor_alert_fired` | host → phone | `sensorAlertFired` | `SensorAlertFiredEvent { sensorName, displayName, value, unit, threshold, direction, severity, firedAtUtc }` |
+| `sensor_alerts_get` | phone → host | none | none. The answer is `sensor_alert_rules` |
+| `sensor_alert_set` | phone → host | `sensorAlertChange` | `SensorAlertChange { sensorName, threshold, direction, severity }`. Adds the rule, or replaces the sensor's existing one |
+| `sensor_alert_remove` | phone → host | `sensorAlertRemoval` | `SensorAlertRemoval { sensorName }` |
+
+`sensor_alert_rules` (host → phone, envelope property `sensorAlertRules`, payload
+`SensorAlertRules { rules, revision, updatedUtc }`, each rule `SensorAlertRule { sensorName, displayName,
+unit, currentValue, threshold, direction, severity }`) is the one reply to `sensor_alerts_get`,
+`sensor_alert_set` and `sensor_alert_remove`. It is also sent whenever the PC's rules change by any other
+route, so it carries the whole list every time. It is not a new kind of request; it is how the PC answers
+the ones above.
+
+Every alert type starts with `sensor_alert_`. The Android native router forwards that whole prefix to
+`RemexCallback.onSensorAlertMessage` in one place; a new host → phone type must keep the prefix or it is
+dropped without a trace. All four slots are lenient: a wrong-typed field nulls the slot, not the envelope.
+
+- **Direction and severity are names.** `"Above"` / `"Below"` and `"Warning"` / `"Critical"`, verbatim.
+  Any other name, or a number that is not one of them, makes the request malformed.
+- **Firing.** `sensor_alert_fired` is sent exactly when the PC raises its own alert for the rule, so the
+  tracker's 60 second per-sensor cooldown applies to phones as well; there is no second evaluator.
+  `value` is the reading that crossed `threshold`, in `unit`.
+- **Rules.** `currentValue` is the sensor's latest reading when the PC has one (absent otherwise). `revision`
+  rises per host process; the phone ignores an older list on the same connection and forgets the counter on
+  reconnect. A list holds at most 100 rules.
+- **Requests.** The PC applies a request on its UI thread through `SensorAlertStore` (so its own Alerts
+  list refreshes and the profile is saved) and answers by sending `sensor_alert_rules`, accepted or not. A
+  refused request is answered with the unchanged list, which puts the phone's optimistic edit back. A set
+  is refused when: the sensor name is blank, over 200 characters or has control characters; the threshold
+  is not a finite number within ±1e12; the direction or severity is unknown; the PC does not know a sensor
+  by that name (unless it already has a rule for it, which can always be edited or removed); or adding the
+  rule would make more than 100.

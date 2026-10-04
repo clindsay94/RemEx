@@ -6,6 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.HomePinsState
+import com.clindsay94.remex.data.SensorAlertDirection
+import com.clindsay94.remex.data.SensorAlertSeverity
+import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.sensors.CardSpan
 import com.clindsay94.remex.ui.screens.sensors.SensorGridMigration
@@ -392,6 +395,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     /** Pins or unpins a sensor on the PC's Home (or the phone's own list for an older PC). */
     fun setHomePin(sensorName: String, pinned: Boolean) = RemexClientManager.setHomePin(sensorName, pinned)
+
+    // ── The PC's sensor alerts on the phone (RemEx-pp4cm.12) ──
+
+    /** The connected PC's alert rules; the cards' bells, the "Alert me..." sheet and the Alerts list read this. */
+    val sensorAlerts: StateFlow<SensorAlertsState> = RemexClientManager.sensorAlerts
+
+    /** Whether the PC's alerts show as notifications on this phone ("Alerts from your PC"; on until switched off). */
+    val pcAlertsEnabled: StateFlow<Boolean> =
+        settingsManager.pcAlertsEnabledFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setPcAlertsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setPcAlertsEnabled(enabled) }
+    }
+
+    /** Sets (adds or replaces) the alert on a sensor; the PC owns the rule and confirms it with its next list. */
+    fun setSensorAlert(
+        sensorName: String,
+        displayName: String,
+        unit: String?,
+        threshold: Double,
+        direction: SensorAlertDirection,
+        severity: SensorAlertSeverity,
+    ) = RemexClientManager.setSensorAlert(sensorName, displayName, unit, threshold, direction, severity)
+
+    fun removeSensorAlert(sensorName: String) = RemexClientManager.removeSensorAlert(sensorName)
+
+    /** Asks the PC for its rules again, so a sheet opened on a stale list shows the PC's own. */
+    fun refreshSensorAlerts() = RemexClientManager.refreshSensorAlerts()
 
     // ── Coach marks (RemEx-km0i.10) ──
     // -1 = hidden; 0..DASHBOARD_COACH_HINT_COUNT-1 = the sequential hints. Never shown in edit mode.

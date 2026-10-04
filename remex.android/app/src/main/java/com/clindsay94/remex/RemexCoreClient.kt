@@ -91,6 +91,18 @@ object RemexCoreClient {
          * reason as the callbacks above.
          */
         fun onDiagnosticMessage(json: String?)
+
+        /**
+         * Any `sensor_alert_*` message from the PC, as a whole RemexMessage envelope (RemEx-pp4cm.12):
+         * today `sensor_alert_fired` (a rule just fired on the PC) and `sensor_alert_rules` (the PC's
+         * whole rule list).
+         *
+         * Forwarded by PREFIX in the native router, like `home_pins_*`. Switch on `type` and ignore what
+         * you do not handle. REQUIRED, not defaulted: the native callback registration is all-or-nothing,
+         * so a missing implementation fails loudly at registration instead of the PC's alerts silently
+         * never arriving.
+         */
+        fun onSensorAlertMessage(json: String?)
         /**
          * Link quality measured by the native layer (RemEx-93n2).
          *

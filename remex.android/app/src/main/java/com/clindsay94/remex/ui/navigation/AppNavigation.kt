@@ -99,6 +99,7 @@ import com.clindsay94.remex.ui.splash.LiveHandshakeSplash
 import com.clindsay94.remex.ui.splash.rememberLiveHandshakeLensModifier
 import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.routines.RoutineEditorChrome
+import com.clindsay94.remex.alerts.SensorAlertOpenRequests
 import com.clindsay94.remex.ui.routines.RoutineOpenRequests
 import com.clindsay94.remex.ui.routines.RoutinesScreen
 import com.clindsay94.remex.ui.PairingRouteArgs
@@ -560,6 +561,17 @@ private fun AppNavigationContent(
                 if (pendingRoutineOpen == null || currentDestination == null) return@LaunchedEffect
                 if (isOn(Screen.Splash) || isOn(Screen.Tutorial) || isOn(Screen.Routines)) return@LaunchedEffect
                 navigateTo(Screen.Routines)
+        }
+
+        // A PC alert notification's tap (RemEx-pp4cm.12): open Sensors, where the alert's sensor lives.
+        // Same guard as the routine open above: never over the splash or the tutorial, which navigate
+        // onward themselves; the key on currentDestination retries once they have.
+        val pendingSensorAlertOpen by SensorAlertOpenRequests.pending.collectAsStateWithLifecycle()
+        LaunchedEffect(pendingSensorAlertOpen, currentDestination) {
+                if (!pendingSensorAlertOpen || currentDestination == null) return@LaunchedEffect
+                if (isOn(Screen.Splash) || isOn(Screen.Tutorial)) return@LaunchedEffect
+                SensorAlertOpenRequests.consume()
+                if (!isOn(Screen.Dashboard)) navigateTo(Screen.Dashboard)
         }
 
         // ─── Adaptive layout shell ────────────────────────────────────────────────

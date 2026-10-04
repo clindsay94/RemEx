@@ -64,6 +64,7 @@ public class HostToClientRoutingTests
     [InlineData("routine_", "_onRoutineMessageMethodId")]
     [InlineData("home_pins_", "_onHomePinsMessageMethodId")]
     [InlineData("diagnostic_", "_onDiagnosticMessageMethodId")]
+    [InlineData("sensor_alert_", "_onSensorAlertMessageMethodId")]
     public void TheFamilyIsForwardedByPrefixToItsCallback(string prefix, string callbackField)
     {
         var body = RouterBody();
@@ -88,6 +89,8 @@ public class HostToClientRoutingTests
     [InlineData("routine_", "routine_notify")]
     [InlineData("routine_", "routine_run_report")]
     [InlineData("home_pins_", "home_pins_sync")]
+    [InlineData("sensor_alert_", "sensor_alert_fired")]
+    [InlineData("sensor_alert_", "sensor_alert_rules")]
     public void TheWireValueStartsWithThePrefixItIsRoutedBy(string prefix, string wireValue)
     {
         // THE TWO HALVES OF THE ROUTING LIVE IN DIFFERENT FILES AND NOTHING TIED THEM TOGETHER.
@@ -165,6 +168,7 @@ public class HostToClientRoutingTests
     [InlineData("onRoutineMessage", "_onRoutineMessageMethodId")]
     [InlineData("onHomePinsMessage", "_onHomePinsMessageMethodId")]
     [InlineData("onDiagnosticMessage", "_onDiagnosticMessageMethodId")]
+    [InlineData("onSensorAlertMessage", "_onSensorAlertMessageMethodId")]
     public void TheCallbackIsLookedUpAndAssignedDuringRegistration(string javaMethod, string field)
     {
         // **THE HOLE THE ROUTER SCAN CANNOT SEE, AND IT IS THE BIGGER ONE.** The forward can be
@@ -195,6 +199,7 @@ public class HostToClientRoutingTests
                      ("routine_", "_onRoutineMessageMethodId"),
                      ("home_pins_", "_onHomePinsMessageMethodId"),
                      ("diagnostic_", "_onDiagnosticMessageMethodId"),
+                     ("sensor_alert_", "_onSensorAlertMessageMethodId"),
                  })
         {
             var match = Regex.Match(
@@ -228,6 +233,7 @@ public class HostToClientRoutingTests
         Assert.DoesNotContain("MessageTypes.Routine", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.HomePins", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.Diagnostic", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("MessageTypes.SensorAlert", body, StringComparison.Ordinal);
     }
 
     [Fact]

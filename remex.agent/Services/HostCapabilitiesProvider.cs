@@ -196,6 +196,9 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             RoutinePowerVerbs = Routines.RoutinePowerVerbProbe.Probe(),
             // PingPongHandler handles home_pins_change and sends home_pins_sync (RemEx-wqo7a.5).
             SupportsHomePinsSync = true,
+            // PingPongHandler handles the sensor_alert* requests and PhoneSensorAlerts sends
+            // sensor_alert_fired / sensor_alert_rules (RemEx-pp4cm.12).
+            SupportsSensorAlerts = true,
         };
     }
 

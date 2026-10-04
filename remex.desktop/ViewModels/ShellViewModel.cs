@@ -15,6 +15,7 @@ using Remex.Core.Guards;
 using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Services.Alerts;
 using Remex.Core.Services.Home;
 
 namespace Remex.Desktop.ViewModels;
@@ -733,6 +734,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private CustomizationViewModel? _customizationViewModel;
     private LayoutSettingsViewModel? _layoutSettingsViewModel;
     private readonly HomePinsBridge? _homePinsBridge;
+    private readonly PhoneSensorAlertsBridge? _phoneSensorAlertsBridge;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
@@ -1146,6 +1148,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 homePinsStore, _layoutService, _canvasViewModel, logger: _services.GetService<ILogger<HomePinsBridge>>());
         }
 
+        // The PC's sensor alerts on paired phones (RemEx-pp4cm.12): the same host-only arrangement as
+        // the pinned-sensors bridge above. It sends the tracker's own firings to phones and applies a
+        // phone's rule edits through SensorAlertStore, so there is still one set of rules.
+        if (App.EmbeddedHostServices?.GetService(typeof(IPhoneSensorAlerts)) is IPhoneSensorAlerts phoneSensorAlerts)
+        {
+            _phoneSensorAlertsBridge = new PhoneSensorAlertsBridge(
+                phoneSensorAlerts, alertStore, _canvasViewModel, logger: _services.GetService<ILogger<PhoneSensorAlertsBridge>>());
+        }
+
         // AlertBadgeCount MIRRORS THE TRACKER, IT DOES NOT COUNT (RemEx-8wpvr.3). Seeded from
         // whatever is already tripped (a fresh tracker is always empty, but a test or future caller
         // handing in one that is not should not have to wait for the next trip to see it), then kept
@@ -1242,6 +1253,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // Before the canvas it watches.
         _homePinsBridge?.Dispose();
+        _phoneSensorAlertsBridge?.Dispose();
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();
