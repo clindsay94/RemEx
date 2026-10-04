@@ -15,10 +15,24 @@ namespace Remex.Branding;
 ///
 /// Pixel-exact port of the Android <c>SplashPong.kt</c>. Deterministic — a pure function of elapsed
 /// time with no <c>Random</c>/<c>DateTime</c> (rally trajectory varies by contact index + sin), so the
-/// offline PNG renderer yields byte-stable frames. Fixed brand palette; never theme-adaptive.
+/// offline PNG renderer yields byte-stable frames. Colours come from SplashBrand (seed-recoloured by
+/// the host).
+///
+/// Since RemEx-pp4cm.11 the rally is played on a phosphor CRT court (<see cref="SplashFilmField"/>):
+/// glowing rails and net that heat up with the rally, and every contact is a beat that ripples the
+/// court, building to the mark assembling. Under reduced motion it shows its designed still frame.
 /// </summary>
-public sealed class PongVariant : ISplashVariant
+public sealed class PongVariant : IFieldSplashVariant
 {
+    private volatile bool _reduced;
+    private volatile bool _field = true;
+
+    /// <inheritdoc />
+    public bool ReducedMotion { set => _reduced = value; }
+
+    /// <inheritdoc />
+    public bool FieldEnabled { set => _field = value; }
+
     // ── Timeline (seconds) — identical to Android SplashPong.kt through the wordmark ──
     private const float IntroDur    = 0.30f;
     private const float Contact1    = 0.75f;   // right paddle
@@ -41,7 +55,7 @@ public sealed class PongVariant : ISplashVariant
     private const float FadeAt   = 2.82f;
     private const float FadeDur  = 0.38f;      // fade fully covers the handoff at 3.20
 
-    public float Duration => 3.20f;
+    public float Duration => _reduced ? SplashFilmField.StillDuration : 3.20f;
 
     private const int MorphSamples = 72;
     private static readonly float Pi = MathF.PI;
@@ -52,6 +66,11 @@ public sealed class PongVariant : ISplashVariant
 
     public void Render(SKCanvas canvas, float width, float height, float t, float dt)
     {
+        if (_reduced)
+        {
+            SplashFilmField.DrawStill(canvas, width, height, SplashFilmStyle.Pong, t, _field);
+            return;
+        }
         float w = width, h = height;
         float baseSize = MathF.Min(w, h);
 
@@ -117,7 +136,15 @@ public sealed class PongVariant : ISplashVariant
         canvas.Scale(zoomScale);
         canvas.Translate(-w / 2f, -h / 2f);
 
-        SplashScene.DrawBackdrop(canvas, w, h);
+        // The court: heat builds over the rally; each contact is a beat from the paddle that struck,
+        // and the mark assembling is the last and biggest one.
+        var beat = t >= CompleteAt ? new FilmBeat(markCenter.X, markCenter.Y, CompleteAt, 1.2f)
+            : t >= Contact3 ? new FilmBeat(rightX, y3, Contact3, 0.95f)
+            : t >= Contact2 ? new FilmBeat(leftX, y2, Contact2, 0.8f)
+            : t >= Contact1 ? new FilmBeat(rightX, y1, Contact1, 0.65f)
+            : FilmBeat.None;
+        SplashFilmField.Draw(canvas, w, h, SplashFilmStyle.Pong, t, baseSize / 400f, new SKPoint(cxMid, midY),
+            Clamp01((t - IntroDur) / (Contact3 - IntroDur)), beat, still: false, _field);
 
         // Paddles — morph rounded bar → chevron/cursor while sliding to the icon layout.
         EnsureTargets();
@@ -196,7 +223,8 @@ public sealed class PongVariant : ISplashVariant
         // Exit fade to the window fill (screen space — covers the handoff to the app).
         if (fade > 0f)
         {
-            using var f = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha(Alpha(fade)) };
+            // Out to the palette's backdrop, the app's own surface, so the hand-off is one colour.
+            using var f = new SKPaint { Color = SplashBrand.BackdropStart.WithAlpha(Alpha(fade)) };
             canvas.DrawRect(0, 0, w, h, f);
         }
     }

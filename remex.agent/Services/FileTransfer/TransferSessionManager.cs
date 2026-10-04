@@ -1660,6 +1660,13 @@ public sealed class TransferSessionManager : IDisposable
                 lastProgressAt = DateTime.UtcNow;
                 if (controlWs.State != WebSocketState.Open)
                 {
+                    // The verdict can land between the top-of-loop check and here; a phone that answered
+                    // and then closed its socket finished the upload, so let the loop read that answer.
+                    if (waiter.Result.Task.IsCompleted)
+                    {
+                        continue;
+                    }
+
                     _logger.LogWarning("The phone's connection closed while it was finishing {TransferId}.", transferId);
                     RecordQueueState(transferId, TransferState.Failed, PeerTransferFailure.ConnectionDropped);
                     return PeerFailure(transferId, PeerTransferFailure.ConnectionDropped);

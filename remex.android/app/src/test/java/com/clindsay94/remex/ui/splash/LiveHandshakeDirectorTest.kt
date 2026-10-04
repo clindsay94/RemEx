@@ -190,9 +190,31 @@ class LiveHandshakeDirectorTest {
         assertEquals(0.32, at[0], 0.002)
         assertEquals(0.64, at[1], 0.002) // due 0.62, pushed by LINE_GAP
         assertEquals(1.12, at[2], 0.002)
-        assertEquals(1.82, at[3], 0.002)
+        assertEquals(1.90, at[3], 0.002) // the FLOOR (RemEx-pp4cm.11), past lock + hold at 1.82
         assertEquals(8L, lines[1].value)
         assertTrue(lines[2].hot && lines[3].hot && !lines[1].hot)
+    }
+
+    @Test
+    fun `an awake PC mid-handshake is waited for and never called not answering`() {
+        // The AVD case (RemEx-pp4cm.11): the probe hears the PC at 0.41 s, the app is ready at once,
+        // and the host's ack lands at 1.95 s. Some evidence of silence (a connect attempt ending)
+        // turns up at 0.6 s. The splash must hold for the lock and must not say the PC that just
+        // answered is "not answering".
+        val lines = consoleFor(
+            DirectorInputs(
+                peers = 1, targetId = "desk", answers = listOf(DirectorAnswer("desk", 0.41)),
+                readyAt = 0.10, linkedAt = 1.95,
+            ),
+            rtt = mapOf("desk" to 414L),
+            silentAt = 0.6,
+        )
+        assertEquals(
+            listOf(ConsoleLineKind.Pinging, ConsoleLineKind.Answered, ConsoleLineKind.Linked, ConsoleLineKind.Opening),
+            lines.map { it.kind },
+        )
+        assertEquals(1.95, lines[2].at, 0.002)
+        assertEquals(2.65, lines[3].at, 0.002) // lock + LOCK_HOLD, not readyAt + GRACE
     }
 
     @Test

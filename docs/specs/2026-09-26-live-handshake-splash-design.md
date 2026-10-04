@@ -56,7 +56,7 @@ single in-flight discovery). It opens and immediately closes one TCP socket per 
 Both platforms implement the same pure function, unit-tested against
 `docs/specs/live-handshake-director-vectors.json` (both test suites read that file).
 
-Constants: FLOOR 1.4 s, GRACE 1.2 s, CAP 3.0 s, LOCK_HOLD 0.7 s, EXIT 0.72 s, FADE_EXIT 0.28 s,
+Constants: FLOOR 1.9 s (1.4 s until RemEx-pp4cm.11), GRACE 1.2 s, CAP 3.0 s, LOCK_HOLD 0.7 s, EXIT 0.72 s, FADE_EXIT 0.28 s,
 FIRST_PULSE 0.32 s, PULSE_PERIOD 1.0 s, ANSWER_MIN 0.62 s, ANSWER_GAP 0.18 s, LOCK_AFTER 0.5 s,
 LINE_GAP 0.32 s.
 
@@ -77,10 +77,16 @@ if skipAt known:                         c = skipAt
 else if readyAt unknown:                 c = CAP
 else if peers == 0 or no target:         c = max(FLOOR, readyAt)
 else if linkedAt known:                  c = max(lockShown + LOCK_HOLD, FLOOR, readyAt)
+else if target answered the probe:       c = CAP        (awake, mid-handshake: wait for the lock)
 else if failedAt known:                  c = max(FLOOR, readyAt, failedAt)
 else:                                    c = max(FLOOR, min(readyAt + GRACE, CAP))
 return min(c, CAP)
 ```
+The "target answered" arm (RemEx-pp4cm.11) comes before the failure arm on purpose: Android's
+connect signal reports a failure at t = 0 on a normal open (the native connect reports
+"disconnected" while it replaces the socket), and readiness now lands at t = 0 too, so the old rules
+handed off at FLOOR before the host's ack and the lock-on never played. See
+`docs/SPIKE-splash-detail-3.0.md`.
 The hand-off starts on the first frame where `now >= candidate(known)`; after that it is fixed and
 later events are ignored. Exit origin: the target node if the lock was SHOWN at or before the
 hand-off and the platform opens from nodes (Android), else the mark (always the mark on PC). Pulses
@@ -88,7 +94,7 @@ start at FIRST_PULSE + k * PULSE_PERIOD while strictly before the hand-off; none
 motion. Tests step `now` from 0 in 1 ms increments and expect the hand-off within 2 ms of
 `expectHandoff`, plus `expectLockShown` and `expectAnswersShown`.
 
-A fast launch now hands off at ~1.8 s (portal done ~2.5 s); asleep ~1.9 s; the cap is 3.0 s,
+A fast launch now hands off at ~1.9 s (portal done ~2.6 s); asleep ~1.9 s; the cap is 3.0 s,
 still under Cosmic Zoom's 3.1 s. Tap/click skips at any moment.
 
 ## The console (revised 2026-09-26)

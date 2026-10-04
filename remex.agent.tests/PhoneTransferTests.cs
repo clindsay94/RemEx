@@ -447,11 +447,13 @@ public sealed class PhoneTransferTests
     [Fact]
     public async Task Upload_ASlowFinalCopyOnThePhone_IsNotReportedAsThePhoneStoppingResponding()
     {
-        using var kit = new PhoneRelayTestKit(configure: o => o.PeerIdleTimeout = TimeSpan.FromMilliseconds(300));
+        // Idle window wide enough that a loaded test host can't trip it between the last ack and the
+        // verdict marker (RemEx-w7ei pattern); the verdict still comes well past it.
+        using var kit = new PhoneRelayTestKit(configure: o => o.PeerIdleTimeout = TimeSpan.FromSeconds(1));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var (control, channel, _) = StartPhone(kit, cts.Token);
         var received = new List<byte>();
-        PlayPhoneReceiving(kit, control, channel, received, verdictDelay: TimeSpan.FromMilliseconds(1500));
+        PlayPhoneReceiving(kit, control, channel, received, verdictDelay: TimeSpan.FromMilliseconds(3500));
         var payload = RandomNumberGenerator.GetBytes(80_000);
         var localPath = Path.Combine(kit.LocalFolder, "slow-copy.mp4");
         await File.WriteAllBytesAsync(localPath, payload);
@@ -470,8 +472,8 @@ public sealed class PhoneTransferTests
     {
         using var kit = new PhoneRelayTestKit(configure: o =>
         {
-            o.PeerIdleTimeout = TimeSpan.FromMilliseconds(200);
-            o.PeerVerdictTimeout = TimeSpan.FromMilliseconds(700);
+            o.PeerIdleTimeout = TimeSpan.FromSeconds(1);
+            o.PeerVerdictTimeout = TimeSpan.FromSeconds(3);
         });
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var (control, channel, _) = StartPhone(kit, cts.Token);
@@ -484,7 +486,7 @@ public sealed class PhoneTransferTests
             kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token));
 
         Assert.Equal(Remex.Agent.Services.FileTransfer.PeerTransferFailure.NoAnswer, failure.Message);
-        Assert.True(DateTime.UtcNow - started >= TimeSpan.FromMilliseconds(600), "it waited for the verdict bound, not the idle window");
+        Assert.True(DateTime.UtcNow - started >= TimeSpan.FromMilliseconds(2800), "it waited for the verdict bound, not the idle window");
     }
 
     /// <summary>A phone that drops during its final copy is noticed at once, not after the long bound.</summary>

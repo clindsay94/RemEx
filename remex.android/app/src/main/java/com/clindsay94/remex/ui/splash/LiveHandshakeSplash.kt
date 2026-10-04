@@ -473,6 +473,17 @@ private class LiveHandshakeScene {
         val handoff = director.handoffAt
         if (handoff != null && !exitFixed) {
             exitFixed = true
+            // One line per splash: which beats made it before the hand-off. This is what showed the
+            // lock-on landing after the hand-off on a normal open (RemEx-pp4cm.11).
+            android.util.Log.i(
+                "LiveHandshake",
+                "hand-off %.2fs origin=%s ready=%s connect=%s linked=%s failed=%s probeDone=%s targetAnswer=%s lockShown=%s"
+                    .format(
+                        java.util.Locale.ROOT, handoff, director.origin, fmt(readyAt), fmt(connectStartAt), fmt(linkedAt),
+                        fmt(failedAt), fmt(probeDoneAt), fmt(inputs.targetId?.let { id -> inputs.answers.firstOrNull { it.id == id }?.at }),
+                        fmt(director.lockShown),
+                    ),
+            )
             val tg = target
             if (director.origin == ExitOrigin.Target && tg != null) {
                 exitX = nodeX(tg, handoff)
@@ -486,6 +497,8 @@ private class LiveHandshakeScene {
     }
 
     val console = LiveHandshakeConsole()
+
+    private fun fmt(x: Double?): String = x?.let { "%.2f".format(java.util.Locale.ROOT, it) } ?: "-"
 
     /** The lock as SHOWN (staged), never the raw ack time. */
     fun lockedNow(t: Double): Boolean = target != null && director.isLockShownAt(t)
