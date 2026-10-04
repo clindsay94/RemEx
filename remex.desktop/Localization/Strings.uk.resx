@@ -113,10 +113,10 @@
     <value>Огляд...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Запустити</value>
+    <value>Запустити</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Зупинити</value>
+    <value>Зупинити</value>
   </data>
 
   
@@ -165,13 +165,13 @@
     <value>Налаштування</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Головна</value>
+    <value>Назад на Головну</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
     <value>Зберегти зміни</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Налаштування збережено!</value>
+    <value>Налаштування збережено</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Підключення</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  Процеси</value>
+    <value>Процеси</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>Що працює на цьому ПК</value>
@@ -231,7 +231,7 @@
     <value>Програми, які може запустити ваш телефон</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Додати програму</value>
+    <value>Додати програму</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>Програм не налаштовано.</value>
@@ -254,7 +254,7 @@
     <value>Додати нову програму</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Шлях до виконуваного файлу</value>
+    <value>Шлях до програми</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
     <value>Відображувана назва</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Швидкий перегляд</value>
+    <value>Датчики</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>Нові датчики</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Додати картку</value>
+    <value>Додати картку</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Зберегти</value>
@@ -324,7 +324,7 @@
     <value>Відключити</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Підключити</value>
+    <value>Підключити</value>
   </data>
 
   
@@ -344,7 +344,7 @@
     <value>Необмежено</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Помилка потоку</value>
+    <value>Помилка потоку</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
     <value>Віддалений робочий стіл</value>
@@ -394,7 +394,7 @@
     <value>Картки</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Закріпіть датчик на полотні, щоб показати його тут.</value>
+    <value>Закріпіть датчик на сторінці «Датчики», щоб показати його тут.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Кнопки</value>
@@ -477,10 +477,10 @@
     <value>Масштаб: {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Пад: Компактний</value>
+    <value>Пад: компактний</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Пад: Повний</value>
+    <value>Пад: повний</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Компактний пад курсора активовано</value>
@@ -592,7 +592,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Спочатку введіть MAC-адресу.</value>
+    <value>Спочатку введіть MAC-адресу.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>Надсилання магічного пакету через хост…</value>
@@ -601,13 +601,13 @@
     <value>Надсилання магічного пакету локально…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Пакет надіслано до {0}</value>
+    <value>Сигнал пробудження надіслано на {0}</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>Не вдалося: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Блокування надіслано</value>
@@ -641,16 +641,16 @@
     <value>Початок роботи</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Пропустити ✕</value>
+    <value>Пропустити</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Назад</value>
+    <value>Назад</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>Далі →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Почати ✓</value>
+    <value>Почати</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Більше не показувати цей посібник</value>
@@ -663,7 +663,7 @@
     <value>Ласкаво просимо до RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx перетворює ваш ПК на захищений центр дистанційного керування. З телефона ви можете спостерігати за датчиками обладнання, запускати програми, керувати файлами та процесами й транслювати робочий стіл.
+    <value>RemEx дає змогу безпечно керувати цим ПК з телефона. Ви можете спостерігати за датчиками обладнання, запускати програми, керувати файлами та процесами й транслювати робочий стіл.
 
 RemEx працює на цьому ПК, а телефон підключається до нього. Кожне з'єднання захищене TLS і спарюванням за PIN-кодом.</value>
   </data>
@@ -672,26 +672,26 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>Як це працює</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Цей десктопний застосунок містить вбудований RemEx PC, який запускається автоматично. Ваш Android-телефон підключається до нього, а не навпаки.</value>
+    <value>RemEx працює на цьому ПК і запускається автоматично. Ваш Android-телефон підключається до нього, а не навпаки.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx запускається автоматично, коли ви входите на цей ПК — через завдання входу у Windows або запис автозапуску в Linux. Тому телефон може підключитися будь-коли, поки ви у системі. Моніторинг датчиків і команди живлення працюють і при заблокованому екрані, але для трансляції чи керування робочим столом сеанс має бути розблокований. Якщо ПК вимкнено або ніхто не ввійшов, увімкніть його через Wake-on-LAN і спершу увійдіть.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>Інтеграція з HWInfo (Рекомендовано)</value>
+    <value>HWiNFO (рекомендовано)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>Для детального моніторингу обладнання (понад 300 датчиків) встановіть HWiNFO64 — програма безкоштовна для особистого користування.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Завантажте з hwinfo.com
-2. Запустіть HWInfo → Settings (⚙) → Main Settings
+2. Запустіть HWiNFO → Settings → Main Settings
 3. Позначте «Shared Memory Support» → OK
-4. HWInfo має бути запущений, щоб RemEx читав його датчики</value>
+4. HWiNFO має бути запущений, щоб RemEx читав його датчики</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ Спільна пам'ять (Shared Memory) у HWInfo автоматично вимикається через 12 годин (у безкоштовній версії). Періодично вмикайте її знову або розгляньте можливість придбання ліцензії Pro.</value>
+    <value>Спільна пам'ять (Shared Memory) у HWiNFO автоматично вимикається через 12 годин (у безкоштовній версії). Періодично вмикайте її знову або розгляньте можливість придбання ліцензії Pro.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
@@ -701,17 +701,17 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>RemEx підтримує два джерела телеметрії:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ датчиків — температури ЦП, частоти графічного процесора, швидкість вентиляторів, напруга, енергоспоживання. Потребує запущеного HWInfo.</value>
+    <value>HWiNFO: 300+ датчиків — температури ЦП, частоти графічного процесора, швидкість вентиляторів, напруга, енергоспоживання. Потребує запущеного HWiNFO.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Вбудоване: Основні датчики — використання ЦП, ОЗП, дисковий ввід/вивід, швидкість мережі. Завжди доступно, без додаткового ПЗ.</value>
+    <value>Вбудоване: основні датчики — використання ЦП, ОЗП, дисковий ввід/вивід, швидкість мережі. Завжди доступно, без додаткового ПЗ.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Закріпіть улюблені датчики на Головній у Персоналізувати → Макет → Закріплені датчики.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Налаштування Застосунків</value>
+    <value>Налаштування застосунків</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>Сторінка Застосунки дає змогу запускати програми на ПК з телефона. Спершу додайте їх тут.</value>
@@ -753,7 +753,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>1. Відкрийте Налаштування → Підключення на комп'ютері
 2. Натисніть «Пов’язати телефон», щоб показати QR-код
 3. Відкрийте мобільний застосунок RemEx
-4. Торкніться значка сканера QR на екрані з'єднання
+4. На екрані «Підключення» торкніться «Додати ПК», а потім «Сканувати QR-код»
 5. Наведіть камеру на код — з'єднання встановиться автоматично!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
@@ -865,7 +865,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Допомога</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Повторити посібник</value>
+    <value>Повторити посібник</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Переглянути посібник для початківців ще раз</value>
@@ -877,7 +877,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Виберіть, які папки цього ПК відображатимуться у Файлах. Папки лише для читання дозволяють переглядати й завантажувати, а папки з правом запису також приймають файли з телефона.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Додати папку</value>
+    <value>Додати папку</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Відновити стандартні</value>
@@ -1150,7 +1150,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Режим пера: дотик = миттєвий клік, перетягування = клік і перетягування</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Скинути масштаб</value>
+    <value>Скинути масштаб</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Стилус: натискання = клік, кнопка на стилусі = правий клік</value>
@@ -1165,10 +1165,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перемкнути компактний пад курсора</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>Перемкнути пад курсора</value>
+    <value>Показати або сховати пад курсора</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Перемкнути повноекранний режим</value>
+    <value>Увімкнути або вимкнути повноекранний режим</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Перо</value>
@@ -1191,7 +1191,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перезавантажити в UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Закріпити/Відкріпити на Головній</value>
+    <value>Закріпити на Головній або відкріпити</value>
   </data>
 
   
@@ -1206,7 +1206,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Android-додаток → підключається до → 🖥️ Хоста ПК (ця машина)</value>
+    <value>Ваш телефон  →  підключається до  →  цього ПК</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Пропустити посібник — ви можете переглянути його пізніше в Налаштуваннях</value>
@@ -1230,10 +1230,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Переглядайте процеси, що виконуються на комп'ютері, сортуйте їх за навантаженням і завершуйте завислі завдання, не встаючи з крісла.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Глосарій: Полотно датчиків</value>
+    <value>Глосарій: Датчики</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Створіть стіну живої телеметрії, закріплюючи датчики, змінюючи розмір карток і розташовуючи їх на вільному полотні.</value>
+    <value>Створіть стіну живої телеметрії, закріплюючи датчики, змінюючи розмір карток і вільно розташовуючи їх на сторінці «Датчики».</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Глосарій: Файли</value>
@@ -1319,46 +1319,46 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Вимкнення — ви впевнені?</value>
+    <value>Вимкнути цей ПК?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Віддалений ПК буде вимкнено. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Цей ПК буде вимкнено. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Вимкнути</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Перезавантаження — ви впевнені?</value>
+    <value>Перезавантажити цей ПК?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Віддалений ПК буде перезавантажено. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Цей ПК буде перезавантажено. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Перезавантажити</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Примусове вимкнення — ви впевнені?</value>
+    <value>Примусово вимкнути цей ПК?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Це негайно вимкне віддалений ПК. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Це негайно вимкне цей ПК. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Примусово вимкнути</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Примусове перезавантаження — ви впевнені?</value>
+    <value>Примусово перезавантажити цей ПК?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Це негайно перезавантажить віддалений ПК. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Це негайно перезавантажить цей ПК. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Примусово перезавантажити</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Перезавантаження в UEFI — ви впевнені?</value>
+    <value>Перезавантажити цей ПК в UEFI?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Віддалений ПК перезавантажиться й одразу завантажиться в налаштування мікропрограми UEFI. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Цей ПК перезавантажиться й одразу завантажиться в налаштування мікропрограми UEFI. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Перезавантажити в UEFI</value>
@@ -1468,7 +1468,7 @@ Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Зменште повзунок якості.
-• Зменште цільову частоту кадрів (FPS) — зазвичай достатньо 15-20.
+• Зменште цільову частоту кадрів (FPS). Телефон починає зі 120 — це верхня межа, а не обіцянка. Якщо зображення все одно смикається, через Wi-Fi достатньо 30–60 FPS.
 • Зменште масштаб.
 • Використовуйте швидку локальну мережу. Найкраще Wi-Fi 5 ГГц або дротове з'єднання — це найпоширеніша причина затримок.
 • Вам не потрібно налаштовувати захоплення екрана. RemEx автоматично обирає найшвидший метод, який підтримує ваш ПК.</value>
@@ -1477,7 +1477,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Що таке Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN дає змогу вмикати ПК дистанційно. Увімкніть його в BIOS/UEFI та у властивостях мережевого адаптера. Потім введіть MAC-адресу вашого ПК на екрані Підключення.&#xD;&#xA;&#xD;&#xA;Увімкнути комп'ютер — не те саме, що знову отримати до нього доступ. Wake-on-LAN вмикає машину, і вона зупиняється на екрані входу; RemEx запускається лише коли хтось увійде на самому комп'ютері.</value>
+    <value>Wake-on-LAN дає змогу вмикати ПК дистанційно. Увімкніть його в BIOS/UEFI та у властивостях мережевого адаптера. Зазвичай телефон сам дізнається MAC-адресу цього ПК після підключення. Вводьте її на екрані Підключення в телефоні, лише якщо її немає.&#xD;&#xA;&#xD;&#xA;Увімкнути комп'ютер — не те саме, що знову отримати до нього доступ. Wake-on-LAN вмикає машину, і вона зупиняється на екрані входу; RemEx запускається лише коли хтось увійде на самому комп'ютері.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Як передавати файли?</value>
@@ -1642,7 +1642,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Навігація</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Полотно сенсорів</value>
+    <value>Датчики</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Команди</value>
@@ -1663,25 +1663,25 @@ Linux: ip addr  або  hostname -I</value>
     <value>Налаштування</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Перемкнути панель налаштувань</value>
+    <value>Показати або сховати панель «Персоналізувати»</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Інтерфейс</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Закрити панель налаштувань</value>
+    <value>Закрити панель «Персоналізувати»</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Перемкнути бічну панель навігації</value>
+    <value>Показати або сховати бічну панель</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Скасувати редагування полотна</value>
+    <value>Скасувати зміну макета</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Полотно</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Повторити редагування полотна</value>
+    <value>Повторити зміну макета</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
     <value>Закрити банер з'єднання</value>
@@ -1696,7 +1696,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Довідка</value>
   </data>
   <data name="Palette_TutorialGlossary" xml:space="preserve">
-    <value>Посібник та Глосарій</value>
+    <value>Посібник та глосарій</value>
   </data>
   <data name="Palette_LockPc" xml:space="preserve">
     <value>Блокувати ПК</value>
@@ -1738,7 +1738,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>З'єднати</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Десктоп - Віддалене виконання</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
@@ -1855,7 +1855,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Сповіщення датчиків</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>Сповіщення не налаштовано. Клацніть правою кнопкою миші на картці датчика на полотні, щоб налаштувати одне.</value>
+    <value>Сповіщення не налаштовано. Клацніть правою кнопкою миші на картці датчика на сторінці «Датчики», щоб налаштувати одне.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Редагувати</value>
@@ -1915,7 +1915,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Повторити (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Перемкнути міні-карту</value>
+    <value>Показати або сховати міні-карту</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Зберегти полотно як PNG в папку Зображення</value>
@@ -1954,7 +1954,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Відкрити палітру команд (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Перемкнути бічну панель</value>
+    <value>Показати або сховати бічну панель</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Потрібно переглянути інструкцію знову?</value>
@@ -1993,7 +1993,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Відкрити передавання</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Сполучити пристрій</value>
+    <value>Пов’язати телефон</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Відкрити папку журналів</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Wake-on-LAN дозволяє вашому телефону вмикати цей ПК через мережу — навіть коли він спить або повністю вимкнений. Це працює завдяки надсиланню невеликого «магічного пакета», який каже цьому комп'ютеру увімкнутися.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>Щоб налаштувати: відкрийте застосунок RemEx на телефоні, перейдіть у Налаштування → Wake-on-LAN і введіть адресу вище. Після цього телефон зможе вмикати цей ПК, коли він у тій самій мережі.</value>
+    <value>Зазвичай телефон сам отримує цю адресу після підключення. Якщо її немає, відкрийте застосунок RemEx на телефоні, перейдіть на екран Підключення, відкрийте картку цього ПК, торкніться «Змінити дані підключення» і введіть адресу вище. Після цього телефон зможе вмикати цей ПК, коли він у тій самій мережі.</value>
   </data>
   <data name="Remote_WakeTitle" xml:space="preserve">
     <value>Увімкнути цей ПК з телефону</value>
@@ -2699,7 +2699,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Виберіть другий показник</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Видалення — ви впевнені?</value>
+    <value>Видалити назавжди?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>«{0}» буде видалено назавжди. Цю дію не можна скасувати.</value>
@@ -2770,25 +2770,25 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Очистити журнал діагностики? Показані тут записи буде відкинуто. Файли журналів, уже записані на диск, не зміняться.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Завершення процесу — ви впевнені?</value>
+    <value>Завершити цей процес?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Видалення програми — ви впевнені?</value>
+    <value>Прибрати цю програму?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Видалити</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Припинення доступу — ви впевнені?</value>
+    <value>Припинити спільний доступ до цієї папки?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Відкликання доступу — ви впевнені?</value>
+    <value>Відкликати доступ до файлів?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Відновлення стандартних — ви впевнені?</value>
+    <value>Відновити стандартні папки?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Очищення логів — ви впевнені?</value>
+    <value>Очистити журнал?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2884,10 +2884,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Нічого не завершено. «{0}» (PID {1}) закрилася, поки ви вирішували, і цей PID тепер може належати іншій програмі. Список оновлено — знайдіть програму знову та повторіть спробу.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Вихід із системи — ви впевнені?</value>
+    <value>Вийти із системи на цьому ПК?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Усе відкрите на віддаленому ПК буде закрито, а незбережену роботу втрачено. ПК залишиться увімкненим, але RemEx від'єднається й не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
+    <value>Усе відкрите на цьому ПК буде закрито, а незбережену роботу втрачено. ПК залишиться увімкненим, але RemEx від'єднається й не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Вийти</value>
@@ -3925,7 +3925,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>На цьому комп'ютері ще не працюють рутини</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Рутини створюються в застосунку RemEx на телефоні, у розділі «Рутини». Ті, що працюють на цьому комп'ютері, з'являються тут.</value>
+    <value>Рутини створюються в застосунку RemEx на телефоні, у розділі «Більше», а потім «Рутини». Ті, що працюють на цьому ПК, з'являються тут.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>Дізнатися про рутини</value>
@@ -4006,7 +4006,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Не вдалося запустити {0}: {1}</value>
   </data>
   <data name="Routines_Subheader" xml:space="preserve">
-    <value>Створюються в застосунку RemEx на телефоні. Працюють на цьому комп'ютері, навіть коли телефона немає поруч.</value>
+    <value>Створюються в застосунку RemEx на телефоні. Працюють на цьому ПК, навіть коли телефона немає поруч.</value>
   </data>
   <data name="Routines_Unavailable" xml:space="preserve">
     <value>Рутини зараз недоступні, бо служба RemEx у цьому застосунку не запустилася.</value>
