@@ -52,6 +52,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -1154,22 +1155,30 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     val sensorAlerts: StateFlow<SensorAlertsState> = sensorAlertsRepository.state
 
+    /** Sensors whose alert the PC answered without keeping; see [SensorAlertsRepository.refusals]. */
+    val sensorAlertRefusals: SharedFlow<String> = sensorAlertsRepository.refusals
+
     /**
      * Sets (adds or replaces) the alert on [sensorName] on the connected PC. Off the main thread because
      * the send is a blocking JNI call; see [SensorAlertsRepository.setRule] for when nothing happens.
+     *
+     * Returns false when nothing was sent, so the sheet that asked can say why instead of closing
+     * (RemEx-pp4cm.12). Run on [managerScope], so a caller that is cancelled mid-send (the screen
+     * going away) still lets the send finish.
      */
-    fun setSensorAlert(
+    suspend fun setSensorAlert(
             sensorName: String,
             displayName: String,
             unit: String?,
             threshold: Double,
             direction: SensorAlertDirection,
             severity: SensorAlertSeverity,
-    ) {
-        managerScope.launch(Dispatchers.IO) {
-            sensorAlertsRepository.setRule(sensorName, displayName, unit, threshold, direction, severity)
-        }
-    }
+    ): Boolean =
+        managerScope
+            .async(Dispatchers.IO) {
+                sensorAlertsRepository.setRule(sensorName, displayName, unit, threshold, direction, severity)
+            }
+            .await()
 
     /** Removes the alert on [sensorName] from the connected PC. */
     fun removeSensorAlert(sensorName: String) {

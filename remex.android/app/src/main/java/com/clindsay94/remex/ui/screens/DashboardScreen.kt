@@ -59,6 +59,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -108,6 +109,8 @@ import com.clindsay94.remex.data.SensorAlertDirection
 import com.clindsay94.remex.data.SensorAlertSeverity
 import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.ui.screens.sensors.CardPinControl
+import com.clindsay94.remex.ui.screens.sensors.SensorAlertBlock
+import com.clindsay94.remex.ui.screens.sensors.SensorAlertEditorLogic
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertEditorSheet
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertTarget
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertsListSheet
@@ -122,8 +125,10 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.clindsay94.remex.ui.components.RemexHapticEvent
@@ -201,6 +206,7 @@ fun DashboardScreen(
                 pcAlertsEnabled = pcAlertsEnabled,
                 onSetPcAlertsEnabled = viewModel::setPcAlertsEnabled,
                 onSetSensorAlert = viewModel::setSensorAlert,
+                sensorAlertRefusals = viewModel.sensorAlertRefusals,
                 onRemoveSensorAlert = viewModel::removeSensorAlert,
                 onRefreshSensorAlerts = viewModel::refreshSensorAlerts,
                 cornerRadius = cornerRadius,
@@ -301,8 +307,10 @@ fun DashboardScreenContent(
         sensorAlerts: SensorAlertsState = SensorAlertsState(),
         pcAlertsEnabled: Boolean = true,
         onSetPcAlertsEnabled: (Boolean) -> Unit = {},
-        onSetSensorAlert: (String, String, String?, Double, SensorAlertDirection, SensorAlertSeverity) -> Unit =
-                { _, _, _, _, _, _ -> },
+        onSetSensorAlert: suspend (String, String, String?, Double, SensorAlertDirection, SensorAlertSeverity) -> Boolean =
+                { _, _, _, _, _, _ -> true },
+        /** Sensors whose alert the PC answered without keeping, for a snackbar (RemEx-pp4cm.12). */
+        sensorAlertRefusals: Flow<String> = emptyFlow(),
         onRemoveSensorAlert: (String) -> Unit = {},
         onRefreshSensorAlerts: () -> Unit = {},
         /**
@@ -355,6 +363,14 @@ fun DashboardScreenContent(
     var pickerCardId by remember { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var alertTarget by remember { mutableStateOf<SensorAlertTarget?>(null) }
+    // Why the sheet's last Save was not sent; a different sheet starts clean.
+    var alertSaveFailure by remember(alertTarget) { mutableStateOf<SensorAlertBlock?>(null) }
+    val alertRefusedFormat = stringResource(R.string.sensor_alert_refused_snackbar)
+    LaunchedEffect(sensorAlertRefusals) {
+        sensorAlertRefusals.collect { name ->
+            snackbarHostState.showSnackbar(alertRefusedFormat.format(name), duration = SnackbarDuration.Long)
+        }
+    }
     var showAlertList by remember { mutableStateOf(false) }
     val visibleCards = layout.visibleCards
 
@@ -657,9 +673,16 @@ fun DashboardScreenContent(
         SensorAlertEditorSheet(
                 target = target,
                 state = sensorAlerts,
+                saveFailure = alertSaveFailure,
                 onSave = { threshold, direction, severity ->
-                    onSetSensorAlert(target.sensorName, target.displayName, target.unit, threshold, direction, severity)
-                    alertTarget = null
+                    scope.launch {
+                        val sent = onSetSensorAlert(target.sensorName, target.displayName, target.unit, threshold, direction, severity)
+                        if (sent) {
+                            alertTarget = null
+                        } else {
+                            alertSaveFailure = SensorAlertEditorLogic.failureReason(sensorAlerts, sensorAlerts.ruleFor(target.sensorName))
+                        }
+                    }
                 },
                 onRemove = {
                     onRemoveSensorAlert(target.sensorName)

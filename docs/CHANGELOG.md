@@ -526,6 +526,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A refused alert Save now says why.** Pressing Save on a sensor alert used to close the sheet whether or
+  not anything was sent. The sheet now stays open with the reason when the alert could not be sent (not
+  connected, PC too old, or the PC already holds as many alerts as it allows), and if the PC accepts it and
+  then answers without keeping it, a message names the sensor. (RemEx-pp4cm.12)
 - **PC logs screen and alert sheets, review fixes.** The PC logs rows, "latest" button and the alert remove
   button now use local icon glyphs instead of adding more uses of the deprecated extended icon set; the log
   text takes its size from the theme instead of a fixed 11/12 sp; a repeated log sequence number or summary

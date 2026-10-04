@@ -1621,6 +1621,8 @@
     <string name="sensor_alert_remove">Hapus peringatan</string>
     <string name="sensor_alert_blocked_not_connected">Hubungkan ke PC Anda untuk mengatur peringatan.</string>
     <string name="sensor_alert_blocked_pc_too_old">Perbarui RemEx di PC Anda untuk mengatur peringatan dari ponsel.</string>
+    <string name="sensor_alert_save_failed">Peringatan tidak terkirim ke PC Anda. Pastikan ponsel Anda masih terhubung ke PC, lalu coba lagi.</string>
+    <string name="sensor_alert_refused_snackbar">PC Anda tidak menyimpan peringatan untuk %1$s. Mungkin PC tidak lagi mengenali sensor itu.</string>
     <string name="sensor_alert_blocked_too_many">PC Anda sudah menyimpan peringatan sebanyak yang bisa. Hapus satu dulu.</string>
     <string name="sensor_alerts_title">Peringatan PC</string>
     <string name="sensor_alerts_empty">Belum ada peringatan. Buka opsi kartu sensor dan pilih Beri tahu saya… untuk menambahkan.</string>

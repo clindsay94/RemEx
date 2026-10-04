@@ -1,7 +1,10 @@
 package com.clindsay94.remex.data
 
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -52,6 +55,18 @@ class SensorAlertsRepository(
         private val _state = MutableStateFlow(SensorAlertsState())
         val state: StateFlow<SensorAlertsState> = _state.asStateFlow()
 
+        /**
+         * The display name of a sensor whose [setRule] the PC answered without keeping it (RemEx-pp4cm.12).
+         * The PC replies to every set with its whole list, accepted or not, and a refused set is the
+         * unchanged list: it undoes the optimistic edit by itself and, before this, with no word to the
+         * person who had just pressed Save. Nothing replays; the screen showing the sheet listens.
+         */
+        private val _refusals = MutableSharedFlow<String>(extraBufferCapacity = 8)
+        val refusals: SharedFlow<String> = _refusals.asSharedFlow()
+
+        /** Sets sent and not yet answered, by lower-cased sensor name. Guarded by [mutex]. */
+        private val pendingSets = HashMap<String, SensorAlertRule>()
+
         private var connected = false
         private var epoch = NoEpoch
         private var lastRevision = NoRevision
@@ -67,6 +82,7 @@ class SensorAlertsRepository(
                         epoch = connectionEpoch
                         lastRevision = NoRevision
                         requested = false
+                        pendingSets.clear()
                         val supported = hostInfoSupport?.takeIf { it.first == connectionEpoch }?.second == true
                         _state.value = SensorAlertsState(supported = supported, connected = true)
 
@@ -90,6 +106,7 @@ class SensorAlertsRepository(
                         connected = false
                         epoch = NoEpoch
                         requested = false
+                        pendingSets.clear()
                         _state.value = SensorAlertsState()
                 }
         }
@@ -172,6 +189,7 @@ class SensorAlertsRepository(
                                         rules = current.rules.filterNot { it.sensorName.equals(sensorName, ignoreCase = true) } + rule
                                 )
                         send(envelope)
+                        pendingSets[sensorName.lowercase()] = rule
                         true
                 }
 
@@ -189,6 +207,14 @@ class SensorAlertsRepository(
 
         private fun applyRules(message: SensorAlertRulesMessage) {
                 lastRevision = message.revision
+                // The PC answers every request with its list, so a list that does not hold a rule we
+                // just sent is that rule being refused.
+                if (pendingSets.isNotEmpty()) {
+                        pendingSets.values.forEach { sentRule ->
+                                if (message.rules.none { keeps(it, sentRule) }) _refusals.tryEmit(sentRule.displayName)
+                        }
+                        pendingSets.clear()
+                }
                 // A PC that sends a list mirrors alerts, whatever an earlier host_info said.
                 _state.value = _state.value.copy(rules = message.rules, supported = true, connected = true, loaded = true)
         }
@@ -198,6 +224,13 @@ class SensorAlertsRepository(
                 requested = true
                 send(SensorAlerts.buildGetEnvelope())
         }
+
+        /** Whether [kept] is the rule [sent]: same sensor, same threshold, direction and severity. */
+        private fun keeps(kept: SensorAlertRule, sent: SensorAlertRule): Boolean =
+                kept.sensorName.equals(sent.sensorName, ignoreCase = true) &&
+                        kept.direction == sent.direction &&
+                        kept.severity == sent.severity &&
+                        Math.abs(kept.threshold - sent.threshold) <= 1e-9 * maxOf(1.0, Math.abs(sent.threshold))
 
         private companion object {
                 const val NoRevision = Long.MIN_VALUE

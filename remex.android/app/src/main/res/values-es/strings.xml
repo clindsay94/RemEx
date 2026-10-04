@@ -1626,6 +1626,8 @@
     <string name="sensor_alert_remove">Quitar alerta</string>
     <string name="sensor_alert_blocked_not_connected">Conéctate a tu PC para configurar alertas.</string>
     <string name="sensor_alert_blocked_pc_too_old">Actualiza RemEx en tu PC para configurar alertas desde tu teléfono.</string>
+    <string name="sensor_alert_save_failed">La alerta no se envió a tu PC. Comprueba que el teléfono siga conectado a él y vuelve a intentarlo.</string>
+    <string name="sensor_alert_refused_snackbar">Tu PC no guardó la alerta de %1$s. Puede que ya no reconozca ese sensor.</string>
     <string name="sensor_alert_blocked_too_many">Tu PC ya tiene todas las alertas que puede guardar. Quita una primero.</string>
     <string name="sensor_alerts_title">Alertas del PC</string>
     <string name="sensor_alerts_empty">Aún no hay alertas. Abre las opciones de una tarjeta de sensor y elige Avisarme… para añadir una.</string>

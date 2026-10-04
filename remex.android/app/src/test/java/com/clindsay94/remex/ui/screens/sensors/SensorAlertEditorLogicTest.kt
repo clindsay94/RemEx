@@ -101,4 +101,23 @@ class SensorAlertEditorLogicTest {
                 SensorAlertEditorLogic.blockedReason(live.copy(rules = (0 until SensorAlerts.MaxRules).map { rule("S$it") }), rule("S1"))
         )
     }
+
+    @Test
+    fun `a save that was not sent says why the connection explains it`() {
+        assertEquals(SensorAlertBlock.NOT_CONNECTED, SensorAlertEditorLogic.failureReason(SensorAlertsState(), null))
+        assertEquals(
+            SensorAlertBlock.PC_TOO_OLD,
+            SensorAlertEditorLogic.failureReason(SensorAlertsState(connected = true), null)
+        )
+        assertEquals(
+            SensorAlertBlock.TOO_MANY,
+            SensorAlertEditorLogic.failureReason(live.copy(rules = (0 until SensorAlerts.MaxRules).map { rule("S$it") }), null)
+        )
+    }
+
+    @Test
+    fun `a save that was not sent with a healthy connection still gets a reason`() {
+        // Never a blank: the sheet used to close with nothing said (RemEx-pp4cm.12).
+        assertEquals(SensorAlertBlock.NOT_SENT, SensorAlertEditorLogic.failureReason(live, null))
+    }
 }

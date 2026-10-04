@@ -1628,6 +1628,8 @@
     <string name="sensor_alert_remove">Uyarıyı kaldır</string>
     <string name="sensor_alert_blocked_not_connected">Uyarı ayarlamak için PC\'nize bağlanın.</string>
     <string name="sensor_alert_blocked_pc_too_old">Telefonunuzdan uyarı ayarlamak için PC\'nizde RemEx\'i güncelleyin.</string>
+    <string name="sensor_alert_save_failed">Uyarı PC\'nize gönderilmedi. Telefonunuzun hâlâ PC\'ye bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
+    <string name="sensor_alert_refused_snackbar">PC\'niz %1$s uyarısını kaydetmedi. Bu sensörü artık tanımıyor olabilir.</string>
     <string name="sensor_alert_blocked_too_many">PC\'niz saklayabileceği kadar uyarıya zaten sahip. Önce birini kaldırın.</string>
     <string name="sensor_alerts_title">PC uyarıları</string>
     <string name="sensor_alerts_empty">Henüz uyarı yok. Bir sensör kartının seçeneklerini açın ve eklemek için Beni uyar… seçeneğini seçin.</string>

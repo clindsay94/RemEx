@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -409,15 +410,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { settingsManager.setPcAlertsEnabled(enabled) }
     }
 
-    /** Sets (adds or replaces) the alert on a sensor; the PC owns the rule and confirms it with its next list. */
-    fun setSensorAlert(
+    /**
+     * Sets (adds or replaces) the alert on a sensor; the PC owns the rule and confirms it with its next
+     * list. False means nothing was sent, so the sheet stays open and says why.
+     */
+    suspend fun setSensorAlert(
         sensorName: String,
         displayName: String,
         unit: String?,
         threshold: Double,
         direction: SensorAlertDirection,
         severity: SensorAlertSeverity,
-    ) = RemexClientManager.setSensorAlert(sensorName, displayName, unit, threshold, direction, severity)
+    ): Boolean = RemexClientManager.setSensorAlert(sensorName, displayName, unit, threshold, direction, severity)
+
+    /** A sensor whose alert the PC refused after it was sent, for a snackbar. */
+    val sensorAlertRefusals: SharedFlow<String> = RemexClientManager.sensorAlertRefusals
 
     fun removeSensorAlert(sensorName: String) = RemexClientManager.removeSensorAlert(sensorName)
 

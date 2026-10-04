@@ -1650,6 +1650,8 @@
     <string name="sensor_alert_remove">Usuń alert</string>
     <string name="sensor_alert_blocked_not_connected">Połącz się z komputerem, aby ustawić alerty.</string>
     <string name="sensor_alert_blocked_pc_too_old">Zaktualizuj RemEx na komputerze, aby ustawiać alerty z telefonu.</string>
+    <string name="sensor_alert_save_failed">Alert nie został wysłany do komputera. Sprawdź, czy telefon nadal jest z nim połączony, a następnie spróbuj ponownie.</string>
+    <string name="sensor_alert_refused_snackbar">Komputer nie zachował alertu dla: %1$s. Być może już nie rozpoznaje tego czujnika.</string>
     <string name="sensor_alert_blocked_too_many">Komputer ma już tyle alertów, ile może przechowywać. Najpierw usuń jeden.</string>
     <string name="sensor_alerts_title">Alerty z komputera</string>
     <string name="sensor_alerts_empty">Brak alertów. Otwórz opcje karty czujnika i wybierz Powiadom mnie…, aby dodać alert.</string>

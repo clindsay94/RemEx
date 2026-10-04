@@ -62,6 +62,15 @@ object SensorAlertEditorLogic {
         fun canSave(draft: SensorAlertDraft, state: SensorAlertsState, existing: SensorAlertRule?): Boolean =
                 draft.isValid && state.canEdit && (existing != null || state.rules.size < SensorAlerts.MaxRules)
 
+        /**
+         * Why the sheet did not send a Save that looked sendable (RemEx-pp4cm.12). The connection can
+         * drop between enabling the button and pressing it, so the state is read again at the moment of
+         * failure; if none of the known blocks explains it, the rule was simply not sent
+         * ([SensorAlertBlock.NOT_SENT]).
+         */
+        fun failureReason(state: SensorAlertsState, existing: SensorAlertRule?): SensorAlertBlock =
+                blockedReason(state, existing) ?: SensorAlertBlock.NOT_SENT
+
         /** What the sheet says when it cannot be used, or null when it can. A string resource name, not text. */
         fun blockedReason(state: SensorAlertsState, existing: SensorAlertRule?): SensorAlertBlock? =
                 when {
@@ -81,5 +90,8 @@ enum class SensorAlertBlock {
         PC_TOO_OLD,
 
         /** The PC already holds as many rules as it will. */
-        TOO_MANY
+        TOO_MANY,
+
+        /** Nothing in the connection explains it, but the rule was not sent. */
+        NOT_SENT
 }

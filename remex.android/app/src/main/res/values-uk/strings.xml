@@ -1650,6 +1650,8 @@
     <string name="sensor_alert_remove">Прибрати оповіщення</string>
     <string name="sensor_alert_blocked_not_connected">Підключіться до ПК, щоб налаштувати оповіщення.</string>
     <string name="sensor_alert_blocked_pc_too_old">Оновіть RemEx на ПК, щоб налаштовувати оповіщення з телефона.</string>
+    <string name="sensor_alert_save_failed">Оповіщення не надіслано на ваш ПК. Перевірте, чи телефон досі підключений до нього, а потім спробуйте ще раз.</string>
+    <string name="sensor_alert_refused_snackbar">Ваш ПК не зберіг оповіщення для %1$s. Можливо, він більше не розпізнає цей датчик.</string>
     <string name="sensor_alert_blocked_too_many">На вашому ПК уже стільки оповіщень, скільки він може зберігати. Спершу приберіть одне.</string>
     <string name="sensor_alerts_title">Оповіщення від ПК</string>
     <string name="sensor_alerts_empty">Оповіщень поки немає. Відкрийте параметри картки датчика й виберіть Повідомити мене…, щоб додати.</string>

@@ -1726,6 +1726,8 @@
     <string name="sensor_alert_remove">Remove alert</string>
     <string name="sensor_alert_blocked_not_connected">Connect to your PC to set alerts.</string>
     <string name="sensor_alert_blocked_pc_too_old">Update RemEx on your PC to set alerts from your phone.</string>
+    <string name="sensor_alert_save_failed">The alert wasn’t sent to your PC. Check that your phone is still connected to it, then try again.</string>
+    <string name="sensor_alert_refused_snackbar">Your PC didn’t keep the alert for %1$s. It may not recognise that sensor any more.</string>
     <string name="sensor_alert_blocked_too_many">Your PC already has as many alerts as it can keep. Remove one first.</string>
     <string name="sensor_alerts_title">PC alerts</string>
     <string name="sensor_alerts_empty">No alerts yet. Open a sensor card\'s options and choose Alert me… to add one.</string>
