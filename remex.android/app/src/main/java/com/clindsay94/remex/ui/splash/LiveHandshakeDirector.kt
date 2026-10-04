@@ -21,7 +21,11 @@ import kotlin.math.min
  * Times are seconds since the splash started.
  */
 object LiveHandshakeTiming {
-    const val FLOOR = 1.4
+    /**
+     * The shortest a splash plays. 1.9 s since RemEx-pp4cm.11 (was 1.4 s): readiness now lands
+     * almost at once, and a 1.4 s hand-off cut the second pulse at birth (it starts at 1.32 s).
+     */
+    const val FLOOR = 1.9
     const val GRACE = 1.2
     const val CAP = 3.0
     const val LOCK_HOLD = 0.7
@@ -232,6 +236,16 @@ class LiveHandshakeDirector(private val exitFromMark: Boolean = false) {
         /**
          * The spec's `candidate(known)`, with `known` = the events in [inputs] whose time <= [now],
          * and [lockShown] the staged lock for that same knowledge.
+         *
+         * A target that has ANSWERED the probe but not linked yet is awake and mid-handshake, so the
+         * splash waits for its lock (up to CAP) rather than handing off after GRACE, and before any
+         * "failed" evidence counts (RemEx-pp4cm.11). Measured on the AVD paired with a real PC
+         * (logcat `LiveHandshake: hand-off 1.92s ... failed=0.00 targetAnswer=0.00 linked=-`): the
+         * native connect reports "disconnected" while it replaces the socket, which clears
+         * isConnecting with nothing connected yet, so [LiveHandshakeSignals] stamped a failure at
+         * t = 0 and the old rules handed off at FLOOR. The lock-on beat (reticle, beam, packets,
+         * haptic, the portal out of the PC) never played. A real failure against an awake PC now
+         * costs at most the wait to CAP.
          */
         fun candidate(inputs: DirectorInputs, now: Double, lockShown: Double?): Double {
             fun Double?.known(): Double? = this?.takeIf { it <= now }
@@ -246,10 +260,18 @@ class LiveHandshakeDirector(private val exitFromMark: Boolean = false) {
                 linkedAt != null -> maxOf(
                     (lockShown ?: linkedAt) + LiveHandshakeTiming.LOCK_HOLD, LiveHandshakeTiming.FLOOR, readyAt,
                 )
+                targetAnswered(inputs, now) -> LiveHandshakeTiming.CAP
                 failedAt != null -> maxOf(LiveHandshakeTiming.FLOOR, readyAt, failedAt)
                 else -> max(LiveHandshakeTiming.FLOOR, min(readyAt + LiveHandshakeTiming.GRACE, LiveHandshakeTiming.CAP))
             }
             return min(c, LiveHandshakeTiming.CAP)
+        }
+
+        /** True when the target's own probe answer has been heard by [now]. */
+        fun targetAnswered(inputs: DirectorInputs, now: Double): Boolean {
+            val target = inputs.targetId ?: return false
+            for (a in inputs.answers) if (a.id == target && a.at <= now) return true
+            return false
         }
 
         /**
@@ -363,7 +385,12 @@ class LiveHandshakeConsole {
             val lock = director.lockShown
             val target = inputs.targetId
             if (!lockDone && lock != null && target != null) offer(ConsoleLineKind.Linked, target, 0, lock)
-            if (!silentDone && target != null && lock == null && targetSilentAt != null && targetSilentAt <= now) {
+            // "Not answering" only for a target that never answered the probe: one that answered is
+            // awake, and saying it is not (before "answered in 414 ms") read as a contradiction on
+            // the AVD (RemEx-pp4cm.11).
+            if (!silentDone && target != null && lock == null && targetSilentAt != null && targetSilentAt <= now &&
+                rttFor(target) == null
+            ) {
                 var due = inputs.readyAt?.let { it + LiveHandshakeTiming.NOT_ANSWERING_AFTER_READY } ?: targetSilentAt
                 if (handoff != null) due = min(due, handoff - LiveHandshakeTiming.NOT_ANSWERING_BEFORE_HANDOFF)
                 offer(ConsoleLineKind.NotAnswering, target, 0, due)
