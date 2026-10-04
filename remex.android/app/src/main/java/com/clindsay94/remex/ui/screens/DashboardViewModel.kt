@@ -11,6 +11,7 @@ import com.clindsay94.remex.data.SensorAlertSeverity
 import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.sensors.CardSpan
+import com.clindsay94.remex.ui.screens.sensors.GridWidth
 import com.clindsay94.remex.ui.screens.sensors.SensorGridMigration
 import com.clindsay94.remex.ui.screens.sensors.SensorLayout
 import com.clindsay94.remex.ui.screens.sensors.SensorLayoutCodec
@@ -408,6 +409,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setPcAlertsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsManager.setPcAlertsEnabled(enabled) }
+    }
+
+    /** How many columns the Sensors grid has: Auto, 2, 3 or 4 (RemEx-pp4cm.16). */
+    val gridWidth = settingsManager.sensorGridWidthFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GridWidth.AUTO)
+
+    fun setGridWidth(width: GridWidth) {
+        viewModelScope.launch { settingsManager.setSensorGridWidth(width) }
     }
 
     /**

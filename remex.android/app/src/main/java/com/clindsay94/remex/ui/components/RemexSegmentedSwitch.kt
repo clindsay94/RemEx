@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.components
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,10 +32,12 @@ fun <T> RemexSegmentedSwitch(
         labelRes: (T) -> Int,
         onSelect: (T) -> Unit,
         modifier: Modifier = Modifier,
+        /** The default is the tab-level 16dp page margin; pass less when the row sits inside padded content. */
+        contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
 ) {
     val haptics = rememberRemexHaptics()
     SingleChoiceSegmentedButtonRow(
-            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = modifier.fillMaxWidth().padding(contentPadding)
     ) {
         options.forEachIndexed { index, option ->
             SegmentedButton(

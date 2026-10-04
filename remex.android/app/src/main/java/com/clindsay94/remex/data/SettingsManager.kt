@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.clindsay94.remex.ui.screens.DashboardShapes
+import com.clindsay94.remex.ui.screens.sensors.GridWidth
 import com.clindsay94.remex.ui.theme.CardShapes
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -192,6 +193,16 @@ class SettingsManager(val context: Context) {
                 // "Alerts from your PC" (RemEx-pp4cm.12): whether the PC's sensor alerts show as notifications.
                 // On unless switched off. Not exported: it is how this phone behaves, not a layout to carry over.
                 val PC_ALERTS_ENABLED_KEY = booleanPreferencesKey("pc_alerts_enabled")
+
+                /** Sensors grid column count: 0 = Auto, else 2, 3 or 4 (RemEx-pp4cm.16). */
+                val SENSOR_GRID_COLUMNS_KEY = intPreferencesKey("sensor_grid_columns")
+
+                internal fun readSensorGridWidth(preferences: Preferences): GridWidth =
+                        GridWidth.fromStored(preferences[SENSOR_GRID_COLUMNS_KEY])
+
+                internal fun writeSensorGridWidth(preferences: MutablePreferences, width: GridWidth) {
+                        preferences[SENSOR_GRID_COLUMNS_KEY] = width.stored
+                }
                 // Routines first-visit coach marks (routines spec 5.3) and the More "New" badge that
                 // shows until Routines is first opened (spec 1.2, R-UX-05). RemEx-pp0rt.6.
                 val ROUTINES_COACH_SEEN_KEY = booleanPreferencesKey("routines_coach_seen")
@@ -359,6 +370,14 @@ class SettingsManager(val context: Context) {
                 context.dataStore.data.map { preferences ->
                         preferences[PC_ALERTS_ENABLED_KEY] ?: true
                 }
+
+        /** How many columns the Sensors grid has; Auto until the user picks one (RemEx-pp4cm.16). */
+        val sensorGridWidthFlow: Flow<GridWidth> =
+                context.dataStore.data.map { preferences -> readSensorGridWidth(preferences) }
+
+        suspend fun setSensorGridWidth(width: GridWidth) {
+                context.dataStore.edit { writeSensorGridWidth(it, width) }
+        }
 
         suspend fun setPcAlertsEnabled(enabled: Boolean) {
                 context.dataStore.edit { it[PC_ALERTS_ENABLED_KEY] = enabled }

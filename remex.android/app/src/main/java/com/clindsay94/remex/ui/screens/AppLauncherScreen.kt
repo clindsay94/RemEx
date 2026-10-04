@@ -78,6 +78,7 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.shapeSafeArea
 import com.clindsay94.remex.ui.components.RemexHapticEvent
 import com.clindsay94.remex.ui.components.rememberRemexHaptics
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
@@ -486,6 +487,7 @@ fun AppGridItem(
     ) {
         Column(
             modifier = Modifier
+                .shapeSafeArea(shapePreset)
                 .fillMaxWidth()
                 .atLeastSquare()
                 .padding(adaptivePadding),

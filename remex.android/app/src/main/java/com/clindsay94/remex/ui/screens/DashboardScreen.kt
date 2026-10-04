@@ -111,6 +111,8 @@ import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.ui.screens.sensors.CardPinControl
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertBlock
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertEditorLogic
+import com.clindsay94.remex.ui.screens.sensors.GridWidth
+import com.clindsay94.remex.ui.screens.sensors.GridWidthPicker
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertEditorSheet
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertTarget
 import com.clindsay94.remex.ui.screens.sensors.SensorAlertsListSheet
@@ -121,6 +123,7 @@ import com.clindsay94.remex.ui.screens.sensors.SensorsChrome
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import com.clindsay94.remex.ui.telemetry.SensorAccents
 import com.clindsay94.remex.ui.theme.CardShapes
+import com.clindsay94.remex.ui.theme.shapeSafeArea
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
@@ -186,6 +189,7 @@ fun DashboardScreen(
     val homePins by viewModel.homePins.collectAsStateWithLifecycle()
     val sensorAlerts by viewModel.sensorAlerts.collectAsStateWithLifecycle()
     val pcAlertsEnabled by viewModel.pcAlertsEnabled.collectAsStateWithLifecycle()
+    val gridWidth by viewModel.gridWidth.collectAsStateWithLifecycle()
     val coachStep by viewModel.coachStep.collectAsStateWithLifecycle()
     // Live on-screen centre of the ⋮ menu, so the coach pointer lands on it whatever the insets.
     var menuAnchor by remember { mutableStateOf(Offset.Zero) }
@@ -204,6 +208,8 @@ fun DashboardScreen(
                 homePins = homePins,
                 sensorAlerts = sensorAlerts,
                 pcAlertsEnabled = pcAlertsEnabled,
+                gridWidth = gridWidth,
+                onSetGridWidth = viewModel::setGridWidth,
                 onSetPcAlertsEnabled = viewModel::setPcAlertsEnabled,
                 onSetSensorAlert = viewModel::setSensorAlert,
                 sensorAlertRefusals = viewModel.sensorAlertRefusals,
@@ -306,6 +312,9 @@ fun DashboardScreenContent(
         /** The PC's alert rules (RemEx-pp4cm.12): the cards' bells, the "Alert me..." sheet and the Alerts list. */
         sensorAlerts: SensorAlertsState = SensorAlertsState(),
         pcAlertsEnabled: Boolean = true,
+        /** Auto, 2, 3 or 4 columns, chosen in edit mode (RemEx-pp4cm.16). */
+        gridWidth: GridWidth = GridWidth.AUTO,
+        onSetGridWidth: (GridWidth) -> Unit = {},
         onSetPcAlertsEnabled: (Boolean) -> Unit = {},
         onSetSensorAlert: suspend (String, String, String?, Double, SensorAlertDirection, SensorAlertSeverity) -> Boolean =
                 { _, _, _, _, _, _ -> true },
@@ -495,6 +504,7 @@ fun DashboardScreenContent(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        GridWidthPicker(selected = gridWidth, onSelect = onSetGridWidth)
                     }
                     if (pairingBlocksGrid) {
                         NeedsPairingContent(onPair = onPair)
@@ -508,6 +518,7 @@ fun DashboardScreenContent(
                     } else {
                         SensorGridLayout(
                                 cards = visibleCards,
+                                gridWidth = gridWidth,
                                 editMode = editMode,
                                 draggingCardId = draggingCardId,
                                 onEnterEditMode = onEnterEditMode,
@@ -716,6 +727,7 @@ fun DashboardScreenContent(
 @Composable
 private fun SensorGridLayout(
         cards: List<HomeCardState>,
+        gridWidth: GridWidth,
         editMode: Boolean,
         draggingCardId: String?,
         onEnterEditMode: () -> Unit,
@@ -730,7 +742,7 @@ private fun SensorGridLayout(
         val gutter = CardShapes.CARD_SPACING_DP.toFloat()
         val widthDp = maxWidth.value
         // The breakpoint is the window's width class; the grid itself sits inside 16dp margins.
-        val columns = SensorGrid.columnsFor(widthDp + 32f)
+        val columns = SensorGrid.columnsFor(widthDp + 32f, gridWidth)
         val cell = SensorGrid.cellWidth(widthDp, columns, gutter)
         val rowHeight = SensorGrid.rowHeight(cell)
         val placements = remember(cards, columns) { SensorGrid.pack(cards.map { it.id to it.span }, columns) }
@@ -997,7 +1009,9 @@ private fun titleBandIntrusion(
         bandBottomPx: Float,
         density: Density
 ): Pair<Float, Float> {
-    if (shapePreset >= 23.5f || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
+    // Polygons are already confined to their safe rectangle (shapeSafeArea), so only the cut corner
+    // could intrude on the title band; it sits at the top of the range and measures zero here today.
+    if (shapePreset >= 23.5f || CardShapes.isPolygon(shapePreset) || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
     val outline =
             cardShape(shapePreset, 0)
                     .createOutline(GeoSize(cardWidthPx.toFloat(), cardHeightPx.toFloat()), LayoutDirection.Ltr, density)
@@ -1040,7 +1054,9 @@ private fun TelemetryCardContent(
     val density = LocalDensity.current
     val titleLineHeight = MaterialTheme.typography.labelSmall.lineHeight
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    // A polygon shape (Slanted, Clover...) confines the content to its measured safe rectangle
+    // (RemEx-pp4cm.14); the rounded rectangle and cut corner use the whole tile.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().shapeSafeArea(shapeIndex)) {
         val contentWidthPx = constraints.maxWidth
         val contentHeightPx = constraints.maxHeight
         // Extra start/end inset for the title row (RemEx-0ukf): the uniform adaptive padding is

@@ -46,7 +46,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexCollapsingScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
-import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.CardShapes
 import com.clindsay94.remex.ui.components.RemexHapticEvent
 import com.clindsay94.remex.ui.components.rememberRemexHaptics
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
@@ -242,7 +242,7 @@ fun TaskManagerScreenContent(
                 SearchBar(
                         query = searchQuery,
                         onUpdateQuery = onUpdateSearchQuery,
-                        shape = cardShape(shapePreset, cornerRadius)
+                        shape = CardShapes.stripShapeFor(shapePreset, cornerRadius)
                 )
 
                 FilterSortSection(

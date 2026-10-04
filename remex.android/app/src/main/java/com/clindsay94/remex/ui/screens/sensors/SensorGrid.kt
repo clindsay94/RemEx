@@ -23,6 +23,23 @@ enum class CardSpan(val cols: Int, val rows: Int) {
     }
 }
 
+/**
+ * How many columns the Sensors grid uses (RemEx-pp4cm.16). [AUTO] keeps the width-class rule
+ * ([SensorGrid.columnsFor]): 2 on a phone, 4 from 600dp. The others pin the count. The value is
+ * what DataStore holds, so a number is never reused: 0 is Auto, 2/3/4 are the column counts, and
+ * anything else (a value from a newer or older build) reads as Auto.
+ */
+enum class GridWidth(val stored: Int, val columns: Int?) {
+    AUTO(0, null),
+    TWO(2, 2),
+    THREE(3, 3),
+    FOUR(4, 4);
+
+    companion object {
+        fun fromStored(value: Int?): GridWidth = entries.firstOrNull { it.stored == value } ?: AUTO
+    }
+}
+
 /** One card's cell rectangle: top-left [col]/[row], covering [colSpan] x [rowSpan] cells. */
 data class GridPlacement(val id: String, val col: Int, val row: Int, val colSpan: Int, val rowSpan: Int)
 
@@ -45,6 +62,9 @@ object SensorGrid {
     const val ROW_HEIGHT_RATIO = 0.85f
 
     fun columnsFor(widthDp: Float): Int = if (widthDp >= EXPANDED_MIN_WIDTH_DP) EXPANDED_COLUMNS else COMPACT_COLUMNS
+
+    /** The column count for a chosen [width]: its own number, or the width-class rule for Auto. */
+    fun columnsFor(widthDp: Float, width: GridWidth): Int = width.columns ?: columnsFor(widthDp)
 
     /**
      * First-fit, row-major: each card, in order, takes the first top-left cell (scanning rows top to

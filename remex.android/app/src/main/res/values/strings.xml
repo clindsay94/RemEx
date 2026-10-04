@@ -649,6 +649,12 @@
     
     <string name="shape_rounded_rectangle">Rounded Rectangle</string>
     <string name="shape_cut_corner">Cut Corner</string>
+    <string name="shape_slanted">Slanted</string>
+    <string name="shape_clam_shell">Clam shell</string>
+    <string name="shape_arch">Arch</string>
+    <string name="shape_clover_4_leaf">Clover</string>
+    <string name="shape_sunny">Sunny</string>
+    <string name="shape_pixel_circle">Pixel circle</string>
     <string name="pairing_error_malformed_response">Your PC replied, but the reply could not be read. Check the PC is running the same version of RemEx as your phone, then try pairing again.</string>
     <string name="pairing_error_empty_response">Your PC did not send a PIN. Check RemEx is open on the PC and showing a pairing PIN, then try again.</string>
     <string name="pairing_error_reach_failed">Could not reach your PC. Check both devices are on the same Wi-Fi network and that the PC address is correct, then try again.</string>
@@ -715,12 +721,15 @@
     <string name="font_lato">Lato</string>
     <string name="font_montserrat">Montserrat</string>
     <string name="font_poppins">Poppins</string>
-    <string name="font_inter_premium">Inter (Premium)</string>
-    <string name="font_outfit_modern">Outfit (Modern Rounded)</string>
-    <string name="font_space_grotesk_cyber">Space Grotesk (Cyber)</string>
-    <string name="font_syne_expressive">Syne (Expressive)</string>
-    <string name="font_lexend_fluent">Lexend (Fluent)</string>
-    <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>
+    <string name="font_inter">Inter</string>
+    <string name="font_outfit">Outfit</string>
+    <string name="font_space_grotesk">Space Grotesk</string>
+    <string name="font_syne">Syne</string>
+    <string name="font_lexend">Lexend</string>
+    <string name="font_jetbrains_mono">JetBrains Mono</string>
+    <string name="font_caskaydia_cove_nerd">CaskaydiaCove Nerd Font</string>
+    <string name="font_hack_nerd">Hack Nerd Font</string>
+    <string name="font_iosevka_nerd">Iosevka Nerd Font</string>
 
     <string name="file_transfer_select_folder_first">Select a remote shared folder first.</string>
     <string name="file_transfer_deleting_single">Deleting %1$s…</string>
@@ -1637,6 +1646,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Edit layout</string>
     <string name="dashboard_edit_banner">Hold a card and drag it to move it. Tap Done when you\'re finished.</string>
+    <string name="dashboard_grid_width">Grid width</string>
+    <string name="dashboard_grid_width_auto">Auto</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">No cards here yet. Choose Edit layout from the menu, then Add cards.</string>
     <string name="dashboard_empty_grid_edit">No cards here yet. Tap Add cards to put sensors on this page.</string>
     <string name="dashboard_offline_body">Readings show up here once your PC is connected.</string>
