@@ -1549,6 +1549,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Editar layout</string>
     <string name="dashboard_edit_banner">Segure um card e arraste para movê-lo. Toque em Concluído quando terminar.</string>
+    <string name="dashboard_grid_width">Largura da grade</string>
+    <string name="dashboard_grid_width_auto">Auto</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Ainda não há cards aqui. Escolha Editar layout no menu e depois Adicionar cards.</string>
     <string name="dashboard_empty_grid_edit">Ainda não há cards aqui. Toque em Adicionar cards para colocar sensores nesta página.</string>
     <string name="dashboard_offline_body">As leituras aparecem aqui quando o PC estiver conectado.</string>

@@ -1549,6 +1549,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">लेआउट बदलें</string>
     <string name="dashboard_edit_banner">किसी कार्ड को दबाकर रखें और हिलाने के लिए खींचें। काम पूरा होने पर हो गया पर टैप करें।</string>
+    <string name="dashboard_grid_width">ग्रिड की चौड़ाई</string>
+    <string name="dashboard_grid_width_auto">ऑटो</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">अभी यहाँ कोई कार्ड नहीं है। मेनू से लेआउट बदलें चुनें, फिर कार्ड जोड़ें।</string>
     <string name="dashboard_empty_grid_edit">अभी यहाँ कोई कार्ड नहीं है। इस पेज पर सेंसर रखने के लिए कार्ड जोड़ें पर टैप करें।</string>
     <string name="dashboard_offline_body">आपका PC कनेक्ट होते ही रीडिंग यहाँ दिखेंगी।</string>

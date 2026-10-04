@@ -1649,6 +1649,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Edit layout</string>
     <string name="dashboard_edit_banner">Hold a card and drag it to move it. Tap Done when you\'re finished.</string>
+    <string name="dashboard_grid_width">Grid width</string>
+    <string name="dashboard_grid_width_auto">Auto</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">No cards here yet. Choose Edit layout from the menu, then Add cards.</string>
     <string name="dashboard_empty_grid_edit">No cards here yet. Tap Add cards to put sensors on this page.</string>
     <string name="dashboard_offline_body">Readings show up here once your PC is connected.</string>

@@ -1573,6 +1573,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Змінити розташування</string>
     <string name="dashboard_edit_banner">Утримуйте картку й перетягніть, щоб перемістити її. Коли закінчите, торкніться «Готово».</string>
+    <string name="dashboard_grid_width">Ширина сітки</string>
+    <string name="dashboard_grid_width_auto">Авто</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Карток ще немає. Виберіть у меню «Змінити розташування», а потім «Додати картки».</string>
     <string name="dashboard_empty_grid_edit">Карток ще немає. Торкніться «Додати картки», щоб додати датчики на цю сторінку.</string>
     <string name="dashboard_offline_body">Показники з’являться тут, щойно ПК буде підключено.</string>

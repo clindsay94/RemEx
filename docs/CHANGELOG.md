@@ -13,6 +13,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Choose how wide the Sensors grid is.** In Sensors edit mode there is a new **Grid width** control under the
+  hint: **Auto**, **2**, **3** or **4** columns. Auto is what it always was (2 columns on a phone, 4 on a wide
+  screen); the others pin the count, so you can fit more small cards across a phone or give them more room on a
+  tablet. Cards keep their order and their size setting whatever you pick: a wide card on a narrow grid just
+  narrows to fit, and switching back brings its full width back. The choice is remembered. (RemEx-pp4cm.16)
 - **Plain font names, and three Nerd Fonts on the phone.** The font list in Personalize now shows plain family
   names (Inter, Lexend, Outfit...) in every language instead of tags like "(Premium)" or "(Cyber)", and each name
   is drawn in its own typeface. CaskaydiaCove Nerd Font, Hack Nerd Font and Iosevka Nerd Font are new: they ship

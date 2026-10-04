@@ -1544,6 +1544,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Edit tata letak</string>
     <string name="dashboard_edit_banner">Tahan kartu lalu seret untuk memindahkannya. Ketuk Selesai jika sudah.</string>
+    <string name="dashboard_grid_width">Lebar kisi</string>
+    <string name="dashboard_grid_width_auto">Otomatis</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Belum ada kartu di sini. Pilih Edit tata letak dari menu, lalu Tambah kartu.</string>
     <string name="dashboard_empty_grid_edit">Belum ada kartu di sini. Ketuk Tambah kartu untuk menaruh sensor di halaman ini.</string>
     <string name="dashboard_offline_body">Bacaan muncul di sini setelah PC Anda terhubung.</string>

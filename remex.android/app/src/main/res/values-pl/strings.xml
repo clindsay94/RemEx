@@ -1573,6 +1573,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Edytuj układ</string>
     <string name="dashboard_edit_banner">Przytrzymaj kartę i przeciągnij, aby ją przenieść. Na koniec dotknij Gotowe.</string>
+    <string name="dashboard_grid_width">Szerokość siatki</string>
+    <string name="dashboard_grid_width_auto">Auto</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Nie ma tu jeszcze kart. Wybierz Edytuj układ z menu, a potem Dodaj karty.</string>
     <string name="dashboard_empty_grid_edit">Nie ma tu jeszcze kart. Dotknij Dodaj karty, aby umieścić czujniki na tej stronie.</string>
     <string name="dashboard_offline_body">Odczyty pojawią się tutaj, gdy komputer będzie połączony.</string>

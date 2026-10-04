@@ -1551,6 +1551,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Düzeni düzenle</string>
     <string name="dashboard_edit_banner">Taşımak için bir kartı basılı tutup sürükleyin. İşiniz bitince Bitti\'ye dokunun.</string>
+    <string name="dashboard_grid_width">Izgara genişliği</string>
+    <string name="dashboard_grid_width_auto">Otomatik</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Henüz kart yok. Menüden Düzeni düzenle\'yi, ardından Kart ekle\'yi seçin.</string>
     <string name="dashboard_empty_grid_edit">Henüz kart yok. Bu sayfaya sensör koymak için Kart ekle\'ye dokunun.</string>
     <string name="dashboard_offline_body">Bilgisayarınız bağlandığında değerler burada görünür.</string>

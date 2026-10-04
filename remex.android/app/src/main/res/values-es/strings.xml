@@ -1549,6 +1549,11 @@
     <string name="home_recent_detail">%1$s · %2$s</string>
     <string name="dashboard_menu_edit">Editar diseño</string>
     <string name="dashboard_edit_banner">Mantén pulsada una tarjeta y arrástrala para moverla. Toca Listo cuando termines.</string>
+    <string name="dashboard_grid_width">Ancho de la cuadrícula</string>
+    <string name="dashboard_grid_width_auto">Auto</string>
+    <string name="dashboard_grid_width_2">2</string>
+    <string name="dashboard_grid_width_3">3</string>
+    <string name="dashboard_grid_width_4">4</string>
     <string name="dashboard_empty_grid">Aún no hay tarjetas. Elige Editar diseño en el menú y luego Añadir tarjetas.</string>
     <string name="dashboard_empty_grid_edit">Aún no hay tarjetas. Toca Añadir tarjetas para poner sensores en esta página.</string>
     <string name="dashboard_offline_body">Las lecturas aparecen aquí cuando tu PC está conectado.</string>
