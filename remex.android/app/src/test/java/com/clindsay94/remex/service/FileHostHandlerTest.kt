@@ -896,8 +896,16 @@ class FileHostHandlerTest {
         val release = java.util.concurrent.CountDownLatch(1)
         val tree = bigTree()
         val (h, sender, _) = build(tree, scope = scope)
+        // Parks the copy on its second read until released. Waits ONCE: a broken handler that copies inline
+        // would otherwise sit out the timeout on every chunk and hang the suite instead of failing it.
+        var parked = false
         lastFacade!!.inputOverride = { node ->
-            slowInput((node as FakeNode).content) { release.await(10, java.util.concurrent.TimeUnit.SECONDS) }
+            slowInput((node as FakeNode).content) {
+                if (!parked) {
+                    parked = true
+                    release.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                }
+            }
         }
 
         try {
