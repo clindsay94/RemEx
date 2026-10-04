@@ -484,9 +484,15 @@
     <string name="about_whats_new_4_label">Um só visual nos dois aplicativos</string>
     <string name="about_whats_new_4_body">O celular e o PC agora usam as mesmas palavras, fontes, cartões e cores. Uma instalação nova começa com as cores do RemEx.</string>
     <string name="about_whats_new_5_label">Correções na transferência de arquivos</string>
-    <string name="about_whats_new_5_body">Baixar uma pasta, em qualquer direção, não pula nem repete mais arquivos. Arquivos esconde itens ocultos e do sistema até você ativar Mostrar itens ocultos.</string>
+    <string name="about_whats_new_5_body">Baixar uma pasta, em qualquer direção, não pula nem repete mais arquivos. Arquivos esconde itens ocultos e do sistema até você ativar Mostrar itens ocultos. O PC agora também pode explorar as pastas compartilhadas do seu celular.</string>
     <string name="about_whats_new_6_label">Uma nova tela de inicialização</string>
     <string name="about_whats_new_6_body">Ao abrir o RemEx, a tela de inicialização mostra o aplicativo iniciando e se conectando de verdade, em vez de uma animação fixa.</string>
+    <string name="about_whats_new_7_label">Alertas de sensores no celular</string>
+    <string name="about_whats_new_7_body">Os alertas que você cria no PC agora chegam ao celular como notificações. Você pode adicioná-los, alterá-los ou removê-los em qualquer um dos dois.</string>
+    <string name="about_whats_new_8_label">Logs e diagnóstico do PC no celular</string>
+    <string name="about_whats_new_8_body">Em Mais, uma página nova mostra o que o seu PC registrou e as mesmas verificações de integridade que o PC mostra. Ela é somente leitura.</string>
+    <string name="about_whats_new_9_label">Mais formas de personalizar o celular</string>
+    <string name="about_whats_new_9_body">Escolha um plano de fundo, mais formas de cartão e sete Nerd Fonts, e defina a largura da grade de Sensores.</string>
     <string name="about_whats_new_title">Novidades da versão %1$s</string>
     <string name="app_launcher_recent">Recentes</string>
     <string name="cd_close_settings">Fechar configurações</string>

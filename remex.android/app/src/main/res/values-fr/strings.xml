@@ -484,9 +484,15 @@
     <string name="about_whats_new_4_label">Le même style sur les deux applications</string>
     <string name="about_whats_new_4_body">Le téléphone et le PC utilisent maintenant les mêmes mots, polices, cartes et couleurs. Une nouvelle installation démarre avec les couleurs RemEx.</string>
     <string name="about_whats_new_5_label">Corrections du transfert de fichiers</string>
-    <string name="about_whats_new_5_body">Télécharger un dossier, dans un sens comme dans l\'autre, ne saute ni ne répète plus aucun fichier. Fichiers masque les éléments cachés et système tant que vous n\'activez pas Afficher les éléments masqués.</string>
+    <string name="about_whats_new_5_body">Télécharger un dossier, dans un sens comme dans l\'autre, ne saute ni ne répète plus aucun fichier. Fichiers masque les éléments cachés et système tant que vous n\'activez pas Afficher les éléments masqués. Le PC peut aussi parcourir les dossiers partagés de votre téléphone.</string>
     <string name="about_whats_new_6_label">Un nouvel écran de démarrage</string>
     <string name="about_whats_new_6_body">À l\'ouverture, l\'écran de démarrage montre RemEx qui démarre et se connecte vraiment, au lieu d\'une animation figée.</string>
+    <string name="about_whats_new_7_label">Alertes de capteurs sur le téléphone</string>
+    <string name="about_whats_new_7_body">Les alertes que vous créez sur le PC arrivent maintenant sur le téléphone sous forme de notifications. Vous pouvez les ajouter, les modifier ou les supprimer depuis l\'un ou l\'autre.</string>
+    <string name="about_whats_new_8_label">Journaux et diagnostics du PC sur le téléphone</string>
+    <string name="about_whats_new_8_body">Dans Plus, une nouvelle page montre ce que votre PC a consigné et les mêmes vérifications d\'état que sur le PC. Elle est en lecture seule.</string>
+    <string name="about_whats_new_9_label">Plus de façons de personnaliser le téléphone</string>
+    <string name="about_whats_new_9_body">Choisissez un arrière-plan, d\'autres formes de cartes et sept Nerd Fonts, ainsi que la largeur de la grille de Capteurs.</string>
     <string name="about_whats_new_title">Nouveautés de la version %1$s</string>
     <string name="app_launcher_recent">Récents</string>
     <string name="cd_close_settings">Fermer les paramètres</string>

@@ -1207,13 +1207,31 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Poprawki przesyłania plików</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Pobieranie folderu, w obie strony, nie pomija już ani nie powtarza plików. Pliki na telefonie nie pokazują ukrytych i systemowych elementów, dopóki o to nie poprosisz.</value>
+    <value>Pobieranie folderu, w obie strony, nie pomija już ani nie powtarza plików. Pliki na telefonie nie pokazują ukrytych i systemowych elementów, dopóki o to nie poprosisz. Komputer może teraz przeglądać też udostępnione foldery telefonu.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Nowy ekran powitalny</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>Po otwarciu RemEx ekran powitalny pokazuje, jak aplikacja naprawdę się uruchamia i łączy, zamiast odtwarzać stałą animację.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Alerty czujników w telefonie</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Alerty ustawione na komputerze trafiają teraz do telefonu jako powiadomienia. Możesz je dodawać, zmieniać i usuwać na każdym z nich.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Logi i diagnostyka komputera w telefonie</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>W Więcej nowa strona pokazuje, co zapisał twój komputer, oraz te same kontrole stanu co na komputerze. Jest tylko do odczytu.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Więcej sposobów personalizacji telefonu</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Wybierz tło, więcej kształtów kart i siedem czcionek Nerd Fonts oraz ustaw szerokość siatki Czujników.</value>
   </data>
 
   <data name="Faq_Q1_Answer" xml:space="preserve">

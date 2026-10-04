@@ -164,7 +164,7 @@ public sealed class WhatsNewParityTests : IDisposable
     }
 
     [Fact]
-    public void TheCopyIsPlainAndThePhoneDoesNotAdvertisePcOnlyFeatures()
+    public void TheCopyIsPlain()
     {
         var offenders = new List<string>();
         foreach (var locale in PcLocales)
@@ -187,13 +187,8 @@ public sealed class WhatsNewParityTests : IDisposable
             }
         }
 
-        // Sensor alerts live only on the PC; the phone's list once led with them.
-        var androidEnglish = AndroidValues("values");
-        foreach (var key in Enumerable.Range(1, AboutViewModel.WhatsNewCount).SelectMany(AndroidKeys))
-        {
-            if (androidEnglish[key].Contains("alert", StringComparison.OrdinalIgnoreCase))
-                offenders.Add($"android values: {key} mentions sensor alerts, which the phone does not have");
-        }
+        // Sensor alerts used to be PC-only, so the phone's list could not mention them. Since 3.0 the
+        // PC's alert rules reach the phone (RemEx-pp4cm.12) and item 7 says so.
 
         offenders.Should().BeEmpty();
     }

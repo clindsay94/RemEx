@@ -1456,13 +1456,31 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>File transfer fixes</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Folder downloads, either way, no longer skip or repeat files. The phone's Files hides hidden and system items until you ask.</value>
+    <value>Folder downloads, either way, no longer skip or repeat files. The phone's Files hides hidden and system items until you ask. The PC can now browse your phone's shared folders too.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>A new startup splash</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>When RemEx opens, the splash now shows it really starting up and connecting, instead of playing a fixed animation.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Sensor alerts on your phone</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>The alerts you set on the PC now reach your phone as notifications. You can add, change or remove them from either one.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>PC logs and diagnostics on your phone</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>In More, a new page shows what your PC has logged and the same health checks the PC shows. It is read-only.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>More ways to personalize the phone</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Pick a background, more card shapes and seven Nerd Fonts, and choose how wide the Sensors grid is.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
