@@ -533,6 +533,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   phones at once with a 5 second limit per phone. A phone that asked for the rules just before the PC
   finished starting is answered as soon as the PC is ready. `docs/API_CONTRACTS.md` section 11 now
   says the rules are sent to every connected phone, not only the one that asked. (RemEx-pp4cm.12)
+- **Two-finger scroll works again in Remote desktop, including in portrait (RemEx-pp4cm.10).**
+  Portrait opens the PC picture fitted to the screen height, which is zoomed in, and a zoomed view used
+  to treat every two-finger drag as "move the picture", so nothing reached the PC. Two fingers now
+  always scroll the PC at any zoom. Pinching still zooms, and moving your fingers while you pinch
+  moves the zoomed picture; the picture also follows the cursor when it nears an edge.
 - **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
   last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
   Home's Connect ask for the local-network permission like the Connection screen does, and say so on

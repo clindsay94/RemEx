@@ -137,4 +137,43 @@ class RemoteDesktopTwoFingerScrollTest {
         report("portrait-unfitted")
         assertTrue("unzoomed portrait: no scroll sent", scrolls.isNotEmpty())
     }
+
+    @Test
+    fun zoomedPortrait_sendsScroll() {
+        // The real portrait case (RemEx-pp4cm.10): with the host's screen size known the view opens
+        // fit-to-height at about 3x. Two fingers used to pan the view there and sent nothing to the
+        // PC. They must scroll the PC at any zoom.
+        setScreen(fullscreen = false, wDp = 400, hDp = 800, metaReady = true)
+        twoFingerDrag(-6f)
+        report("portrait-fitted-zoomed")
+        assertTrue("zoomed portrait: no scroll sent", scrolls.isNotEmpty())
+    }
+
+    @Test
+    fun pinch_doesNotSendScroll() {
+        setScreen(fullscreen = false, wDp = 400, hDp = 800, metaReady = true)
+        var cx = 0f
+        var cy = 0f
+        composeTestRule.onRoot().performTouchInput {
+            cx = centerX
+            cy = centerY
+            down(0, Offset(cx - 60f, cy))
+            down(1, Offset(cx + 60f, cy))
+        }
+        for (i in 1..30) {
+            Thread.sleep(8)
+            composeTestRule.onRoot().performTouchInput {
+                updatePointerTo(0, Offset(cx - 60f - 4f * i, cy))
+                updatePointerTo(1, Offset(cx + 60f + 4f * i, cy))
+                move(8)
+            }
+        }
+        composeTestRule.onRoot().performTouchInput {
+            up(0)
+            up(1)
+        }
+        composeTestRule.waitForIdle()
+        report("pinch")
+        assertTrue("a pinch must not scroll the PC", scrolls.isEmpty())
+    }
 }
