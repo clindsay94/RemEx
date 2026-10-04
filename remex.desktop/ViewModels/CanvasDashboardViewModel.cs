@@ -1109,7 +1109,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     {
         TriggerSave();
         await _layoutService.FlushAsync();
-        LayoutStatus = "Layout Saved!";
+        // Localized (3.0 comb, canvas-status-english); clears itself after three seconds.
+        LayoutStatus = LocalizationService.Instance["Canvas_LayoutSaved"];
         _ = Task.Delay(3000).ContinueWith(_ =>
             Dispatcher.UIThread.Post(() => LayoutStatus = string.Empty));
     }

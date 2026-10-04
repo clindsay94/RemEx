@@ -85,6 +85,12 @@ object HomeLogic {
     fun needsConfirmation(action: String): Boolean = actionDiscardsWork(action)
 
     /**
+     * Whether the disconnected PC card offers Wake (3.0 comb, home-firstrun-card). Not with no paired
+     * PC: there is nothing to wake, and the attempt's error sent a new user off to a MAC setting.
+     */
+    fun connectCardOffersWake(pairedPcCount: Int): Boolean = pairedPcCount > 0
+
+    /**
      * The pinned sensors that are reporting, in pin order. A pinned sensor the PC is not reporting
      * right now is left out of the row (it stays in the sheet); a name matches its first sensor,
      * case-insensitively, like the PC Home.

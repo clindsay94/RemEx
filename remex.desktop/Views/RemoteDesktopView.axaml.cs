@@ -782,8 +782,12 @@ public partial class RemoteDesktopView : UserControl
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
         var keyCode = MapKeyToVirtualKey(e.Key);
         if (keyCode == 0) return;
-        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyDown, KeyCode = keyCode });
+        // Handled BEFORE the await (3.0 comb, rd-handled-after-await): this is an async void handler,
+        // so Avalonia resumes routing the moment the first await yields. Set afterwards, the flag came
+        // too late and Tab / Escape also acted on the local window while a stream was forwarding them
+        // to the remote PC.
         e.Handled = true;
+        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyDown, KeyCode = keyCode });
     }
 
     private async void OnViewKeyUp(object? sender, KeyEventArgs e)
@@ -791,8 +795,12 @@ public partial class RemoteDesktopView : UserControl
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
         var keyCode = MapKeyToVirtualKey(e.Key);
         if (keyCode == 0) return;
-        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyUp, KeyCode = keyCode });
+        // Handled BEFORE the await (3.0 comb, rd-handled-after-await): this is an async void handler,
+        // so Avalonia resumes routing the moment the first await yields. Set afterwards, the flag came
+        // too late and Tab / Escape also acted on the local window while a stream was forwarding them
+        // to the remote PC.
         e.Handled = true;
+        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyUp, KeyCode = keyCode });
     }
 
     // ═══════════════ Helpers ═══════════════

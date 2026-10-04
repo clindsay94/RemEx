@@ -22,6 +22,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,13 +57,22 @@ import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
  *         topBar = { RemexFlexibleTopBar(title = "...", scrollBehavior = scrollBehavior) }
  *     )
  */
+/**
+ * What the top bar's Up arrow does on the screen below it, or null for no arrow (3.0 comb,
+ * no-up-arrow). The navigation shell provides it for routes pushed over the tabs (Sensors, Files,
+ * Connection, Settings, FAQ, About, ...), and Settings re-provides it for its detail pane on a phone,
+ * where Up means "back to the list". Tabs, dialogs-as-routes and the widget set-up screens get none.
+ */
+val LocalRemexUpAction = compositionLocalOf<(() -> Unit)?> { null }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemexFlexibleTopBar(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    navigationIcon: @Composable () -> Unit = {},
+    /** Null takes the Up arrow from [LocalRemexUpAction] when there is one; pass a lambda to override. */
+    navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors = remexFlexibleTopBarColors(),
@@ -71,6 +81,11 @@ fun RemexFlexibleTopBar(
     // Page title and subtitle use the PC's display type, picked per UI language (RemEx-kq10x.4).
     // Pass subtitleInDisplayFont = false when the subtitle is data (a folder path), not a sentence.
     val display = currentDisplayType()
+    val upAction = LocalRemexUpAction.current
+    val resolvedNavigationIcon: @Composable () -> Unit =
+        navigationIcon
+            ?: upAction?.let { up -> { RemexUpButton(onClick = up) } }
+            ?: {}
     MediumTopAppBar(
         title = {
             Column {
@@ -98,11 +113,22 @@ fun RemexFlexibleTopBar(
             }
         },
         modifier = modifier,
-        navigationIcon = navigationIcon,
+        navigationIcon = resolvedNavigationIcon,
         actions = actions,
         scrollBehavior = scrollBehavior,
         colors = colors
     )
+}
+
+/** The standard Up arrow: auto-mirrored, with its label as a tooltip, as the QR scanner's is. */
+@Composable
+fun RemexUpButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.cd_back)
+    RemexTooltip(label) {
+        IconButton(onClick = onClick, shapes = rememberRemexIconButtonShapes()) {
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = label)
+        }
+    }
 }
 
 /**

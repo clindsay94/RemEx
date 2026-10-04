@@ -72,6 +72,12 @@ public sealed partial class RoutinesViewModel : ObservableObject, IDisposable
             _shell.PropertyChanged += OnShellPropertyChanged;
         }
 
+        // Every card, group and history line is text formatted when it was built, so a live language
+        // switch has to rebuild them or the page stays in the old language until the next host change
+        // (3.0 comb, routines-no-live-language). Routed through the same coalesced refresh a host
+        // change uses.
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+
         InitCoachMark();
         Refresh();
     }
@@ -688,5 +694,9 @@ public sealed partial class RoutinesViewModel : ObservableObject, IDisposable
         {
             _shell.PropertyChanged -= OnShellPropertyChanged;
         }
+
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
     }
+
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) => OnHostChanged(this, EventArgs.Empty);
 }

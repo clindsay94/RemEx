@@ -294,8 +294,14 @@ private fun AppGrid(
     val dedupedApps = remember(uiState.apps) {
         uiState.apps.distinctBy { "${it.name}|${it.path}" }
     }
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    // Tapping Apps while on Apps goes back to the top (3.0 comb, no-reselect).
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.AppLauncher) {
+        gridState.animateScrollToItem(0)
+    }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = LauncherTileMinSize),
+        state = gridState,
         modifier = Modifier.fillMaxSize(),
         // Nothing floats over this grid any more, so the bottom only has to clear the system
         // navigation bar (RemEx-wqo7a.1, RemEx-wqo7a.6).

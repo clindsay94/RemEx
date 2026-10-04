@@ -53,6 +53,7 @@ internal sealed class PhoneRelayTestKit : IDisposable
         {
             ReadyTimeout = options.ReadyTimeout,
             PeerIdleTimeout = options.PeerIdleTimeout,
+            PeerVerdictTimeout = options.PeerVerdictTimeout,
             PeerProgressInterval = TimeSpan.FromMilliseconds(20),
         };
 
@@ -118,6 +119,7 @@ internal sealed class PhoneRelayTestKit : IDisposable
     {
         public TimeSpan ReadyTimeout { get; set; } = TimeSpan.FromSeconds(10);
         public TimeSpan PeerIdleTimeout { get; set; } = TimeSpan.FromSeconds(10);
+        public TimeSpan PeerVerdictTimeout { get; set; } = TimeSpan.FromMinutes(5);
     }
 
     /// <summary>Lands the staging file with a plain move, like a same-volume promotion.</summary>

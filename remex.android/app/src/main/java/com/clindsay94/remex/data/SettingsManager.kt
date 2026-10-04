@@ -2,6 +2,7 @@ package com.clindsay94.remex.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -49,6 +50,32 @@ class SettingsManager(val context: Context) {
                                 manual.isNotBlank() &&
                                         (manualHost.isBlank() || manualHost == currentHost)
                         return if (manualAppliesHere) manual else hostReported
+                }
+
+                /** The address form's write: host, port and the Wake-on-LAN fields it shows. */
+                internal fun writeConnectionSettings(
+                        preferences: MutablePreferences,
+                        host: String,
+                        port: Int,
+                        mac: String,
+                        broadcast: String,
+                        subnetMask: String,
+                ) {
+                        writeConnectionHost(preferences, host, port)
+                        preferences[MAC_KEY] = mac
+                        // Recorded in the same edit as the host it belongs to (RemEx-263f).
+                        preferences[MAC_MANUAL_HOST_KEY] = host
+                        preferences[BROADCAST_IP_KEY] = broadcast
+                        preferences[SUBNET_MASK_KEY] = subnetMask
+                }
+
+                /**
+                 * A connect that only picks a PC (see [saveConnectionHost]): host and port, and
+                 * nothing that belongs to Wake-on-LAN.
+                 */
+                internal fun writeConnectionHost(preferences: MutablePreferences, host: String, port: Int) {
+                        preferences[HOST_KEY] = host
+                        preferences[PORT_KEY] = port
                 }
 
                 val HOST_KEY = stringPreferencesKey("host")
@@ -489,6 +516,10 @@ class SettingsManager(val context: Context) {
         val personalizationPreferencesFlow: Flow<PersonalizationPreferences> =
                 context.dataStore.data.map { preferences -> personalizationFrom(preferences) }
 
+        /**
+         * The address form's save: host, port AND the Wake-on-LAN fields the user can see and edit
+         * there. Only the form may call this, because only the form shows the MAC it writes.
+         */
         suspend fun saveConnectionSettings(
                 host: String,
                 port: Int,
@@ -497,14 +528,22 @@ class SettingsManager(val context: Context) {
                 subnetMask: String
         ) {
                 context.dataStore.edit { preferences ->
-                        preferences[HOST_KEY] = host
-                        preferences[PORT_KEY] = port
-                        preferences[MAC_KEY] = mac
-                        // Recorded in the same edit as the host it belongs to (RemEx-263f).
-                        preferences[MAC_MANUAL_HOST_KEY] = host
-                        preferences[BROADCAST_IP_KEY] = broadcast
-                        preferences[SUBNET_MASK_KEY] = subnetMask
+                        writeConnectionSettings(preferences, host, port, mac, broadcast, subnetMask)
                 }
+        }
+
+        /**
+         * A connect that names only WHERE to go: a Known PCs card, Home's Connect, a scanned QR code.
+         *
+         * HOST AND PORT ONLY (3.0 comb, mac-leak). These paths used to re-save the form's MAC,
+         * broadcast and subnet alongside the new host, which re-stamped PC A's manual MAC as PC B's
+         * (MAC_MANUAL_HOST_KEY = B) and undid RemEx-263f: Wake on PC B woke PC A. Worse, on a fresh
+         * process the form's values had not loaded yet, so the same save wiped a manual MAC and reset
+         * the broadcast and subnet to defaults. Leaving those fields alone lets [resolveMacAddress]
+         * fall back to the MAC PC B itself reported.
+         */
+        suspend fun saveConnectionHost(host: String, port: Int) {
+                context.dataStore.edit { preferences -> writeConnectionHost(preferences, host, port) }
         }
 
         // preset defaults to "custom": callers that save raw quality/fps/scale without going through

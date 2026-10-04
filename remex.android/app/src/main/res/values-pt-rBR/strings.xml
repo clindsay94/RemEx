@@ -1587,4 +1587,12 @@
     <string name="sensor_alerts_remove_cd">Remover o alerta de %1$s</string>
     <string name="cd_sensor_alert_bell">Alerta definido para este sensor</string>
     <string name="cd_sensor_alerts_open">Alertas do PC</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">O PC remoto será desligado. Todo o trabalho não salvo será perdido. Ligá-lo com o RemEx não basta: o RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
+    <string name="rc_restart_warning">O PC remoto será reiniciado. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
+    <string name="rc_force_shutdown_warning">Isso desligará o PC remoto imediatamente. Todo o trabalho não salvo será perdido. Ligá-lo com o RemEx não basta: o RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
+    <string name="rc_force_restart_warning">Isso reiniciará o PC remoto imediatamente. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
+    <string name="rc_reboot_uefi_warning">O PC remoto será reiniciado e iniciará diretamente nas configurações de firmware UEFI. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
+    <string name="relative_time_just_now">agora mesmo</string>
+    <string name="button_open_app_settings">Abrir configurações</string>
 </resources>

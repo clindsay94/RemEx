@@ -165,6 +165,7 @@ fun DashboardScreen(
     TelemetryLeaseEffect(TelemetryDemand.SENSORS_CANVAS, active = isVisible)
 
     val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+    val needsPairing by com.clindsay94.remex.RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val telemetrySensors by viewModel.telemetrySensors.collectAsStateWithLifecycle()
     val telemetryHistory by viewModel.telemetryHistory.collectAsStateWithLifecycle()
     val layout by viewModel.layout.collectAsStateWithLifecycle()
@@ -237,6 +238,11 @@ fun DashboardScreen(
                 onMenuAnchor = { menuAnchor = it },
                 editRevision = viewModel.editRevision,
                 onUndoIfUnchanged = { viewModel.undoIfUnchanged(it) },
+                needsPairing = isConnected && needsPairing,
+                onPair = {
+                    ConnectionOpenRequests.requestAddPc()
+                    onNavigateToConnection()
+                },
         )
         // First-run coach marks (RemEx-km0i.10), mounted last = top of z-order. Never over edit mode.
         AnimatedVisibility(
@@ -299,9 +305,17 @@ fun DashboardScreenContent(
                 { _, _, _, _, _, _ -> },
         onRemoveSensorAlert: (String) -> Unit = {},
         onRefreshSensorAlerts: () -> Unit = {},
+        /**
+         * Connected, but the PC no longer recognises this phone, so it sends no readings: the grid
+         * says so instead of sitting on empty tiles (3.0 comb, needs-pairing-gaps).
+         */
+        needsPairing: Boolean = false,
+        onPair: () -> Unit = onNavigateToConnection,
 ) {
     val haptics = rememberRemexHaptics()
     val chrome = SensorsChrome.forMode(editMode)
+    val pairingBlocksGrid =
+            !editMode && ConnectedPane.state(isConnected, needsPairing) == ConnectedPaneState.NeedsPairing
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
@@ -463,7 +477,9 @@ fun DashboardScreenContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (visibleCards.isEmpty()) {
+                    if (pairingBlocksGrid) {
+                        NeedsPairingContent(onPair = onPair)
+                    } else if (visibleCards.isEmpty()) {
                         Text(
                                 stringResource(if (editMode) R.string.dashboard_empty_grid_edit else R.string.dashboard_empty_grid),
                                 style = MaterialTheme.typography.bodyLarge,

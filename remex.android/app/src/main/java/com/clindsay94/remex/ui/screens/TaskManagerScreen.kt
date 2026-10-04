@@ -308,7 +308,14 @@ fun TaskManagerScreenContent(
                                     } else {
                                         null
                                     }
+                            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                            // Tapping Control while on Processes goes back to the top (3.0 comb,
+                            // no-reselect).
+                            com.clindsay94.remex.ui.navigation.TabReselectEffect(
+                                    com.clindsay94.remex.ui.navigation.Screen.Control
+                            ) { listState.animateScrollToItem(0) }
                             LazyColumn(
+                                    state = listState,
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = 80.dp)
                             ) {

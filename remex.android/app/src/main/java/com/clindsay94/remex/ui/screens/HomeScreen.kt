@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.text.format.DateUtils
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -90,6 +89,7 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.navigation.NavDestination
 import com.clindsay94.remex.ui.navigation.Screen
+import com.clindsay94.remex.ui.navigation.TabReselectEffect
 import com.clindsay94.remex.ui.telemetry.SensorAccents
 import com.clindsay94.remex.ui.theme.CardShapes
 import com.clindsay94.remex.ui.theme.AnimatedValueText
@@ -124,6 +124,14 @@ data class HomeUiState(
         val sensors: List<TelemetrySensor> = emptyList(),
         val recent: List<RecentActivity> = emptyList(),
         val cornerRadius: Int = CardShapes.DEFAULT_CORNER_RADIUS_DP,
+        /**
+         * Why the last connect failed, already in plain words, or null (3.0 comb, qr-home-no-perms).
+         * Home starts connections too (its Connect, and a scanned QR code lands here), so it has to
+         * say when one fails rather than sit on "Offline".
+         */
+        val connectionError: String? = null,
+        /** The error is a refusal only the app's settings page can undo; offer it. */
+        val errorOpensAppSettings: Boolean = false,
 )
 
 /** How many paired PCs the connect card lists before "Other PCs" takes over. */
@@ -166,7 +174,15 @@ fun HomeScreen(
     val history by viewModel.routineHistory.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val knownPcRows by connectionViewModel.knownPcRows.collectAsStateWithLifecycle()
+    val connectionError by connectionViewModel.connectionError.collectAsStateWithLifecycle()
+    val isCertMismatch by connectionViewModel.isCertMismatch.collectAsStateWithLifecycle()
+    val errorOpensAppSettings by connectionViewModel.errorOpensAppSettings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    // The same permission gate as the Connection screen (3.0 comb, qr-home-no-perms): Home's Connect
+    // used to skip it, so on Android 17 the attempt failed on a LAN socket with nothing asked.
+    val permissionGate =
+            rememberConnectPermissionGate { permanently -> connectionViewModel.reportLocalNetworkRefused(permanently) }
+    val certChangedMessage = stringResource(R.string.connection_error_cert_changed)
 
     // A result is shown only while Home is started, never minutes later somewhere else.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -191,13 +207,19 @@ fun HomeScreen(
                     sensors = sensors,
                     recent = HomeLogic.recentActivity(history, knownPcRows),
                     cornerRadius = cornerRadius,
+                    connectionError =
+                            connectionError?.takeUnless { isConnected }?.let { if (isCertMismatch) certChangedMessage else it },
+                    errorOpensAppSettings = errorOpensAppSettings,
             )
 
     HomeScreenContent(
             state = state,
             snackbarHostState = snackbarHostState,
             onQuickAction = viewModel::sendQuickAction,
-            onConnectTo = { entry -> connectionViewModel.connectToKnownPc(entry) },
+            onConnectTo = { entry ->
+                permissionGate.connect(entry.address) { connectionViewModel.connectToKnownPc(entry) }
+            },
+            onDismissError = connectionViewModel::clearError,
             onWakePc = viewModel::wakePc,
             onSetPinned = viewModel::setHomePin,
             onNavigateToConnection = onNavigateToConnection,
@@ -220,13 +242,17 @@ fun HomeScreenContent(
         onNavigateToConnection: () -> Unit,
         onOpenDestination: (NavDestination) -> Unit,
         snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-        /** Connection > Add a PC, for a PC that needs pairing again. */
+        /** Connection > Add a PC, for a PC that needs pairing again, and for a phone with no PCs yet. */
         onPair: () -> Unit = onNavigateToConnection,
+        onDismissError: () -> Unit = {},
 ) {
     val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     var showPinSheet by rememberSaveable { mutableStateOf(false) }
     val tileShape = CardShapes.shapeFor(CardShapes.ROUNDED_RECTANGLE, state.cornerRadius)
+    val scrollState = rememberScrollState()
+    // Tapping Home while on Home goes back to the top (3.0 comb, no-reselect).
+    TabReselectEffect(Screen.Home) { scrollState.animateScrollTo(0) }
 
     Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -243,7 +269,7 @@ fun HomeScreenContent(
                 modifier =
                         Modifier.fillMaxSize()
                                 .padding(innerPadding)
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(scrollState)
                                 .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(CardShapes.CARD_SPACING_DP.dp)
         ) {
@@ -256,6 +282,8 @@ fun HomeScreenContent(
                         onConnectTo = onConnectTo,
                         onWakePc = onWakePc,
                         onNavigateToConnection = onNavigateToConnection,
+                        onAddPc = onPair,
+                        onDismissError = onDismissError,
                 )
             }
 
@@ -508,9 +536,12 @@ private fun ConnectCard(
         onConnectTo: (KnownPcEntry) -> Unit,
         onWakePc: () -> Unit,
         onNavigateToConnection: () -> Unit,
+        onAddPc: () -> Unit,
+        onDismissError: () -> Unit,
 ) {
     val haptics = rememberRemexHaptics()
     val buttonShapes = rememberRemexButtonShapes()
+    val context = LocalContext.current
     Card(
             modifier = Modifier.fillMaxWidth(),
             shape = shape,
@@ -533,6 +564,40 @@ private fun ConnectCard(
                 }
             }
 
+            // The last attempt's failure, in plain words (3.0 comb, qr-home-no-perms): a Connect here
+            // or a scanned QR code that fails used to leave Home saying only "Offline".
+            state.connectionError?.let { error ->
+                Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(start = 12.dp, top = 12.dp, end = 4.dp, bottom = 4.dp)) {
+                        Text(error, style = MaterialTheme.typography.bodyMedium)
+                        Row(modifier = Modifier.align(Alignment.End)) {
+                            if (state.errorOpensAppSettings) {
+                                TextButton(
+                                        onClick = {
+                                            haptics.perform(RemexHapticEvent.Press)
+                                            openAppPermissionSettings(context)
+                                        },
+                                        shapes = buttonShapes,
+                                        contentPadding = ButtonDefaults.TextButtonContentPadding,
+                                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                                ) { Text(stringResource(R.string.button_open_app_settings)) }
+                            }
+                            TextButton(
+                                    onClick = onDismissError,
+                                    shapes = buttonShapes,
+                                    contentPadding = ButtonDefaults.TextButtonContentPadding,
+                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                            ) { Text(stringResource(R.string.button_dismiss)) }
+                        }
+                    }
+                }
+            }
+
             val pcs = state.knownPcs.take(CONNECT_CARD_MAX_PCS)
             if (pcs.isEmpty()) {
                 Text(
@@ -540,14 +605,16 @@ private fun ConnectCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // Straight to Add a PC, which is what the line above asks for (3.0 comb,
+                // home-firstrun-card): "Connect" opened Connection with nothing to connect to.
                 Button(
                         onClick = {
                             haptics.perform(RemexHapticEvent.Press)
-                            onNavigateToConnection()
+                            onAddPc()
                         },
                         shapes = buttonShapes,
                         modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.button_connect)) }
+                ) { Text(stringResource(R.string.connection_add_pc)) }
             } else {
                 pcs.forEach { pc ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -582,19 +649,21 @@ private fun ConnectCard(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(
-                        onClick = {
-                            haptics.perform(RemexHapticEvent.CommandSent)
-                            onWakePc()
-                        },
-                        shapes = buttonShapes,
-                ) {
-                    Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.dashboard_wake_pc))
-                }
-                if (pcs.isNotEmpty()) {
+            // No Wake with no PC to wake (3.0 comb, home-firstrun-card): it could only fail, and its
+            // error pointed at a MAC setting the person has no reason to know about yet.
+            if (HomeLogic.connectCardOffersWake(state.knownPcs.size)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                            onClick = {
+                                haptics.perform(RemexHapticEvent.CommandSent)
+                                onWakePc()
+                            },
+                            shapes = buttonShapes,
+                    ) {
+                        Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.dashboard_wake_pc))
+                    }
                     TextButton(onClick = onNavigateToConnection, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.home_connect_other)) }
                 }
             }
@@ -872,9 +941,11 @@ private fun RecentActivitySection(recent: List<RecentActivity>, shape: androidx.
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                val now = System.currentTimeMillis()
+                // Ticks once a minute, so "just now" becomes "1 minute ago" on its own instead of
+                // only when something else recomposes (3.0 comb, zero-minutes-ago).
+                val now = rememberMinuteClock()
                 recent.forEach { item ->
-                    val time = DateUtils.getRelativeTimeSpanString(item.atMillis, now, DateUtils.MINUTE_IN_MILLIS).toString()
+                    val time = relativeTimeText(item.atMillis, now)
                     val (icon, title, status) =
                             when (item) {
                                 is RecentActivity.RoutineRan ->

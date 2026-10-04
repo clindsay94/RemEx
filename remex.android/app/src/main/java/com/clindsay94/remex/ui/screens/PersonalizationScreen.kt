@@ -32,6 +32,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -580,8 +582,22 @@ fun PersonalizationScreenContent(
                     // Material You wallpaper colour. The custom-palette branch in RemExTheme
                     // overrides it, so it is disabled there — that override, not an API level, is
                     // why this is conditional at all (RemEx-9429, RemEx-jcl4p).
+                    // The whole row is the switch (3.0 comb, switch-unlabeled): the label is
+                    // tappable and TalkBack reads "Dynamic colour, switch, off" as one item instead
+                    // of a bare "Switch, off" next to text it could not tie to it.
                     Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier =
+                                    Modifier.fillMaxWidth()
+                                            .toggleable(
+                                                    value = dynamicColor,
+                                                    enabled = palette == "default",
+                                                    role = Role.Switch,
+                                                    onValueChange = {
+                                                        haptics.perform(RemexHaptics.toggle(it))
+                                                        dynamicColor = it
+                                                        onDynamicColorChange(it)
+                                                    }
+                                            ),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -600,11 +616,8 @@ fun PersonalizationScreenContent(
                         }
                         Switch(
                                 checked = dynamicColor,
-                                onCheckedChange = {
-                                    haptics.perform(RemexHaptics.toggle(it))
-                                    dynamicColor = it
-                                    onDynamicColorChange(it)
-                                },
+                                // Null: the row's toggleable owns the click and the semantics.
+                                onCheckedChange = null,
                                 enabled = palette == "default"
                         )
                     }

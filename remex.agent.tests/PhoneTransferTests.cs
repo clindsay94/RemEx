@@ -308,7 +308,8 @@ public sealed class PhoneTransferTests
     /// <summary>Plays the phone receiving an upload: ready, ack the final frame, verify, answer.</summary>
     private static void PlayPhoneReceiving(
         PhoneRelayTestKit kit, FakePhoneSocket control, FakeChannelSocket channel, List<byte> received,
-        Action<FileTransferOffer>? onOffer = null, bool impostorVerdictFirst = false)
+        Action<FileTransferOffer>? onOffer = null, bool impostorVerdictFirst = false,
+        TimeSpan? verdictDelay = null, Action? onComplete = null)
     {
         channel.OnFrame = (envelope, payload) =>
         {
@@ -337,8 +338,16 @@ public sealed class PhoneTransferTests
             }
             else if (message.FileTransferComplete is { } complete)
             {
-                _ = Task.Run(() =>
+                onComplete?.Invoke();
+                _ = Task.Run(async () =>
                 {
+                    // A phone busy copying to slow storage answers late; Infinite means never.
+                    if (verdictDelay is { } delay)
+                    {
+                        if (delay == Timeout.InfiniteTimeSpan) return;
+                        await Task.Delay(delay);
+                    }
+
                     byte[] bytes;
                     lock (received) bytes = [.. received];
                     if (impostorVerdictFirst)
@@ -428,6 +437,70 @@ public sealed class PhoneTransferTests
             kit.Relay.UploadAsync(PhoneA, localPath, "root", "ReadOnly", null, cts.Token));
 
         Assert.Equal("Destination folder not found or read-only.", refusal.HostMessage);
+    }
+
+    /// <summary>
+    /// The phone acknowledged every byte and the PC told it so; the phone's own copy onto slow storage
+    /// then outlasts the idle window with no bytes moving (RemEx-5w3er). That is the phone being slow,
+    /// not going quiet, so the upload must succeed rather than report "stopped responding".
+    /// </summary>
+    [Fact]
+    public async Task Upload_ASlowFinalCopyOnThePhone_IsNotReportedAsThePhoneStoppingResponding()
+    {
+        using var kit = new PhoneRelayTestKit(configure: o => o.PeerIdleTimeout = TimeSpan.FromMilliseconds(300));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var (control, channel, _) = StartPhone(kit, cts.Token);
+        var received = new List<byte>();
+        PlayPhoneReceiving(kit, control, channel, received, verdictDelay: TimeSpan.FromMilliseconds(1500));
+        var payload = RandomNumberGenerator.GetBytes(80_000);
+        var localPath = Path.Combine(kit.LocalFolder, "slow-copy.mp4");
+        await File.WriteAllBytesAsync(localPath, payload);
+
+        await kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token);
+
+        lock (received) Assert.Equal(payload, received.ToArray());
+    }
+
+    /// <summary>
+    /// The longer bound is still a bound: a phone that acknowledged everything, stays connected and
+    /// never answers is reported as not answering, not waited on forever.
+    /// </summary>
+    [Fact]
+    public async Task Upload_APhoneThatNeverAnswersAfterTheLastByte_FailsAtTheVerdictBound()
+    {
+        using var kit = new PhoneRelayTestKit(configure: o =>
+        {
+            o.PeerIdleTimeout = TimeSpan.FromMilliseconds(200);
+            o.PeerVerdictTimeout = TimeSpan.FromMilliseconds(700);
+        });
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var (control, channel, _) = StartPhone(kit, cts.Token);
+        PlayPhoneReceiving(kit, control, channel, new List<byte>(), verdictDelay: Timeout.InfiniteTimeSpan);
+        var localPath = Path.Combine(kit.LocalFolder, "silent.mp4");
+        await File.WriteAllBytesAsync(localPath, RandomNumberGenerator.GetBytes(50_000));
+        var started = DateTime.UtcNow;
+
+        var failure = await Assert.ThrowsAsync<TimeoutException>(() =>
+            kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token));
+
+        Assert.Equal(Remex.Agent.Services.FileTransfer.PeerTransferFailure.NoAnswer, failure.Message);
+        Assert.True(DateTime.UtcNow - started >= TimeSpan.FromMilliseconds(600), "it waited for the verdict bound, not the idle window");
+    }
+
+    /// <summary>A phone that drops during its final copy is noticed at once, not after the long bound.</summary>
+    [Fact]
+    public async Task Upload_APhoneThatDropsDuringItsFinalCopy_FailsAsDisconnected()
+    {
+        using var kit = new PhoneRelayTestKit(configure: o => o.PeerVerdictTimeout = TimeSpan.FromMinutes(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var (control, channel, _) = StartPhone(kit, cts.Token);
+        PlayPhoneReceiving(kit, control, channel, new List<byte>(), verdictDelay: Timeout.InfiniteTimeSpan,
+            onComplete: () => control.Close());
+        var localPath = Path.Combine(kit.LocalFolder, "drop.mp4");
+        await File.WriteAllBytesAsync(localPath, RandomNumberGenerator.GetBytes(50_000));
+
+        await Assert.ThrowsAsync<PhoneNotConnectedException>(() =>
+            kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token));
     }
 
     private sealed class SynchronousProgress(Action<Remex.Desktop.ViewModels.TransferProgress> report)
