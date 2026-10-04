@@ -587,7 +587,9 @@ public partial class ShellView : UserControl
     /// </summary>
     private void ScrollCurrentPageToTop()
     {
-        _pageHost?.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault()?.ScrollToHome();
+        // The page's own scroller, not the one inside a TextBox template that may come first in the walk.
+        _pageHost?.GetVisualDescendants().OfType<ScrollViewer>()
+            .FirstOrDefault(sv => sv.FindAncestorOfType<TextBox>() is null)?.ScrollToHome();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

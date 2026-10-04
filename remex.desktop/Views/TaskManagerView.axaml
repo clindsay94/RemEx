@@ -35,14 +35,15 @@
             <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="secondary pill compact" VerticalAlignment="Center"/>
         </Grid>
 
-        <Border Grid.Row="2" Margin="0,0,0,24" Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <TextBlock Text="{Binding KillError}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
-        </Border>
-
-        <!-- The list on screen is out of date: say so (3.0 comb, taskmgr-poll-fault). Shares the kill-error row. -->
-        <Border Grid.Row="2" Margin="0,0,0,24" Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding HasRefreshError}">
-            <TextBlock Text="{local:Localize TaskMgr_RefreshFailed}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
-        </Border>
+        <!-- Kill error and "list is out of date" (3.0 comb, taskmgr-poll-fault) share the row, stacked so both stay readable. -->
+        <StackPanel Grid.Row="2" Spacing="8">
+            <Border Margin="0,0,0,16" Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding KillError}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
+            </Border>
+            <Border Margin="0,0,0,16" Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding HasRefreshError}">
+                <TextBlock Text="{local:Localize TaskMgr_RefreshFailed}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
+            </Border>
+        </StackPanel>
 
         <!-- Unified List Container (M3 Surface) -->
         <material:Card Grid.Row="3" Classes="surface" Padding="0" InsideClipping="True">
