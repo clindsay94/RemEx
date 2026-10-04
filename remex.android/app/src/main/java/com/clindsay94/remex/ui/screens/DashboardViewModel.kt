@@ -411,9 +411,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { settingsManager.setPcAlertsEnabled(enabled) }
     }
 
-    /** How many columns the Sensors grid has: Auto, 2, 3 or 4 (RemEx-pp4cm.16). */
-    val gridWidth = settingsManager.sensorGridWidthFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GridWidth.AUTO)
+    /**
+     * How many columns the Sensors grid has: Auto, 2, 3 or 4 (RemEx-pp4cm.16). Null until the stored value
+     * is read, so the grid waits for it instead of packing for Auto and then jumping to the saved width.
+     */
+    val gridWidth: StateFlow<GridWidth?> = settingsManager.sensorGridWidthFlow
+        .stateIn<GridWidth?>(viewModelScope, SharingStarted.Eagerly, null)
 
     fun setGridWidth(width: GridWidth) {
         viewModelScope.launch { settingsManager.setSensorGridWidth(width) }

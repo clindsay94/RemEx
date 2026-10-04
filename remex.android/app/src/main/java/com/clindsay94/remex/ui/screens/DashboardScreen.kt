@@ -72,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size as GeoSize
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidPath
@@ -313,7 +314,7 @@ fun DashboardScreenContent(
         sensorAlerts: SensorAlertsState = SensorAlertsState(),
         pcAlertsEnabled: Boolean = true,
         /** Auto, 2, 3 or 4 columns, chosen in edit mode (RemEx-pp4cm.16). */
-        gridWidth: GridWidth = GridWidth.AUTO,
+        gridWidth: GridWidth? = GridWidth.AUTO,
         onSetGridWidth: (GridWidth) -> Unit = {},
         onSetPcAlertsEnabled: (Boolean) -> Unit = {},
         onSetSensorAlert: suspend (String, String, String?, Double, SensorAlertDirection, SensorAlertSeverity) -> Boolean =
@@ -384,7 +385,13 @@ fun DashboardScreenContent(
     val visibleCards = layout.visibleCards
 
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
-    Surface(modifier = Modifier.fillMaxSize()) {
+    // Transparent so the app background (RemEx-pp4cm.17) shows here like on every other screen; content
+    // colour stays onBackground. Cards keep their own opaque containers.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().nestedScroll(topBarScrollBehavior.nestedScrollConnection)) {
                 RemexFlexibleTopBar(
@@ -504,7 +511,7 @@ fun DashboardScreenContent(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        GridWidthPicker(selected = gridWidth, onSelect = onSetGridWidth)
+                        GridWidthPicker(selected = gridWidth ?: GridWidth.AUTO, onSelect = onSetGridWidth)
                     }
                     if (pairingBlocksGrid) {
                         NeedsPairingContent(onPair = onPair)
@@ -727,7 +734,7 @@ fun DashboardScreenContent(
 @Composable
 private fun SensorGridLayout(
         cards: List<HomeCardState>,
-        gridWidth: GridWidth,
+        gridWidth: GridWidth?,
         editMode: Boolean,
         draggingCardId: String?,
         onEnterEditMode: () -> Unit,
@@ -742,7 +749,9 @@ private fun SensorGridLayout(
         val gutter = CardShapes.CARD_SPACING_DP.toFloat()
         val widthDp = maxWidth.value
         // The breakpoint is the window's width class; the grid itself sits inside 16dp margins.
-        val columns = SensorGrid.columnsFor(widthDp + 32f, gridWidth)
+        // Hold the grid until the saved width is read, so it never packs for Auto and then reflows.
+        val resolvedWidth = gridWidth ?: return@BoxWithConstraints
+        val columns = SensorGrid.columnsFor(widthDp + 32f, resolvedWidth)
         val cell = SensorGrid.cellWidth(widthDp, columns, gutter)
         val rowHeight = SensorGrid.rowHeight(cell)
         val placements = remember(cards, columns) { SensorGrid.pack(cards.map { it.id to it.span }, columns) }

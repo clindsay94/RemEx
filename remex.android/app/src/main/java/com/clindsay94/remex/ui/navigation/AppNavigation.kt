@@ -585,12 +585,14 @@ private fun AppNavigationContent(
 
         // The app background (RemEx-pp4cm.17): one layer behind the whole shell, not one per screen.
         // Nothing is composed for None. The splash and the remote desktop stream cover it with
-        // opaque content, so an animated style stops drawing while either is up.
+        // opaque content, as do the QR scanner and pairing, so an animated style stops drawing while any
+        // of them is up.
         val backgroundVisible = BackgroundStyles.isVisible(backgroundStyle)
         AppBackgroundLayer(
                 style = backgroundStyle,
                 intensity = backgroundIntensity,
-                covered = isOn(Screen.Splash) || isOn(Screen.RemoteDesktop),
+                covered = isOn(Screen.Splash) || isOn(Screen.RemoteDesktop) || isOn(Screen.QrScanner) ||
+                        currentDestination?.hasRoute(PairingRoute::class) == true,
         )
 
         // ─── Adaptive layout shell ────────────────────────────────────────────────
