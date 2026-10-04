@@ -112,6 +112,7 @@ import com.clindsay94.remex.ui.screens.ControlTabScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.DesktopTabScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
+import com.clindsay94.remex.ui.screens.PcDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.HomeScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
@@ -1278,6 +1279,12 @@ private fun RemexNavHost(
 
                 composable<Screen.Faq> {
                         CompositionLocalProvider(LocalRemexUpAction provides moreUp) { FaqScreen() }
+                }
+
+                composable<Screen.PcDiagnostics> {
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                                PcDiagnosticsScreen(onNavigateToConnection = { onNavigateToConnection() })
+                        }
                 }
 
                 // Always pushed from Settings, so always an Up arrow, rail or not.
