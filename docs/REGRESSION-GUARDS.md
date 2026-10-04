@@ -1554,7 +1554,7 @@ owner never agreed:
   `Manage_WithAnUnsafeNameOrPathOrOperation_IsRefusedEvenWhenThePhoneAllowsChanges` covers each case.
 
 **On the phone, the switch is the guard, and it is checked first.** `FileHostHandler.handleManage`
-(`FileHostHandler.kt:380`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
+(`FileHostHandler.kt:399`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
 included, BEFORE anything is resolved, and `AndroidFileTransferHost` reads the person's
 `pcMayChangeFilesFlow` into `pcMayChangeFiles` (`AndroidFileTransferHost.kt:68`, default `false`) and serves
 it through `isPcChangeAllowed()` (`:176`), which also gates `canRename/canMove/canDelete` on each root
@@ -1564,8 +1564,22 @@ PC's relay gate becomes the only thing standing between a PC and the phone's fil
 stale (the person turned the switch off while the screen was open) and cannot be trusted by a forged request.
 `FileHostHandlerTest.everyManageOperation_withTheSwitchOff_isRefusedWithAPlainReasonAndChangesNothing` and
 `theSwitch_isReadOnEveryRequest_notOnceAtStartup` go red (defect-injected in RemEx-fgmne). The same function
-refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:388`) and the shared folder
-itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:399`) before the resolver runs.
+refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:420`) and the shared folder
+itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:431`) before the resolver runs. It also refuses the whole-device
+(full-browse) volume (`FULL_BROWSE_READ_ONLY_MESSAGE`: only folders the person shared by name are writable
+from the PC; `theWholeDeviceView_isReadOnlyFromThePc_forEveryOperation`), and never sends a SAF provider's
+exception text to the PC (`reportManageFailure`; the text can hold `/storage/emulated/0/...`).
+
+**Copy, move and replace on the phone** (`FileHostHandler.copyOrMove`) must never touch what exists until the
+new bytes are safe: a destination that is the source is refused, a folder is never replaced, and a replace
+copies to a temporary sibling first and only then swaps the old file out (restoring it on any failure); the
+partial target is deleted in a `finally` on failure AND cancellation, and the copy runs on the host's IO scope
+in chunks that call `ensureActive()` so it cannot hold up the control-message collector. Each is pinned by a
+`FileHostHandlerTest` case (`copyOrMoveOntoItself_...`, `aReplaceNeverDeletesAFolder_...`,
+`aReplaceThatFailsMidCopy_...`, `aCopyThatIsCancelled_...`, `aLongCopy_doesNotHoldUpTheRequestsBehindIt`;
+each defect-injected red in RemEx-fgmne). Names the PC invents are checked with `isSafeNewName` /
+`FilePathValidation.IsValidRemoteName` (UTF-8 bytes, no control or Unicode format characters); names of files
+that already exist use the lenient rule so a file with U+200D in its name can still be browsed and deleted.
 
 On the phone, `SharedPathPolicy` (both `SafFileSystemFacade.resolve` and the v2 `resolveDocument`)
 resolves only roots the person shares RIGHT NOW. `fromTreeUri` opens any tree the app still holds a

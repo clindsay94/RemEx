@@ -166,10 +166,15 @@ browsing only while that switch is on. The phone resolves a root id only if it i
   answers with `success: false` and a plain `errorMessage` when it is off. A read-only share, a root that is not
   shared, a path with `..`, a backslash, a NUL or an empty segment, a name over 255 characters or containing a
   separator, and any attempt to delete, rename, move or copy the shared folder itself are refused the same way
-  (the shared folder can still be given a new sub-folder).
+  (the shared folder can still be given a new sub-folder). Manage requests are refused on the whole-device
+  (full-browse) volume: only folders the person shared by name are writable from the PC. A copy or move onto
+  the source itself, or onto a folder, is refused; a replace copies to a temporary sibling and swaps it in
+  only after it fully landed, and copies run in the background so they never hold up other requests. The
+  phone's refusal text is fixed plain English and never carries a path or provider error.
 - *The PC checks first too.* Before the wire the relay validates the operation (one of the five), the root id,
-  every name (`FilePathValidation.IsValidRemoteName`) and every path (`IsValidRemoteRelativePath`): the same
-  rules the phone applies. Copy and move are not subject to the 90-second request timeout: they stream the
+  every new name (`FilePathValidation.IsValidRemoteName`: at most 255 UTF-8 bytes, no separator, no control
+  character, no Unicode format character such as U+202E or U+200B) and every path
+  (`IsValidRemoteRelativePath`): the same rules the phone applies. Copy and move are not subject to the 90-second request timeout: they stream the
   whole file on the phone before it answers, so they wait up to 30 minutes.
 
 **Folder upload to a phone** is not a new request either: the PC makes each folder with `mkdir`
