@@ -52,8 +52,11 @@ public sealed class SplashSourceScrapeTests
 
         source.Should().Contain("clock.MarkFirstFrame();");
         source.Should().Contain("_clock.Advance(dt);");
-        source.Should().Contain("_clock.Reset(live: variant is ILiveSplashVariant);");
+        source.Should().Contain("_clock.Reset();", "every style waits for its first frame (RemEx-pp4cm.11)");
+        source.Should().NotContain("Reset(live:", "the films no longer run from attach");
         source.Should().Contain("LiveHandshakeField.WarmUp();", "the SkSL compile is warmed off the render path");
+        source.Should().Contain("SplashFilmField.WarmUp();", "and the films' field the same way");
+        source.Should().Contain("fielded.ReducedMotion = ReduceMotion;", "every style honours reduced motion");
     }
 
     [Fact]
@@ -62,8 +65,8 @@ public sealed class SplashSourceScrapeTests
         // On a raster lease the field costs ~200 ms a frame; the variant must be told to fall back.
         var source = Read("remex.desktop/Controls/Splash/SkiaSplashControl.cs");
 
-        source.Should().Contain("live.FieldEnabled = lease.GrContext is not null;");
-        var fieldIndex = source.IndexOf("live.FieldEnabled = lease.GrContext is not null;", StringComparison.Ordinal);
+        source.Should().Contain("fielded.FieldEnabled = lease.GrContext is not null;");
+        var fieldIndex = source.IndexOf("fielded.FieldEnabled = lease.GrContext is not null;", StringComparison.Ordinal);
         var renderIndex = source.IndexOf("variant.Render(canvas, w, h, t, dt);", StringComparison.Ordinal);
         fieldIndex.Should().BeLessThan(renderIndex, "the GPU check has to land before the frame it governs");
     }

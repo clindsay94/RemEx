@@ -8,12 +8,27 @@ namespace Remex.Branding;
 /// centre, faint amber HUD (concentric rings + crosshair), a hero terminal mark that eases up from
 /// scale ~0.1 toward rest, then a 1.8s IMPACT (white flash, deterministic camera shake, elastic punch,
 /// amber shockwave + gold ring, additive RGB-split chromatic bloom), the two-colour "RemEx" wordmark +
-/// "⚡ COMMAND CENTER" tagline revealing below, and a fade-to-backdrop exit. Fixed brand palette
-/// (SplashBrand) plus the transient impact accents present in the Android source; never theme colours.
+/// "⚡ COMMAND CENTER" tagline revealing below, and a fade-to-backdrop exit. Colours come from
+/// SplashBrand (seed-recoloured by the host) plus the transient impact accents of the Android source.
 /// Fully deterministic — no Random/DateTime; particles seed by index, shake via sin(t).
 /// </summary>
-public sealed class CosmicZoomVariant : ISplashVariant
+/// <remarks>
+/// Since RemEx-pp4cm.11 it plays in deep space: the film field (<see cref="SplashFilmField"/>) draws
+/// a seed-tinted nebula and three star layers that stretch into a warp as the zoom builds, and the
+/// impact is a beat that splits chroma through the field. Under reduced motion it shows its designed
+/// still frame instead.
+/// </remarks>
+public sealed class CosmicZoomVariant : IFieldSplashVariant
 {
+    private volatile bool _reduced;
+    private volatile bool _field = true;
+
+    /// <inheritdoc />
+    public bool ReducedMotion { set => _reduced = value; }
+
+    /// <inheritdoc />
+    public bool FieldEnabled { set => _field = value; }
+
     // Transient impact accents — verbatim from SplashCosmicZoom.kt (allowed non-palette colours).
     private static readonly SKColor Gold = new(0xFF, 0xD7, 0x00);        // #FFD700 inner shock ring
     private static readonly SKColor AberrRed = new(0xFF, 0x2D, 0x55);    // #FF2D55 chromatic red
@@ -28,10 +43,15 @@ public sealed class CosmicZoomVariant : ISplashVariant
     private readonly DeterministicRandom _respawnRng = new(99); // Android used Random(99L) for respawns
 
     /// <summary>~3.1s: exit fade completes at 3.0s, +0.1s tail — identical to the Android source.</summary>
-    public float Duration => 3.1f;
+    public float Duration => _reduced ? SplashFilmField.StillDuration : 3.1f;
 
     public void Render(SKCanvas canvas, float width, float height, float t, float dt)
     {
+        if (_reduced)
+        {
+            SplashFilmField.DrawStill(canvas, width, height, SplashFilmStyle.Cosmic, t, _field);
+            return;
+        }
         EnsureParticles();
 
         float cx = width / 2f, cy = height / 2f;
@@ -39,8 +59,12 @@ public sealed class CosmicZoomVariant : ISplashVariant
         // phone's `density` so the whole composition (hero offsets, wordmark, strokes) scales together.
         float u = MathF.Min(width, height) / 520f;
 
-        // ── Backdrop: full-bleed diagonal brand gradient ──
-        SplashScene.DrawBackdrop(canvas, width, height);
+        // ── Backdrop: deep space. The warp builds with the zoom and peaks at the strike; the strike
+        // is the beat, from the mark's resting centre. ──
+        float warpCy = cy - 30f * RestScale * u;
+        float warp = t < ImpactAt ? (t / ImpactAt) * (t / ImpactAt) : MathF.Max(0.12f, 1f - (t - ImpactAt) / 0.6f);
+        SplashFilmField.Draw(canvas, width, height, SplashFilmStyle.Cosmic, t, u, new SKPoint(cx, warpCy), warp,
+            new FilmBeat(cx, warpCy, ImpactAt, 1.2f), still: false, _field);
 
         // ── Cosmic starfield: advance one frame, then draw ──
         UpdateParticles(dt);
