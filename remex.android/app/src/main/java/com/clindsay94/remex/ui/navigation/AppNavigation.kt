@@ -112,6 +112,7 @@ import com.clindsay94.remex.ui.screens.ControlTabScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.DesktopTabScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
+import com.clindsay94.remex.ui.screens.PcDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.HomeScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
@@ -1203,6 +1204,10 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.Faq> { FaqScreen() }
+
+                composable<Screen.PcDiagnostics> {
+                    PcDiagnosticsScreen(onNavigateToConnection = { onNavigateToConnection() })
+                }
 
                 composable<Screen.ShareDiagnostics> { ShareDiagnosticsScreen() }
 

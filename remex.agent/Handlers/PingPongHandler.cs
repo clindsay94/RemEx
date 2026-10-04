@@ -56,7 +56,10 @@ public sealed class PingPongHandler(
     // The PC browsing a paired phone (RemEx-xt0af): the phone's answers to the read-only file_*
     // requests the PC relayed down this session. Optional and last for the same reason as the three
     // above; null means such replies are dropped, which is also what happens to one nobody asked for.
-    Remex.Agent.Services.FileTransfer.PhoneFileRelay? phoneFileRelay = null) : IDisposable
+    Remex.Agent.Services.FileTransfer.PhoneFileRelay? phoneFileRelay = null,
+    // The phone's read-only look at the PC's logs and status (RemEx-pp4cm.13): diagnostic_logs_get and
+    // diagnostic_summary_get. Optional and last for the same reason; null answers both "refused".
+    Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService? phoneDiagnostics = null) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -130,6 +133,10 @@ public sealed class PingPongHandler(
         // Tells this phone the PC Home's pinned sensors once it has authenticated (RemEx-wqo7a.5).
         // Null until then, and always null for loopback: the PC's own UI reads the list in-process.
         HomePinsSessionLink? homePinsLink = null;
+
+        // This connection's own pacing for the phone's log and status reads (RemEx-pp4cm.13): one request
+        // of each kind a second, per session, so two phones never share a budget.
+        var diagnosticsGate = phoneDiagnostics?.CreateSessionGate();
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -648,6 +655,26 @@ public sealed class PingPongHandler(
                             homePinsStore.RequestFromPhone(message.HomePinChange!, connectionClientId ?? string.Empty);
                         }
 
+                        break;
+
+                    // ── PC logs and diagnostics on the phone (RemEx-pp4cm.13) ──
+                    // Pairing-gated by RequiresPairing's default; the service additionally refuses loopback and
+                    // any session without a proven identity, rate-limits per session, validates, redacts and caps
+                    // the answer. Always answers (a refusal is a reply with an error token), so the phone shows a
+                    // reason instead of waiting out a timeout. Not detached: building a page is a memory read,
+                    // and the summary runs its probes on the thread pool inside the service.
+                    case MessageTypes.DiagnosticLogsGet:
+                    case MessageTypes.DiagnosticSummaryGet:
+                        if (phoneDiagnostics is null || diagnosticsGate is null)
+                        {
+                            logger.LogWarning("Ignored {Type}: diagnostics are not available on this host.", message.Type);
+                            break;
+                        }
+
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            await phoneDiagnostics.HandleAsync(message, diagnosticsGate, isLoopback, identityProven, ct),
+                            ct);
                         break;
 
                     // ── 3.0 Routines: PC-run routines (RemEx-pp0rt.9, spec §7.3.1, §7.3.8, §7.4.2) ──

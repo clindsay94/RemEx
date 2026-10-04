@@ -63,6 +63,7 @@ public class HostToClientRoutingTests
     [InlineData("clipboard_", "_onClipboardMessageMethodId")]
     [InlineData("routine_", "_onRoutineMessageMethodId")]
     [InlineData("home_pins_", "_onHomePinsMessageMethodId")]
+    [InlineData("diagnostic_", "_onDiagnosticMessageMethodId")]
     public void TheFamilyIsForwardedByPrefixToItsCallback(string prefix, string callbackField)
     {
         var body = RouterBody();
@@ -163,6 +164,7 @@ public class HostToClientRoutingTests
     [InlineData("onLinkQuality", "_onLinkQualityMethodId")]
     [InlineData("onRoutineMessage", "_onRoutineMessageMethodId")]
     [InlineData("onHomePinsMessage", "_onHomePinsMessageMethodId")]
+    [InlineData("onDiagnosticMessage", "_onDiagnosticMessageMethodId")]
     public void TheCallbackIsLookedUpAndAssignedDuringRegistration(string javaMethod, string field)
     {
         // **THE HOLE THE ROUTER SCAN CANNOT SEE, AND IT IS THE BIGGER ONE.** The forward can be
@@ -192,6 +194,7 @@ public class HostToClientRoutingTests
                      ("clipboard_", "_onClipboardMessageMethodId"),
                      ("routine_", "_onRoutineMessageMethodId"),
                      ("home_pins_", "_onHomePinsMessageMethodId"),
+                     ("diagnostic_", "_onDiagnosticMessageMethodId"),
                  })
         {
             var match = Regex.Match(
@@ -224,6 +227,7 @@ public class HostToClientRoutingTests
         Assert.DoesNotContain("MessageTypes.ClipboardContent", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.Routine", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MessageTypes.HomePins", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("MessageTypes.Diagnostic", body, StringComparison.Ordinal);
     }
 
     [Fact]

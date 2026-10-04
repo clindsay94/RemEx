@@ -563,6 +563,18 @@ public static class HostBootstrapper
                     certificatePath: certService.CertificatePath),
                 port));
 
+        // The phone's read-only view of the PC's logs and status (RemEx-pp4cm.13). Reads the same
+        // in-memory buffer the PC's Logs page reads; everything it returns is redacted first.
+        var hostStartedAt = DateTimeOffset.UtcNow;
+        builder.Services.AddSingleton(sp => new Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService(
+            () => Remex.Core.Logging.InMemoryLogSink.GetEntries(),
+            () => Remex.Core.Logging.InMemoryLogSink.LastSeq,
+            sp.GetRequiredService<Remex.Core.Services.Readiness.ISystemReadinessService>(),
+            () => sp.GetRequiredService<IHostCapabilitiesProvider>().GetCurrent(),
+            () => DateTimeOffset.UtcNow - hostStartedAt,
+            sp.GetRequiredService<TimeProvider>(),
+            sp.GetRequiredService<ILogger<Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService>>()));
+
         if (configureWebHost is null)
         {
             builder.WebHost.ConfigureKestrel(kestrel =>
@@ -716,7 +728,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineStepRequestHandler>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.Routines.RoutineHostMessageHandler>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Home.IHomePinnedSensorsStore>(),
-                context.RequestServices.GetRequiredService<PhoneFileRelay>());
+                context.RequestServices.GetRequiredService<PhoneFileRelay>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Diagnostics.PhoneDiagnosticsService>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

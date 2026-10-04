@@ -224,6 +224,8 @@ public static class AndroidNativeExports
 
     /// <summary>Carries every <c>home_pins_*</c> envelope to Kotlin (RemEx-wqo7a.5).</summary>
     private static IntPtr _onHomePinsMessageMethodId;
+    /// <summary>Carries every <c>diagnostic_*</c> envelope to Kotlin (RemEx-pp4cm.13).</summary>
+    private static IntPtr _onDiagnosticMessageMethodId;
     private static IntPtr _onLinkQualityMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
@@ -373,6 +375,7 @@ public static class AndroidNativeExports
         _onClipboardMessageMethodId = IntPtr.Zero;
         _onRoutineMessageMethodId = IntPtr.Zero;
         _onHomePinsMessageMethodId = IntPtr.Zero;
+        _onDiagnosticMessageMethodId = IntPtr.Zero;
         _onLinkQualityMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
@@ -489,6 +492,7 @@ public static class AndroidNativeExports
                 var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
                 var onRoutineMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onRoutineMessage", "(Ljava/lang/String;)V");
                 var onHomePinsMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onHomePinsMessage", "(Ljava/lang/String;)V");
+                var onDiagnosticMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onDiagnosticMessage", "(Ljava/lang/String;)V");
                 var onLinkQualityMethodId = GetRequiredCallbackMethodId(env, clazz, "onLinkQuality", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
@@ -514,6 +518,7 @@ public static class AndroidNativeExports
                     || onClipboardMessageMethodId == IntPtr.Zero
                     || onRoutineMessageMethodId == IntPtr.Zero
                     || onHomePinsMessageMethodId == IntPtr.Zero
+                    || onDiagnosticMessageMethodId == IntPtr.Zero
                     || onLinkQualityMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
@@ -544,6 +549,7 @@ public static class AndroidNativeExports
                 _onClipboardMessageMethodId = onClipboardMessageMethodId;
                 _onRoutineMessageMethodId = onRoutineMessageMethodId;
                 _onHomePinsMessageMethodId = onHomePinsMessageMethodId;
+                _onDiagnosticMessageMethodId = onDiagnosticMessageMethodId;
                 _onLinkQualityMethodId = onLinkQualityMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
@@ -2105,6 +2111,20 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onHomePinsMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
+        }
+
+        // THE WHOLE diagnostic_ FAMILY, BY PREFIX (RemEx-pp4cm.13). diagnostic_logs_result and
+        // diagnostic_summary_result are the PC's redacted log page and status rows; without this line
+        // the host answers, the send succeeds, and the phone's PC logs screen spins until its own
+        // timeout - the RemEx-y6x6 failure mode again, reading as a PC that has nothing to say. The two
+        // phone -> host requests match the prefix too but never arrive on this side. The whole envelope,
+        // like the families above, because Kotlin checks `type` and the correlation id. Do NOT narrow it
+        // to an explicit type list.
+        if (msg.Type is { } diagnosticType && diagnosticType.StartsWith("diagnostic_", StringComparison.Ordinal))
+        {
+            NotifyJavaData(
+                _onDiagnosticMessageMethodId,
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 

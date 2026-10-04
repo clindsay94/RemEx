@@ -466,6 +466,27 @@ public sealed record RemexMessage
     [JsonPropertyName("homePinChange")]
     [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.HomePinChange>))]
     public Remex.Core.Models.HomePinChange? HomePinChange { get; init; }
+
+    // PC logs and diagnostics on the phone (RemEx-pp4cm.13). LENIENT like the slots above: a malformed
+    // payload nulls its own slot, and the handler answers invalid_request instead of dropping the session.
+
+    /// <summary>
+    /// One page request for the PC's captured log, for <see cref="MessageTypes.DiagnosticLogsGet"/>
+    /// (phone → host).
+    /// </summary>
+    [JsonPropertyName("diagnosticLogsRequest")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.DiagnosticLogsRequest>))]
+    public Remex.Core.Models.DiagnosticLogsRequest? DiagnosticLogsRequest { get; init; }
+
+    /// <summary>The redacted log page, for <see cref="MessageTypes.DiagnosticLogsResult"/> (host → phone).</summary>
+    [JsonPropertyName("diagnosticLogsResponse")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.DiagnosticLogsResponse>))]
+    public Remex.Core.Models.DiagnosticLogsResponse? DiagnosticLogsResponse { get; init; }
+
+    /// <summary>The PC's status rows, for <see cref="MessageTypes.DiagnosticSummaryResult"/> (host → phone).</summary>
+    [JsonPropertyName("diagnosticSummaryResponse")]
+    [JsonConverter(typeof(Remex.Core.Messages.Routines.LenientRoutinePayloadConverter<Remex.Core.Models.DiagnosticSummaryResponse>))]
+    public Remex.Core.Models.DiagnosticSummaryResponse? DiagnosticSummaryResponse { get; init; }
 }
 
 /// <summary>
@@ -746,4 +767,29 @@ public static class MessageTypes
     /// <see cref="HomePinsSync"/>.
     /// </summary>
     public const string HomePinsChange = "home_pins_change";
+
+    // ── PC logs and diagnostics on the phone (RemEx-pp4cm.13) ──
+    //
+    // NAMING RULE, LIKE routine_ AND home_pins_ ABOVE: every HOST -> PHONE type starts with
+    // "diagnostic_", so the single prefix forward in AndroidNativeExports.OnNativeMessageReceived carries
+    // all of them to RemexCallback.onDiagnosticMessage. The two phone -> host requests match the prefix
+    // too and never arrive on the phone side. Do not add a host -> phone diagnostics type outside it.
+
+    /// <summary>
+    /// Phone -> host: one page of the PC's captured log (read-only). Answered with
+    /// <see cref="DiagnosticLogsResult"/>, echoing the correlation id.
+    /// </summary>
+    public const string DiagnosticLogsGet = "diagnostic_logs_get";
+
+    /// <summary>Host -> phone: the redacted page of log entries.</summary>
+    public const string DiagnosticLogsResult = "diagnostic_logs_result";
+
+    /// <summary>
+    /// Phone -> host: the PC's status rows (read-only). Carries no payload. Answered with
+    /// <see cref="DiagnosticSummaryResult"/>.
+    /// </summary>
+    public const string DiagnosticSummaryGet = "diagnostic_summary_get";
+
+    /// <summary>Host -> phone: the PC's status rows.</summary>
+    public const string DiagnosticSummaryResult = "diagnostic_summary_result";
 }

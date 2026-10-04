@@ -20,13 +20,14 @@ class NavRoutesPhase2Test {
     }
 
     @Test
-    fun `More holds Routines first, then Sensors, Files, Connection, Settings and Help`() {
+    fun `More holds Routines first, then Sensors, Files, Connection, PC logs, Settings and Help`() {
         assertEquals(
                 listOf(
                         Screen.Routines,
                         Screen.Dashboard,
                         Screen.FileTransfer,
                         Screen.Connection,
+                        Screen.PcDiagnostics,
                         Screen.Settings,
                         Screen.Faq,
                 ),

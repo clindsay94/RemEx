@@ -518,3 +518,43 @@ dropped without a trace. Both slots are lenient: a wrong-typed field nulls the s
 - **Change.** One sensor per message, never a whole list. The host applies changes in arrival order, so
   changes to different sensors both survive and the later of two changes to one sensor wins. The answer
   is the next `home_pins_sync`; a change the PC cannot honour is answered by resending the unchanged list.
+
+
+---
+
+## 10. PC logs and diagnostics on the phone
+
+A paired phone can read the PC's captured log and its status rows, read-only. Nothing here writes, clears or
+reconfigures anything on the PC. Payload records: `remex.core/Models/DiagnosticsMessages.cs`; validation:
+`remex.core/Validation/DiagnosticsValidation.cs`; host: `remex.agent/Services/Diagnostics/PhoneDiagnosticsService.cs`.
+
+**Transport and gating.** `RemexMessage` on the authenticated `/ws` channel, `protocolVersion` stays `2`.
+Both requests need a paired session (`RequiresPairing`) and the host additionally answers `refused` to a loopback
+session or one that has not proven its identity. At most one request of each kind per second per session
+(`rate_limited`). Every string the PC sends is redacted first (secrets, client ids, IP and MAC addresses, file
+paths reduced to the file name, e-mail addresses, long key-like strings), and an exception is reduced to its type
+and first line. A refusal is still a reply, echoing `correlationId`, so the phone shows a reason rather than waiting.
+
+| `type` | Direction | Envelope property | Payload record |
+| :--- | :--- | :--- | :--- |
+| `diagnostic_logs_get` | phone → host | `diagnosticLogsRequest` | `DiagnosticLogsRequest { afterSeq, minLevel, max }` |
+| `diagnostic_logs_result` | host → phone | `diagnosticLogsResponse` | `DiagnosticLogsResponse { entries[{seq, timeUtc, level, category, message}], lastSeq, truncated, error }` |
+| `diagnostic_summary_get` | phone → host | none | none |
+| `diagnostic_summary_result` | host → phone | `diagnosticSummaryResponse` | `DiagnosticSummaryResponse { items[{key, state, detail}], error }` |
+
+Every diagnostics type starts with `diagnostic_`; the Android native router forwards that prefix to
+`RemexCallback.onDiagnosticMessage` in one place. All slots are lenient: a wrong-typed field nulls the slot, not the
+envelope, and the host answers `invalid_request`.
+
+- **Logs request.** `minLevel` is `trace`, `debug`, `information`, `warning`, `error` or `critical` (lower case);
+  `max` is 1 to 500; `afterSeq` is 0 or more. `afterSeq` 0 returns the newest page; any other value returns the
+  entries after it, oldest first, so a polling phone never skips or repeats a line. An `afterSeq` beyond the PC's
+  newest entry (the PC restarted) is served as 0.
+- **Logs response.** `entries` are oldest first. `lastSeq` is the value to send as `afterSeq` next: the last entry
+  sent when `truncated` is true on an incremental read, otherwise the newest sequence number the PC has, even if
+  the filter hid it. `truncated` is true when more matching entries exist than were returned (page cap, or the
+  response size cap of about 256 KB, which drops the oldest lines of a newest page).
+- **Summary rows.** `key` is one of `listener`, `certificate`, `firewall`, `elevation` (Windows only),
+  `autostart`, `capture`, `encoder`, `version`, `uptime`; `state` is `ok`, `warn` or `error`; `detail` is a short
+  redacted value. The phone translates the key and keeps an unknown key as plain text.
+- **Errors.** `error` is null on success, otherwise `refused`, `rate_limited`, `invalid_request` or `unavailable`.

@@ -119,6 +119,12 @@ public static class MessageAudience
         // IHomePinnedSensorsStore and the host never sends it to a loopback session. It reaches Kotlin
         // through the home_pins_ prefix forward; declaring it here is what makes that forward
         // impossible to delete in silence.
+        // The phone only (RemEx-pp4cm.13). The PC's own Logs & diagnostics page reads the buffer
+        // in-process, and the host refuses both requests from loopback. Both reach Kotlin through the
+        // diagnostic_ prefix forward; declaring them here is what makes that forward impossible to
+        // delete in silence.
+        [MessageTypes.DiagnosticLogsResult] = ClientSurface.AndroidControl,
+        [MessageTypes.DiagnosticSummaryResult] = ClientSurface.AndroidControl,
         [MessageTypes.HomePinsSync] = ClientSurface.AndroidControl,
         [MessageTypes.HostInfo] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.LauncherSync] = ClientSurface.AndroidControl | ClientSurface.PcUi,

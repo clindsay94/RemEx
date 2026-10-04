@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.FolderOpen
@@ -120,6 +121,17 @@ sealed class Screen {
         override val icon = Icons.Default.Settings
     }
 
+    /**
+     * The PC's logs and its own checks, read-only, with Logs | Diagnostics tabs (RemEx-pp4cm.13). In
+     * [moreItems], after Connection: it is what you open when the PC is misbehaving, so it sits next to
+     * the connection page and ahead of Settings and Help.
+     */
+    @Serializable
+    data object PcDiagnostics : NavDestination() {
+        override val titleRes = R.string.screen_pc_diagnostics_title
+        override val icon = Icons.AutoMirrored.Filled.Notes
+    }
+
     @Serializable
     data object Faq : NavDestination() {
         override val titleRes = R.string.screen_faq_title
@@ -214,6 +226,7 @@ val moreItems =
                 Screen.Dashboard,
                 Screen.FileTransfer,
                 Screen.Connection,
+                Screen.PcDiagnostics,
                 Screen.Settings,
                 Screen.Faq,
                 // Personalization and About are not here: Settings already links to both

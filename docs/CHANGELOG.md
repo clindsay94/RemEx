@@ -13,6 +13,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **See the PC's logs and status from your phone.** More has a new **PC logs & diagnostics** page with two
+  tabs. **Logs** shows what the PC has recorded, with level chips, search, a Live switch that refreshes every
+  2 seconds only while the page is open, Jump to latest, and Copy or Share as text. **Diagnostics** lists the
+  same checks the PC shows (listening, certificate, firewall, capture, encoder, version, uptime) with a Refresh
+  button. It is read-only: the phone cannot clear or change anything on the PC. Anything private in a log line
+  (tokens, IP addresses, file paths, device ids) is hidden on the PC before it is sent, and the PC answers
+  each phone at most once a second. Two new message types, `diagnostic_logs_get` and `diagnostic_summary_get`
+  (`docs/API_CONTRACTS.md` §10). (RemEx-pp4cm.13)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder

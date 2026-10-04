@@ -1080,6 +1080,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             MutableSharedFlow<HomePinsInbound>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val homePinsMessages: SharedFlow<HomePinsInbound> = _homePinsMessages.asSharedFlow()
 
+    /**
+     * Every `diagnostic_*` envelope from the PC (RemEx-pp4cm.13), raw. No replay: an answer is only
+     * meaningful to the request that is waiting for it, and one that arrived while nothing was waiting
+     * (the screen closed, the request timed out) must not be handed to the next screen that opens.
+     */
+    private val _diagnosticMessages =
+            MutableSharedFlow<String>(extraBufferCapacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val diagnosticMessages: SharedFlow<String> = _diagnosticMessages.asSharedFlow()
+
     /** One `home_pins_*` envelope and the epoch of the connection it arrived on (null: none known). */
     data class HomePinsInbound(val connectionEpoch: Long?, val json: String)
 
@@ -1804,6 +1813,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             is RoutineInboundMessage.Ignored -> Unit
             else -> _routineMessages.tryEmit(message)
         }
+    }
+
+    override fun onDiagnosticMessage(json: String?) {
+        // Raw, parsed by the consumer (PcLogsController): nothing above a JNI callback can catch an
+        // exception, so the parse belongs where a malformed message can be ignored without that risk.
+        json?.let { _diagnosticMessages.tryEmit(it) }
     }
 
     override fun onHomePinsMessage(json: String?) {

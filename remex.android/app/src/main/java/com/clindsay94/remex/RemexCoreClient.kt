@@ -80,6 +80,17 @@ object RemexCoreClient {
          * PC's pins silently never arriving.
          */
         fun onHomePinsMessage(json: String?)
+
+        /**
+         * Any `diagnostic_*` message from the PC, as a whole RemexMessage envelope (RemEx-pp4cm.13):
+         * `diagnostic_logs_result` and `diagnostic_summary_result`, the PC's redacted log page and
+         * status rows, each echoing the `correlationId` of the request it answers.
+         *
+         * Forwarded by PREFIX in the native router, like `home_pins_*`. Switch on `type` and ignore
+         * what you do not handle. REQUIRED, not defaulted, for the same all-or-nothing registration
+         * reason as the callbacks above.
+         */
+        fun onDiagnosticMessage(json: String?)
         /**
          * Link quality measured by the native layer (RemEx-93n2).
          *
