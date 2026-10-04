@@ -30,9 +30,10 @@ public sealed record PhoneFileSource(string ClientId, string? DisplayName);
 /// use rather than caching it, because the host publishes its container after it starts.
 /// </para>
 /// <para>
-/// READ-ONLY BY CONSTRUCTION. Only roots, browse, volumes, manifest, metadata, thumbnail and search
-/// requests are relayed; anything else is refused before it reaches the phone. Renaming, deleting or
-/// moving files on the phone from the PC is a separate decision that has not been made.
+/// READ-ONLY UNLESS THE PHONE SAYS OTHERWISE. Roots, browse, volumes, manifest, metadata, thumbnail and
+/// search requests are always relayed. <c>file_manage_request</c> (rename, delete, move, copy, new
+/// folder) is relayed only to a phone whose own roots reply said the person turned on "Let your PC
+/// change files" (RemEx-fgmne); anything else is refused before it reaches the phone.
 /// </para>
 /// <para>
 /// THE PHONE'S OWN SETTINGS ARE THE CONSENT. What the PC can see is exactly what the person shared
@@ -107,7 +108,8 @@ public sealed class PhoneNotConnectedException : Exception
 }
 
 /// <summary>
-/// The PC asked to relay a request type that is not on the read-only allowlist (RemEx-xt0af).
+/// The PC asked to relay a request that is not on the allowlist, or whose operation, names or paths
+/// failed validation (RemEx-xt0af, RemEx-fgmne).
 /// </summary>
 public sealed class PhoneFileRequestRefusedException : InvalidOperationException
 {
@@ -122,6 +124,33 @@ public sealed class PhoneFileRequestRefusedException : InvalidOperationException
     }
 
     public PhoneFileRequestRefusedException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
+/// <summary>
+/// The PC asked to change files on a phone that has not said it allows that (RemEx-fgmne): its "Let your
+/// PC change files" switch is off, or the phone predates the switch.
+/// </summary>
+/// <remarks>
+/// Its own type rather than <see cref="PhoneFileRequestRefusedException"/> because the person has
+/// something to DO about this one (turn the switch on, on the phone), so the screen words it differently
+/// from "the phone said no".
+/// </remarks>
+public sealed class PhoneChangesNotAllowedException : InvalidOperationException
+{
+    public PhoneChangesNotAllowedException()
+        : base("The phone has not allowed the PC to change its files.")
+    {
+    }
+
+    public PhoneChangesNotAllowedException(string message)
+        : base(message)
+    {
+    }
+
+    public PhoneChangesNotAllowedException(string message, Exception innerException)
         : base(message, innerException)
     {
     }

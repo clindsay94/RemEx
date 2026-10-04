@@ -1220,8 +1220,9 @@ public sealed class PingPongHandler(
                         transferSessionManager.HandleControl(message.FileTransferControl, connectionClientId ?? string.Empty);
                         break;
 
-                    // ── The PC browsing a paired phone (RemEx-xt0af) ──
-                    // A phone's answers to the read-only requests the PC relayed down THIS session. They
+                    // ── The PC browsing a paired phone (RemEx-xt0af, RemEx-fgmne) ──
+                    // A phone's answers to the requests the PC relayed down THIS session (the read-only ones, and
+                    // file_manage_request for a phone that allows changes). They
                     // are handed over with what this connection has PROVED about itself, and the relay
                     // decides: a loopback connection or one that never proved an id gets nothing
                     // delivered (RemEx-4215's rule, applied to replies), and a reply goes only to a
@@ -1233,6 +1234,7 @@ public sealed class PingPongHandler(
                     case MessageTypes.FileManifestResponse:
                     case MessageTypes.FileMetadataResponse:
                     case MessageTypes.FileThumbnailResponse:
+                    case MessageTypes.FileManageResponse:
                         if (phoneFileRelay?.TryDeliverReply(connectionClientId, identityProven, isLoopback, message) != true
                             && logger.IsEnabled(LogLevel.Debug))
                         {

@@ -200,4 +200,12 @@ interface SharedRootsProvider {
      */
     fun allowedRootIds(): Set<String> =
         sharedRoots().map { it.rootId }.toSet() + fullBrowseVolumes().map { it.id }
+
+    /**
+     * Whether the person has turned on "Let your PC change files" (RemEx-fgmne). OFF unless a provider
+     * says otherwise: the safe default is that a PC may read what is shared and change nothing, so a
+     * provider that forgets to override this refuses every rename, move, copy, delete and new folder
+     * rather than allowing them.
+     */
+    fun isPcChangeAllowed(): Boolean = false
 }

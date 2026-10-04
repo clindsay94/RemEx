@@ -11,6 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -92,6 +94,37 @@ enum class PushRefusal {
  */
 internal fun pushDestinationRoot(roots: List<RootDescriptor>): String? =
     roots.firstOrNull { it.isWritable && it.rootId.isNotBlank() }?.rootId
+
+/**
+ * What the PC is told when it asks to change files and the person has not allowed it (RemEx-fgmne).
+ * Written for a person, because the PC shows it as written: it says what to turn on and where.
+ */
+internal const val PC_CHANGES_OFF_MESSAGE =
+    "Your phone isn't letting your PC change files. In RemEx on the phone, open Settings, go to Access from your PC, and turn on Let your PC change files."
+
+/**
+ * What the PC is told when it names a shared folder itself as the thing to delete, rename, move or copy.
+ * The folder the person chose to share is theirs to remove, on the phone, and never a "file in it".
+ */
+internal const val SHARED_FOLDER_ITSELF_MESSAGE =
+    "That is the shared folder itself, so it can't be changed from your PC. Remove it from Access from your PC on the phone instead."
+
+/**
+ * What the PC is told when a change failed for a reason the phone keeps to itself. A SAF provider's
+ * exception text can hold an absolute path or a content URI, so it is logged on the phone and never sent.
+ */
+internal const val MANAGE_FAILED_MESSAGE = "That couldn't be done on the phone. Check the file is not in use, then try again."
+
+/**
+ * What the PC is told when it tries to change files through the whole-device view. Only the folders the
+ * person shared by name are ever writable from the PC; the whole-device view is for browsing, because a
+ * delete there could take Download or DCIM with it (RemEx-fgmne review).
+ */
+internal const val FULL_BROWSE_READ_ONLY_MESSAGE =
+    "Whole-device browsing is read-only from your PC. To change files in a folder, share that folder in Access from your PC."
+
+/** How much of a file a copy reads and writes between checks for cancellation. */
+internal const val COPY_CHUNK_BYTES = 64 * 1024
 
 /** Sends a control-plane JSON envelope to the peer over the native `/ws` socket. */
 fun interface ControlMessageSender {
@@ -298,6 +331,10 @@ class FileHostHandler(
             )
             put("fullBrowse", rootsProvider.isFullBrowseGranted())
             put("push", true)
+            // Whether a PC is ALLOWED to use the ops above (RemEx-fgmne): the person's switch, read fresh on
+            // every roots request so a PC that reloads sees a change made a moment ago. Absent on a phone
+            // that predates it, which the PC reads as "no".
+            put("pcChanges", rootsProvider.isPcChangeAllowed())
         }
 
     private fun handleBrowse(req: JSONObject?) {
@@ -355,6 +392,46 @@ class FileHostHandler(
         val destinationPath = if (req.has("destinationPath")) req.optString("destinationPath") else null
         val overwrite = req.optBoolean("overwrite", false)
 
+        // THE PERSON'S SWITCH, CHECKED ON EVERY REQUEST AND BEFORE ANYTHING IS RESOLVED (RemEx-fgmne).
+        // The PC hides its buttons when this is off, but a screen can be stale and a request can be
+        // forged, so this is the check that cannot be talked around: with the switch off, nothing here
+        // touches a file, however writable the shared folder is. Every operation, including mkdir.
+        if (!rootsProvider.isPcChangeAllowed()) {
+            sendManage(requestId, false, PC_CHANGES_OFF_MESSAGE)
+            return
+        }
+
+        // ONLY A FOLDER THE PERSON SHARED BY NAME, NEVER THE WHOLE-DEVICE VIEW. The facade resolves the
+        // full-browse volume too (that is how it is browsed), and a delete there would reach Download,
+        // DCIM and everything else device-wide. Nothing is resolved before this.
+        if (rootsProvider.sharedRoots().none { it.rootId == rootId }) {
+            sendManage(
+                requestId,
+                false,
+                if (rootsProvider.fullBrowseVolumes().any { it.id == rootId }) FULL_BROWSE_READ_ONLY_MESSAGE
+                else "File not found or access denied.",
+            )
+            return
+        }
+
+        // PATHS ARE NAMES TO WALK, NOT STRINGS TO TRUST: `..`, a backslash, a NUL, an empty segment or an
+        // over-long name refuses the whole request here, before any resolver sees it. The resolver
+        // checks again; this is the layer that does not depend on what a SAF provider does with a name.
+        if (SharedPathPolicy.segments(relativePath) == null ||
+            (destinationPath != null && SharedPathPolicy.segments(destinationPath) == null)
+        ) {
+            sendManage(requestId, false, "That path can't be used.")
+            return
+        }
+
+        // The shared folder ITSELF is never "a file in it": delete, rename, copy and move of the root
+        // would take the whole share (or its place in the Access list) with them.
+        val namesRoot = relativePath.trim('/').isEmpty()
+        if (namesRoot && operation != FileManageOperations.MKDIR) {
+            sendManage(requestId, false, SHARED_FOLDER_ITSELF_MESSAGE)
+            return
+        }
+
         try {
             when (operation) {
                 FileManageOperations.DELETE -> {
@@ -373,7 +450,7 @@ class FileHostHandler(
                             sendManage(requestId, false, "File not found or access denied.")
                         newName.isBlank() -> sendManage(requestId, false, "A new name is required.")
                         // `.`, `..`, separators, NUL: a name, not a path (RemEx-xt0af).
-                        !SharedPathPolicy.isSafeName(newName) ->
+                        !SharedPathPolicy.isSafeNewName(newName) ->
                             sendManage(requestId, false, "That name can't be used.")
                         node.renameTo(newName) -> sendManage(requestId, true, null)
                         else -> sendManage(requestId, false, "Rename failed.")
@@ -385,7 +462,7 @@ class FileHostHandler(
                         parent == null || !parent.canWrite ->
                             sendManage(requestId, false, "Destination folder not found or read-only.")
                         newName.isBlank() -> sendManage(requestId, false, "A folder name is required.")
-                        !SharedPathPolicy.isSafeName(newName) ->
+                        !SharedPathPolicy.isSafeNewName(newName) ->
                             sendManage(requestId, false, "That folder name can't be used.")
                         parent.findChild(newName) != null && !overwrite ->
                             sendManage(requestId, false, "A folder with that name already exists.")
@@ -394,16 +471,54 @@ class FileHostHandler(
                     }
                 }
                 FileManageOperations.COPY, FileManageOperations.MOVE -> {
-                    handleCopyOrMove(requestId, rootId, relativePath, destinationPath, overwrite, isMove = operation == FileManageOperations.MOVE)
+                    // OFF THE CONTROL-MESSAGE COLLECTOR. A copy streams the whole file, and the collector
+                    // is the one stream every later browse, roots and manage request waits behind, so an
+                    // inline copy froze the PC's screen for as long as the file took and could not be
+                    // stopped. It runs on the host's IO scope, in chunks that check for cancellation.
+                    val isMove = operation == FileManageOperations.MOVE
+                    scope.launch {
+                        try {
+                            copyOrMove(requestId, rootId, relativePath, destinationPath, overwrite, isMove)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            reportManageFailure(requestId, e)
+                        }
+                    }
                 }
                 else -> sendManage(requestId, false, "Unknown operation.")
             }
         } catch (e: Exception) {
-            sendManage(requestId, false, e.message ?: "Operation failed.")
+            reportManageFailure(requestId, e)
         }
     }
 
-    private fun handleCopyOrMove(
+    /**
+     * Tells the PC a change did not happen WITHOUT telling it why in the provider's words. An exception
+     * message from a SAF provider can carry an absolute path (`/storage/emulated/0/...`) or a content
+     * URI, and the PC shows what the phone sends. The detail goes to the phone's own log only.
+     */
+    private fun reportManageFailure(requestId: String, e: Exception) {
+        android.util.Log.w("FileHostHandler", "A change requested by the PC failed.", e)
+        sendManage(requestId, false, MANAGE_FAILED_MESSAGE)
+    }
+
+    /**
+     * Copy or move one FILE inside a shared folder. Runs on the host's IO scope (see [handleManage]).
+     *
+     * **NOTHING THAT EXISTS IS TOUCHED UNTIL THE NEW BYTES ARE SAFE (RemEx-fgmne review).** The first
+     * version deleted the file being replaced before it copied anything, and never asked whether that
+     * file WAS the source: pasting `a.txt` over itself with Replace deleted it, then copied from the
+     * file it had just deleted. So:
+     *  - a destination that is the source is refused outright;
+     *  - a destination that is a folder is refused (a Replace would delete the folder's whole contents,
+     *    and nobody asking for a file copy means that), and so is anything else of a different kind;
+     *  - a replace copies to a temporary sibling first, and only once that has fully landed does the old
+     *    file step aside, the copy take its name, and the old file go. If any step fails the old file is
+     *    put back and the temporary copy removed;
+     *  - the partial target is deleted in a `finally` on ANY failure or cancellation.
+     */
+    private suspend fun copyOrMove(
         requestId: String,
         rootId: String,
         relativePath: String,
@@ -430,7 +545,7 @@ class FileHostHandler(
             sendManage(requestId, false, "A destination file name is required.")
             return
         }
-        if (!SharedPathPolicy.isSafeName(destName)) {
+        if (!SharedPathPolicy.isSafeNewName(destName)) {
             sendManage(requestId, false, "That destination file name can't be used.")
             return
         }
@@ -439,38 +554,83 @@ class FileHostHandler(
             sendManage(requestId, false, "Destination folder not found or read-only.")
             return
         }
+
         val existing = parent.findChild(destName)
         if (existing != null) {
+            // THE SOURCE ITSELF, by path or by identity (a case-insensitive card finds `A.txt` for `a.txt`).
+            val sameFile =
+                SharedPathPolicy.segments(relativePath) == SharedPathPolicy.segments(destinationPath) ||
+                    (existing.contentUri != null && existing.contentUri == source.contentUri)
+            if (sameFile) {
+                sendManage(requestId, false, "That is the same file. Pick a different folder or name.")
+                return
+            }
+            if (existing.isDirectory) {
+                sendManage(requestId, false, "A folder with that name already exists, so nothing was changed.")
+                return
+            }
             if (!overwrite) {
                 sendManage(requestId, false, "A file with that name already exists.")
                 return
             }
-            existing.delete()
         }
+
         val mime = source.mimeType ?: "application/octet-stream"
-        val target = parent.createFile(mime, destName)
+        // A replace lands in a temporary sibling first; a plain copy goes straight to its final name.
+        val landingName = if (existing != null) ".remex-${safeStem(requestId)}.part" else destName
+        val target = parent.createFile(mime, landingName)
         if (target == null) {
             sendManage(requestId, false, "Could not create the destination file.")
             return
         }
-        val copied =
-            try {
-                facade.openInput(source)?.use { input ->
-                    facade.openOutput(target)?.use { output ->
-                        input.copyTo(output, 65536)
-                        true
-                    } ?: false
-                } ?: false
-            } catch (e: Exception) {
-                false
+
+        var committed = false
+        try {
+            copyBytes(source, target)
+
+            if (existing != null) {
+                val backupName = ".remex-${safeStem(requestId)}.old"
+                if (!existing.renameTo(backupName)) {
+                    sendManage(requestId, false, "Could not replace the existing file, so nothing was changed.")
+                    return
+                }
+                if (!target.renameTo(destName)) {
+                    existing.renameTo(destName)
+                    sendManage(requestId, false, "Could not replace the existing file, so nothing was changed.")
+                    return
+                }
+                committed = true
+                existing.delete()
+            } else {
+                committed = true
             }
-        if (!copied) {
-            target.delete()
-            sendManage(requestId, false, "Copy failed.")
+        } finally {
+            // Cancellation, an I/O error, a refused rename: whatever stopped it, no partial file stays.
+            if (!committed) runCatching { target.delete() }
+        }
+
+        if (isMove && !source.delete()) {
+            sendManage(requestId, false, "The file was copied, but the original could not be removed.")
             return
         }
-        if (isMove) source.delete()
         sendManage(requestId, true, null)
+    }
+
+    /** Streams [source] into [target] in chunks, checking for cancellation between each. */
+    private suspend fun copyBytes(source: FileNode, target: FileNode) {
+        val input = facade.openInput(source) ?: throw java.io.IOException("source unreadable")
+        input.use { inp ->
+            val output = facade.openOutput(target) ?: throw java.io.IOException("target unwritable")
+            output.use { out ->
+                val buffer = ByteArray(COPY_CHUNK_BYTES)
+                while (true) {
+                    currentCoroutineContext().ensureActive()
+                    val read = inp.read(buffer)
+                    if (read < 0) break
+                    out.write(buffer, 0, read)
+                }
+            }
+        }
     }
 
     private fun sendManage(requestId: String, success: Boolean, error: String?) {

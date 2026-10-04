@@ -1675,4 +1675,6 @@
     <string name="personalization_background_intensity">Intensitas: %1$d%%</string>
     <string name="cd_background_intensity">Intensitas latar belakang</string>
     <string name="personalization_background_note">Latar belakang beranimasi berhenti saat aplikasi berada di latar belakang, saat Penghemat Baterai aktif, atau saat animasi dimatikan.</string>
+    <string name="settings_ft_pc_changes_title">Izinkan PC Anda mengubah file</string>
+    <string name="settings_ft_pc_changes_desc">PC Anda dapat membuat, mengganti nama, memindahkan, menyalin, dan menghapus file serta folder di dalam folder yang Anda bagikan. Penghapusan bersifat permanen, dan menghapus folder berarti menghapus semua isinya. Penjelajahan seluruh perangkat tetap hanya-baca.</string>
 </resources>

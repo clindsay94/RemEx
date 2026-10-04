@@ -1515,10 +1515,13 @@ production path.
 ### `PhoneFileRelay` — the PC browsing a phone accepts replies only from the phone it asked
 
 `remex.agent/Services/FileTransfer/PhoneFileRelay.cs` (`TryDeliverReply`, `Connection.SendAsync`),
-called from the seven `file_*_response` cases in `PingPongHandler.HandleAsync` — RemEx-xt0af.
+called from the eight `file_*_response` cases in `PingPongHandler.HandleAsync` — RemEx-xt0af,
+widened to `file_manage_request` in RemEx-fgmne.
 
-The PC's File Transfer screen sends read-only `file_*` requests down a paired phone's session. Four
-rules make that safe, and each one fails SILENTLY if dropped — the screen just shows a listing:
+The PC's File Transfer screen sends `file_*` requests down a paired phone's session: the read-only ones,
+and, only to a phone whose owner allows it, `file_manage_request`. The rules below make that safe, and each
+one fails SILENTLY if dropped — the screen just shows a listing, or a rename quietly works on a phone whose
+owner never agreed:
 
 - **Replies from loopback or an unproven session are refused** before anything else (RemEx-4215's
   rule). Without it any local process, unelevated included, can open `/ws` on 127.0.0.1 and put its own
@@ -1532,9 +1535,51 @@ rules make that safe, and each one fails SILENTLY if dropped — the screen just
   `TryDeliverReply`'s loop). Delete it and a second paired phone that guesses a request id answers for
   the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected
   in RemEx-xt0af).
-- **Only the seven read-only request types are relayed** (`RelayedRequests`); management is refused
-  before the wire. Widening it is a product decision, not a fix.
+- **Only the allowlisted request types are relayed** (`RelayedRequests`, derived from `RequestForReply`,
+  `PhoneFileRelay.cs:58-79`): the seven read-only ones plus `file_manage_request`. `file_root_manage_request`
+  (which folders a phone shares) and hashing stay out; `TheAllowlist_HoldsTheSevenReadOnlyTypesAndManage_AndNotRootManagement`
+  and `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
+  decision, not a fix.
 - **Outbound requests carry no `ClientId`.**
+- **A `file_manage_request` goes out only after THIS phone's own roots reply said `pcChanges: true`**
+  (`Connection.SendAsync`, the `_phoneAllowsChanges` gate at `PhoneFileRelay.cs:530-540`, set in `TryComplete`
+  at `PhoneFileRelay.cs:605`, which only a reply that already passed `TryDeliverReply`'s loopback, proven and
+  paired checks can reach). Delete the gate and the PC offers and sends renames and deletes to a phone whose
+  owner never turned them on, and to every older phone. `Manage_BeforeThePhoneHasSaidItAllowsChanges_...`,
+  `Manage_WhenThePhoneSwitchIsOff_...` and `APlantedRootsReply_FromLoopbackOrAnUnprovenSession_CannotTurnManageOn`
+  go red (gate defect-injected in RemEx-fgmne).
+- **And its operation, names and paths are validated before the wire** (`ManageRefusal`,
+  `PhoneFileRelay.cs:447`): one of five operations, a root id, `FilePathValidation.IsValidRemoteName` /
+  `IsValidRemoteRelativePath`, and never the shared folder itself.
+  `Manage_WithAnUnsafeNameOrPathOrOperation_IsRefusedEvenWhenThePhoneAllowsChanges` covers each case.
+
+**On the phone, the switch is the guard, and it is checked first.** `FileHostHandler.handleManage`
+(`FileHostHandler.kt:399`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
+included, BEFORE anything is resolved, and `AndroidFileTransferHost` reads the person's
+`pcMayChangeFilesFlow` into `pcMayChangeFiles` (`AndroidFileTransferHost.kt:68`, default `false`) and serves
+it through `isPcChangeAllowed()` (`:176`), which also gates `canRename/canMove/canDelete` on each root
+(`:151-153`). The interface default is `false` (`FileSystemFacade.kt`, `SharedRootsProvider.isPcChangeAllowed`),
+so a provider that forgets to override it refuses everything instead of allowing it. Remove the check and the
+PC's relay gate becomes the only thing standing between a PC and the phone's files: the PC relay can be
+stale (the person turned the switch off while the screen was open) and cannot be trusted by a forged request.
+`FileHostHandlerTest.everyManageOperation_withTheSwitchOff_isRefusedWithAPlainReasonAndChangesNothing` and
+`theSwitch_isReadOnEveryRequest_notOnceAtStartup` go red (defect-injected in RemEx-fgmne). The same function
+refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:420`) and the shared folder
+itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:431`) before the resolver runs. It also refuses the whole-device
+(full-browse) volume (`FULL_BROWSE_READ_ONLY_MESSAGE`: only folders the person shared by name are writable
+from the PC; `theWholeDeviceView_isReadOnlyFromThePc_forEveryOperation`), and never sends a SAF provider's
+exception text to the PC (`reportManageFailure`; the text can hold `/storage/emulated/0/...`).
+
+**Copy, move and replace on the phone** (`FileHostHandler.copyOrMove`) must never touch what exists until the
+new bytes are safe: a destination that is the source is refused, a folder is never replaced, and a replace
+copies to a temporary sibling first and only then swaps the old file out (restoring it on any failure); the
+partial target is deleted in a `finally` on failure AND cancellation, and the copy runs on the host's IO scope
+in chunks that call `ensureActive()` so it cannot hold up the control-message collector. Each is pinned by a
+`FileHostHandlerTest` case (`copyOrMoveOntoItself_...`, `aReplaceNeverDeletesAFolder_...`,
+`aReplaceThatFailsMidCopy_...`, `aCopyThatIsCancelled_...`, `aLongCopy_doesNotHoldUpTheRequestsBehindIt`;
+each defect-injected red in RemEx-fgmne). Names the PC invents are checked with `isSafeNewName` /
+`FilePathValidation.IsValidRemoteName` (UTF-8 bytes, no control or Unicode format characters); names of files
+that already exist use the lenient rule so a file with U+200D in its name can still be browsed and deleted.
 
 On the phone, `SharedPathPolicy` (both `SafFileSystemFacade.resolve` and the v2 `resolveDocument`)
 resolves only roots the person shares RIGHT NOW. `fromTreeUri` opens any tree the app still holds a

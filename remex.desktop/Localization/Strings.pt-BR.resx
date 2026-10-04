@@ -4191,7 +4191,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
     <value>A navegação por todo o dispositivo está desativada no seu celular. Para usá-la, abra o RemEx no celular, vá até Acesso pelo seu PC e ative Permitir navegar por todo o dispositivo.</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>Ainda não é possível enviar pastas para um celular. Envie os arquivos que estão dentro dela.</value>
+    <value>Ainda não dá para enviar pastas a este telefone. No telefone, abra o RemEx, vá em Acesso pelo seu PC, ative Permitir que seu PC altere arquivos e toque em Recarregar pastas compartilhadas. Ou envie os arquivos que estão dentro da pasta.</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>Seu celular se desconectou antes de a transferência terminar. Conecte-o de novo e tente outra vez.</value>
@@ -4246,5 +4246,14 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>Não foi possível atualizar a lista de processos. A lista abaixo é a última que o RemEx recebeu, e ele continuará tentando.</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>Seu telefone não está permitindo que este PC altere os arquivos dele. No telefone, abra o RemEx, vá em Acesso pelo seu PC e ative Permitir que seu PC altere arquivos. Depois, toque em Recarregar pastas compartilhadas aqui.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>Isto vai excluir “{0}” do seu telefone permanentemente. O item não vai para uma lixeira e não dá para desfazer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>Isto vai excluir {0} itens ({1}) do seu telefone permanentemente. Eles não vão para uma lixeira e não dá para desfazer.</value>
   </data>
 </root>

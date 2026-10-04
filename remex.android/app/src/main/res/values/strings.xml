@@ -1780,4 +1780,6 @@
     <string name="personalization_background_intensity">Intensity: %1$d%%</string>
     <string name="cd_background_intensity">Background intensity</string>
     <string name="personalization_background_note">Animated backgrounds pause when the app is in the background, when Battery Saver is on, or when animations are turned off.</string>
+    <string name="settings_ft_pc_changes_title">Let your PC change files</string>
+    <string name="settings_ft_pc_changes_desc">Your PC can make, rename, move, copy and delete files and folders inside the folders you share. Deleting is permanent, and deleting a folder deletes everything in it. Whole-device browsing stays read-only.</string>
 </resources>

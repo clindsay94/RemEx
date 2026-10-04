@@ -138,4 +138,111 @@ public class FilePathValidationTests
         // '\0' is in Path.GetInvalidFileNameChars() on every platform.
         Assert.False(FilePathValidation.IsValidFileName("a\0b", out _));
     }
+
+    // ─── Names and paths sent to ANOTHER device, the phone (RemEx-fgmne) ───────────────────
+
+    [Theory]
+    [InlineData("IMG_0001.jpg", true)]
+    [InlineData("Holiday 2026", true)]
+    // Ordinary on Android, invalid on Windows: this is not THIS machine's file-name rule.
+    [InlineData("a:b?c\"d.txt", true)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(".", false)]
+    [InlineData("..", false)]
+    [InlineData("a/b", false)]
+    [InlineData("a\\b", false)]
+    [InlineData("a\0b", false)]
+    [InlineData("a\nb", false)]
+    [InlineData("a\tb", false)]
+    public void IsValidRemoteName_AcceptsANameAndRefusesAPathOrAControlCharacter(string name, bool expectedValid)
+    {
+        Assert.Equal(expectedValid, FilePathValidation.IsValidRemoteName(name, out var error));
+        Assert.Equal(expectedValid, error is null);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_NullName_IsInvalid()
+    {
+        Assert.False(FilePathValidation.IsValidRemoteName(null, out var error));
+        Assert.NotNull(error);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_EnforcesTheLengthCapExactly()
+    {
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('x', FilePathValidation.MaxRemoteNameLength), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('x', FilePathValidation.MaxRemoteNameLength + 1), out var error));
+        Assert.NotNull(error);
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData("/", true)]
+    [InlineData("DCIM", true)]
+    [InlineData("/DCIM/Camera/", true)]
+    [InlineData("DCIM/Camera/IMG_1.jpg", true)]
+    [InlineData("../outside", false)]
+    [InlineData("DCIM/../..", false)]
+    [InlineData("DCIM/..", false)]
+    [InlineData("DCIM\\Camera", false)]
+    [InlineData("DCIM//Camera", false)]
+    [InlineData("DCIM/a\0b", false)]
+    public void IsValidRemoteRelativePath_RefusesTraversalAndMalformedSegments(string? path, bool expectedValid)
+    {
+        Assert.Equal(expectedValid, FilePathValidation.IsValidRemoteRelativePath(path, out var error));
+        Assert.Equal(expectedValid, error is null);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_CountsUtf8Bytes_NotCharacters()
+    {
+        // NAME_MAX limits bytes: 127 two-byte characters are 254 bytes, 128 are 256.
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('é', 127), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('é', 128), out var error));
+        Assert.Equal("Name is too long.", error);
+        // Three-byte characters: 85 is 255 bytes, 86 is 258.
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('日', 85), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('日', 86), out _));
+    }
+
+    [Theory]
+    [InlineData("evil‮fdp.exe")] // right-to-left override: reads as ".../exe.pdf" style spoofs
+    [InlineData("a​b")]          // zero-width space
+    [InlineData("a⁦b")]          // left-to-right isolate
+    [InlineData("﻿name")]        // byte order mark
+    [InlineData("a\u0007b")]          // bell
+    [InlineData("a\u0085b")]          // next line (C1 control)
+    public void IsValidRemoteName_RefusesInvisibleAndDirectionChangingCharacters(string name)
+    {
+        Assert.False(FilePathValidation.IsValidRemoteName(name, out var error));
+        Assert.Equal("Name contains invalid characters.", error);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_StillAcceptsOrdinaryUnicodeNames()
+    {
+        Assert.True(FilePathValidation.IsValidRemoteName("été 日本 مرحبا.txt", out _));
+    }
+
+    [Fact]
+    public void IsValidRemoteRelativePath_AcceptsAnExistingNameWithAJoiner_ButRefusesControlCharacters()
+    {
+        // The path names something that ALREADY exists: an emoji joined with U+200D must stay deletable.
+        Assert.True(FilePathValidation.IsValidRemoteRelativePath("DCIM/family‍.txt", out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("DCIM/a\u0007b", out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("DCIM/" + new string('é', 128), out _));
+    }
+
+    [Fact]
+    public void IsValidRemoteRelativePath_RefusesAnOverlongSegmentAndAnAbsurdDepth()
+    {
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("a/" + new string('x', FilePathValidation.MaxRemoteNameLength + 1), out _));
+
+        var deepEnough = string.Join('/', Enumerable.Repeat("d", FilePathValidation.MaxRemotePathSegments));
+        var tooDeep = deepEnough + "/d";
+        Assert.True(FilePathValidation.IsValidRemoteRelativePath(deepEnough, out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath(tooDeep, out _));
+    }
 }

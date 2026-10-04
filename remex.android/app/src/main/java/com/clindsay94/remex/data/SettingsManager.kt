@@ -911,6 +911,19 @@ class SettingsManager(val context: Context) {
                 }
         }
 
+        // "Let your PC change files" (RemEx-fgmne). OFF BY DEFAULT, and it is the person's call alone: with
+        // it off the phone refuses every rename, move, copy, delete and new-folder request from the PC,
+        // however writable the shared folder is, and tells the PC it is off. It does not widen WHAT is
+        // shared; it only decides whether the PC may change files inside what already is.
+        private val pcMayChangeFilesKey = booleanPreferencesKey("file_pc_may_change_files")
+
+        val pcMayChangeFilesFlow: Flow<Boolean> =
+                context.dataStore.data.map { prefs -> prefs[pcMayChangeFilesKey] ?: false }
+
+        suspend fun setPcMayChangeFiles(enabled: Boolean) {
+                context.dataStore.edit { prefs -> prefs[pcMayChangeFilesKey] = enabled }
+        }
+
         // Files: "Show hidden items" (RemEx-wqo7a.6). Off by default, like Windows Explorer; only
         // changes what the listing shows, never what a transfer brings across.
         private val fileManagerShowHiddenKey = booleanPreferencesKey("file_manager_show_hidden")

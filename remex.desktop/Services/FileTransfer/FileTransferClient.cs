@@ -272,6 +272,12 @@ public sealed class FileTransferClient : IDisposable
     /// <summary>True when full-device (volume) browsing may be offered for this host.</summary>
     public bool SupportsFullBrowse => SupportsV3 && Capabilities?.FullBrowse == true;
 
+    /// <summary>
+    /// True when the host says its owner allows a PC to change files there (RemEx-fgmne). Only a phone
+    /// ever says so; a host that omits it reads as "no", which is what an older phone is.
+    /// </summary>
+    public bool SupportsPcChanges => SupportsV3 && Capabilities?.PcChanges == true;
+
     public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");

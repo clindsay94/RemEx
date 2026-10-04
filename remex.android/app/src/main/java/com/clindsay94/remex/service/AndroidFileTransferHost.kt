@@ -63,6 +63,10 @@ object AndroidFileTransferHost {
     @Volatile private var sharedFolderUris: Set<String> = emptySet()
     @Volatile private var fullBrowseRootUri: String? = null
 
+    // "Let your PC change files" (RemEx-fgmne). Off until the person turns it on, and OFF is also what a
+    // handler sees in the instant before the first settings read lands.
+    @Volatile private var pcMayChangeFiles: Boolean = false
+
     private var hostHandler: FileHostHandler? = null
 
     /**
@@ -115,6 +119,7 @@ object AndroidFileTransferHost {
         // Keep the served-device configuration snapshots fresh.
         jobs += scope.launch { settingsManager.sharedFolderUrisFlow.collect { sharedFolderUris = it } }
         jobs += scope.launch { settingsManager.fullBrowseRootUriFlow.collect { fullBrowseRootUri = it } }
+        jobs += scope.launch { settingsManager.pcMayChangeFilesFlow.collect { pcMayChangeFiles = it } }
         // Sweep any staging partials orphaned by a prior crash (plan §1.3).
         jobs += scope.launch {
             runCatching { hostHandler?.cleanupOrphans(ORPHAN_MAX_AGE_MS) }
@@ -141,9 +146,11 @@ object AndroidFileTransferHost {
                                 rootId = uriStr,
                                 displayName = doc.name ?: "Shared Folder",
                                 isWritable = doc.canWrite(),
-                                canRename = doc.canWrite(),
-                                canMove = doc.canWrite(),
-                                canDelete = doc.canWrite(),
+                                // Writable AND allowed: a folder the phone can write but the person has
+                                // not let the PC change reads as "no" here, so the PC never offers the buttons.
+                                canRename = doc.canWrite() && pcMayChangeFiles,
+                                canMove = doc.canWrite() && pcMayChangeFiles,
+                                canDelete = doc.canWrite() && pcMayChangeFiles,
                                 canRemoveRoot = false,
                             )
                         } else null
@@ -165,6 +172,8 @@ object AndroidFileTransferHost {
                 }
 
                 override fun isFullBrowseGranted(): Boolean = fullBrowseRootUri != null
+
+                override fun isPcChangeAllowed(): Boolean = pcMayChangeFiles
 
                 // Straight from the settings snapshots (RemEx-xt0af): the same consent the two lists
                 // above express, without opening a DocumentFile per shared folder on every resolve.

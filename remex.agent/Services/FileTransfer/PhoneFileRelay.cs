@@ -5,6 +5,7 @@ using Remex.Agent.Services.Security;
 using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Validation;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
 using Remex.Desktop.ViewModels;
@@ -12,9 +13,11 @@ using Remex.Desktop.ViewModels;
 namespace Remex.Agent.Services.FileTransfer;
 
 /// <summary>
-/// The PC browsing a paired phone (RemEx-xt0af): relays a fixed set of read-only <c>file_*</c>
-/// requests from the PC's own File Transfer screen down a paired phone's existing session, hands the
-/// phone's replies back, and runs PC-started transfers over the phone's own file channel.
+/// The PC browsing a paired phone (RemEx-xt0af): relays a fixed set of <c>file_*</c> requests from the
+/// PC's own File Transfer screen down a paired phone's existing session, hands the phone's replies
+/// back, and runs PC-started transfers over the phone's own file channel. Since RemEx-fgmne the set
+/// includes <c>file_manage_request</c> (rename, delete, move, copy, new folder), but only for a phone
+/// that said so.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,15 +26,21 @@ namespace Remex.Agent.Services.FileTransfer;
 /// the PC just never sent them. No message type is new.
 /// </para>
 /// <para>
-/// FOUR RULES, EACH WITH A TEST, AND EACH ONE IS THE THING STANDING BETWEEN A LOCAL PROCESS AND THE
+/// FIVE RULES, EACH WITH A TEST, AND EACH ONE IS THE THING STANDING BETWEEN A LOCAL PROCESS AND THE
 /// PHONE'S FILES:
 /// </para>
 /// <list type="number">
 /// <item>The target must be paired AND connected right now (<see cref="IsReachable"/>), or
 /// <see cref="Open"/> and every send throw <see cref="PhoneNotConnectedException"/>.</item>
-/// <item>Only the seven read-only request types in <see cref="RelayedRequests"/> are forwarded. Rename,
-/// delete, move, copy, mkdir, root management and the legacy v2 transfer are refused before they reach
-/// the wire, whatever the caller asks for.</item>
+/// <item>Only the request types in <see cref="RelayedRequests"/> are forwarded: the seven read-only
+/// ones, and <c>file_manage_request</c> (RemEx-fgmne). Root management (<c>file_root_manage_request</c>:
+/// what the phone shares stays the phone's decision), hashing and the legacy v2 transfer are refused
+/// before they reach the wire, whatever the caller asks for.</item>
+/// <item>A <c>file_manage_request</c> is forwarded only when THIS phone's own roots reply said the
+/// person allows the PC to change files (<see cref="FileCapabilities.PcChanges"/>), and only when its
+/// operation, names and paths pass <c>FilePathValidation</c>. The phone checks its switch and its
+/// shared folders again on every request: this side keeps the screen honest, that side cannot be
+/// talked around.</item>
 /// <item>An outbound request carries no client id at all. The phone does not need one to answer, and
 /// a request that named some other device would be a lie told on the PC's behalf.</item>
 /// <item>A reply is accepted only from a session that PROVED its identity and is not loopback
@@ -56,11 +65,16 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             [MessageTypes.FileManifestResponse] = MessageTypes.FileManifestRequest,
             [MessageTypes.FileMetadataResponse] = MessageTypes.FileMetadataRequest,
             [MessageTypes.FileThumbnailResponse] = MessageTypes.FileThumbnailRequest,
+            // RemEx-fgmne: managing files on the phone from the PC. A deliberate widening, gated per phone
+            // by FileCapabilities.PcChanges and by the phone's own switch. file_root_manage_request is NOT
+            // here and must not be: which folders a phone shares is only ever the phone's decision.
+            [MessageTypes.FileManageResponse] = MessageTypes.FileManageRequest,
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>
-    /// The ONLY request types the PC may send to a phone. Read-only by construction: managing files on
-    /// the phone from the PC is a separate decision that has not been made.
+    /// The ONLY request types the PC may send to a phone: seven read-only ones, plus
+    /// <c>file_manage_request</c>, which <see cref="Connection.SendAsync"/> additionally gates on the
+    /// phone's own say-so. Root management is deliberately absent.
     /// </summary>
     internal static readonly FrozenSet<string> RelayedRequests =
         RequestForReply.Values.ToFrozenSet(StringComparer.Ordinal);
@@ -81,6 +95,13 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
     /// left registered here forever. Test seam only; DI binds constructors.
     /// </remarks>
     internal TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(90);
+
+    /// <summary>
+    /// How long a relayed copy or move may wait. Those two stream the whole file on the phone before it
+    /// answers, so the 90-second backstop would report a healthy large copy as failed while it was still
+    /// running (the PC client has no deadline for them either, RemEx-l519). Test seam only.
+    /// </summary>
+    internal TimeSpan CopyMoveTimeout { get; init; } = TimeSpan.FromMinutes(30);
 
     public PhoneFileRelay(
         ILogger<PhoneFileRelay> logger,
@@ -337,6 +358,7 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileManifestRequest => message.FileManifestRequest?.RequestId,
         MessageTypes.FileMetadataRequest => message.FileMetadataRequest?.RequestId,
         MessageTypes.FileThumbnailRequest => message.FileThumbnailRequest?.RequestId,
+        MessageTypes.FileManageRequest => message.FileManageRequest?.RequestId,
         _ => null,
     };
 
@@ -349,6 +371,7 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileManifestResponse => message.FileManifestResponse?.RequestId,
         MessageTypes.FileMetadataResponse => message.FileMetadataResponse?.RequestId,
         MessageTypes.FileThumbnailResponse => message.FileThumbnailResponse?.RequestId,
+        MessageTypes.FileManageResponse => message.FileManageResponse?.RequestId,
         _ => null,
     };
 
@@ -362,6 +385,7 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileManifestRequest => message.FileManifestRequest is not null,
         MessageTypes.FileMetadataRequest => message.FileMetadataRequest is not null,
         MessageTypes.FileThumbnailRequest => message.FileThumbnailRequest is not null,
+        MessageTypes.FileManageRequest => message.FileManageRequest is not null,
         _ => false,
     };
 
@@ -402,6 +426,11 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             Type = MessageTypes.FileMetadataResponse,
             FileMetadataResponse = new FileMetadataResponse { RequestId = requestId, ErrorMessage = reason },
         },
+        MessageTypes.FileManageRequest => new RemexMessage
+        {
+            Type = MessageTypes.FileManageResponse,
+            FileManageResponse = new FileManageResponse { RequestId = requestId, Success = false, ErrorMessage = reason },
+        },
         _ => new RemexMessage
         {
             Type = MessageTypes.FileThumbnailResponse,
@@ -409,12 +438,69 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         },
     };
 
+    /// <summary>
+    /// Why a <c>file_manage_request</c> may not be sent, or null when it may. Pure, so every refusal is
+    /// testable without a socket. The operation must be one of the five, the root must be named, and
+    /// every name and path must pass <see cref="FilePathValidation"/>'s remote rules — the same ones the
+    /// phone applies.
+    /// </summary>
+    internal static string? ManageRefusal(FileManageRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RootId))
+            return "a root id is required";
+
+        if (!FilePathValidation.IsValidRemoteRelativePath(request.RelativePath, out var pathError))
+            return $"relativePath: {pathError}";
+
+        var isRootItself = request.RelativePath.Trim('/').Length == 0;
+
+        switch (request.Operation)
+        {
+            case FileManageOperations.Delete:
+                // The shared folder itself is not "a file in it": the root is the person's, and the
+                // phone's Remove-folder switch is the only way it goes.
+                return isRootItself ? "the shared folder itself cannot be deleted" : null;
+
+            case FileManageOperations.Rename:
+                if (isRootItself)
+                    return "the shared folder itself cannot be renamed";
+                return FilePathValidation.IsValidRemoteName(request.NewName, out var renameError)
+                    ? null : $"newName: {renameError}";
+
+            case FileManageOperations.Mkdir:
+                return FilePathValidation.IsValidRemoteName(request.NewName, out var mkdirError)
+                    ? null : $"newName: {mkdirError}";
+
+            case FileManageOperations.Copy:
+            case FileManageOperations.Move:
+                if (isRootItself)
+                    return "the shared folder itself cannot be copied or moved";
+                if (string.IsNullOrWhiteSpace(request.DestinationPath)
+                    || request.DestinationPath.Trim('/').Length == 0)
+                {
+                    return "a destination is required";
+                }
+                if (!FilePathValidation.IsValidRemoteRelativePath(request.DestinationPath, out var destError))
+                    return $"destinationPath: {destError}";
+                // The last segment is a NEW name, so it gets the stricter rule (no invisible or
+                // direction-changing characters); the folders above it already exist.
+                var destination = request.DestinationPath.Trim('/');
+                var finalName = destination[(destination.LastIndexOf('/') + 1)..];
+                return FilePathValidation.IsValidRemoteName(finalName, out var finalError)
+                    ? null : $"destinationPath: {finalError}";
+
+            default:
+                return "that operation is not one the phone is sent";
+        }
+    }
+
     /// <summary>One browsing connection to one phone.</summary>
     private sealed class Connection(PhoneFileRelay relay, string clientId) : IPhoneFileConnection
     {
         private readonly ConcurrentDictionary<(string Type, string Id), PendingRequest> _pending = new();
         private int _closed;
         private int _disconnectRaised;
+        private volatile bool _phoneAllowsChanges;
 
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -444,11 +530,33 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             if (message.Type != MessageTypes.FileRootsRequest && string.IsNullOrWhiteSpace(requestId))
                 throw new PhoneFileRequestRefusedException($"{message.Type} needs a request id before it can be sent to a phone.");
 
+            var isCopyOrMove = false;
+            if (message.Type == MessageTypes.FileManageRequest)
+            {
+                // THE PHONE MUST HAVE SAID, ON ITS OWN ROOTS REPLY, THAT THE PERSON ALLOWS THIS. A phone
+                // that predates the switch never says it, so it reads as "no".
+                if (!_phoneAllowsChanges)
+                {
+                    relay._logger.LogWarning(
+                        "Refused to send {Operation} to {ClientId}: that phone has not said it lets the PC change files.",
+                        message.FileManageRequest!.Operation, LogRedaction.RedactClientId(ClientId));
+                    throw new PhoneChangesNotAllowedException();
+                }
+
+                if (ManageRefusal(message.FileManageRequest!) is { } refusal)
+                {
+                    relay._logger.LogWarning("Refused to send a manage request to a phone: {Reason}.", refusal);
+                    throw new PhoneFileRequestRefusedException($"file_manage_request is not sent to a phone: {refusal}.");
+                }
+
+                isCopyOrMove = message.FileManageRequest!.Operation is FileManageOperations.Copy or FileManageOperations.Move;
+            }
+
             if (!relay.IsReachable(ClientId))
                 throw new PhoneNotConnectedException();
 
             var key = (message.Type, requestId ?? string.Empty);
-            var pending = new PendingRequest(relay.RequestTimeout);
+            var pending = new PendingRequest(isCopyOrMove ? relay.CopyMoveTimeout : relay.RequestTimeout);
             if (_pending.TryRemove(key, out var superseded))
                 superseded.Dispose();
             _pending[key] = pending;
@@ -494,6 +602,14 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
                 return false;
 
             pending.Dispose();
+
+            // THE PHONE'S OWN WORDS ON WHETHER THE PC MAY CHANGE ITS FILES, re-read on every roots reply
+            // so a person who flips the switch and refreshes is believed in both directions. A failure
+            // reply this PC wrote itself (no answer, phone gone) carries no capabilities and reads as
+            // "not allowed", which is the safe side.
+            if (reply.Type == MessageTypes.FileRootsResponse)
+                _phoneAllowsChanges = reply.FileRootsResponse?.FileCapabilities?.PcChanges == true;
+
             Deliver(reply);
             return true;
         }

@@ -4191,7 +4191,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>आपके फ़ोन पर पूरे डिवाइस की ब्राउज़िंग बंद है। इसे इस्तेमाल करने के लिए, फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ, और पूरे डिवाइस को ब्राउज़ करने की अनुमति दें को चालू करें।</value>
   </data>
   <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
-    <value>फ़ोन पर अभी फ़ोल्डर अपलोड नहीं किए जा सकते। इसके बजाय उसके अंदर की फ़ाइलें अपलोड करें।</value>
+    <value>इस फ़ोन पर अभी फ़ोल्डर अपलोड नहीं किए जा सकते। फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ, अपने PC को फ़ाइलें बदलने दें चालू करें, फिर साझा फ़ोल्डर पुनः लोड करें दबाएँ। या फ़ोल्डर के अंदर की फ़ाइलें अपलोड करें।</value>
   </data>
   <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
     <value>ट्रांसफ़र पूरा होने से पहले आपका फ़ोन डिस्कनेक्ट हो गया। उसे दोबारा कनेक्ट करें, फिर कोशिश करें।</value>
@@ -4246,5 +4246,14 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="TaskMgr_RefreshFailed" xml:space="preserve">
     <value>प्रक्रिया सूची ताज़ा नहीं हो सकी। नीचे की सूची RemEx को मिली आख़िरी सूची है, और वह कोशिश करता रहेगा।</value>
+  </data>
+  <data name="FileTransfer_PhoneChangesOff" xml:space="preserve">
+    <value>आपका फ़ोन इस PC को अपनी फ़ाइलें बदलने नहीं दे रहा है। फ़ोन पर RemEx खोलें, आपके PC से पहुँच में जाएँ और अपने PC को फ़ाइलें बदलने दें चालू करें। फिर यहाँ साझा फ़ोल्डर पुनः लोड करें दबाएँ।</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneSingleFormat" xml:space="preserve">
+    <value>यह “{0}” को आपके फ़ोन से हमेशा के लिए हटा देगा। यह रीसायकल बिन में नहीं जाएगा और इसे वापस नहीं किया जा सकता।</value>
+  </data>
+  <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
+    <value>यह {0} आइटम ({1}) को आपके फ़ोन से हमेशा के लिए हटा देगा। वे रीसायकल बिन में नहीं जाएँगे और इसे वापस नहीं किया जा सकता।</value>
   </data>
 </root>

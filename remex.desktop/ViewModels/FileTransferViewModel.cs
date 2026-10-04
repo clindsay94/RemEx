@@ -218,13 +218,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     private void RefreshCapabilityFlags()
     {
-        // A PHONE IS BROWSED, NOT MANAGED, FROM THE PC (RemEx-xt0af). The phone advertises copy, move
-        // and mkdir because it answers them for a phone-side UI; the PC's relay refuses to send them, so
-        // offering the buttons would only produce a refusal. Everything read-only is still gated on
-        // what the phone itself advertises.
-        SupportsCopyMove = !IsPhoneSource
+        // A PHONE IS BROWSED, AND MANAGED ONLY WHEN IT SAYS SO (RemEx-xt0af, RemEx-fgmne). The phone
+        // advertises copy, move and mkdir because it answers them for a phone-side UI, but whether a PC
+        // may use them is the person's switch on the phone ("Let your PC change files"), reported as
+        // pcChanges. The relay refuses to send them to a phone that has not said so, so offering the
+        // buttons would only produce a refusal.
+        PhoneAllowsChanges = IsPhoneSource && _client.SupportsPcChanges;
+        var mayChange = !IsPhoneSource || PhoneAllowsChanges;
+        SupportsCopyMove = mayChange
             && _client.SupportsOp(FileManageOperations.Copy) && _client.SupportsOp(FileManageOperations.Move);
-        SupportsMkdir = !IsPhoneSource && _client.SupportsOp(FileManageOperations.Mkdir);
+        SupportsMkdir = mayChange && _client.SupportsOp(FileManageOperations.Mkdir);
         SupportsSearch = _client.SupportsV3 && _client.SupportsOp("search");
         SupportsFullBrowse = _client.SupportsFullBrowse;
         SupportsFolderTransfer = _client.SupportsV3 && _client.SupportsOp("manifest");
@@ -244,14 +247,36 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private FileSourceOption? _selectedSource;
 
-    /// <summary>True while a phone is the source. Hides everything that would change files on it.</summary>
+    /// <summary>True while a phone is the source.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanManageFiles))]
+    [NotifyPropertyChangedFor(nameof(CanChangeFiles))]
     [NotifyPropertyChangedFor(nameof(ShowVolumesButton))]
     private bool _isPhoneSource;
 
-    /// <summary>Rename, delete, copy, pin and the rest: offered for This PC only.</summary>
+    /// <summary>
+    /// True while the phone being browsed has said its owner lets the PC change its files (RemEx-fgmne).
+    /// Always false for This PC and for a phone that has not said so (an older phone, or the switch off).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanChangeFiles))]
+    [NotifyCanExecuteChangedFor(nameof(UploadFolderCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteRemoteCommand))]
+    [NotifyCanExecuteChangedFor(nameof(StartRenameCommand))]
+    private bool _phoneAllowsChanges;
+
+    /// <summary>
+    /// Pin, remove folder and verify hash: offered for This PC only. A phone's shared folders are
+    /// the phone's to change, and hashing is not part of what the PC may ask a phone.
+    /// </summary>
     public bool CanManageFiles => !IsPhoneSource;
+
+    /// <summary>
+    /// Rename, delete and upload folder: offered for This PC, and for a phone only while it allows the PC to
+    /// change its files. New folder, copy, cut and paste follow <see cref="SupportsMkdir"/> and
+    /// <see cref="SupportsCopyMove"/>, which carry the same gate.
+    /// </summary>
+    public bool CanChangeFiles => !IsPhoneSource || PhoneAllowsChanges;
 
     /// <summary>
     /// The whole-device button is shown for a PHONE that has turned on whole-device browsing, and for
@@ -371,6 +396,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         OnPropertyChanged(nameof(HasVolumes));
         SupportsCopyMove = false;
         SupportsMkdir = false;
+        PhoneAllowsChanges = false;
         SupportsSearch = false;
         SupportsFullBrowse = false;
         SupportsFolderTransfer = false;
@@ -1052,10 +1078,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private bool CanUpload() => SelectedRemoteRoot is { IsWritable: true } && IsSourceConnected;
 
     /// <summary>
-    /// Folder upload needs mkdir on the destination, which a phone is not sent from the PC (RemEx-xt0af):
-    /// managing files on the phone is a separate decision. Individual files still upload.
+    /// Folder upload needs mkdir on the destination, which a phone is sent from the PC only while it
+    /// allows changes (RemEx-fgmne). Individual files upload either way.
     /// </summary>
-    private bool CanUploadFolder() => !IsPhoneSource && CanUpload();
+    private bool CanUploadFolder() => CanChangeFiles && CanUpload();
 
     /// <summary>Enqueues an upload of each local file into the current remote folder. Shared by the
     /// upload button and drag-drop from the desktop. The send-to-device button was removed with
@@ -1337,9 +1363,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// </summary>
     public async Task EnqueueFolderUploadAsync(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
     {
-        // A folder dropped onto a phone's folder: the folders would have to be made on the phone, and the
-        // PC does not manage files there (RemEx-xt0af). Said plainly rather than queueing files that fail.
-        if (IsPhoneSource)
+        // A folder dropped onto a phone's folder: the folders have to be made on the phone first, which
+        // the phone allows only while its owner has turned on "Let your PC change files" (RemEx-fgmne).
+        // Said plainly rather than queueing files that fail.
+        if (!CanChangeFiles)
         {
             SetStatus(() => LocalizationService.Instance["FileTransfer_PhoneFolderUploadUnavailable"]);
             return;
@@ -1394,13 +1421,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             return;
 
         var queued = 0;
+        var client = _client;
+        var phoneId = SelectedPhoneId;
 
         foreach (var localPath in localFiles)
         {
             var relative = Path.GetRelativePath(localRoot, localPath).Replace('\\', '/');
             var remoteFile = CombineRemotePath(targetFolder, relative);
-            TransferQueue.Enqueue(kind, Path.GetFileName(localPath), (progress, ct) =>
-                _client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct));
+
+            // A PHONE'S BYTES ARE MOVED BY THE HOST, same as a single-file upload (RemEx-xt0af,
+            // RemEx-fgmne): they ride the phone's own file channel, which only the host can reach, and
+            // that call names the DESTINATION FOLDER rather than the file's own path.
+            var slash = relative.LastIndexOf('/');
+            var remoteDirectory = ToRootRelative(
+                slash < 0 ? targetFolder : CombineRemotePath(targetFolder, relative[..slash]));
+            TransferQueue.Enqueue(kind, Path.GetFileName(localPath), (progress, ct) => phoneId is null
+                ? client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct)
+                : RequirePhoneTransfers().UploadAsync(phoneId, localPath, root.RootId, remoteDirectory, progress, ct));
             queued++;
         }
 
@@ -1467,6 +1504,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Creating remote folder {Folder} failed.", remoteFolder);
+                if (IsPhoneSource)
+                {
+                    // The phone being gone, silent, or not allowing changes has its own plain wording.
+                    ShowPhoneFailure(ex);
+                    return false;
+                }
+
                 var reason = ex.Message;
                 SetStatus(() => string.Format(
                     CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], reason));
@@ -1578,9 +1622,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // Remote deletes are permanent — confirm before touching anything (RemEx-07jx).
         var previewNames = string.Join(", ", toDelete.Take(3).Select(e => e.Name))
             + (toDelete.Count > 3 ? "…" : string.Empty);
+        // On a phone there is no recycle bin either, and the person should hear that it is THE PHONE'S file
+        // that goes (RemEx-fgmne).
+        var singleKey = IsPhoneSource ? "Confirm_DeleteRemote_PhoneSingleFormat" : "Confirm_DeleteRemote_SingleFormat";
+        var multipleKey = IsPhoneSource ? "Confirm_DeleteRemote_PhoneMultipleFormat" : "Confirm_DeleteRemote_MultipleFormat";
         var message = toDelete.Count == 1
-            ? string.Format(LocalizationService.Instance["Confirm_DeleteRemote_SingleFormat"], toDelete[0].Name)
-            : string.Format(LocalizationService.Instance["Confirm_DeleteRemote_MultipleFormat"], toDelete.Count, previewNames);
+            ? string.Format(LocalizationService.Instance[singleKey], toDelete[0].Name)
+            : string.Format(LocalizationService.Instance[multipleKey], toDelete.Count, previewNames);
         if (OnConfirmationRequested is null
             || !await OnConfirmationRequested(
                 LocalizationService.Instance["Confirm_DeleteRemote_Title"],
@@ -1614,7 +1662,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Deleting an item on the connected device failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_DeleteFailedFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneChangeFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_DeleteFailedFormat"]);
         }
         finally
         {
@@ -1624,7 +1675,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     private bool CanDeleteRemote()
     {
-        if (IsPhoneSource || SelectedRemoteRoot is not { CanDelete: true }) return false;
+        if (!CanChangeFiles || SelectedRemoteRoot is not { CanDelete: true }) return false;
         if (IsRenaming || IsCreatingFolder) return false;
         return EffectiveSelection().Count > 0;
     }
@@ -1763,7 +1814,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Pasting the clipboard selection failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_PasteFailedFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_PasteFailedFormat"]);
         }
         finally
         {
@@ -1990,7 +2044,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanStartRename() =>
-        !IsPhoneSource
+        CanChangeFiles
         && SelectedRemoteEntry is { Name: not ".." }
         && SelectedRemoteRoot is { CanRename: true }
         && !IsRenaming
@@ -2023,7 +2077,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Renaming an item on the connected device failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_RenameFailedFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneChangeFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_RenameFailedFormat"]);
         }
         finally
         {
@@ -2091,7 +2148,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Creating a folder on the phone failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"]);
         }
         finally
         {
@@ -2172,6 +2232,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _client.SupportsV3 && SelectedRemoteEntry is { Name: not ".." } && SelectedRemoteRoot is not null && IsSourceConnected;
 
     /// <summary>
+    /// A rename or delete on a phone that did not happen. When the phone itself refused, its own words
+    /// are shown as it wrote them ("A file with that name already exists."): it writes its refusals for
+    /// people, the same promise the other phone refusals here rely on. Everything else - unreachable,
+    /// silent, switch off - gets the PC's own wording.
+    /// </summary>
+    private void ShowPhoneChangeFailure(Exception ex)
+    {
+        if (ex is FileTransferHostException refusal)
+        {
+            StatusText = refusal.HostMessage;
+            return;
+        }
+
+        ShowPhoneFailure(ex);
+    }
+
+    /// <summary>
     /// Words a failed phone request for the person at the PC (RemEx-xt0af). The phone's own settings
     /// decide what it shares, so every refusal points there rather than at this PC.
     /// </summary>
@@ -2179,6 +2256,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         var key = ex switch
         {
+            // The switch on the phone is off (or the phone predates it): the one refusal with something to
+            // DO about it, so it is worded apart from "your phone said no" (RemEx-fgmne).
+            PhoneChangesNotAllowedException => "FileTransfer_PhoneChangesOff",
             PhoneNotConnectedException => "FileTransfer_PhoneDisconnected",
             _ when _phoneConnection?.IsConnected != true => "FileTransfer_PhoneDisconnected",
             TimeoutException => "FileTransfer_PhoneNoAnswer",

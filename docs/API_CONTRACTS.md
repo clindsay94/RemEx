@@ -124,14 +124,15 @@ them exactly as it would answer any peer. No message type was added.
 
 **Relayed requests (host → phone), and nothing else:** `file_roots_request`, `file_browse_request`,
 `file_volumes_request`, `file_search_request`, `file_manifest_request`, `file_metadata_request`,
-`file_thumbnail_request`. Management (`file_manage_request`, `file_root_manage_request`), hashing and
+`file_thumbnail_request`, and (RemEx-fgmne) `file_manage_request`. Root management
+(`file_root_manage_request`: which folders the phone shares is only ever the phone's decision), hashing and
 the legacy v2 transfer are refused by the relay before they reach the wire.
 
 Rules the host enforces, each pinned by `PhoneFileRelayTests`:
 - The target must be **paired** (`PairedClientRegistry`) **and connected** on a session that proved its
   identity; otherwise the PC side gets `PhoneNotConnectedException`.
 - A relayed request carries **no `clientId`** (it is nulled on the way out).
-- A reply (`file_*_response` of the seven types above) is accepted only from a session with
+- A reply (`file_*_response` of the eight types above) is accepted only from a session with
   `identityProven && !isLoopback`, only for a request this host sent to **that same client id**, and is
   delivered only to the relay connection that asked. Unrequested replies are dropped; nothing is
   broadcast. Loopback can never answer for a phone (RemEx-4215).
@@ -151,6 +152,35 @@ started with. PC-started pulls are not resumable and are not written to `transfe
 **Consent** is the phone's own **Access from your PC** settings: the shared folders, plus whole-device
 browsing only while that switch is on. The phone resolves a root id only if it is one of those right now
 (`SharedPathPolicy`), and refuses `.`/`..` path names.
+
+**Changing files on the phone (RemEx-fgmne).** `file_manage_request` (`delete`, `rename`, `move`, `copy`,
+`mkdir`) is relayed only under two further conditions, both about the person's second switch on the phone,
+**Let your PC change files** (off by default, under Access from your PC):
+- *The capability.* The phone reports the switch in its roots reply: `fileCapabilities.pcChanges` (boolean,
+  additive, default false). A phone that predates the switch never sends it, which reads as "no". The PC's
+  relay remembers it per connection from the phone's own proven roots reply (a loopback or unproven reply
+  never updates it) and refuses `file_manage_request` with `PhoneChangesNotAllowedException` until it is true.
+  The roots reply also zeroes `canRename`/`canMove`/`canDelete` on every root while the switch is off, so the
+  buttons stay hidden. The PC re-reads it on every roots reload (the screen's Reload shared folders button).
+- *The phone says no again.* The phone re-reads the switch on EVERY request, before it resolves anything, and
+  answers with `success: false` and a plain `errorMessage` when it is off. A read-only share, a root that is not
+  shared, a path with `..`, a backslash, a NUL or an empty segment, a name over 255 characters or containing a
+  separator, and any attempt to delete, rename, move or copy the shared folder itself are refused the same way
+  (the shared folder can still be given a new sub-folder). Manage requests are refused on the whole-device
+  (full-browse) volume: only folders the person shared by name are writable from the PC. A copy or move onto
+  the source itself, or onto a folder, is refused; a replace copies to a temporary sibling and swaps it in
+  only after it fully landed, and copies run in the background so they never hold up other requests. The
+  phone's refusal text is fixed plain English and never carries a path or provider error.
+- *The PC checks first too.* Before the wire the relay validates the operation (one of the five), the root id,
+  every new name (`FilePathValidation.IsValidRemoteName`: at most 255 UTF-8 bytes, no separator, no control
+  character, no Unicode format character such as U+202E or U+200B) and every path
+  (`IsValidRemoteRelativePath`): the same rules the phone applies. Copy and move are not subject to the 90-second request timeout: they stream the
+  whole file on the phone before it answers, so they wait up to 30 minutes.
+
+**Folder upload to a phone** is not a new request either: the PC makes each folder with `mkdir`
+(`relativePath` = the parent, `newName` = the folder, shallowest first, a folder that already exists is fine),
+then uploads each file as an ordinary `file_transfer_offer` with `mode: "upload"` into that folder. It is offered
+only while the phone allows changes.
 
 ---
 
