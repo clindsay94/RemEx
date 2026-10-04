@@ -975,8 +975,8 @@ crash so nobody re-tries the `RenderTransform` shortcut.
 
 ### Palette-transition suppression must carry an activator AND be declared after the crossfade
 
-`remex.desktop/App.axaml:224` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1195`
-(the "chrome drag suppression … MUST STAY LAST" block, suppressor styles at :1217-1229) — RemEx-zgtn1.
+`remex.desktop/App.axaml:231` (`Window.palette-crossfade.palette-transition-suppressed`) and `:1265`
+(the "chrome drag suppression … MUST STAY LAST" block, suppressor styles at :1288-1302) — RemEx-zgtn1.
 
 Avalonia's `StyleInstance.GetPriority` returns `StyleTrigger` for any style carrying a class activator
 and `Style` otherwise, and PRIORITY IS COMPARED BEFORE APPLICATION ORDER. A suppression selector with
@@ -1496,6 +1496,36 @@ invisible to it.
 `PairedClientRegistry` stores a 32-byte ECDH/HKDF session key per client. Reconnect auth is an
 HMAC-over-nonce challenge, **NOT** a bare clientId lookup. `RegisterClient(string, byte[])` is the
 production path.
+
+### `PhoneFileRelay` — the PC browsing a phone accepts replies only from the phone it asked
+
+`remex.agent/Services/FileTransfer/PhoneFileRelay.cs` (`TryDeliverReply`, `Connection.SendAsync`),
+called from the seven `file_*_response` cases in `PingPongHandler.HandleAsync` — RemEx-xt0af.
+
+The PC's File Transfer screen sends read-only `file_*` requests down a paired phone's session. Four
+rules make that safe, and each one fails SILENTLY if dropped — the screen just shows a listing:
+
+- **Replies from loopback or an unproven session are refused** before anything else (RemEx-4215's
+  rule). Without it any local process, unelevated included, can open `/ws` on 127.0.0.1 and put its own
+  file list on screen under the phone's name. The call site must pass the connection's REAL
+  `isLoopback`/`identityProven`: `PhoneRelayReplyDispatchTests.AReplyFromAPinPairedLoopbackConnection_IsNotDelivered`
+  drives a PIN-paired loopback connection through `HandleAsync` and goes red if the case block
+  hardcodes `isLoopback: false` (defect-injected in RemEx-xt0af).
+- **The sender must still be paired** when the reply arrives (`IsClientPaired`, re-checked in
+  `TryDeliverReply`), so a reply in flight across an unpair is dropped.
+- **A reply is matched only against requests sent to the SENDER's own client id** (the `continue` in
+  `TryDeliverReply`'s loop). Delete it and a second paired phone that guesses a request id answers for
+  the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected
+  in RemEx-xt0af).
+- **Only the seven read-only request types are relayed** (`RelayedRequests`); management is refused
+  before the wire. Widening it is a product decision, not a fix.
+- **Outbound requests carry no `ClientId`.**
+
+On the phone, `SharedPathPolicy` (both `SafFileSystemFacade.resolve` and the v2 `resolveDocument`)
+resolves only roots the person shares RIGHT NOW. `fromTreeUri` opens any tree the app still holds a
+grant for, so removing the root check reopens the whole-device folder after the person turned
+whole-device browsing off. The RULES are pinned by `SharedPathPolicyTest`; the two CALL SITES are
+SAF-bound and have no unit test, so a removed call there stays green — check them by eye.
 
 ### `EvaluateDesktopAuth` — pre-auth for `/ws/desktop`
 

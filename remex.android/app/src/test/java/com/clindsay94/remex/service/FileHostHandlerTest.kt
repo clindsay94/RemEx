@@ -385,6 +385,109 @@ class FileHostHandlerTest {
         assertNull((tree.children["Docs"] as FakeNode).children["report.txt"])
     }
 
+    // ── Names the PC supplies are names, not paths (RemEx-xt0af) ─────────────────
+
+    private val unsafeNames = listOf(".", "..", "a/b", "a\\b", "nul\u0000byte", "x".repeat(256))
+
+    private fun manage(requestId: String, body: String) =
+        """{"type":"file_manage_request","fileManageRequest":{"requestId":"$requestId","rootId":"root1",$body}}"""
+
+    @Test
+    fun rename_toAnUnsafeName_isRefusedAndChangesNothing() = runBlocking {
+        for (name in unsafeNames) {
+            val tree = sampleTree()
+            val (h, sender, _) = build(tree)
+            h.handleControlMessage(
+                manage("rn", """"relativePath":"Docs/report.txt","operation":"rename","newName":${JSONObject.quote(name)}""")
+            )
+            assertFalse("rename to '$name' must fail", sender.last().getJSONObject("fileManageResponse").getBoolean("success"))
+            assertNotNull("rename to '$name' must leave the file alone", (tree.children["Docs"] as FakeNode).children["report.txt"])
+        }
+    }
+
+    @Test
+    fun mkdir_withAnUnsafeName_isRefusedAndCreatesNothing() = runBlocking {
+        for (name in unsafeNames) {
+            val tree = sampleTree()
+            val (h, sender, _) = build(tree)
+            h.handleControlMessage(
+                manage("mk", """"relativePath":"Docs","operation":"mkdir","newName":${JSONObject.quote(name)}""")
+            )
+            assertFalse("mkdir '$name' must fail", sender.last().getJSONObject("fileManageResponse").getBoolean("success"))
+            assertEquals("mkdir '$name' must create nothing", 1, (tree.children["Docs"] as FakeNode).children.size)
+        }
+    }
+
+    @Test
+    fun copyAndMove_toAnUnsafeDestinationName_areRefusedAndChangeNothing() = runBlocking {
+        // Only names that survive the destinationPath split: "a/b" and "a\b" are a folder and a name
+        // there, so they are covered by the folder resolving or not, not by this rule.
+        for (name in listOf(".", "..", "nul\u0000byte", "x".repeat(256))) {
+            for (operation in listOf("copy", "move")) {
+                val tree = sampleTree()
+                val (h, sender, _) = build(tree)
+                h.handleControlMessage(
+                    manage(
+                        "cp",
+                        """"relativePath":"Docs/report.txt","operation":"$operation","destinationPath":${JSONObject.quote("Docs/$name")}""",
+                    )
+                )
+                assertFalse("$operation to '$name' must fail", sender.last().getJSONObject("fileManageResponse").getBoolean("success"))
+                val docs = tree.children["Docs"] as FakeNode
+                assertEquals("$operation to '$name' must change nothing", listOf("report.txt"), docs.children.keys.toList())
+            }
+        }
+    }
+
+    @Test
+    fun upload_withAnUnsafeFileName_isDeclined() = runBlocking {
+        for (name in unsafeNames) {
+            val tree = sampleTree()
+            val (h, sender, _) = build(tree, granted = true)
+            h.handleControlMessage(
+                """
+                {"type":"file_transfer_offer","fileTransferOffer":{
+                  "transferId":"up-x","mode":"upload","destRoot":"root1","fileName":${JSONObject.quote(name)},"size":5}}
+                """.trimIndent()
+            )
+            val ready = sender.sent.map { JSONObject(it) }.last { it.optString("type") == "file_transfer_ready" }
+                .getJSONObject("fileTransferReady")
+            assertFalse("upload named '$name' must be declined", ready.getBoolean("accepted"))
+            assertEquals("upload named '$name' must create nothing", 1, tree.children.size)
+        }
+    }
+
+    /**
+     * Before the phone's settings have loaded (AndroidFileTransferHost starts with no shared folders
+     * until the DataStore flows emit), every request the PC can relay must still be ANSWERED, with an
+     * empty list or a refusal. A silent drop would leave the PC's File Transfer screen waiting out its
+     * timeout instead of saying the phone shares nothing (RemEx-xt0af).
+     */
+    @Test
+    fun withNothingSharedYet_everyRelayedRequestIsStillAnswered() = runBlocking {
+        val requests = listOf(
+            Triple("file_roots_request", "file_roots_response", """{"type":"file_roots_request"}"""),
+            Triple("file_browse_request", "file_browse_response",
+                """{"type":"file_browse_request","fileBrowseRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs"}}"""),
+            Triple("file_volumes_request", "file_volumes_response",
+                """{"type":"file_volumes_request","fileVolumesRequest":{"requestId":"q"}}"""),
+            Triple("file_search_request", "file_search_response",
+                """{"type":"file_search_request","fileSearchRequest":{"requestId":"q","rootId":"root1","query":"report","maxResults":50}}"""),
+            Triple("file_manifest_request", "file_manifest_response",
+                """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs"}}"""),
+            Triple("file_metadata_request", "file_metadata_response",
+                """{"type":"file_metadata_request","fileMetadataRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt"}}"""),
+            Triple("file_thumbnail_request", "file_thumbnail_response",
+                """{"type":"file_thumbnail_request","fileThumbnailRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt","maxDim":128}}"""),
+        )
+        for ((request, response, json) in requests) {
+            val (h, sender, _) = build(sampleTree(), roots = emptyList())
+            h.handleControlMessage(json)
+            assertTrue("$request went unanswered", sender.sent.isNotEmpty())
+            assertEquals("$request was answered with the wrong type", response, sender.last().getString("type"))
+        }
+    }
+
     @Test
     fun copy_toExistingWithoutOverwrite_fails() = runBlocking {
         val tree = sampleTree()

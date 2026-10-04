@@ -93,7 +93,7 @@
     <value>File</value>
   </data>
   <data name="Nav_RemoteDesktop" xml:space="preserve">
-    <value>Desktop Jarak Jauh</value>
+    <value>Desktop jarak jauh</value>
   </data>
 
   
@@ -113,10 +113,10 @@
     <value>Jelajahi...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Mulai</value>
+    <value>Mulai</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Hentikan</value>
+    <value>Hentikan</value>
   </data>
 
   
@@ -165,25 +165,25 @@
     <value>Pengaturan</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Beranda</value>
+    <value>Kembali ke Beranda</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
-    <value>Simpan Perubahan</value>
+    <value>Simpan perubahan</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Pengaturan Disimpan!</value>
+    <value>Pengaturan disimpan</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Koneksi</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
-    <value>Kunci ke Grid</value>
+    <value>Kunci ke grid</value>
   </data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve">
     <value>Kartu mengunci ke garis grid terdekat saat dilepas</value>
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
-    <value>Ukuran Grid</value>
+    <value>Ukuran grid</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
     <value>Sensor disematkan</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  Proses</value>
+    <value>Proses</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>Apa yang berjalan di PC ini</value>
@@ -211,7 +211,7 @@
     <value>Cari berdasarkan nama atau PID...</value>
   </data>
   <data name="TaskMgr_KillProcess" xml:space="preserve">
-    <value>Hentikan Proses</value>
+    <value>Hentikan proses</value>
   </data>
   <data name="TaskMgr_SortName" xml:space="preserve">
     <value>Nama</value>
@@ -231,16 +231,16 @@
     <value>Program yang bisa dijalankan dari ponsel Anda</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Tambah Program</value>
+    <value>Tambah program</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>Tidak ada aplikasi yang dikonfigurasi.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
-    <value>Pindah Kiri</value>
+    <value>Pindah ke kiri</value>
   </data>
   <data name="AppLauncher_MoveRight" xml:space="preserve">
-    <value>Pindah Kanan</value>
+    <value>Pindah ke kanan</value>
   </data>
   <data name="AppLauncher_Remove" xml:space="preserve">
     <value>Hapus</value>
@@ -248,22 +248,22 @@
 
   
   <data name="AddProgram_Title" xml:space="preserve">
-    <value>Tambah Program</value>
+    <value>Tambah program</value>
   </data>
   <data name="AddProgram_Header" xml:space="preserve">
-    <value>Tambah Program Baru</value>
+    <value>Tambah program baru</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Jalur File Eksekusi</value>
+    <value>Jalur program</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
-    <value>Nama Tampilan</value>
+    <value>Nama tampilan</value>
   </data>
   <data name="AddProgram_AccentColor" xml:space="preserve">
     <value>Warna Aksen (Hex)</value>
   </data>
   <data name="AddProgram_IconPreview" xml:space="preserve">
-    <value>Pratinjau Ikon</value>
+    <value>Pratinjau ikon</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
     <value>C:\Jalur\Ke\App.exe</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Kilasan Langsung</value>
+    <value>Sensor</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>Sensor baru</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Tambah Kartu</value>
+    <value>Tambah kartu</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Simpan</value>
@@ -324,7 +324,7 @@
     <value>Putuskan</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Hubungkan</value>
+    <value>Hubungkan</value>
   </data>
 
   
@@ -344,10 +344,10 @@
     <value>Tak Terbatas</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Kesalahan Stream</value>
+    <value>Kesalahan stream</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
-    <value>Desktop Jarak Jauh</value>
+    <value>Desktop jarak jauh</value>
   </data>
   <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve">
     <value>Hubungkan dan tekan Mulai untuk memulai streaming.</value>
@@ -373,13 +373,13 @@
 
   
   <data name="Custom_CornerRadius" xml:space="preserve">
-    <value>Radius Sudut</value>
+    <value>Radius sudut</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
     <value>Opasitas kartu</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Opasitas Jendela</value>
+    <value>Opasitas jendela</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
     <value>Sembulan baki sistem</value>
@@ -394,7 +394,7 @@
     <value>Kartu</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Sematkan sensor di kanvas untuk menampilkannya di sini.</value>
+    <value>Sematkan sensor di halaman Sensor untuk menampilkannya di sini.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Tombol</value>
@@ -406,13 +406,13 @@
     <value>Tambahkan aplikasi di halaman Aplikasi untuk memilih pintasan.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
-    <value>Kekuatan Cahaya</value>
+    <value>Kekuatan cahaya</value>
   </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
-    <value>Mode Latar Belakang</value>
+    <value>Mode latar belakang</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Atur Ulang ke Default Tema</value>
+    <value>Atur ulang ke default tema</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -477,10 +477,10 @@
     <value>Zoom: {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Pad: Kompak</value>
+    <value>Pad: kompak</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Pad: Penuh</value>
+    <value>Pad: penuh</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Pad kursor kompak aktif</value>
@@ -592,7 +592,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Masukkan alamat MAC terlebih dahulu.</value>
+    <value>Masukkan alamat MAC terlebih dahulu.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>Mengirim paket ajaib melalui PC…</value>
@@ -601,13 +601,13 @@
     <value>Mengirim paket ajaib secara lokal…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Paket dikirim ke {0}</value>
+    <value>Sinyal bangun dikirim ke {0}</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>Tidak berhasil: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Kunci dikirim</value>
@@ -641,16 +641,16 @@
     <value>Memulai</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Lewati ✕</value>
+    <value>Lewati</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Kembali</value>
+    <value>Kembali</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>Berikutnya →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Mulai ✓</value>
+    <value>Mulai</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Jangan tampilkan tutorial ini lagi</value>
@@ -663,55 +663,55 @@
     <value>Selamat Datang di RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx mengubah PC Anda menjadi pusat komando jarak jauh yang aman. Dari ponsel Anda dapat memantau sensor perangkat keras, menjalankan aplikasi, mengelola berkas dan proses, serta melakukan streaming desktop.
+    <value>RemEx memungkinkan Anda mengendalikan PC ini dengan aman dari ponsel. Anda dapat memantau sensor perangkat keras, menjalankan aplikasi, mengelola berkas dan proses, serta melakukan streaming desktop.
 
 RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilindungi TLS dan pemasangan dengan PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
-    <value>Cara Kerjanya</value>
+    <value>Cara kerjanya</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Aplikasi desktop ini mencakup RemEx PC tertanam yang mulai secara otomatis. Ponsel Android Anda terhubung kepadanya — bukan sebaliknya.</value>
+    <value>RemEx berjalan di PC ini dan mulai secara otomatis. Ponsel Android Anda terhubung kepadanya — bukan sebaliknya.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx berjalan otomatis saat Anda masuk ke PC ini — melalui tugas logon di Windows atau entri autostart di Linux. Jadi ponsel Anda dapat terhubung kapan saja selama Anda masuk. Pemantauan sensor dan perintah daya tetap berfungsi saat layar terkunci, tetapi untuk melakukan streaming atau mengendalikan desktop, sesi harus tidak terkunci. Jika PC dimatikan atau Anda keluar dari akun, bangunkan dengan Wake-on-LAN lalu masuk terlebih dahulu.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>Integrasi HWInfo (Disarankan)</value>
+    <value>HWiNFO (disarankan)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>Untuk pemantauan perangkat keras terperinci (300+ sensor), instal HWiNFO64 — gratis untuk penggunaan pribadi.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Unduh dari hwinfo.com
-2. Jalankan HWInfo → Settings (⚙) → Main Settings
+2. Jalankan HWiNFO → Settings → Main Settings
 3. Centang 'Shared Memory Support' → OK
-4. HWInfo harus tetap berjalan agar RemEx dapat membaca sensornya</value>
+4. HWiNFO harus tetap berjalan agar RemEx dapat membaca sensornya</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ Memori Bersama (Shared Memory) HWInfo otomatis dinonaktifkan setelah 12 jam (versi gratis). Aktifkan kembali secara berkala, atau pertimbangkan lisensi Pro.</value>
+    <value>Memori Bersama (Shared Memory) HWiNFO otomatis dinonaktifkan setelah 12 jam (versi gratis). Aktifkan kembali secara berkala, atau pertimbangkan lisensi Pro.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
-    <value>Pemantauan Sensor</value>
+    <value>Pemantauan sensor</value>
   </data>
   <data name="Tutorial_P5_Body1" xml:space="preserve">
     <value>RemEx mendukung dua sumber telemetri:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ sensor — suhu CPU, clock GPU, kecepatan kipas, voltase, konsumsi daya. Membutuhkan HWInfo berjalan.</value>
+    <value>HWiNFO: 300+ sensor — suhu CPU, clock GPU, kecepatan kipas, voltase, konsumsi daya. Membutuhkan HWiNFO berjalan.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Bawaan: Sensor dasar — penggunaan CPU, RAM, I/O disk, kecepatan jaringan. Selalu tersedia, tanpa perangkat lunak tambahan.</value>
+    <value>Bawaan: Sensor dasar — penggunaan CPU, RAM, I/O disk, kecepatan jaringan. Selalu tersedia, tanpa perangkat lunak tambahan.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Sematkan sensor favorit Anda ke Beranda dari Personalisasi → Tata Letak → Sensor disematkan.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Menyiapkan Aplikasi</value>
+    <value>Menyiapkan aplikasi</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>Halaman Aplikasi memungkinkan Anda menjalankan program di PC dari ponsel. Tambahkan dulu di sini.</value>
@@ -727,7 +727,7 @@ RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilin
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
-    <value>Menghubungkan Ponsel Anda</value>
+    <value>Menghubungkan ponsel Anda</value>
   </data>
   <data name="Tutorial_P7_Body1" xml:space="preserve">
     <value>Aplikasi Android Anda menemukan PC ini secara otomatis menggunakan mDNS. Kedua perangkat harus berada di Wi-Fi / LAN yang sama.</value>
@@ -744,7 +744,7 @@ Linux: ip addr  atau  hostname -I</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>Pairing QR Code</value>
+    <value>Pairing kode QR</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
     <value>Cara tercepat untuk menghubungkan ponsel Anda adalah dengan memindai kode QR. PC menghasilkan kode pairing yang berisi semua yang dibutuhkan aplikasi mobile Anda.</value>
@@ -753,14 +753,14 @@ Linux: ip addr  atau  hostname -I</value>
     <value>1. Buka Pengaturan → Koneksi di PC
 2. Klik "Pasangkan ponsel" untuk menampilkan kode QR
 3. Buka aplikasi seluler RemEx
-4. Ketuk ikon pemindai QR di layar koneksi
+4. Di layar Koneksi, ketuk "Tambah PC", lalu "Pindai Kode QR"
 5. Arahkan kamera ke kode — sambungan terjadi otomatis!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>Tanpa mengetik, tanpa alamat IP — cukup pindai dan mulai. Detail koneksi disimpan sehingga Anda hanya perlu memindai sekali.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>File &amp; Folder Bersama</value>
+    <value>File &amp; folder bersama</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
     <value>File hanya menampilkan folder yang dibagikan PC ini. Atur di Pengaturan pada PC ini agar ponsel Anda melihat lokasi yang tepat.</value>
@@ -774,7 +774,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Di ponsel Anda, jelajahi folder bersama, ketuk file untuk mengunduhnya, atau unggah dari Android ke folder yang dapat ditulis.</value>
   </data>
   <data name="Tutorial_P10_Title" xml:space="preserve">
-    <value>Anda Siap!</value>
+    <value>Anda siap!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
     <value>Gunakan bilah samping untuk berpindah antara Beranda, Sensor, Perintah, Rutinitas, Aplikasi, Proses, File, Log &amp; Diagnostik, Pengaturan, dan Tentang. Personalisasi ada di bagian bawah bilah samping.</value>
@@ -865,7 +865,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Bantuan</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Putar Ulang Panduan</value>
+    <value>Putar ulang panduan</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Tonton ulang panduan memulai</value>
@@ -877,10 +877,10 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Pilih folder mana di PC ini yang muncul di File. Folder hanya-baca bisa dijelajahi dan diunduh, sedangkan folder yang dapat ditulisi juga menerima unggahan dari ponsel Anda.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Tambah Folder</value>
+    <value>Tambah folder</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
-    <value>Pulihkan Default</value>
+    <value>Pulihkan default</value>
   </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Izinkan unggahan</value>
@@ -918,7 +918,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Folder yang bisa dijelajahi dan dikirimi file dari ponsel Anda</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
-    <value>Folder Bersama</value>
+    <value>Folder bersama</value>
   </data>
   <data name="FileTransfer_ReloadTooltip" xml:space="preserve">
     <value>Muat ulang folder bersama</value>
@@ -933,13 +933,13 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Perbarui folder saat ini</value>
   </data>
   <data name="FileTransfer_UploadBtn" xml:space="preserve">
-    <value>Unggah File</value>
+    <value>Unggah file</value>
   </data>
   <data name="FileTransfer_UploadTooltip" xml:space="preserve">
     <value>Pilih file lokal dan unggah ke folder jarak jauh ini</value>
   </data>
   <data name="FileTransfer_DownloadBtn" xml:space="preserve">
-    <value>Unduh Yang Dipilih</value>
+    <value>Unduh yang dipilih</value>
   </data>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Pilih tempat menyimpan file jarak jauh yang dipilih</value>
@@ -1010,7 +1010,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>{0} item dihapus.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Pilih Semua</value>
+    <value>Pilih semua</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
     <value>Pilih semua file dan folder di direktori saat ini</value>
@@ -1135,7 +1135,7 @@ Linux: ip addr  atau  hostname -I</value>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
-    <value>Keluar Layar Penuh</value>
+    <value>Keluar dari layar penuh</value>
   </data>
   <data name="RemoteDesktop_Host" xml:space="preserve">
     <value>PC:</value>
@@ -1150,7 +1150,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Mode Pena: ketuk = klik instan, seret = klik dan seret</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Atur Ulang Zoom</value>
+    <value>Atur ulang zoom</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Stylus: tekan = klik, tombol laras = klik kanan</value>
@@ -1165,10 +1165,10 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Alihkan pad kursor kompak</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>Alihkan Pad Kursor</value>
+    <value>Tampilkan atau sembunyikan pad kursor</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Alihkan Layar Penuh</value>
+    <value>Masuk atau keluar dari layar penuh</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Pena</value>
@@ -1191,7 +1191,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Reboot ke UEFI</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Alihkan Sematkan ke Beranda</value>
+    <value>Sematkan ke Beranda atau lepas</value>
   </data>
 
   
@@ -1206,13 +1206,13 @@ Linux: ip addr  atau  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Aplikasi Android → terhubung ke → 🖥️ Your PC (mesin ini)</value>
+    <value>Ponsel Anda  →  terhubung ke  →  PC ini</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Lewati panduan — Anda dapat memutar ulangnya dari Pengaturan</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glosarium: Palet Perintah</value>
+    <value>Glosarium: Palet perintah</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
     <value>Tekan Ctrl+K untuk berpindah layar, menjalankan aksi cepat, dan mencari di RemEx secara instan.</value>
@@ -1230,10 +1230,10 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Periksa proses yang berjalan di PC, urutkan berdasarkan penggunaan, dan akhiri tugas yang macet tanpa meninggalkan kursi Anda.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glosarium: Kanvas Sensor</value>
+    <value>Glosarium: Sensor</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Buat dinding telemetri langsung dengan menyematkan sensor, mengubah ukuran kartu, dan mengaturnya di kanvas bebas.</value>
+    <value>Buat dinding telemetri langsung dengan menyematkan sensor, mengubah ukuran kartu, dan mengaturnya dengan bebas di halaman Sensor.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Glosarium: File</value>
@@ -1242,7 +1242,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Telusuri hanya folder yang dibagikan PC, upload ke lokasi yang dapat ditulis, dan unduh file dengan verifikasi SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glosarium: Desktop Jarak Jauh</value>
+    <value>Glosarium: Desktop jarak jauh</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
     <value>Streaming layar PC dengan kualitas, skala, dan FPS yang dapat disesuaikan untuk menyeimbangkan kejernihan dan bandwidth.</value>
@@ -1273,7 +1273,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Aplikasi Tanpa Nama</value>
+    <value>Aplikasi tanpa nama</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
     <value>Pilih Aplikasi</value>
@@ -1282,7 +1282,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Aplikasi</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>Semua File</value>
+    <value>Semua file</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
     <value>Tidak Diketahui</value>
@@ -1311,7 +1311,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Sumber terbuka dan gratis. (tolong beri bintang, mereka menyandera kucing saya!)</value>
   </data>
   <data name="About_ViewGitHub" xml:space="preserve">
-    <value>Lihat Sumber di GitHub</value>
+    <value>Lihat sumber di GitHub</value>
   </data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Dibuat dengan ❤️ di Denver, Colorado</value>
@@ -1319,46 +1319,46 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Matikan — Apakah Anda yakin?</value>
+    <value>Matikan PC ini?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>PC jarak jauh akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>PC ini akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Matikan</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Apakah Anda yakin?</value>
+    <value>Restart PC ini?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>PC ini akan di-restart. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Mulai Ulang</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Paksa Matikan — Apakah Anda yakin?</value>
+    <value>Paksa matikan PC ini?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Ini akan segera mematikan PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>Ini akan segera mematikan PC ini. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Paksa Matikan</value>
+    <value>Paksa matikan</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Paksa Restart — Apakah Anda yakin?</value>
+    <value>Paksa restart PC ini?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Ini akan segera me-restart PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>Ini akan segera me-restart PC ini. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Paksa Restart</value>
+    <value>Paksa restart</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Boot ke UEFI — Apakah Anda yakin?</value>
+    <value>Boot PC ini ke UEFI?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>PC ini akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Boot ke UEFI</value>
@@ -1369,22 +1369,22 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Pintasan Keyboard</value>
+    <value>Pintasan keyboard</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Palet Perintah</value>
+    <value>Palet perintah</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Batalkan Edit Tata Letak</value>
+    <value>Batalkan edit tata letak</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Ulangi Edit Tata Letak</value>
+    <value>Ulangi edit tata letak</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
     <value>Tutup Overlay/Panel</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>Apa yang Baru?</value>
+    <value>Apa yang baru?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
     <value>Rutinitas</value>
@@ -1468,7 +1468,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Turunkan penggeser Kualitas.
-• Kurangi Target FPS — 15-20 biasanya sudah cukup.
+• Kurangi Target FPS. Ponsel mulai dari 120, yaitu batas atas, bukan janji. Jika gambar masih tersendat, 30–60 FPS sudah cukup lewat Wi-Fi.
 • Turunkan Skala.
 • Gunakan jaringan lokal yang cepat. Wi-Fi 5 GHz atau koneksi kabel adalah yang terbaik — ini penyebab lag yang paling umum.
 • Anda tidak perlu mengatur perekaman layar. RemEx otomatis memilih metode tercepat yang didukung PC Anda.</value>
@@ -1477,7 +1477,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Apa itu Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Lalu masukkan alamat MAC PC Anda di layar Koneksi.&#xD;&#xA;&#xD;&#xA;Menyalakan PC tidak sama dengan mendapatkan aksesnya kembali. Wake-on-LAN menghidupkan mesin dan berhenti di layar masuk; RemEx baru berjalan setelah seseorang masuk di PC itu sendiri.</value>
+    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Ponsel Anda biasanya mengetahui alamat MAC PC ini sendiri setelah terhubung. Ketik di layar Koneksi pada ponsel hanya jika alamatnya belum ada.&#xD;&#xA;&#xD;&#xA;Menyalakan PC tidak sama dengan mendapatkan aksesnya kembali. Wake-on-LAN menghidupkan mesin dan berhenti di layar masuk; RemEx baru berjalan setelah seseorang masuk di PC itu sendiri.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Bagaimana cara mentransfer file?</value>
@@ -1508,7 +1508,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Ulangi</value>
   </data>
   <data name="Canvas_ResetView" xml:space="preserve">
-    <value>Atur Ulang Tampilan</value>
+    <value>Atur ulang tampilan</value>
   </data>
   <data name="Canvas_Map" xml:space="preserve">
     <value>Peta</value>
@@ -1541,7 +1541,7 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Intens</value>
   </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
-    <value>Layar Pembuka</value>
+    <value>Layar pembuka</value>
   </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Kurangi gerak</value>
@@ -1559,16 +1559,16 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Log &amp; Diagnostik</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
-    <value>Log Aplikasi Langsung</value>
+    <value>Log aplikasi langsung</value>
   </data>
   <data name="Logs_VerbosityFilter" xml:space="preserve">
-    <value>Filter Verbositas:</value>
+    <value>Filter verbositas:</value>
   </data>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Segarkan</value>
   </data>
   <data name="Logs_CopySelected" xml:space="preserve">
-    <value>Salin Pilihan</value>
+    <value>Salin pilihan</value>
   </data>
   <data name="Logs_CopyMessage" xml:space="preserve">
     <value>Salin pesan</value>
@@ -1586,10 +1586,10 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Buka folder</value>
   </data>
   <data name="Logs_Clear" xml:space="preserve">
-    <value>Bersihkan Log</value>
+    <value>Bersihkan log</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Log Peristiwa Sistem</value>
+    <value>Log peristiwa sistem</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Kueri log peristiwa terbaru dari Windows Event Viewer atau Linux systemd journal.</value>
@@ -1615,7 +1615,7 @@ Ini normal — RemEx hanya menulis di sini untuk masalah startup yang serius, ja
 Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, bukan melalui systemd — OS tidak pernah menangkap outputnya di sana. {0} di atas adalah catatan RemEx sendiri dan berfungsi di mana saja.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Kueri Log Peristiwa Sistem</value>
+    <value>Kueri log peristiwa sistem</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Tampilan</value>
@@ -1642,7 +1642,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Navigasi</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Kanvas Sensor</value>
+    <value>Sensor</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Perintah</value>
@@ -1654,7 +1654,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Proses</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
-    <value>Desktop Jarak Jauh</value>
+    <value>Desktop jarak jauh</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
     <value>File</value>
@@ -1663,40 +1663,40 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Pengaturan</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Alihkan Panel Pengaturan</value>
+    <value>Tampilkan atau sembunyikan Personalisasi</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Antarmuka</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Tutup Panel Pengaturan</value>
+    <value>Tutup Personalisasi</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Alihkan Laci Navigasi</value>
+    <value>Tampilkan atau sembunyikan bilah sisi</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Urungkan Edit Kanvas</value>
+    <value>Batalkan edit tata letak</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Kanvas</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Ulangi Edit Kanvas</value>
+    <value>Ulangi edit tata letak</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
-    <value>Tutup Banner Koneksi</value>
+    <value>Tutup banner koneksi</value>
   </data>
   <data name="PaletteCategory_Status" xml:space="preserve">
     <value>Status</value>
   </data>
   <data name="Palette_AboutWhatsNew" xml:space="preserve">
-    <value>Tentang &amp; Informasi Baru</value>
+    <value>Tentang &amp; informasi baru</value>
   </data>
   <data name="PaletteCategory_Help" xml:space="preserve">
     <value>Bantuan</value>
   </data>
   <data name="Palette_TutorialGlossary" xml:space="preserve">
-    <value>Tutorial &amp; Glosarium</value>
+    <value>Tutorial &amp; glosarium</value>
   </data>
   <data name="Palette_LockPc" xml:space="preserve">
     <value>Kunci PC</value>
@@ -1711,19 +1711,19 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Hibernasikan PC</value>
   </data>
   <data name="Palette_SignOutPc" xml:space="preserve">
-    <value>Keluar PC</value>
+    <value>Keluar dari PC</value>
   </data>
   <data name="Palette_ShutdownPc" xml:space="preserve">
     <value>Matikan PC</value>
   </data>
   <data name="Palette_ForceShutdownPc" xml:space="preserve">
-    <value>Paksa Matikan PC</value>
+    <value>Paksa matikan PC</value>
   </data>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Mulai Ulang PC</value>
   </data>
   <data name="Palette_ForceRestartPc" xml:space="preserve">
-    <value>Paksa Mulai Ulang PC</value>
+    <value>Paksa mulai ulang PC</value>
   </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Mulai Ulang PC ke UEFI</value>
@@ -1738,34 +1738,34 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Hubungkan</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Desktop - Eksekusi Jarak Jauh</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
-    <value>Palet Perintah</value>
+    <value>Palet perintah</value>
   </data>
   <data name="CommandPalette_SearchWatermark" xml:space="preserve">
     <value>Cari perintah…</value>
   </data>
   <data name="SetAlert_Title" xml:space="preserve">
-    <value>Atur Peringatan Sensor</value>
+    <value>Atur peringatan sensor</value>
   </data>
   <data name="SetAlert_Header" xml:space="preserve">
-    <value>Peringatan Sensor</value>
+    <value>Peringatan sensor</value>
   </data>
   <data name="SetAlert_ThresholdValue" xml:space="preserve">
-    <value>Nilai Ambang Batas</value>
+    <value>Nilai ambang batas</value>
   </data>
   <data name="SetAlert_TriggerDirection" xml:space="preserve">
-    <value>Picu Saat Nilai</value>
+    <value>Picu saat nilai</value>
   </data>
   <data name="SetAlert_Severity" xml:space="preserve">
     <value>Tingkat Keparahan</value>
   </data>
   <data name="SetAlert_SetAlertBtn" xml:space="preserve">
-    <value>Atur Peringatan</value>
+    <value>Atur peringatan</value>
   </data>
   <data name="Btn_Clear" xml:space="preserve">
     <value>Bersihkan</value>
@@ -1855,7 +1855,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Peringatan sensor</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>Belum ada peringatan yang dikonfigurasi. Klik kanan kartu sensor di kanvas untuk mengaturnya.</value>
+    <value>Belum ada peringatan yang dikonfigurasi. Klik kanan kartu sensor di halaman Sensor untuk mengaturnya.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Sunting</value>
@@ -1915,7 +1915,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ulangi (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Alihkan Minimap</value>
+    <value>Tampilkan atau sembunyikan minimap</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Simpan kanvas sebagai PNG ke folder Gambar</value>
@@ -1951,16 +1951,16 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Batas kenaikan penempatan kisi dalam piksel absolut</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Buka Palet Perintah (Ctrl+K)</value>
+    <value>Buka palet perintah (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Alihkan Bilah Sisi</value>
+    <value>Tampilkan atau sembunyikan bilah sisi</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Perlu melihat panduan lagi?</value>
   </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
-    <value>Tampilkan Jendela Utama</value>
+    <value>Tampilkan jendela utama</value>
   </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Keluar</value>
@@ -1993,7 +1993,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Buka transfer</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Pasangkan perangkat</value>
+    <value>Pasangkan ponsel</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Buka folder log</value>
@@ -2062,10 +2062,10 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ekspor semua yang diingat RemEx — tata letak kanvas, aplikasi peluncur, folder bersama, dan tema Anda — ke satu file, atau impor file untuk memulihkannya. Pemasangan perangkat dan sertifikat tidak pernah disertakan; Anda perlu memasangkan ulang ponsel setelah pemulihan.</value>
   </data>
   <data name="Settings_ExportButton" xml:space="preserve">
-    <value>Ekspor Pengaturan</value>
+    <value>Ekspor pengaturan</value>
   </data>
   <data name="Settings_ImportButton" xml:space="preserve">
-    <value>Impor Pengaturan</value>
+    <value>Impor pengaturan</value>
   </data>
   <data name="Settings_ExportDone" xml:space="preserve">
     <value>Pengaturan diekspor.</value>
@@ -2080,10 +2080,10 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>File tersebut bukan file simpanan RemEx yang valid.</value>
   </data>
   <data name="Settings_SavefileType" xml:space="preserve">
-    <value>File Simpanan RemEx</value>
+    <value>File simpanan RemEx</value>
   </data>
   <data name="Restore_PromptTitle" xml:space="preserve">
-    <value>Pulihkan Pengaturan Sebelumnya?</value>
+    <value>Pulihkan pengaturan sebelumnya?</value>
   </data>
   <data name="Restore_PromptMessage" xml:space="preserve">
     <value>Kami menemukan cadangan otomatis dari {0}. Ingin memulihkan tata letak kanvas, aplikasi peluncur, dan pengaturan Anda darinya?</value>
@@ -2092,7 +2092,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Pulihkan</value>
   </data>
   <data name="Restore_Skip" xml:space="preserve">
-    <value>Mulai Baru</value>
+    <value>Mulai baru</value>
   </data>
   <data name="AppLauncher_Sort" xml:space="preserve">
     <value>Urutkan</value>
@@ -2110,10 +2110,10 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Seret untuk mengurutkan ulang dinonaktifkan saat pencarian aktif. Gunakan tombol panah sebagai gantinya.</value>
   </data>
   <data name="AddProgram_EditTitle" xml:space="preserve">
-    <value>Sunting Program</value>
+    <value>Sunting program</value>
   </data>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
-    <value>Segarkan Ikon</value>
+    <value>Segarkan ikon</value>
   </data>
   <data name="FileConsent_Allow" xml:space="preserve">
     <value>Izinkan</value>
@@ -2131,7 +2131,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ingat pilihan saya untuk perangkat ini</value>
   </data>
   <data name="FileConsent_WindowTitle" xml:space="preserve">
-    <value>Permintaan Izin</value>
+    <value>Permintaan izin</value>
   </data>
   <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
     <value>Beranda</value>
@@ -2182,7 +2182,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Memindahkan {0} item…</value>
   </data>
   <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
-    <value>Folder Baru</value>
+    <value>Folder baru</value>
   </data>
   <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
     <value>Nama folder</value>
@@ -2425,7 +2425,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Pong Sinyal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
-    <value>Pembaruan Perangkat Lunak</value>
+    <value>Pembaruan perangkat lunak</value>
   </data>
   <data name="About_Update_Checking" xml:space="preserve">
     <value>Memeriksa pembaruan…</value>
@@ -2466,13 +2466,13 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
 
 
   <data name="Custom_PageTitleFont" xml:space="preserve">
-    <value>Font Judul Halaman</value>
+    <value>Font judul halaman</value>
   </data>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Font untuk judul halaman besar. Mencakup font tampilan aplikasi dan font apa pun yang terinstal di sistem ini.</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
-    <value>Font Konten</value>
+    <value>Font konten</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
     <value>Font untuk teks isi dan konten — deskripsi, label, dan halaman Sensor. Pembacaan data lebar tetap tetap memakai font monospace.</value>
@@ -2500,7 +2500,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Alamat MAC disalin — tempelkan ke aplikasi RemEx di ponsel Anda.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>Untuk mengaturnya: buka aplikasi RemEx di ponsel Anda, buka Pengaturan → Wake-on-LAN, lalu masukkan alamat di atas. Ponsel Anda kemudian dapat membangunkan PC ini kapan saja selama berada di jaringan yang sama.</value>
+    <value>Ponsel Anda biasanya mengambil alamat ini sendiri setelah terhubung. Jika belum ada, buka aplikasi RemEx di ponsel Anda, buka layar Koneksi, buka kartu PC ini, ketuk Ubah detail koneksi, lalu masukkan alamat di atas. Ponsel Anda kemudian dapat membangunkan PC ini kapan saja selama berada di jaringan yang sama.</value>
   </data>
   <data name="Custom_FontUnavailable" xml:space="preserve">
     <value>Font ini tidak dapat dimuat di PC ini dan mungkin belum terinstal: {0}. Font default digunakan sebagai gantinya.</value>
@@ -2527,28 +2527,28 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ekspor</value>
   </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
-    <value>Ekspor Log</value>
+    <value>Ekspor log</value>
   </data>
   <data name="Logs_PresetAll" xml:space="preserve">
     <value>Semua</value>
   </data>
   <data name="Logs_PresetErrors" xml:space="preserve">
-    <value>Kesalahan &amp; Peringatan</value>
+    <value>Kesalahan &amp; peringatan</value>
   </data>
   <data name="Logs_PresetConnection" xml:space="preserve">
-    <value>Koneksi &amp; Pemasangan</value>
+    <value>Koneksi &amp; pemasangan</value>
   </data>
   <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
-    <value>Desktop Jarak Jauh</value>
+    <value>Desktop jarak jauh</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
     <value>Transfer file</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
-    <value>Input &amp; Perintah</value>
+    <value>Input &amp; perintah</value>
   </data>
   <data name="Logs_PresetStartup" xml:space="preserve">
-    <value>Startup &amp; Elevasi</value>
+    <value>Startup &amp; elevasi</value>
   </data>
   <data name="Logs_ScopeCurrentView" xml:space="preserve">
     <value>Tampilan saat ini</value>
@@ -2638,7 +2638,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Personalisasi</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
-    <value>Tentang &amp; Bantuan</value>
+    <value>Tentang &amp; bantuan</value>
   </data>
   <data name="Home_GitHubCard" xml:space="preserve">
     <value>RemEx di GitHub</value>
@@ -2656,7 +2656,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Metrik ganda</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
-    <value>Metrik Kedua</value>
+    <value>Metrik kedua</value>
   </data>
   <data name="Canvas_ActionPin" xml:space="preserve">
     <value>Sematkan</value>
@@ -2683,7 +2683,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Putar ulang tips dasbor</value>
   </data>
   <data name="SecondMetric_Title" xml:space="preserve">
-    <value>Pilih Metrik Kedua</value>
+    <value>Pilih metrik kedua</value>
   </data>
   <data name="SecondMetric_Header" xml:space="preserve">
     <value>Tumpangkan sensor kedua pada</value>
@@ -2701,7 +2701,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ukuran ikon</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Hapus — Apakah Anda yakin?</value>
+    <value>Hapus permanen?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>"{0}" akan dihapus secara permanen. Tindakan ini tidak dapat diurungkan.</value>
@@ -2772,25 +2772,25 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Bersihkan log diagnostik? Entri yang ditampilkan di sini akan dibuang. Berkas log yang sudah tersimpan di disk tidak terpengaruh.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Hentikan Proses — Apakah Anda yakin?</value>
+    <value>Hentikan proses ini?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Hapus Program — Apakah Anda yakin?</value>
+    <value>Hapus program ini?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Hapus</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Berhenti Membagikan — Apakah Anda yakin?</value>
+    <value>Berhenti membagikan folder ini?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Cabut Akses — Apakah Anda yakin?</value>
+    <value>Cabut akses file?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Pulihkan Default — Apakah Anda yakin?</value>
+    <value>Pulihkan folder default?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Bersihkan Log — Apakah Anda yakin?</value>
+    <value>Bersihkan log?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2886,10 +2886,10 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Tidak ada yang dihentikan. "{0}" (PID {1}) tertutup saat Anda memutuskan, dan PID itu kini mungkin milik program lain. Daftar telah disegarkan — cari programnya lagi lalu coba sekali lagi.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Keluar — Apakah Anda yakin?</value>
+    <value>Keluar dari PC ini?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Semua yang terbuka di PC jarak jauh akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+    <value>Semua yang terbuka di PC ini akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Keluar</value>
@@ -2991,7 +2991,7 @@ Anda dapat mengubah:
     <value>Bisakah saya menonton tutorialnya lagi?</value>
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
-    <value>Ya. Buka Pengaturan dan gunakan "Putar Ulang Tutorial" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
+    <value>Ya. Buka Pengaturan dan gunakan "Putar ulang panduan" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
   </data>
   <data name="Faq_Q17_Question" xml:space="preserve">
     <value>Apa itu rutinitas?</value>
@@ -3927,7 +3927,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
     <value>Belum ada rutinitas yang berjalan di PC ini</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Rutinitas dibuat di aplikasi RemEx pada ponsel Anda, di bagian Rutinitas. Rutinitas yang berjalan di PC ini muncul di sini.</value>
+    <value>Rutinitas dibuat di aplikasi RemEx pada ponsel Anda, di Lainnya, lalu Rutinitas. Rutinitas yang berjalan di PC ini muncul di sini.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>Pelajari rutinitas</value>
@@ -4132,5 +4132,68 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Nilai besar</value>
+  </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Tidak dapat dibuka</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx tidak dapat membukanya dengan izin normal Anda. Tunggu sebentar, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Sumber</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Pilih file siapa yang ditampilkan: folder bersama PC ini, atau milik ponsel yang terhubung.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>PC ini</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Ponsel Anda</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Untuk menelusuri ponsel Anda di sini, hubungkan ke PC ini, lalu bagikan folder di RemEx pada ponsel di bagian Akses dari PC Anda.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Anda sedang menelusuri ponsel. Anda dapat mengunduh file, dan mengunggah file ke folder yang dibagikan ponsel untuk ditulis. Untuk mengubah apa yang dapat dilihat PC ini, buka RemEx di ponsel dan buka Akses dari PC Anda.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Ponsel itu sedang tidak terhubung. Buka RemEx di ponsel, hubungkan ke PC ini, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Ponsel Anda terputus, jadi Anda kembali ke folder PC ini. Hubungkan lagi ponsel untuk menelusurinya kembali.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Ponsel Anda tidak menjawab tepat waktu. Pastikan RemEx terbuka dan terhubung di ponsel, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Ponsel Anda tidak mengizinkannya. Buka RemEx di ponsel, buka Akses dari PC Anda, dan periksa apa yang Anda bagikan.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Ponsel Anda belum membagikan folder apa pun. Buka RemEx di ponsel, buka Akses dari PC Anda, lalu tambahkan folder bersama.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Penelusuran seluruh perangkat dimatikan di ponsel Anda. Untuk menggunakannya, buka RemEx di ponsel, buka Akses dari PC Anda, dan nyalakan Izinkan penelusuran seluruh perangkat.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Folder belum dapat diunggah ke ponsel. Unggah file di dalamnya saja.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Ponsel Anda terputus sebelum transfer selesai. Hubungkan lagi, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>File tidak cocok dengan yang dikirim ponsel, jadi file dihapus. Coba unduh lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Ponsel Anda menghentikan transfer. Periksa RemEx di ponsel, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>File terlalu besar untuk dikirim. Pilih file yang lebih kecil.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>File berubah saat sedang dikirim. Tunggu sampai tidak ada yang sedang menyimpannya, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Nama file itu tidak dapat ditransfer. Ganti nama file, lalu coba lagi.</value>
   </data>
 </root>

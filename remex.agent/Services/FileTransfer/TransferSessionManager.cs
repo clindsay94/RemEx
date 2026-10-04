@@ -183,6 +183,49 @@ public sealed class TransferSessionManager : IDisposable
     /// </remarks>
     private readonly TransferQueueService? _queue;
 
+    /// <summary>Where a PC-started pull lands. Null only under the internal test constructor.</summary>
+    private readonly IStagedFilePromoter? _localPromoter;
+
+    /// <summary>
+    /// How long a PC-started transfer may see no progress before it is given up (RemEx-xt0af).
+    /// </summary>
+    /// <remarks>
+    /// An idle window, like <see cref="AckDrainIdleTimeout"/>, and for the same reason: a large file
+    /// over a slow link is never killed while bytes are still moving. Test seam only; DI binds
+    /// constructors, so production always gets the sixty seconds.
+    /// </remarks>
+    internal TimeSpan PeerIdleTimeout { get; init; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>How often a PC-started transfer reports progress and checks for a stalled peer.</summary>
+    internal TimeSpan PeerProgressInterval { get; init; } = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>
+    /// The final verdict a PC-started transfer is waiting for, and WHO may deliver it (RemEx-xt0af).
+    /// </summary>
+    /// <remarks>
+    /// The owner is recorded for the reason <see cref="PendingPush"/> records one (RemEx-5dq3): once a
+    /// send session has finished streaming it is gone, so <see cref="IsForeignTransfer"/> no longer
+    /// knows the id, and a result from any other connection would otherwise be accepted as the phone's.
+    /// </remarks>
+    private sealed record PeerResultWaiter(string ClientId, TaskCompletionSource<FileTransferResult> Result)
+    {
+        private volatile bool _peerFinished;
+
+        /// <summary>
+        /// Set once the phone has sent everything and said so (its <c>file_transfer_complete</c> for a
+        /// pull). From then on the PC is the slow side: the hash check and the copy into a destination
+        /// on another drive, a USB stick or a NAS can take minutes with no bytes moving, and the idle
+        /// timer must not call that "the phone stopped responding" (RemEx-xt0af).
+        /// </summary>
+        public bool PeerFinished
+        {
+            get => _peerFinished;
+            set => _peerFinished = value;
+        }
+    }
+
+    private readonly ConcurrentDictionary<string, PeerResultWaiter> _resultWaiters = new(StringComparer.Ordinal);
+
     private readonly ConcurrentDictionary<string, ReceiveSession> _receiveSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, SendSession> _sendSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, FileChannel> _channels = new(StringComparer.Ordinal);
@@ -192,12 +235,19 @@ public sealed class TransferSessionManager : IDisposable
     /// singleton <c>HostBootstrapper</c> registers, and this is the join that makes
     /// <c>transfer_queue.json</c> get written at all.
     /// </summary>
+    /// <param name="localPromoter">
+    /// Lands a file the PC pulled from a phone in the folder the person picked (RemEx-xt0af). The same
+    /// instance as <paramref name="fileTransferService"/> in production, registered under its own
+    /// interface so a phone-named path can never reach it.
+    /// </param>
     public TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
         SharedRootReadResolver readResolver,
-        TransferQueueService queue)
-        : this(logger, fileTransferService, readResolver, stagingDir: null, queue: Guard.NotNull(queue))
+        TransferQueueService queue,
+        IStagedFilePromoter localPromoter)
+        : this(logger, fileTransferService, readResolver, stagingDir: null, queue: Guard.NotNull(queue),
+            localPromoter: Guard.NotNull(localPromoter))
     {
     }
 
@@ -207,17 +257,23 @@ public sealed class TransferSessionManager : IDisposable
     /// four arguments and are owned elsewhere; a required parameter here would break them for
     /// bookkeeping they do not assert on. Pass one to exercise the queue wiring.
     /// </param>
+    /// <param name="localPromoter">
+    /// Optional for the same reason as <paramref name="queue"/>. Without one,
+    /// <see cref="PullFileAsync"/> refuses rather than guessing where a file may be written.
+    /// </param>
     internal TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
         SharedRootReadResolver readResolver,
         string? stagingDir,
-        TransferQueueService? queue = null)
+        TransferQueueService? queue = null,
+        IStagedFilePromoter? localPromoter = null)
     {
         _logger = Guard.NotNull(logger);
         _fileTransferService = Guard.NotNull(fileTransferService);
         _readResolver = Guard.NotNull(readResolver);
         _queue = queue;
+        _localPromoter = localPromoter;
 
         if (stagingDir is null)
         {
@@ -608,7 +664,7 @@ public sealed class TransferSessionManager : IDisposable
             if (!complete || !hashMatches)
             {
                 DeleteStaging(transferId);
-                var reason = !complete ? "Transfer incomplete." : "SHA-256 mismatch — file corrupted in transit.";
+                var reason = !complete ? PeerTransferFailure.Incomplete : PeerTransferFailure.HashMismatch;
                 _logger.LogWarning("Inbound transfer {TransferId} failed verification: {Reason}", transferId, reason);
                 RecordQueueState(transferId, TransferState.Failed, reason);
                 return new FileTransferResult
@@ -627,8 +683,21 @@ public sealed class TransferSessionManager : IDisposable
             // (RemEx-fq6f).
             try
             {
-                await _fileTransferService.PromoteStagedFileAsync(
-                    session.DestRoot, session.HostRelativePath, session.ExpectedSize, session.PartialPath, ct);
+                if (session.LocalDestinationPath is { } localDestination)
+                {
+                    // A PC-started pull (RemEx-xt0af): the destination is a folder the person at the PC
+                    // picked, not a shared root, so it lands through the local promoter. Same landing
+                    // either way — rename or copy-beside-then-rename, inherited ACL restored.
+                    var parent = Path.GetDirectoryName(localDestination);
+                    if (!string.IsNullOrEmpty(parent))
+                        Directory.CreateDirectory(parent);
+                    await _localPromoter!.PromoteStagedFileToPathAsync(session.PartialPath, localDestination, ct);
+                }
+                else
+                {
+                    await _fileTransferService.PromoteStagedFileAsync(
+                        session.DestRoot, session.HostRelativePath, session.ExpectedSize, session.PartialPath, ct);
+                }
             }
             catch (Exception ex)
             {
@@ -640,7 +709,11 @@ public sealed class TransferSessionManager : IDisposable
                     TransferId = transferId,
                     Verified = false,
                     Sha256Base64 = actualBase64,
-                    Error = $"Verified but could not be saved: {ex.Message}",
+                    // A PC-started pull reports the PC's own fixed reason, which PhoneFileRelay words in
+                    // the user's language; the exception's detail is in the log line above.
+                    Error = session.LocalDestinationPath is not null
+                        ? PeerTransferFailure.SaveFailed
+                        : $"Verified but could not be saved: {ex.Message}",
                 };
             }
 
@@ -667,6 +740,9 @@ public sealed class TransferSessionManager : IDisposable
             session.DisposeStreamOnly();
         DeleteStaging(transferId);
 
+        // A PC-started pull waiting on this id learns it is over now, rather than at its idle timeout.
+        FailWaiter(transferId, PeerTransferFailure.PhoneStopped);
+
         // Unconditionally, like DeleteStaging above it and for the same reason: this is called by id
         // whether or not a live session was found, and a cancel with no session is the ordinary case
         // for a transfer whose socket dropped first. The partial is gone, so nothing can resume it —
@@ -683,6 +759,17 @@ public sealed class TransferSessionManager : IDisposable
         if (_receiveSessions.TryRemove(transferId, out var session))
         {
             session.DisposeStreamOnly();
+
+            // A PC-STARTED PULL IS NOT RESUMABLE, so its partial is not kept (RemEx-xt0af). Resume is
+            // driven by the SENDER re-offering, and for a pull the sender is the phone, which has no
+            // record that the PC wanted this file. Keeping the partial would only leave litter for the
+            // seven-day sweep; the person at the PC simply downloads it again.
+            if (session.LocalDestinationPath is not null)
+            {
+                DeleteStaging(transferId);
+                FailWaiter(transferId, PeerTransferFailure.ConnectionDropped);
+                return;
+            }
 
             // Paused, not Failed: the partial and its manifest survive, so a fresh offer with
             // resumeRequested picks this up where it stopped. Recorded eagerly rather than left to
@@ -775,7 +862,17 @@ public sealed class TransferSessionManager : IDisposable
             ? System.IO.Path.GetFileName(pendingSession.HostRelativePath)
             : null;
 
+        // A file the PC asked for is not news to the PC (RemEx-xt0af): the File Transfer screen that
+        // started it is already showing its progress, so the "received from your phone" announcement
+        // below is for transfers the PHONE started.
+        var pcStartedPull = pendingSession?.LocalDestinationPath is not null;
+
+        // The phone is done; whatever time the verification and promotion below take is the PC's,
+        // so the PC-started wait stops counting it as the phone going quiet.
+        MarkPeerFinished(complete.TransferId, channelKey);
+
         var result = await CompleteReceiveAsync(complete.TransferId, complete.Sha256Base64, ct);
+        TryCompleteWaiter(complete.TransferId, channelKey, result);
         await MessageSerializer.SendAsync(controlWs, new RemexMessage
         {
             Type = MessageTypes.FileTransferResult,
@@ -786,7 +883,7 @@ public sealed class TransferSessionManager : IDisposable
         // Feed the Home "Recent activity" panel when a real remote device pushes a file onto this PC.
         // Skip loopback: a PC-user upload over the self-connection is already recorded desktop-side, so
         // recording it here too would double-count the same file.
-        if (!isLoopback && result.Verified && !string.IsNullOrEmpty(receivedName))
+        if (!isLoopback && !pcStartedPull && result.Verified && !string.IsNullOrEmpty(receivedName))
         {
             Remex.Desktop.Services.ActivityService.Instance.Record(
                 Remex.Desktop.Services.ActivityKind.FileReceived, receivedName);
@@ -882,6 +979,10 @@ public sealed class TransferSessionManager : IDisposable
                 result.TransferId);
             return;
         }
+
+        // BEFORE the send is cancelled, so a PC-started upload records the phone's verdict rather than
+        // the cancellation that follows it (RemEx-xt0af).
+        TryCompleteWaiter(result.TransferId, channelKey, result);
 
         if (_sendSessions.TryRemove(result.TransferId, out var send))
             send.Cancel();
@@ -980,6 +1081,44 @@ public sealed class TransferSessionManager : IDisposable
         string clientId, string transferId, string absolutePath, string fileName, long offeredSize,
         WebSocket controlWs, CancellationToken ct)
     {
+        var start = await OfferOutboundAsync(
+            clientId,
+            new FileTransferOffer
+            {
+                TransferId = transferId,
+                Mode = "push",
+                FileName = fileName,
+                Size = offeredSize,
+            },
+            absolutePath,
+            queueDestRoot: null,
+            queueDestRelativePath: null,
+            controlWs,
+            ct);
+        return start.Started;
+    }
+
+    /// <summary>Whether a host-started send got as far as streaming, and if not, why.</summary>
+    private readonly record struct OutboundStart(bool Started, string? FailureReason);
+
+    /// <summary>
+    /// Offers a host file to a peer, waits for its ready, and starts streaming. Shared by the consented
+    /// push (<see cref="PushFileAsync"/>) and the PC's own upload into a phone's shared folder
+    /// (<see cref="UploadFileToPeerAsync"/>, RemEx-xt0af), which differ only in the offer they make.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="offer"/>'s Size is the number the peer is told and the number the file is
+    /// checked against before a byte moves; see <see cref="PushFileAsync"/> for why that is one number
+    /// and not two measurements.
+    /// </remarks>
+    private async Task<OutboundStart> OfferOutboundAsync(
+        string clientId, FileTransferOffer offer, string absolutePath,
+        string? queueDestRoot, string? queueDestRelativePath,
+        WebSocket controlWs, CancellationToken ct)
+    {
+        var transferId = offer.TransferId;
+        var fileName = offer.FileName;
+        var offeredSize = offer.Size;
         var ready = new TaskCompletionSource<FileTransferReady>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // REGISTERED BEFORE THE OFFER GOES OUT. The peer may answer the instant it lands, and a reply
@@ -998,7 +1137,7 @@ public sealed class TransferSessionManager : IDisposable
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Cannot push {TransferId}: the file could not be opened.", transferId);
-                return false;
+                return new OutboundStart(false, PeerTransferFailure.LocalFileUnreadable);
             }
 
             // **THE OFFERED SIZE IS WHAT GOES ON THE WIRE, AND A FILE THAT NO LONGER MATCHES IT IS
@@ -1026,7 +1165,7 @@ public sealed class TransferSessionManager : IDisposable
                     "Not pushing {TransferId}: {FileName} is now {ActualSize} bytes, but {OfferedSize} "
                         + "was offered and agreed to.",
                     transferId, fileName, source.Length, offeredSize);
-                return false;
+                return new OutboundStart(false, PeerTransferFailure.LocalFileChanged);
             }
 
             await MessageSerializer.SendAsync(
@@ -1034,13 +1173,7 @@ public sealed class TransferSessionManager : IDisposable
                 new RemexMessage
                 {
                     Type = MessageTypes.FileTransferOffer,
-                    FileTransferOffer = new FileTransferOffer
-                    {
-                        TransferId = transferId,
-                        Mode = "push",
-                        FileName = fileName,
-                        Size = offeredSize,
-                    },
+                    FileTransferOffer = offer,
                 },
                 ct);
 
@@ -1055,14 +1188,14 @@ public sealed class TransferSessionManager : IDisposable
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 _logger.LogWarning("The peer never acknowledged the push of {TransferId}.", transferId);
-                return false;
+                return new OutboundStart(false, PeerTransferFailure.NoAnswer);
             }
 
             if (!reply.Accepted)
             {
                 _logger.LogInformation(
                     "The peer declined the push of {TransferId}: {Reason}.", transferId, reply.DeclineReason);
-                return false;
+                return new OutboundStart(false, reply.DeclineReason);
             }
 
             // THE CHANNEL IS LOOKED UP HERE, NOT BEFORE THE OFFER, and the ordering is the fix. The
@@ -1119,7 +1252,7 @@ public sealed class TransferSessionManager : IDisposable
                         ex, "Could not tell the peer to release {TransferId} after the channel miss.", transferId);
                 }
 
-                return false;
+                return new OutboundStart(false, PeerTransferFailure.ChannelMissing);
             }
 
             var session = new SendSession(transferId, clientId ?? string.Empty);
@@ -1137,8 +1270,8 @@ public sealed class TransferSessionManager : IDisposable
                 clientId,
                 fileName,
                 offeredSize,
-                destRoot: null,
-                destRelativePath: null,
+                destRoot: queueDestRoot,
+                destRelativePath: queueDestRelativePath,
                 sourcePath: absolutePath,
                 bytesTransferred: 0);
 
@@ -1146,12 +1279,12 @@ public sealed class TransferSessionManager : IDisposable
             var streaming = source;
             source = null;
             _ = Task.Run(() => StreamSenderAsync(channel, session, streaming, offeredSize, controlWs, ct), CancellationToken.None);
-            return true;
+            return new OutboundStart(true, null);
         }
         catch (Exception ex) when (ex is WebSocketException or InvalidOperationException)
         {
             _logger.LogWarning(ex, "The connection dropped while offering the push of {TransferId}.", transferId);
-            return false;
+            return new OutboundStart(false, PeerTransferFailure.ConnectionDropped);
         }
         finally
         {
@@ -1171,6 +1304,391 @@ public sealed class TransferSessionManager : IDisposable
             // keeps this from closing a stream the streaming task is still reading.
             source?.Dispose();
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // PC-started transfers with a phone (RemEx-xt0af): the PC's own File Transfer screen pulling a file
+    // out of a phone's shared folder, or putting one into it. The PHONE still opened every socket
+    // involved; these only negotiate over the session it already has.
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Pulls one file out of a phone's shared folder into an absolute path on this PC, and waits until
+    /// it is verified and in place.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE SAME RECEIVE PIPELINE AS A PHONE PUSH, WITH A DIFFERENT LANDING. The PC registers a receive
+    /// session BEFORE it offers, so the phone's first data frame has somewhere to go; asks the phone to
+    /// serve the file with an ordinary <c>file_transfer_offer</c> in <c>download</c> mode — the request
+    /// the phone's file host has always answered — and then the frames, the acks, the hash check and the
+    /// promotion out of staging are exactly the ones a push uses. Only the destination differs: a folder
+    /// the person at the PC picked, landed through <see cref="IStagedFilePromoter"/>.
+    /// </para>
+    /// <para>
+    /// NOT RESUMABLE AND NOT IN THE PERSISTENT QUEUE. Resume is the sender re-offering, and here the
+    /// sender is a phone that has no memory of being asked; a <c>transfer_queue.json</c> entry would
+    /// surface after a restart as something that can be resumed and cannot. The screen that started the
+    /// pull is the record of it.
+    /// </para>
+    /// <para>
+    /// Every outcome is a returned result, never a hang: the phone declining, the phone going quiet for
+    /// <see cref="PeerIdleTimeout"/>, its channel dropping, and a bad hash all come back with
+    /// <c>Verified = false</c> and a reason. Cancelling <paramref name="ct"/> tells the phone to stop
+    /// and then throws.
+    /// </para>
+    /// </remarks>
+    /// <param name="remoteRelativePath">The file inside <paramref name="rootId"/>, '/'-separated.</param>
+    /// <param name="localDestinationPath">An absolute path on this PC, chosen by the person at the PC.</param>
+    public async Task<FileTransferResult> PullFileAsync(
+        string clientId, string rootId, string remoteRelativePath, string localDestinationPath,
+        WebSocket controlWs, IProgress<long>? progress, CancellationToken ct)
+    {
+        Guard.NotNull(controlWs);
+        if (_localPromoter is null)
+            throw new InvalidOperationException("This host was built without a local promoter, so it cannot pull files.");
+
+        var transferId = Guid.NewGuid().ToString("N");
+
+        if (string.IsNullOrWhiteSpace(clientId))
+            return PeerFailure(transferId, PeerTransferFailure.PhoneRequired);
+        if (string.IsNullOrWhiteSpace(rootId))
+            return PeerFailure(transferId, PeerTransferFailure.RootRequired);
+
+        var normalized = (remoteRelativePath ?? string.Empty).Replace('\\', '/').Trim('/');
+        var cut = normalized.LastIndexOf('/');
+        var directory = cut < 0 ? string.Empty : normalized[..cut];
+        var fileName = cut < 0 ? normalized : normalized[(cut + 1)..];
+        if (!Remex.Core.Validation.FilePathValidation.IsValidFileName(fileName, out var nameError))
+        {
+            _logger.LogInformation("Not pulling {FileName} from the phone: {Reason}", fileName, nameError);
+            return PeerFailure(transferId, PeerTransferFailure.NameNotAllowed);
+        }
+
+        if (string.IsNullOrWhiteSpace(localDestinationPath)
+            || !Path.IsPathFullyQualified(localDestinationPath)
+            || string.IsNullOrEmpty(Path.GetFileName(localDestinationPath)))
+        {
+            return PeerFailure(transferId, PeerTransferFailure.BadDestination);
+        }
+
+        var partialPath = PartialPathFor(transferId);
+        var stream = new FileStream(
+            partialPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var session = new ReceiveSession
+        {
+            TransferId = transferId,
+            ClientId = clientId,
+            // ZERO MEANS "UNKNOWN", the contract this class already keeps with the phone: the listing's
+            // size may be stale or missing, and the hash is what decides. MaxTransferBytes still caps it.
+            ExpectedSize = 0,
+            DestRoot = string.Empty,
+            HostRelativePath = fileName,
+            PartialPath = partialPath,
+            ManifestPath = ManifestPathFor(transferId),
+            PartialStream = stream,
+            Hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256),
+            LocalDestinationPath = localDestinationPath,
+        };
+
+        var ready = new TaskCompletionSource<FileTransferReady>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pendingReady = new PendingPush(clientId, ready);
+        var waiter = new PeerResultWaiter(
+            clientId, new TaskCompletionSource<FileTransferResult>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        // ALL THREE BEFORE THE OFFER, for the reason OfferOutboundAsync registers its ready first: the
+        // phone can answer, and start streaming, the instant the offer lands.
+        _receiveSessions[transferId] = session;
+        _pendingReady[transferId] = pendingReady;
+        _resultWaiters[transferId] = waiter;
+
+        try
+        {
+            await MessageSerializer.SendAsync(controlWs, new RemexMessage
+            {
+                Type = MessageTypes.FileTransferOffer,
+                ProtocolVersion = ProtocolVersionPolicy.Current,
+                FileTransferOffer = new FileTransferOffer
+                {
+                    TransferId = transferId,
+                    // "download" FROM THE PHONE'S SIDE: it is the one serving. DestRoot and
+                    // DestRelativePath name the SOURCE folder there, and the phone joins the file name on
+                    // (FileHostHandler.beginHostSend).
+                    Mode = FileTransferModes.Download,
+                    DestRoot = rootId,
+                    DestRelativePath = directory.Length == 0 ? null : directory,
+                    FileName = fileName,
+                    Size = 0,
+                },
+            }, ct);
+
+            FileTransferReady reply;
+            using (var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct))
+            {
+                deadline.CancelAfter(ReadyTimeout);
+                try
+                {
+                    reply = await ready.Task.WaitAsync(deadline.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    _logger.LogWarning("The phone never answered the PC's request for {TransferId}.", transferId);
+                    return PeerFailure(transferId, PeerTransferFailure.NoAnswer);
+                }
+            }
+
+            if (!reply.Accepted)
+            {
+                _logger.LogInformation("The phone declined to send {TransferId}: {Reason}.", transferId, reply.DeclineReason);
+                return PeerFailure(transferId, reply.DeclineReason ?? PeerTransferFailure.PhoneDeclined);
+            }
+
+            if (!_channels.ContainsKey(clientId))
+            {
+                LogChannelMiss(clientId, "pull");
+                await TryReleaseAtPeerAsync(controlWs, transferId);
+                return PeerFailure(transferId, PeerTransferFailure.ChannelMissing);
+            }
+
+            return await WatchPeerTransferAsync(
+                transferId, waiter, () => session.BytesReceived, progress, controlWs, ct);
+        }
+        catch (Exception ex) when (ex is WebSocketException or InvalidOperationException)
+        {
+            _logger.LogWarning(ex, "The connection dropped while pulling {TransferId}.", transferId);
+            return PeerFailure(transferId, PeerTransferFailure.ConnectionDropped);
+        }
+        finally
+        {
+            _pendingReady.TryRemove(new KeyValuePair<string, PendingPush>(transferId, pendingReady));
+            _resultWaiters.TryRemove(new KeyValuePair<string, PeerResultWaiter>(transferId, waiter));
+
+            // Anything still registered here did not complete: drop its partial. A completed pull has
+            // already been removed by CompleteReceiveAsync, so this never touches a finished file.
+            if (_receiveSessions.TryGetValue(transferId, out var leftover) && ReferenceEquals(leftover, session))
+                CancelReceive(transferId);
+        }
+    }
+
+    /// <summary>
+    /// Puts one local file into a phone's shared folder, and waits for the phone's verdict on it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AN UPLOAD, NOT A PUSH, and the phone tells the two apart for a reason. A push lands wherever the
+    /// phone decides and is consent-prompted, because the phone never asked for it. An upload names a
+    /// folder the phone SHARED FOR WRITING under "Access from your PC" — the share is the consent, which
+    /// is the rule the phone's file host already applies to <c>upload</c> offers — so no prompt is
+    /// raised. A folder that is not writable is refused by the phone with its own reason.
+    /// </para>
+    /// <para>
+    /// Streams through the same sender as every host-sent transfer: backpressure, the drain before
+    /// completion (docs/REGRESSION-GUARDS.md), and the phone's <c>file_transfer_result</c> as the
+    /// verdict.
+    /// </para>
+    /// </remarks>
+    /// <param name="remoteDirectory">The destination folder inside the root; empty for its top.</param>
+    public async Task<FileTransferResult> UploadFileToPeerAsync(
+        string clientId, string localPath, string rootId, string remoteDirectory,
+        WebSocket controlWs, IProgress<long>? progress, CancellationToken ct)
+    {
+        Guard.NotNull(controlWs);
+        var transferId = Guid.NewGuid().ToString("N");
+
+        if (string.IsNullOrWhiteSpace(clientId))
+            return PeerFailure(transferId, PeerTransferFailure.PhoneRequired);
+        if (string.IsNullOrWhiteSpace(rootId))
+            return PeerFailure(transferId, PeerTransferFailure.RootRequired);
+        if (string.IsNullOrWhiteSpace(localPath) || !Path.IsPathFullyQualified(localPath) || !File.Exists(localPath))
+            return PeerFailure(transferId, PeerTransferFailure.LocalFileMissing);
+
+        var fileName = Path.GetFileName(localPath);
+        if (!Remex.Core.Validation.FilePathValidation.IsValidFileName(fileName, out var nameError))
+        {
+            _logger.LogInformation("Not uploading {FileName} to the phone: {Reason}", fileName, nameError);
+            return PeerFailure(transferId, PeerTransferFailure.NameNotAllowed);
+        }
+
+        long size;
+        try
+        {
+            size = new FileInfo(localPath).Length;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not measure {Path} for an upload to the phone.", localPath);
+            return PeerFailure(transferId, PeerTransferFailure.LocalFileUnreadable);
+        }
+
+        if (size > MaxTransferBytes)
+            return PeerFailure(transferId, PeerTransferFailure.TooLarge);
+
+        var directory = (remoteDirectory ?? string.Empty).Replace('\\', '/').Trim('/');
+        var waiter = new PeerResultWaiter(
+            clientId, new TaskCompletionSource<FileTransferResult>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        // Before the offer: a small file can be streamed, verified and answered before the next line runs.
+        _resultWaiters[transferId] = waiter;
+        try
+        {
+            var start = await OfferOutboundAsync(
+                clientId,
+                new FileTransferOffer
+                {
+                    TransferId = transferId,
+                    Mode = FileTransferModes.Upload,
+                    DestRoot = rootId,
+                    DestRelativePath = directory.Length == 0 ? null : directory,
+                    FileName = fileName,
+                    Size = size,
+                },
+                localPath,
+                queueDestRoot: rootId,
+                queueDestRelativePath: directory,
+                controlWs,
+                ct);
+
+            if (!start.Started)
+                return PeerFailure(transferId, start.FailureReason ?? PeerTransferFailure.PhoneDidNotAccept);
+
+            return await WatchPeerTransferAsync(
+                transferId,
+                waiter,
+                () => _sendSessions.TryGetValue(transferId, out var send) ? send.CommittedOffset : size,
+                progress,
+                controlWs,
+                ct);
+        }
+        finally
+        {
+            _resultWaiters.TryRemove(new KeyValuePair<string, PeerResultWaiter>(transferId, waiter));
+        }
+    }
+
+    /// <summary>
+    /// Reports progress on a PC-started transfer and waits for its verdict, giving up on a peer that
+    /// has made no progress for <see cref="PeerIdleTimeout"/>.
+    /// </summary>
+    /// <remarks>
+    /// Progress is sampled rather than pushed: the receive loop and the sender are the hottest paths in
+    /// this class, and a callback per frame into UI code is the cost this avoids. A cancelled
+    /// <paramref name="ct"/> tells the phone to let go before it throws, so the phone does not keep a
+    /// session open for a transfer nobody is waiting on.
+    /// </remarks>
+    private async Task<FileTransferResult> WatchPeerTransferAsync(
+        string transferId, PeerResultWaiter waiter, Func<long> bytesSoFar,
+        IProgress<long>? progress, WebSocket controlWs, CancellationToken ct)
+    {
+        var lastBytes = -1L;
+        var lastProgressAt = DateTime.UtcNow;
+
+        while (true)
+        {
+            if (waiter.Result.Task.IsCompleted)
+            {
+                var finished = await waiter.Result.Task;
+                if (finished.Verified)
+                    progress?.Report(bytesSoFar());
+                return finished;
+            }
+
+            if (ct.IsCancellationRequested)
+            {
+                await TryReleaseAtPeerAsync(controlWs, transferId);
+                if (_sendSessions.TryRemove(transferId, out var send))
+                    send.Cancel();
+                ForgetQueued(transferId);
+                ct.ThrowIfCancellationRequested();
+            }
+
+            var bytes = bytesSoFar();
+            if (bytes != lastBytes)
+            {
+                lastBytes = bytes;
+                lastProgressAt = DateTime.UtcNow;
+                progress?.Report(bytes);
+            }
+            else if (waiter.PeerFinished)
+            {
+                // The phone has sent everything; the PC is verifying and landing the file. That ends
+                // in a verdict either way (CompleteReceiveAsync never hangs on the phone), so wait for
+                // it rather than reporting a slow local copy as a phone that stopped responding.
+                lastProgressAt = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - lastProgressAt > PeerIdleTimeout)
+            {
+                _logger.LogWarning("PC-started transfer {TransferId} made no progress for {Idle}; giving up.", transferId, PeerIdleTimeout);
+                await TryReleaseAtPeerAsync(controlWs, transferId);
+                if (_sendSessions.TryRemove(transferId, out var stalled))
+                    stalled.Cancel();
+                RecordQueueState(transferId, TransferState.Failed, PeerTransferFailure.StoppedResponding);
+                return PeerFailure(transferId, PeerTransferFailure.StoppedResponding);
+            }
+
+            try
+            {
+                await Task.WhenAny(waiter.Result.Task, Task.Delay(PeerProgressInterval, ct));
+            }
+            catch (OperationCanceledException)
+            {
+                // Handled at the top of the loop, after the phone has been told.
+            }
+        }
+    }
+
+    /// <summary>Best-effort "let go of this transfer" to the phone; never throws.</summary>
+    private async Task TryReleaseAtPeerAsync(WebSocket controlWs, string transferId)
+    {
+        try
+        {
+            await SendControlAsync(controlWs, transferId, FileTransferControlActions.Cancel, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is WebSocketException or InvalidOperationException or OperationCanceledException)
+        {
+            _logger.LogDebug(ex, "Could not release {TransferId} at the phone.", transferId);
+        }
+    }
+
+    private static FileTransferResult PeerFailure(string transferId, string reason) =>
+        new() { TransferId = transferId, Verified = false, Error = reason };
+
+    /// <summary>Delivers a verdict to a PC-started transfer, but only from the peer it was started with.</summary>
+    private void TryCompleteWaiter(string transferId, string channelKey, FileTransferResult result)
+    {
+        if (!_resultWaiters.TryGetValue(transferId, out var waiter))
+            return;
+
+        if (!string.Equals(waiter.ClientId, channelKey, StringComparison.Ordinal))
+        {
+            _logger.LogWarning(
+                "Ignoring a verdict for {TransferId} from {ClientId}: the PC started it with a different device.",
+                transferId,
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(channelKey));
+            return;
+        }
+
+        waiter.Result.TrySetResult(result);
+    }
+
+    /// <summary>
+    /// Records that the peer a PC-started transfer was started with has finished its part, so the idle
+    /// timer stops running (see <see cref="PeerResultWaiter.PeerFinished"/>). Ignored from anyone else.
+    /// </summary>
+    private void MarkPeerFinished(string transferId, string channelKey)
+    {
+        if (_resultWaiters.TryGetValue(transferId, out var waiter)
+            && string.Equals(waiter.ClientId, channelKey, StringComparison.Ordinal))
+        {
+            waiter.PeerFinished = true;
+        }
+    }
+
+    /// <summary>Ends a PC-started transfer's wait with a failure. A no-op once a verdict arrived.</summary>
+    private void FailWaiter(string transferId, string? reason)
+    {
+        if (_resultWaiters.TryGetValue(transferId, out var waiter))
+            waiter.Result.TrySetResult(PeerFailure(transferId, string.IsNullOrWhiteSpace(reason) ? PeerTransferFailure.Failed : reason));
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1301,6 +1819,9 @@ public sealed class TransferSessionManager : IDisposable
 
                     case FileFrameKinds.Error:
                         _logger.LogWarning("Peer reported error on transfer {TransferId}: {Error}", envelope.TransferId, envelope.Error);
+                        // First, so a PC-started transfer reports the phone's own reason rather than
+                        // the generic one CancelReceive would give it (RemEx-xt0af).
+                        FailWaiter(envelope.TransferId, envelope.Error);
                         CancelReceive(envelope.TransferId);
                         if (_sendSessions.TryRemove(envelope.TransferId, out var erroredSend))
                             erroredSend.Cancel();
@@ -1675,6 +2196,7 @@ public sealed class TransferSessionManager : IDisposable
                     TransferState.Failed,
                     "The peer stopped acknowledging data.",
                     session.CommittedOffset);
+                FailWaiter(session.TransferId, PeerTransferFailure.StoppedAcknowledging);
                 return;
             }
 
@@ -1700,11 +2222,16 @@ public sealed class TransferSessionManager : IDisposable
             // wrote Paused — and every one of those is more specific than "cancelled". Overwriting them
             // from here is how a pause would come back as a cancel.
             _logger.LogInformation("Host-sent transfer {TransferId} cancelled.", session.TransferId);
+
+            // A no-op when the phone's verdict already arrived: HandleResult completes the waiter
+            // BEFORE it cancels the send (RemEx-xt0af).
+            FailWaiter(session.TransferId, PeerTransferFailure.Stopped);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Host-sent transfer {TransferId} failed.", session.TransferId);
             RecordQueueState(session.TransferId, TransferState.Failed, ex.Message, sentOffset);
+            FailWaiter(session.TransferId, PeerTransferFailure.ConnectionDropped);
         }
         finally
         {
@@ -1957,6 +2484,13 @@ public sealed class TransferSessionManager : IDisposable
         public required string ManifestPath { get; init; }
         public required FileStream PartialStream { get; init; }
         public required IncrementalHash Hasher { get; init; }
+
+        /// <summary>
+        /// Set only for a PC-started pull (RemEx-xt0af): the absolute local path the verified file
+        /// lands on, in place of <see cref="DestRoot"/>. Such a session is never resumed.
+        /// </summary>
+        public string? LocalDestinationPath { get; init; }
+
         public long BytesReceived { get; set; }
         public long LastAckedOffset; // accessed via Interlocked from the channel loop.
         public bool Completed { get; set; }

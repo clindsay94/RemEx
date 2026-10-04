@@ -3,9 +3,9 @@
     <string name="widget_remote_description">Quick access to PC remote commands like shutdown, restart, lock, and more.</string>
     <string name="widget_hardware_description">Live hardware sensor readings from your connected PC.</string>
     <string name="widget_launcher_description">Launch your favorite PC apps directly from your home screen.</string>
-    <string name="widget_remote_label">RemEx Remote</string>
-    <string name="widget_hardware_label">RemEx Hardware</string>
-    <string name="widget_launcher_label">RemEx Launcher</string>
+    <string name="widget_remote_label">RemEx Commands</string>
+    <string name="widget_hardware_label">RemEx Sensors</string>
+    <string name="widget_launcher_label">RemEx Apps</string>
 
     
     <string name="splash_tagline">Remote Execution</string>
@@ -54,31 +54,31 @@
 
     
     <string name="tutorial_skip">Skip</string>
-    <string name="tutorial_get_started">Get Started</string>
+    <string name="tutorial_get_started">Get started</string>
     <string name="tutorial_next">Next</string>
 
     <string name="tutorial_page1_title">Welcome to RemEx</string>
     <string name="tutorial_page1_body">RemEx lets you use your PC from your phone. Control it, open apps, check how it\'s running, and even see its screen.\n\nLet\'s get you connected in a few quick steps.</string>
 
-    <string name="tutorial_page2_title">Install the PC First</string>
+    <string name="tutorial_page2_title">Install RemEx on your PC first</string>
     <string name="tutorial_page2_body">Before connecting, your PC needs the RemEx app running.\n\nThere\'s just one app to install — it starts automatically when you sign in to your PC and waits for your phone to connect.\n\nGrab the latest release from GitHub and run it before pairing.</string>
     <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
 
-    <string name="tutorial_page3_title">Auto-Discovery</string>
-    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure remex.agent is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. On the Connection screen, tap \'Add a PC\', then \'Discover Automatically\'\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
+    <string name="tutorial_page3_title">Find your PC automatically</string>
+    <string name="tutorial_page3_body">The easiest way to connect is to let RemEx find your PC.\n\n1. Make sure the RemEx app is running on your PC\n2. Make sure your phone and PC are on the same Wi-Fi network\n3. On the Connection screen, tap ‘Add a PC’, then ‘Discover automatically’\n\nRemEx looks for your PC on your home network and fills in its address for you.</string>
 
-    <string name="tutorial_page4_title">Finding Your IP Address</string>
-    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the RemEx window on your PC.</string>
+    <string name="tutorial_page4_title">Finding your IP address</string>
+    <string name="tutorial_page4_body">If RemEx can\'t find your PC by itself, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for ‘IPv4 Address’ (e.g. 192.168.1.42)\n\nLinux:\n  Open a terminal and run ip addr\n\nYou can also see the IP address in the RemEx window on your PC.</string>
 
-    <string name="tutorial_page5_title">Manual Connection</string>
-    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Settings → Connection)\n2. Tap \'Add a PC\', then \'Add manually\', and enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
+    <string name="tutorial_page5_title">Manual connection</string>
+    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Connection)\n2. Tap ‘Add a PC’, then ‘Add manually’, and enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap ‘Save &amp; connect’\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
 
-    <string name="tutorial_page6_title">You\'re All Set!</string>
+    <string name="tutorial_page6_title">You\'re all set!</string>
     <string name="tutorial_page6_body">You\'re ready to take control.\n\nOpen %1$s to watch your PC\'s live readings. The other tabs let you send commands, start apps, see what\'s running, browse shared folders, and stream your desktop.\n\nHead to Personalize to change language, theme, card shapes, and colors.\n\nOpen the FAQ anytime if you need help with pairing, file transfer, or remote desktop tuning.</string>
 
     
-    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. On its Home page, click \'Pair a phone\'\n3. On your phone, tap \'Add a PC\' on the Connection screen, then \'Scan QR Code\'\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
+    <string name="tutorial_page_qr_title">Quick pair with a QR code</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open the RemEx window on your PC\n2. On its Home page, click ‘Pair a phone’\n3. On your phone, tap ‘Add a PC’ on the Connection screen, then ‘Scan QR code’\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
 
     
     <string name="status_disconnected">Disconnected</string>
@@ -86,9 +86,9 @@
     <string name="status_connecting">Connecting to %1$s:%2$d…</string>
     <string name="status_awaiting_metadata">Waiting for PC details</string>
     <string name="status_metadata_unavailable">PC details unavailable</string>
-    <string name="status_native_lib_not_loaded">Native library not loaded</string>
+    <string name="status_native_lib_not_loaded">RemEx couldn\'t start its connection engine</string>
     <string name="error_no_host_found">No RemEx PC found on the network</string>
-    <string name="error_discovery_failed">Discovery failed: %1$s</string>
+    <string name="error_discovery_failed">Couldn\'t search for your PC: %1$s</string>
     
     <string name="error_local_network_permission_denied">Local Network access was denied. RemEx cannot connect to your PC without this permission on Android 17+. Please grant it in App Settings.</string>
     <string name="capability_desktop_available">desktop available</string>
@@ -141,17 +141,17 @@
     <string name="task_manager_fetching">Fetching processes…</string>
     <string name="task_manager_retry">Retry</string>
     <string name="task_manager_dismiss">Dismiss</string>
-    <string name="task_manager_kill_title">Kill Process?</string>
-    <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
-    <string name="button_kill">Kill</string>
+    <string name="task_manager_kill_title">End process?</string>
+    <string name="task_manager_kill_message">Are you sure you want to end %1$s (PID: %2$d)?</string>
+    <string name="button_kill">End</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
 
     
     <string name="remote_mouse_trackpad_label">Trackpad</string>
-    <string name="remote_mouse_left_click">Left Click</string>
-    <string name="remote_mouse_right_click">Right Click</string>
-    <string name="cd_scroll_up">Scroll Up</string>
-    <string name="cd_scroll_down">Scroll Down</string>
+    <string name="remote_mouse_left_click">Left click</string>
+    <string name="remote_mouse_right_click">Right click</string>
+    <string name="cd_scroll_up">Scroll up</string>
+    <string name="cd_scroll_down">Scroll down</string>
     <string name="cd_keyboard">Keyboard</string>
 
     
@@ -162,7 +162,7 @@
     <string name="settings_tab_file_transfer">Files</string>
     <string name="settings_tab_help">Help</string>
     <string name="settings_help_title">Help</string>
-    <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
+    <string name="settings_replay_tutorial">Replay tutorial</string>
     <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough for setup, QR pairing, manual connection, and daily-use tips.</string>
     <string name="settings_faq_hint">Need help with pairing, permissions, file transfer, or remote desktop performance? Open FAQ from the More tab.</string>
 
@@ -219,7 +219,7 @@
 
     
     <string name="screen_remote_desktop_title">Desktop</string>
-    <string name="cd_show_keyboard">Show Keyboard</string>
+    <string name="cd_show_keyboard">Show keyboard</string>
     <string name="cd_key_escape">Esc (Escape)</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">Backspace</string>
@@ -242,28 +242,28 @@
     <string name="cd_more_keys">More keys</string>
     <string name="cd_show_pc_keys">Show PC keys</string>
     <string name="cd_move_pc_keys">Move PC keys bar</string>
-    <string name="cd_reset_input">Reset Input</string>
+    <string name="cd_reset_input">Reset input</string>
     <string name="cd_settings">Settings</string>
-    <string name="cd_enter_fullscreen">Enter Fullscreen</string>
+    <string name="cd_enter_fullscreen">Enter full screen</string>
     <string name="cd_stop">Stop</string>
     <string name="cd_remote_desktop_frame">Desktop stream</string>
     <string name="remote_desktop_unavailable">Remote desktop unavailable</string>
-    <string name="remote_desktop_waiting">Waiting for frames…</string>
-    <string name="remote_desktop_stopped">Stream Stopped</string>
-    <string name="button_start_streaming">Start Streaming</string>
-    <string name="cd_exit_fullscreen">Exit Fullscreen</string>
-    <string name="remote_desktop_config_title">Stream Configuration</string>
+    <string name="remote_desktop_waiting">Waiting for the picture…</string>
+    <string name="remote_desktop_stopped">Stream stopped</string>
+    <string name="button_start_streaming">Start streaming</string>
+    <string name="cd_exit_fullscreen">Exit full screen</string>
+    <string name="remote_desktop_config_title">Stream settings</string>
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
     <string name="remote_desktop_fps_unlimited_label">Target FPS: Unlimited</string>
-    <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
+    <string name="remote_desktop_direct_touch_label">Direct touch mode</string>
     <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
     <string name="remote_desktop_adaptive_scale_label">Adaptive scale</string>
     <string name="remote_desktop_adaptive_scale_desc">Let the PC lower the stream resolution to hold the frame rate. The picture may hitch briefly when it changes.</string>
-    <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
-    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_controls_hint_v2">Tap = Click • Long Press = Right Click • 2 Fingers = Scroll • Pen = Absolute</string>
+    <string name="remote_desktop_pointer_speed_label">Cursor speed: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical scroll sensitivity: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal scroll sensitivity: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Tap to click • Hold to right-click • Two fingers to scroll • A pen goes exactly where it touches</string>
     <string name="remote_desktop_section_stream">Stream</string>
     <string name="remote_desktop_section_input">Input &amp; Controls</string>
     <string name="remote_desktop_cursor_size_label">Cursor Size: %.1fx</string>
@@ -331,34 +331,34 @@
     <string name="connection_pc_status_connecting">Connecting…</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>
-    <string name="connection_discover_button">Discover Automatically</string>
-    <string name="connection_scan_qr_code">Scan QR Code</string>
+    <string name="connection_discover_button">Discover automatically</string>
+    <string name="connection_scan_qr_code">Scan QR code</string>
     <string name="connection_help_title">How to connect manually</string>
     <string name="connection_help_step1_title">Install RemEx PC on your PC</string>
     <string name="connection_help_step1_body">Install the RemEx app on the PC you want to control. Keep it running before you connect from your phone.</string>
     <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
     <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
     <string name="connection_help_step3_title">Find your PC\'s IP address</string>
-    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
+    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; connect</string>
     <string name="connection_help_step4_body">The default port is 5005. If this device is not paired yet, enter the 6-digit PIN shown by the PC to complete secure pairing.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for \"IPv4 Address\" under your Wi-Fi adapter.</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
-    <string name="connection_label_host">PC IP Address</string>
+    <string name="connection_label_host">PC IP address</string>
     <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
     <string name="connection_label_port">Port</string>
     <string name="connection_hint_port">Default: 5005</string>
-    <string name="connection_label_mac">MAC Address (Wake-on-LAN)</string>
+    <string name="connection_label_mac">MAC address (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
     <string name="connection_hint_mac">Required for Wake-on-LAN — find in Device Manager or ip link</string>
     <string name="connection_label_broadcast">Broadcast IP</string>
     <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
-    <string name="connection_label_subnet">Subnet Mask</string>
+    <string name="connection_label_subnet">Subnet mask</string>
     <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
-    <string name="connection_label_pairing_pin">Pairing PIN (6-digits)</string>
+    <string name="connection_label_pairing_pin">Pairing PIN (6 digits)</string>
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
-    <string name="button_save_connect">Save &amp; Connect</string>
+    <string name="button_save_connect">Save &amp; connect</string>
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
@@ -372,14 +372,14 @@
     <string name="connection_known_pc_unpair_message">This phone will forget this PC, at every address it answers on. You\'ll need the PIN shown on the PC to pair again.</string>
     <string name="connection_known_pc_needs_pairing">Needs pairing</string>
     <string name="pairing_needed_title">This PC needs pairing again</string>
-    <string name="pairing_needed_body">The PC answered, but it no longer knows this phone, so it won\'t share anything yet. Tap Pair, then scan the code from \'Pair a phone\' on the PC.</string>
+    <string name="pairing_needed_body">The PC answered, but it no longer knows this phone, so it won\'t share anything yet. Tap Pair, then scan the code from ‘Pair a phone’ on the PC.</string>
     <string name="connection_known_pc_forget">Remove from list</string>
     <string name="connection_known_pc_pair_title">Pair with %1$s?</string>
     <string name="connection_known_pc_pair_message">This phone isn\'t paired at this address. Enter the 6-digit PIN shown on the PC.</string>
     <string name="connection_known_pc_pair_confirm">Pair</string>
 
     
-    <string name="pairing_title">Security Pairing</string>
+    <string name="pairing_title">Secure pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_auto_pin_failed">Couldn\'t fetch the PIN automatically — enter the PIN shown on your PC.</string>
     <string name="pairing_submit">Pair</string>
@@ -387,11 +387,11 @@
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired. Enter the PIN now showing on your PC and try again.</string>
 
     
-    <string name="qr_scanner_title">Scan QR Code</string>
+    <string name="qr_scanner_title">Scan QR code</string>
     <string name="cd_back">Back</string>
     <string name="qr_scanner_hint">Point camera at the QR code shown on your PC</string>
     <string name="qr_scanner_permission_required">Camera permission is required to scan QR codes</string>
-    <string name="qr_scanner_grant_permission">Grant Permission</string>
+    <string name="qr_scanner_grant_permission">Grant permission</string>
 
     
     <string name="screen_faq_title">FAQ</string>
@@ -399,16 +399,16 @@
     <string name="about_android_client_label">Android Client</string>
     <string name="about_build_id">Build %1$s</string>
     <string name="about_pc_host_label">Your PC</string>
-    <string name="about_view_github">View Source on GitHub</string>
+    <string name="about_view_github">View source on GitHub</string>
     <string name="about_status_unknown">Unknown</string>
     <string name="about_github_star">Follow RemEx on GitHub</string>
     <string name="about_github_cat">Browse releases, report issues, and star the project if RemEx helps you.</string>
-    <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
-    <string name="about_whats_new_title">What\'s New in %1$s</string>
+    <string name="about_made_with">Made with ♥️ in Denver, Colorado</string>
+    <string name="about_whats_new_title">What\'s new in %1$s</string>
     <string name="about_whats_new_1_label">Routines</string>
     <string name="about_whats_new_1_body">Your phone can now act on its own when you get home or leave, tap an NFC tag, or a PC sensor passes a limit.</string>
     <string name="about_whats_new_2_label">Routines on your PC</string>
-    <string name="about_whats_new_2_body">Routines can also run on the PC itself, like sleeping it when it\'s idle. A countdown gives you time to stop a shut down or restart.</string>
+    <string name="about_whats_new_2_body">Routines can also run on the PC itself, like sleeping it when it\'s idle. A countdown gives you time to stop a shutdown or restart.</string>
     <string name="about_whats_new_3_label">A new phone layout</string>
     <string name="about_whats_new_3_body">The app now has five tabs. Home shows your PC and the same pinned sensors as the PC, and a long press edits the Sensors grid.</string>
     <string name="about_whats_new_4_label">One look on both apps</string>
@@ -417,22 +417,22 @@
     <string name="about_whats_new_5_body">Folder downloads, either way, no longer skip or repeat files. Files hides hidden and system items until you turn on Show hidden items.</string>
     <string name="about_whats_new_6_label">A new startup splash</string>
     <string name="about_whats_new_6_body">When RemEx opens, the splash now shows it really starting up and connecting, instead of playing a fixed animation.</string>
-    <string name="faq_header">Frequently Asked Questions</string>
+    <string name="faq_header">Frequently asked questions</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>
     <string name="faq_github_button">Open GitHub Releases</string>
 
     <string name="faq_q1">What do I need to run on my PC?</string>
-    <string name="faq_a1">You need remex.agent running on your PC (Windows or Linux). It\'s the only PC-side app — there is no separate desktop client. remex.agent combines the background host service and the \"RemEx\" UI in one process, starts automatically when you sign in, and listens on port 5005.\n\nIt\'s self-contained (all runtimes included) — just extract the release folder and run, or use the installer for your platform. Download from the GitHub releases page.</string>
+    <string name="faq_a1">You need the RemEx app running on your PC (Windows or Linux). It\'s the only app you install on the PC. It starts automatically when you sign in and waits for your phone on port 5005.\n\nEverything it needs is included. Use the installer for your platform from the GitHub releases page, or extract the release folder and run it.</string>
 
     <string name="faq_q2">How do I find my PC\'s IP address?</string>
     <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the RemEx window on your PC.</string>
 
     <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
-    <string name="faq_a3">1. Make sure remex.agent is actually running on your PC — look for the \"RemEx\" window or its tray icon.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. On Android 17+, ACCESS_LOCAL_NETWORK must also be granted. RemEx will prompt for these when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
+    <string name="faq_a3">1. Make sure the RemEx app is running on your PC: look for the RemEx window or its tray icon.\n2. Both devices must be on the same Wi-Fi network.\n3. RemEx needs the nearby devices permission, and on Android 17 and later also the local network permission. RemEx asks for these when you tap ‘Discover automatically’. If you said no, turn them on in Android Settings → Apps → RemEx → Permissions.\n4. Some routers have ‘AP Isolation’ or ‘Client Isolation’ turned on, which stops devices on the network from seeing each other. Check your router settings.\n5. Work and guest Wi-Fi networks often stop devices from finding each other. Try a personal or home network instead.</string>
 
     <string name="faq_q4">What is the default port?</string>
-    <string name="faq_a4">The default port is 5005. If that port is already in use, remex.agent first tries to reclaim it from a stale instance of itself; if that fails, it falls back to the next free port (5006, 5007 and so on, up to 5009). You can see the active port in the RemEx window.\n\nIf you changed the port on the PC side, make sure to enter the matching port in the Connection screen on this app.</string>
+    <string name="faq_a4">The default port is 5005. If that port is already in use, RemEx first checks whether an old copy of itself is holding it and takes it back; if that fails, it falls back to the next free port (5006, 5007 and so on, up to 5009). You can see the active port in the RemEx window.\n\nIf you changed the port on the PC side, make sure to enter the matching port in the Connection screen on this app.</string>
 
     <string name="faq_q5">How do I pair with my PC?</string>
     <string name="faq_a5">When you connect to a PC for the first time, you must enter the 6-digit PIN displayed on the PC. This creates a secure, encrypted bond between the devices. You won\'t need to enter the PIN again unless you reset the connection or reinstall the app.</string>
@@ -441,13 +441,13 @@
     <string name="faq_a6">Yes — securely, using Tailscale (recommended). Tailscale builds a private, end-to-end encrypted network between your devices (using WireGuard®), so this app can reach your PC from anywhere — cellular data, work Wi-Fi, a coffee shop — with no router setup and nothing exposed to the public internet.\n\nSee \'How do I set up secure remote access with Tailscale?\' further down for step-by-step instructions.\n\nNot recommended: you could instead open a port on your router and connect through your public IP, but that exposes your PC to the internet and is a real security risk. Use Tailscale (or another VPN such as WireGuard) instead.</string>
 
     <string name="faq_q7">The Desktop screen is laggy or not working. What can I do?</string>
-    <string name="faq_a7">• Lower the Quality slider in Desktop → Stream Configuration.\n• Reduce the Target FPS. It starts at 120, which is a ceiling rather than a promise: the PC sends fewer frames when your network or PC can\'t keep up. If the picture still stutters, 30–60 FPS is plenty for everyday use.\n• Lower the Scale to reduce the resolution being streamed.\n• On Windows, remex.agent automatically picks the fastest available capture backend — Windows.Graphics.Capture, falling back to DXGI Desktop Duplication, then GDI. On Linux, it captures via PipeWire through the XDG desktop portal (X11 or Wayland).\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
+    <string name="faq_a7">• Lower the Quality slider in Desktop → Stream settings.\n• Reduce the Target FPS. It starts at 120, which is a ceiling rather than a promise: the PC sends fewer frames when your network or PC can\'t keep up. If the picture still stutters, 30–60 FPS is plenty for everyday use.\n• Lower the Scale to reduce the resolution being streamed.\n• RemEx picks the fastest way to capture your PC\'s screen by itself, so there is nothing to change there.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
 
     <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
-    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a \"wake signal\" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on %1$s or the Commands screen.\n\nWaking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</string>
+    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a \"wake signal\" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Connect to your PC once while it is on. RemEx learns its MAC address then; you only need to type it in the Connection screen if RemEx couldn\'t get it from the PC.\n4. Use the ‘Wake PC’ card on %1$s or the Commands screen.\n\nWaking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</string>
 
     <string name="faq_q9">How do I customize the app\'s appearance?</string>
-    <string name="faq_a9">Open the More tab and tap Personalize (or Settings → Personalize).\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode\n• App language (independent of your system language)</string>
+    <string name="faq_a9">Open the More tab → Settings → Personalize.\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode\n• App language (independent of your system language)</string>
 
     <string name="faq_q10">Can I re-watch the tutorial?</string>
     <string name="faq_a10">Yes! Open the More tab → Settings → Help. There you\'ll find an option to replay the tutorial at any time.</string>
@@ -459,74 +459,74 @@
     <string name="faq_a12">Open the More tab → Files to browse Local (Phone) and Remote (PC) side by side, then use Upload ↑ / Download ↓ to move files between them.\n\nBoth sides only expose folders you\'ve explicitly shared:\n• On the PC: add a shared folder from the RemEx PC app\'s Files page.\n• On the phone: go to Settings → Files and add a folder — this lets the PC browse into that folder on your phone too.\n\nYou can pin folders as shortcuts, rename or delete files, and select multiple items at once. Transfers show live progress in a notification and continue in the background.</string>
 
     <string name="faq_q13">RemEx suddenly refuses to connect / asks me to re-pair. Why?</string>
-    <string name="faq_a13">The first time you pair, your phone remembers your PC\'s exact certificate fingerprint and will only ever trust that PC again. If the certificate changes — for example after reinstalling remex.agent, restoring the PC from backup, or moving to new hardware — your phone correctly refuses the connection instead of trusting an impostor.\n\nThis is expected security behavior, not a bug. To fix it, remove (unpair) the PC on the Connection screen, then pair again using the new 6-digit PIN shown on the PC.</string>
+    <string name="faq_a13">The first time you pair, your phone remembers your PC\'s exact certificate fingerprint and will only ever trust that PC again. If the certificate changes — for example after reinstalling RemEx on the PC, restoring the PC from backup, or moving to new hardware — your phone correctly refuses the connection instead of trusting an impostor.\n\nThis is expected security behavior, not a bug. To fix it, remove (unpair) the PC on the Connection screen, then pair again using the new 6-digit PIN shown on the PC.</string>
 
     
     <string name="screen_personalization_title">Personalize</string>
-    <string name="personalization_appearance_studio">Appearance Studio</string>
+    <string name="personalization_appearance_studio">Appearance studio</string>
     <string name="personalization_section_language">Language</string>
-    <string name="personalization_app_language">App Language</string>
+    <string name="personalization_app_language">App language</string>
     <string name="personalization_language_note">Changes the display language for this app and applies immediately. Some text may remain in English until translations are complete.</string>
-    <string name="personalization_system_default">System Default</string>
-    <string name="personalization_section_theme">Theme &amp; Strategy</string>
-    <string name="personalization_display_mode">Display Mode</string>
-    <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
-    <string name="personalization_section_color">Color Studio</string>
-    <string name="personalization_palette_mode">Palette Mode</string>
+    <string name="personalization_system_default">System default</string>
+    <string name="personalization_section_theme">Theme &amp; strategy</string>
+    <string name="personalization_display_mode">Base mode</string>
+    <string name="personalization_palette_strategy">Strategy</string>
+    <string name="personalization_section_color">Color studio</string>
+    <string name="personalization_palette_mode">Palette mode</string>
     <string name="personalization_dynamic_color">Dynamic color</string>
     <string name="personalization_dynamic_color_desc">Color the app from your wallpaper. Turn off to use the RemEx palette.</string>
     <string name="personalization_hue_label">Hue: %1$d°</string>
-    <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
+    <string name="personalization_chroma_label">Vibrancy: %1$d</string>
     <string name="personalization_contrast_label">Contrast: %1$s</string>
-    <string name="personalization_tonal_range">Tonal Range</string>
-    <string name="personalization_manual_hex">Manual Hex Code</string>
-    <string name="personalization_section_geometry">Expressive Geometry</string>
-    <string name="personalization_corner_base">Corner Base: %1$ddp</string>
-    <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
-    <string name="cd_card_opacity">Card Opacity</string>
+    <string name="personalization_tonal_range">Tonal range</string>
+    <string name="personalization_manual_hex">Seed</string>
+    <string name="personalization_section_geometry">Expressive geometry</string>
+    <string name="personalization_corner_base">Corner radius: %1$ddp</string>
+    <string name="personalization_card_opacity">Card opacity: %1$d%%</string>
+    <string name="cd_card_opacity">Card opacity</string>
     <string name="cd_percent_value">%1$d%%</string>
-    <string name="personalization_shape_telemetry">Telemetry Cards</string>
+    <string name="personalization_shape_telemetry">Sensor cards</string>
     <string name="personalization_shape_app_launcher">Apps</string>
     <string name="personalization_shape_remote_commands">Commands</string>
-    <string name="personalization_shape_remote_mouse">Remote Mouse</string>
+    <string name="personalization_shape_remote_mouse">Remote mouse</string>
     <string name="personalization_shape_task_manager">Processes</string>
     <string name="personalization_shape_remote_desktop">Desktop</string>
-    <string name="personalization_shape_pc_orb">PC Connection Orb</string>
+    <string name="personalization_shape_pc_orb">PC connection orb</string>
     <string name="personalization_shape_auto">Auto (per category)</string>
     <string name="personalization_shape_reset_default">Reset %1$s to the default shape</string>
     <string name="personalization_preview">Preview</string>
 
-    <string name="personalization_section_splash">Splash Animation</string>
-    <string name="personalization_splash_style">Splash Screen Animation</string>
+    <string name="personalization_section_splash">Splash animation</string>
+    <string name="personalization_splash_style">Splash screen animation</string>
     <string name="personalization_splash_original">Original Scan</string>
     <string name="personalization_splash_cosmic">Cosmic Zoom</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <string name="personalization_splash_live">Live Handshake</string>
-    <string name="personalization_splash_preview">Preview Animation</string>
+    <string name="personalization_splash_preview">Preview animation</string>
     <string name="personalization_splash_preview_close">Close preview</string>
 
     
-    <string name="widget_config_app_launcher_title">Configure Apps</string>
+    <string name="widget_config_app_launcher_title">Set up the Apps widget</string>
     <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>
     <string name="widget_config_no_apps">No apps available yet.</string>
     <string name="widget_config_no_apps_hint">Connect to your PC and sync apps first.</string>
-    <string name="widget_config_hardware_info_title">Configure Hardware Info</string>
+    <string name="widget_config_hardware_info_title">Set up the Sensors widget</string>
     <string name="widget_config_hardware_info_hint">Select the sensors to display on your widget:</string>
     <string name="widget_config_no_sensors">No sensors available yet.</string>
     <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
-    <string name="widget_config_remote_control_title">Configure Commands</string>
+    <string name="widget_config_remote_control_title">Set up the Commands widget</string>
     <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
-    <string name="tutorial_battery_title">Keep RemEx Running</string>
-    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can interrupt your remote session.\n\nTap \"Whitelist RemEx\" below to exempt the app from battery optimization and keep your connection stable.</string>
-    <string name="tutorial_battery_action">Whitelist RemEx</string>
+    <string name="tutorial_battery_title">Keep RemEx running</string>
+    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can drop your connection to the PC.\n\nTap ‘Let RemEx run in the background’ below so your connection stays steady.</string>
+    <string name="tutorial_battery_action">Let RemEx run in the background</string>
     <string name="tile_lock_label">Lock PC</string>
     <string name="tile_shutdown_label">Shutdown PC</string>
     <string name="tile_restart_label">Restart PC</string>
-    <string name="tile_restart_uefi_label">UEFI Settings</string>
+    <string name="tile_restart_uefi_label">Reboot to UEFI</string>
     <string name="tile_sleep_label">Sleep PC</string>
     <string name="tile_hibernate_label">Hibernate PC</string>
-    <string name="tile_monitor_off_label">Monitor Off</string>
-    <string name="tile_wol_label">Wake-on-LAN</string>
+    <string name="tile_monitor_off_label">Turn off monitor</string>
+    <string name="tile_wol_label">Wake PC</string>
     <string name="tile_confirm_title">Confirm action</string>
     <string name="tile_confirm_message">Send \"%1$s\" to your PC now?</string>
 
@@ -696,12 +696,12 @@
     <string name="widget_toast_command_sent">%1$s sent</string>
     <string name="widget_refresh">Refresh</string>
     <string name="widget_toast_refreshing">Refreshing…</string>
-    <string name="widget_toast_refreshed">Telemetry refreshed</string>
-    <string name="widget_toast_refresh_failed">Couldn\'t refresh telemetry</string>
+    <string name="widget_toast_refreshed">Sensor readings updated</string>
+    <string name="widget_toast_refresh_failed">Couldn\'t update sensor readings</string>
     <string name="widget_toast_connecting">Connecting to PC…</string>
     <string name="widget_config_poll_interval_label">Refresh every %1$d s</string>
-    <string name="widget_config_poll_interval_hint">How often the widget polls the PC for fresh telemetry while connected.</string>
-    <string name="widget_hardware_title">Hardware Info</string>
+    <string name="widget_config_poll_interval_hint">How often the widget asks the PC for new sensor readings while connected.</string>
+    <string name="widget_hardware_title">Sensors</string>
     <string name="sensor_cpu_usage">CPU Usage</string>
     <string name="sensor_gpu_usage">GPU Usage</string>
     <string name="sensor_ram_usage">RAM Usage</string>
@@ -711,9 +711,9 @@
     <string name="sensor_fallback_label">Sensor %1$d</string>
 
     
-    <string name="personalization_typography_studio">Typography Studio</string>
-    <string name="personalization_font_family">Font Family</string>
-    <string name="personalization_font_scale_format">Font Scale: %1$d%%</string>
+    <string name="personalization_typography_studio">Typography studio</string>
+    <string name="personalization_font_family">Font family</string>
+    <string name="personalization_font_scale_format">Font scale: %1$d%%</string>
     <string name="font_roboto">Roboto</string>
     <string name="font_lato">Lato</string>
     <string name="font_montserrat">Montserrat</string>
@@ -747,8 +747,8 @@
     <string name="file_transfer_uploading_single">Uploading %1$s…</string>
     <string name="file_transfer_downloading_single">Downloading %1$s…</string>
     <string name="file_transfer_upload_failed">Could not send the file. Check your PC is still connected, then try again.</string>
-    <string name="file_transfer_download_failed_integrity">Download failed: integrity check failed.</string>
-    <string name="file_transfer_download_failed_sha256">Download failed: SHA-256 mismatch</string>
+    <string name="file_transfer_download_failed_integrity">The downloaded file did not match what the PC sent, so it was deleted. Try downloading it again.</string>
+    <string name="file_transfer_download_failed_sha256">The downloaded file did not match what the PC sent, so it was deleted. Try downloading it again.</string>
     <string name="file_transfer_download_complete">Download complete.</string>
     <string name="file_transfer_upload_complete">Upload complete.</string>
     <string name="file_transfer_transfer_failed">The transfer did not finish. Check your PC is still connected, then try again.</string>
@@ -763,7 +763,7 @@
     <string name="file_transfer_file_fallback">File</string>
 
     <string name="task_manager_host_unresponsive">PC is not responding to process list requests. Check that pairing completed and the PC has permission to read process info.</string>
-    <string name="task_manager_kill_failed_format">Failed to kill process %1$d</string>
+    <string name="task_manager_kill_failed_format">Couldn\'t end process %1$d</string>
 
     <string name="rc_success_format">Success: %1$s</string>
     <string name="rc_failed_format">Failed: %1$s</string>
@@ -897,10 +897,10 @@
     <string name="faq_q15">Can I stop RemEx starting automatically on my PC?</string>
     <string name="faq_a15">Yes, but you change it on the PC, not on your phone.\n\nOn the PC, open RemEx, go to Settings and turn off \"Launch RemEx when you sign in\". RemEx stays installed and can still be started by hand, and switching it back on restores automatic startup.\n\nBehind that switch, Windows uses a Task Scheduler task named \"RemEx\" and Linux uses an autostart entry at ~/.config/autostart/remex-agent.desktop. If RemEx stops starting at sign-in, switch the setting off and back on to recreate it.\n\nRemember your phone can only reach the PC while RemEx is running, so with automatic startup off you will need to start it on the PC before connecting.</string>
     <string name="cd_hue">Hue</string>
-    <string name="cd_chroma">Vibrancy (Chroma)</string>
+    <string name="cd_chroma">Vibrancy</string>
     <string name="cd_contrast">Contrast</string>
     <string name="cd_font_scale">Font Scale</string>
-    <string name="cd_corner_radius">Corner Base</string>
+    <string name="cd_corner_radius">Corner radius</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
     <string name="task_manager_kill_err_access_denied">RemEx does not have permission to end that program. It may need to be started as an administrator on the PC.</string>
@@ -1616,7 +1616,10 @@
     <string name="home_pc_online">Online</string>
     <string name="home_pc_offline">Offline</string>
     <string name="home_pc_connecting">Connecting…</string>
-    <string name="home_pc_uptime">Up %1$dd %2$dh %3$dm</string>
+    <string name="home_pc_uptime">Up %1$s</string>
+    <string name="home_pc_uptime_days">%1$d d</string>
+    <string name="home_pc_uptime_hours">%1$d h</string>
+    <string name="home_pc_uptime_minutes">%1$d min</string>
     <string name="home_connect_body_none">Pair this phone with your PC to see it here.</string>
     <string name="home_connect_other">Other PCs</string>
     <string name="home_pinned_title">Pinned sensors</string>

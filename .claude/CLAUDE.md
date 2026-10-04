@@ -20,6 +20,11 @@ back, because that only happens when a tool regenerates them:
 - `remex.android` is the **only** network client (Kotlin + Compose + JNI → `libRemexCore.so`). The
   connection always runs Android → PC and is never loopback. Any loopback on the PC side is local UI
   plumbing, not a client.
+  - The PC may send read-only `file_*` requests (roots, browse, volumes, search, manifest, metadata,
+    thumbnail) and PC-started transfer offers DOWN a paired phone's existing session, so its File
+    Transfer screen can browse the phone (`PhoneFileRelay`, RemEx-xt0af). The direction is unchanged:
+    the phone still opens every socket, and no message type was added. Replies count only from a
+    proven, non-loopback session of the phone that was asked. See `docs/API_CONTRACTS.md` §3.
 - `remex.desktop/` holds PC-side UI code only (Views, ViewModels, Localization). It's compiled into
   `remex.agent` through a real `<ProjectReference>`, and the UI reaches host services in-process via DI
   (`EmbeddedHostServiceLocator`), not a socket.

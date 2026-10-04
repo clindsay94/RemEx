@@ -274,6 +274,47 @@ public class FileTransferQueueTests
         item.ErrorMessage.Should().NotBe("FileTransfer_ErrIntegrity");
     }
 
+    /// <summary>
+    /// The PC's own diagnosis of a transfer with a phone is worded from the resx, never its English
+    /// log detail (RemEx-xt0af).
+    /// </summary>
+    [Theory]
+    [InlineData(PhoneTransferProblem.Unknown)]
+    [InlineData(PhoneTransferProblem.PhoneStopped)]
+    [InlineData(PhoneTransferProblem.PhoneRefused)]
+    [InlineData(PhoneTransferProblem.FileTooLarge)]
+    [InlineData(PhoneTransferProblem.FileChanged)]
+    [InlineData(PhoneTransferProblem.NameNotAllowed)]
+    public async Task APhoneTransferDiagnosis_IsWordedFromItsResourceKey_NotItsLogDetail(PhoneTransferProblem problem)
+    {
+        const string LogDetail = "The phone stopped the transfer. (English, for the log)";
+        var failure = new PhoneTransferFailedException(problem, LogDetail);
+        var queue = NewQueue();
+        var item = queue.Enqueue(FileTransferQueueKind.Upload, "a.jpg", (_, _) => throw failure);
+
+        await item.Completion.Task;
+
+        item.ErrorMessage.Should().Be(LocalizationService.Instance[failure.ResourceKey]);
+        item.ErrorMessage.Should().NotBe(failure.ResourceKey, "the key must be defined in Strings.resx");
+        item.ErrorMessage.Should().NotBe(LogDetail);
+        item.ErrorMessage.Should().NotBe(
+            LocalizationService.Instance["FileTransfer_ErrSourceUnavailable"],
+            "the plain IOException arm must not swallow the more precise diagnosis");
+    }
+
+    [Fact]
+    public void EveryPhoneTransferProblem_HasItsOwnDefinedSentence()
+    {
+        var problems = Enum.GetValues<PhoneTransferProblem>();
+        problems.Should().NotBeEmpty();
+
+        foreach (var problem in problems)
+        {
+            var key = new PhoneTransferFailedException(problem).ResourceKey;
+            LocalizationService.Instance[key].Should().NotBe(key, $"{problem} names a key no resx defines");
+        }
+    }
+
     [Fact]
     public async Task Cancel_WhileQueued_NeverRunsWorkAndMarksCancelled()
     {

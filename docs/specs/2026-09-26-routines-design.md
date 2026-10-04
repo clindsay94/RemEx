@@ -127,7 +127,7 @@ Every "mirror this" claim below points at one of these.
 | `SendCommandAsync` is bounded (10 s send+reply) and returns immediately when disconnected. | `remex.core/Native/AndroidNativeExports.cs:~1811` comment; `TileCommand.kt:30-34` |
 | 11 shared power verbs: `SHUTDOWN FORCESHUTDOWN RESTART FORCERESTART RESTARTTOUEFI SLEEP HIBERNATE SIGNOUT LOCK MONITOROFF WAKEONLAN`. Delay parameter applies to the first five. | `remex.core/Services/Command/SharedCommandVerbs.cs:62-127`; `CommandVerbs.cs:39-51` |
 | 8338 dispatches only those 11 verbs, deliberately. | `remex.core/Services/Network/RemexNetworkListener.cs:42-51`; `SharedCommandVerbs.cs:25-29` |
-| `LAUNCHAPP` is allowlist-gated by exact full-path match and rejects UNC/mapped drives. | `remex.agent/Services/AppLauncherService.cs:20`, `:92-122`, `:131-146`; `PingPongHandler.cs:1229-1236` |
+| `LAUNCHAPP` is allowlist-gated by exact full-path match and rejects UNC/mapped drives. | `remex.agent/Services/AppLauncherService.cs:33`, `:108-138`, `:147-162`; `PingPongHandler.cs:1229-1236` |
 | Launcher allowlist entries have a stable `Guid Id`. Stored in `launchers.json`. | `remex.core/Models/AppEntry.cs:6-19`; `remex.core/Services/LauncherStorageService.cs:44` |
 | Sensor alerts: `SensorAlert{SensorName, Threshold, Direction, Severity}`; hysteresis in `SensorViewModel.IsAlertLive` (2% deadband); **no sustain duration** exists today; the tracker only rate-limits notifications (60 s). | `remex.core/Models/SensorAlert.cs:4-34`; `remex.desktop/ViewModels/SensorViewModel.cs:473-488`; `remex.desktop/Services/SensorAlertTracker.cs:19`, `:55` |
 | Telemetry samples at 1 Hz only while something holds demand; an armed alert is expected to hold it. | `remex.agent/Services/Telemetry/TelemetryBackgroundService.cs:122-132`, `:256-276` |
@@ -1525,7 +1525,7 @@ Deleting a routine invalidates its shortcut (`ShortcutManagerCompat.disableShort
 | `RoutineStore` | Load/validate/migrate `routines.json`, apply syncs, owner bookkeeping, PC overrides |
 | `RoutineRunStore` | History (§8.8), `seq` allocation, startup sweep marking `running` records `interrupted_pc` |
 | `RoutineNotifyQueue` | Persistent queue, expiry, ack |
-| `RoutineStepExecutor` | Executes `power` via `SharedCommandVerbs.TryExecuteAsync` (`SharedCommandVerbs.cs:62`), `launchApp` via `launchers.json` lookup + `IAppLauncherService.LaunchAppAsync` (`AppLauncherService.cs:20`), `media` via the same virtual-key path the phone's media buttons use (VK `0xB3/0xB0/0xB1`, translated on Linux by `LinuxInputEventTranslator.cs:246-249`), `notify(pc)` via `NotificationRouter`, `notify(phone)` via `routine_notify` |
+| `RoutineStepExecutor` | Executes `power` via `SharedCommandVerbs.TryExecuteAsync` (`SharedCommandVerbs.cs:62`), `launchApp` via `launchers.json` lookup + `IAppLauncherService.LaunchAppAsync` (`AppLauncherService.cs:33`), `media` via the same virtual-key path the phone's media buttons use (VK `0xB3/0xB0/0xB1`, translated on Linux by `LinuxInputEventTranslator.cs:246-249`), `notify(pc)` via `NotificationRouter`, `notify(phone)` via `routine_notify` |
 | `RoutineCountdownCoordinator` | §8.6 |
 | Trigger sources | `SensorTriggerSource`, `IdleTriggerSource`, `SessionTriggerSource` (§8.5) |
 | `RoutineRunNow` | PC page "Run now": after `ConfirmationDialogHost` confirms (destructive routines only; others start at once), starts a host run with `source = manual.pcRunNow` and the in-process flag `presenceConfirmed = true`, which skips the countdown (D3). No wire field maps to it |

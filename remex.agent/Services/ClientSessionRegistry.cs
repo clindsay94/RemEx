@@ -145,7 +145,62 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
         {
             entry.IdentityProven = identityProven;
             entry.Authenticated = true;
+
+            if (identityProven && entry.ClientId is { Length: > 0 } provenId)
+                RaiseProvenSessionChanged(provenId);
         }
+    }
+
+    /// <summary>
+    /// Raised with a client id whenever a session that PROVED that id starts or ends (RemEx-xt0af).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PROVEN SESSIONS ONLY, on the same rule as <see cref="Find"/>. A loopback or unpaired connection
+    /// that merely named a phone never raises this, so it cannot make the PC believe that phone came
+    /// or went — which is what the File Transfer screen's phone list and the relay's "the phone is
+    /// gone, fail what is in flight" both act on.
+    /// </para>
+    /// <para>
+    /// Raised AFTER the registry has changed, so a handler that asks <see cref="IsConnected"/> sees the
+    /// new state. A phone that redialled before its old session unwound raises this twice and stays
+    /// connected throughout; handlers must ask rather than assume which way it went.
+    /// </para>
+    /// </remarks>
+    public event Action<string>? ProvenSessionChanged;
+
+    private void RaiseProvenSessionChanged(string clientId)
+    {
+        var handlers = ProvenSessionChanged;
+        if (handlers is null) return;
+
+        // One subscriber throwing must not stop the others, and must never escape into a session's
+        // teardown path, which is where most of these are raised from.
+        foreach (var handler in handlers.GetInvocationList().Cast<Action<string>>())
+        {
+            try
+            {
+                handler(clientId);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                System.Diagnostics.Trace.TraceWarning($"A ProvenSessionChanged handler threw: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The control socket of a client's newest open, PROVEN session, or null (RemEx-xt0af).
+    /// </summary>
+    /// <remarks>
+    /// For the transfer engine, which negotiates a PC-started transfer on the same <c>/ws</c> socket the
+    /// phone's replies come back on. Same lookup as <see cref="TrySendAsync"/>: never a loopback
+    /// session, never one that has not proved the id.
+    /// </remarks>
+    public WebSocket? ControlSocketFor(string? clientId)
+    {
+        var entry = Find(clientId);
+        return entry is not null && entry.Socket.State == WebSocketState.Open ? entry.Socket : null;
     }
 
     /// <summary>Records whether a client can be asked for consent on its own screen (RemEx-220r).</summary>
@@ -345,6 +400,14 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
     {
         public Guid Id { get; } = id;
 
-        public void Dispose() => owner._sessions.TryRemove(Id, out _);
+        public void Dispose()
+        {
+            if (owner._sessions.TryRemove(Id, out var removed)
+                && removed.IdentityProven
+                && removed.ClientId is { Length: > 0 } provenId)
+            {
+                owner.RaiseProvenSessionChanged(provenId);
+            }
+        }
     }
 }

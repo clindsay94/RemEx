@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Logging;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Launching;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -513,11 +514,15 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// "reveal and select the file" — RemEx has no select-in-file-manager plumbing yet, and this
     /// bead scoped to opening the folder (RemEx-a8du).
     /// </summary>
+    /// <remarks>
+    /// On Windows the folder window goes through <see cref="UserLauncher"/>, so it opens with the
+    /// user's normal permissions rather than this elevated host's (RemEx-pp4cm.2). Linux is unchanged.
+    /// </remarks>
     internal static void LaunchFolder(string directory)
     {
         if (OperatingSystem.IsWindows())
         {
-            Process.Start(new ProcessStartInfo { FileName = directory, UseShellExecute = true });
+            UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<IUnelevatedLauncher>(), directory);
         }
         else if (OperatingSystem.IsLinux())
         {

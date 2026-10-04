@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -15,8 +16,8 @@
     <Border x:Name="PaletteSurface" CornerRadius="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="0,0,0,8" Opacity="0" RenderTransformOrigin="50%,0%" RenderTransform="scale(0.98)">
         <Border.Transitions>
             <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" />
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                <DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" />
             </Transitions>
         </Border.Transitions>
 
@@ -139,6 +140,15 @@
 
                          :selected is declared after :pointerover on purpose — same priority, so the
                          later one wins and a hovered selected row keeps the accent. -->
+                    <!-- The row fill eases between rest, hover and selected (RemEx-pp4cm.1) rather
+                         than snapping as the arrow keys move the selection. -->
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Transitions">
+                            <Transitions>
+                                <BrushTransition Property="Background" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}" />
+                            </Transitions>
+                        </Setter>
+                    </Style>
                     <Style Selector="ListBoxItem:pointerover">
                         <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}" />
                     </Style>

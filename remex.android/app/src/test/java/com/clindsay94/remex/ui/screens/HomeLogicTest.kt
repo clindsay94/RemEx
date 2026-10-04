@@ -36,6 +36,33 @@ class HomeLogicTest {
     }
 
     @Test
+    fun `uptime shows the two largest units and drops zeros`() {
+        val d = UptimeUnit.DAYS
+        val h = UptimeUnit.HOURS
+        val m = UptimeUnit.MINUTES
+        assertEquals(listOf(h to 3, m to 5), HomeLogic.uptimeParts(PcUptime(0, 3, 5)))
+        assertEquals(listOf(d to 2, h to 4), HomeLogic.uptimeParts(PcUptime(2, 4, 59)))
+        assertEquals(listOf(d to 2), HomeLogic.uptimeParts(PcUptime(2, 0, 5)))
+        assertEquals(listOf(h to 3), HomeLogic.uptimeParts(PcUptime(0, 3, 0)))
+        assertEquals(listOf(m to 7), HomeLogic.uptimeParts(PcUptime(0, 0, 7)))
+        assertEquals(listOf(m to 0), HomeLogic.uptimeParts(PcUptime(0, 0, 0)))
+    }
+
+    @Test
+    fun `the uptime line joins unit strings into one placeholder in every locale`() {
+        val res = java.io.File("src/main/res")
+        for (dir in listOf("values", "values-es", "values-fr", "values-hi", "values-in", "values-pl", "values-pt-rBR", "values-tr", "values-uk")) {
+            val xml = java.io.File(res, "$dir/strings.xml").readText(Charsets.UTF_8)
+            fun value(key: String) =
+                    Regex("""<string name="$key">(.*?)</string>""").find(xml)?.groupValues?.get(1)
+            assertEquals("$dir home_pc_uptime", 1, Regex("""%1\${'$'}s""").findAll(value("home_pc_uptime").orEmpty()).count())
+            for (key in listOf("home_pc_uptime_days", "home_pc_uptime_hours", "home_pc_uptime_minutes")) {
+                assertTrue("$dir $key", value(key)?.contains("%1\$d") == true)
+            }
+        }
+    }
+
+    @Test
     fun `uptimeText is read from the telemetry payload`() {
         assertEquals("1d 2h 3m", HomeLogic.uptimeTextOf("""{"sensors":[],"uptimeText":"1d 2h 3m"}"""))
         assertNull(HomeLogic.uptimeTextOf("""{"sensors":[]}"""))

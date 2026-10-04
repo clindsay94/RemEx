@@ -656,6 +656,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // decides (sweep D8).
         var updated = current with { IsReducedMotion = value, IsReducedMotionSet = true };
         _layoutService.RequestSave(updated);
+        // Live: every Motion easing reads this on its next frame, so no restart (RemEx-pp4cm.1).
+        Remex.Desktop.Styles.Motion.SetReducedMotion(value);
         OnPropertyChanged(nameof(SuppressPaletteTransitions));
         OnPropertyChanged(nameof(ShowPresencePulse));
     }
@@ -1025,6 +1027,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             storedProfile?.IsReducedMotion ?? false,
             storedProfile?.IsReducedMotionSet ?? false,
             hasChoice ? null : _osPrefersReducedMotion());
+        // Mirrored into the motion tokens, which every easing reads (RemEx-pp4cm.1).
+        Remex.Desktop.Styles.Motion.SetReducedMotion(_isReducedMotion);
 
         // Surface any layout load failure to the user via a dismissible banner.
         if (!string.IsNullOrEmpty(_layoutService.LoadFailureWarning))

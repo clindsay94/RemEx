@@ -35,7 +35,31 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 {
     private readonly ConnectionViewModel _connection;
     private readonly ILogger<FileTransferViewModel> _logger;
-    private readonly FileTransferClient _client;
+
+    /// <summary>The PC's own host, over the desktop's connection to it. Always there.</summary>
+    private readonly FileTransferClient _pcClient;
+
+    /// <summary>
+    /// Whichever source is selected: <see cref="_pcClient"/>, or a client over a phone connection
+    /// (RemEx-xt0af). Every browse, search, metadata and thumbnail call goes through this one field,
+    /// which is what lets the whole screen point at a phone without a second copy of its logic.
+    /// </summary>
+    private FileTransferClient _client;
+
+    /// <summary>Resolves the host's phone relay on every use; see the constructor.</summary>
+    private readonly Func<IPhoneFileAccess?> _resolvePhoneAccess;
+
+    /// <summary>Resolves the host's phone transfer engine on every use; see the constructor.</summary>
+    private readonly Func<IPhoneFileTransfers?> _resolvePhoneTransfers;
+
+    /// <summary>The relay this view model is subscribed to for phone arrivals and departures.</summary>
+    private IPhoneFileAccess? _subscribedPhoneAccess;
+
+    /// <summary>The live phone connection while a phone is the source; null for This PC.</summary>
+    private IPhoneFileConnection? _phoneConnection;
+
+    /// <summary>The client over <see cref="_phoneConnection"/>; owned and disposed with it.</summary>
+    private FileTransferClient? _phoneClient;
 
     // Server-ordered snapshot of the current folder; the display list is a sorted projection of this.
     private readonly List<FileEntry> _rawEntries = new();
@@ -72,10 +96,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         ILogger<FileTransferViewModel>? logger = null,
         ILogger<FileTransferQueue>? queueLogger = null,
         FileTransferQueue? transferQueue = null,
-        FileTransferClient? client = null)
+        FileTransferClient? client = null,
+        Func<IPhoneFileAccess?>? phoneAccess = null,
+        Func<IPhoneFileTransfers?>? phoneTransfers = null)
     {
         _connection = connection;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
+
+        // RESOLVED ON EVERY USE, NEVER CACHED (RemEx-xt0af). The host publishes its container after it
+        // starts and this view model can be built first; a cached null would hide every phone for the
+        // rest of the session — the mistake IClientSessionSource's remarks record from RemEx-n8xk.
+        // Tests pass their own fakes.
+        _resolvePhoneAccess = phoneAccess ?? EmbeddedHostServiceLocator.TryResolve<IPhoneFileAccess>;
+        _resolvePhoneTransfers = phoneTransfers ?? EmbeddedHostServiceLocator.TryResolve<IPhoneFileTransfers>;
 
         // THE SEAM THAT LETS THE CONFLICT FLOW BE TESTED AT ALL, and it is the join this repo's own
         // splitting rule insists on landing with the logic (AGENTS.md). FileTransferClient already
@@ -86,9 +119,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // The connector moves uploads to this PC's own host onto the binary /ws/files channel (perf
         // audit P1-5); any other host keeps the legacy path. Read lazily, so a changed host address
         // is picked up on the next upload.
-        _client = client ?? new FileTransferClient(
+        _pcClient = client ?? new FileTransferClient(
             connection,
             new LoopbackFileChannelConnector(() => connection.HostAddress, _logger));
+        _client = _pcClient;
+        Sources.Add(FileSourceOption.ThisPc);
+        _selectedSource = FileSourceOption.ThisPc;
 
         // SHARED WITH ShellViewModel WHEN SUPPLIED (RemEx-rjnbo.1). The Files-nav badge needs a live
         // transfer count before this view model has ever been built - it is lazily constructed on
@@ -182,11 +218,280 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     private void RefreshCapabilityFlags()
     {
-        SupportsCopyMove = _client.SupportsOp(FileManageOperations.Copy) && _client.SupportsOp(FileManageOperations.Move);
-        SupportsMkdir = _client.SupportsOp(FileManageOperations.Mkdir);
+        // A PHONE IS BROWSED, NOT MANAGED, FROM THE PC (RemEx-xt0af). The phone advertises copy, move
+        // and mkdir because it answers them for a phone-side UI; the PC's relay refuses to send them, so
+        // offering the buttons would only produce a refusal. Everything read-only is still gated on
+        // what the phone itself advertises.
+        SupportsCopyMove = !IsPhoneSource
+            && _client.SupportsOp(FileManageOperations.Copy) && _client.SupportsOp(FileManageOperations.Move);
+        SupportsMkdir = !IsPhoneSource && _client.SupportsOp(FileManageOperations.Mkdir);
         SupportsSearch = _client.SupportsV3 && _client.SupportsOp("search");
         SupportsFullBrowse = _client.SupportsFullBrowse;
         SupportsFolderTransfer = _client.SupportsV3 && _client.SupportsOp("manifest");
+        OnPropertyChanged(nameof(ShowVolumesButton));
+        LoadVolumesCommand.NotifyCanExecuteChanged();
+        ShowPropertiesCommand.NotifyCanExecuteChanged();
+    }
+
+    // ─── Source: This PC, or a paired phone (RemEx-xt0af) ─────────────────────
+
+    /// <summary>
+    /// Where the file list comes from: this PC's own shared folders, then every paired phone that is
+    /// connected right now.
+    /// </summary>
+    public ObservableCollection<FileSourceOption> Sources { get; } = new();
+
+    [ObservableProperty]
+    private FileSourceOption? _selectedSource;
+
+    /// <summary>True while a phone is the source. Hides everything that would change files on it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManageFiles))]
+    [NotifyPropertyChangedFor(nameof(ShowVolumesButton))]
+    private bool _isPhoneSource;
+
+    /// <summary>Rename, delete, copy, pin and the rest: offered for This PC only.</summary>
+    public bool CanManageFiles => !IsPhoneSource;
+
+    /// <summary>
+    /// The whole-device button is shown for a PHONE that has turned on whole-device browsing, and for
+    /// nothing else.
+    /// </summary>
+    /// <remarks>
+    /// THIS USED TO SHOW FOR THE PC ITSELF, AND COULD NEVER WORK THERE (RemEx-xt0af). It sent
+    /// <c>file_volumes_request</c> over the desktop's own loopback connection — asking this PC to list
+    /// this PC's drives — and the host refused it with "A paired client identity is required to browse
+    /// volumes", because a loopback connection never proves an identity (RemEx-4215). The person at
+    /// the PC already has File Explorer for their own drives; the button now means the phone's.
+    /// </remarks>
+    public bool ShowVolumesButton => IsPhoneSource && SupportsFullBrowse;
+
+    /// <summary>Whether the selected source can be talked to right now.</summary>
+    private bool IsSourceConnected => IsPhoneSource
+        ? _phoneConnection?.IsConnected == true
+        : _connection.IsConnected;
+
+    /// <summary>The selected phone's client id, or null for This PC.</summary>
+    private string? SelectedPhoneId => IsPhoneSource ? _phoneConnection?.ClientId : null;
+
+    partial void OnSelectedSourceChanged(FileSourceOption? oldValue, FileSourceOption? newValue)
+    {
+        if (_suppressSourceSwitch)
+            return;
+
+        if (newValue is null)
+        {
+            // The picker briefly reports nothing while its list is rebuilt; This PC is always there.
+            SelectedSource = Sources.FirstOrDefault() ?? FileSourceOption.ThisPc;
+            return;
+        }
+
+        if (oldValue is not null && newValue.SameSourceAs(oldValue))
+            return;
+
+        SwitchSource(newValue);
+    }
+
+    /// <summary>
+    /// Points the whole screen at <paramref name="source"/>: drops the old phone connection, opens the
+    /// new one, clears what was on screen, and lists the new source's folders.
+    /// </summary>
+    private void SwitchSource(FileSourceOption source)
+    {
+        ClosePhoneConnection();
+
+        if (source.ClientId is { } clientId)
+        {
+            var access = _resolvePhoneAccess();
+            try
+            {
+                if (access is null)
+                    throw new PhoneNotConnectedException();
+
+                var connection = access.Open(clientId);
+                _phoneConnection = connection;
+                _phoneClient = new FileTransferClient(connection);
+                _client = _phoneClient;
+                connection.Disconnected += OnPhoneDisconnected;
+                IsPhoneSource = true;
+            }
+            catch (PhoneNotConnectedException ex)
+            {
+                _logger.LogInformation(ex, "The chosen phone is not connected any more");
+                ReturnToThisPc();
+                SetStatus(() => LocalizationService.Instance["FileTransfer_PhoneNotConnected"]);
+                RefreshSources();
+                return;
+            }
+        }
+        else
+        {
+            _client = _pcClient;
+            IsPhoneSource = false;
+        }
+
+        ResetForNewSource();
+        StatusText = string.Empty;
+        _ = LoadRemoteRootsAsync();
+    }
+
+    /// <summary>Selects This PC without re-entering <see cref="SwitchSource"/> for a phone.</summary>
+    private void ReturnToThisPc()
+    {
+        ClosePhoneConnection();
+        _client = _pcClient;
+        IsPhoneSource = false;
+        ResetForNewSource();
+        if (SelectedSource?.ClientId is not null)
+        {
+            _suppressSourceSwitch = true;
+            try
+            {
+                SelectedSource = Sources.FirstOrDefault(s => s.ClientId is null) ?? FileSourceOption.ThisPc;
+            }
+            finally
+            {
+                _suppressSourceSwitch = false;
+            }
+        }
+    }
+
+    /// <summary>Clears everything the previous source put on screen.</summary>
+    private void ResetForNewSource()
+    {
+        EndConflictPrompt(FileConflictAction.Cancel);
+        ClearSearch();
+        CloseProperties();
+        _clipboard.Clear();
+        _clipboardRootId = null;
+        RemoteRoots.Clear();
+        SelectedRemoteRoot = null;
+        Volumes.Clear();
+        FullBrowseGranted = false;
+        OnPropertyChanged(nameof(HasVolumes));
+        SupportsCopyMove = false;
+        SupportsMkdir = false;
+        SupportsSearch = false;
+        SupportsFullBrowse = false;
+        SupportsFolderTransfer = false;
+        OnPropertyChanged(nameof(ShowVolumesButton));
+        NotifySourceDependentCommands();
+    }
+
+    private void ClosePhoneConnection()
+    {
+        if (_phoneConnection is { } connection)
+        {
+            connection.Disconnected -= OnPhoneDisconnected;
+            _phoneConnection = null;
+            _phoneClient?.Dispose();
+            _phoneClient = null;
+            connection.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Where phone arrivals and departures are handed to the UI thread. They are raised on the host's
+    /// session threads. A seam for the reason <c>CanvasDashboardViewModel.Dispatch</c> is one: a test
+    /// runs the posted work itself instead of depending on Avalonia's dispatcher.
+    /// </summary>
+    internal Action<Action> PostToUi { get; set; } = work => Dispatcher.UIThread.Post(work);
+
+    /// <summary>The phone being browsed went away: back to This PC, and say why.</summary>
+    private void OnPhoneDisconnected()
+    {
+        PostToUi(() =>
+        {
+            if (!IsPhoneSource)
+                return;
+
+            ReturnToThisPc();
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PhoneDisconnected"]);
+            RefreshSources();
+            _ = LoadRemoteRootsAsync();
+        });
+    }
+
+    private void OnPhoneAvailabilityChanged() => PostToUi(RefreshSources);
+
+    /// <summary>
+    /// Rebuilds the phone half of <see cref="Sources"/> from the host's current list, keeping the
+    /// selection when that phone is still there.
+    /// </summary>
+    internal void RefreshSources()
+    {
+        var access = _resolvePhoneAccess();
+        if (!ReferenceEquals(access, _subscribedPhoneAccess))
+        {
+            if (_subscribedPhoneAccess is not null)
+                _subscribedPhoneAccess.AvailabilityChanged -= OnPhoneAvailabilityChanged;
+            if (access is not null)
+                access.AvailabilityChanged += OnPhoneAvailabilityChanged;
+            _subscribedPhoneAccess = access;
+        }
+
+        var phones = access?.AvailablePhones() ?? [];
+        var wanted = new List<FileSourceOption> { FileSourceOption.ThisPc };
+        wanted.AddRange(phones
+            .OrderBy(phone => phone.DisplayName ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
+            .Select(phone => new FileSourceOption(phone.ClientId, phone.DisplayName)));
+
+        if (wanted.SequenceEqual(Sources))
+            return;
+
+        var selectedId = SelectedSource?.ClientId;
+        _suppressSourceSwitch = true;
+        try
+        {
+            Sources.Clear();
+            foreach (var option in wanted)
+                Sources.Add(option);
+            SelectedSource = Sources.FirstOrDefault(option => option.ClientId == selectedId) ?? Sources[0];
+        }
+        finally
+        {
+            _suppressSourceSwitch = false;
+        }
+
+        OnPropertyChanged(nameof(HasPhoneSources));
+
+        // The phone being browsed is no longer in the list: its Disconnected handler normally gets
+        // here first, but a phone that was UNPAIRED while connected is gone from the list too.
+        if (IsPhoneSource && SelectedSource?.ClientId is null)
+        {
+            ReturnToThisPc();
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PhoneDisconnected"]);
+            _ = LoadRemoteRootsAsync();
+        }
+    }
+
+    /// <summary>
+    /// Set while the selection is changed BY this view model — a list rebuild, or falling back to This
+    /// PC — so the change is not mistaken for the person picking a source.
+    /// </summary>
+    private bool _suppressSourceSwitch;
+
+    /// <summary>Whether any phone is listed, so the picker can explain itself when none is.</summary>
+    public bool HasPhoneSources => Sources.Count > 1;
+
+    private void NotifySourceDependentCommands()
+    {
+        UploadCommand.NotifyCanExecuteChanged();
+        UploadFolderCommand.NotifyCanExecuteChanged();
+        DownloadCommand.NotifyCanExecuteChanged();
+        DownloadFolderCommand.NotifyCanExecuteChanged();
+        VerifyHashCommand.NotifyCanExecuteChanged();
+        SearchCommand.NotifyCanExecuteChanged();
+        LoadVolumesCommand.NotifyCanExecuteChanged();
+        ShowPropertiesCommand.NotifyCanExecuteChanged();
+        DeleteRemoteCommand.NotifyCanExecuteChanged();
+        StartRenameCommand.NotifyCanExecuteChanged();
+        NewFolderCommand.NotifyCanExecuteChanged();
+        CopySelectionCommand.NotifyCanExecuteChanged();
+        CutSelectionCommand.NotifyCanExecuteChanged();
+        PasteCommand.NotifyCanExecuteChanged();
+        PinCurrentFolderCommand.NotifyCanExecuteChanged();
+        RemoveCurrentRootCommand.NotifyCanExecuteChanged();
     }
 
     // ─── Roots ────────────────────────────────────────────────────────────────
@@ -226,21 +531,29 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     private async Task InitializeAsync()
     {
-        if (_connection.IsConnected)
+        RefreshSources();
+        if (IsSourceConnected)
             await LoadRemoteRootsAsync();
     }
 
     [RelayCommand]
     private async Task LoadRemoteRootsAsync()
     {
-        if (!_connection.IsConnected)
+        // The reload button also refreshes the Source picker, so a phone that connected while this
+        // screen was open can be found without leaving it.
+        RefreshSources();
+
+        if (!IsSourceConnected)
             return;
 
+        var client = _client;
         try
         {
             IsLoading = true;
             StatusText = string.Empty;
-            var roots = await _client.ListRemoteRootsAsync(CancellationToken.None);
+            var roots = await client.ListRemoteRootsAsync(CancellationToken.None);
+            if (!ReferenceEquals(client, _client))
+                return; // The source changed while this was in flight; its answer is for a screen that is gone.
             RefreshCapabilityFlags();
             var previousRootId = SelectedRemoteRoot?.RootId;
             RemoteRoots.Clear();
@@ -252,17 +565,27 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ?? RemoteRoots.FirstOrDefault();
 
             if (SelectedRemoteRoot is null)
-                SetStatus(() => LocalizationService.Instance["FileTransfer_NoSharedFolders"]);
+            {
+                // A phone with nothing shared is the one case with a precise fix, and it is on the
+                // phone: say where (RemEx-xt0af).
+                SetStatus(() => LocalizationService.Instance[
+                    IsPhoneSource ? "FileTransfer_PhoneNoSharedFolders" : "FileTransfer_NoSharedFolders"]);
+            }
+        }
+        catch (Exception ex) when (IsPhoneSource && ReferenceEquals(client, _client))
+        {
+            _logger.LogWarning(ex, "Listing the phone's shared folders failed");
+            ShowPhoneFailure(ex);
         }
         catch (FileTransferHostException ex)
         {
-            _logger.LogWarning(ex, "Listing the phone's shared folders failed - the phone refused it");
-            // The phone answers these with copy a user can act on, so show it verbatim.
+            _logger.LogWarning(ex, "Listing the shared folders failed - the host refused it");
+            // The host answers these with copy a user can act on, so show it verbatim.
             StatusText = ex.HostMessage;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Listing the phone's shared folders failed");
+            _logger.LogWarning(ex, "Listing the shared folders failed");
             SetStatus(() => LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"]);
         }
         finally
@@ -353,7 +676,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Browsing the connected device failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_BrowseErrorFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_BrowseErrorFormat"]);
         }
         finally
         {
@@ -541,7 +867,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             await RunSearchAsync(SearchQuery, CancellationToken.None);
     }
 
-    private bool CanSearch() => SupportsSearch && _connection.IsConnected && SelectedRemoteRoot is not null;
+    private bool CanSearch() => SupportsSearch && IsSourceConnected && SelectedRemoteRoot is not null;
 
     private async Task RunSearchAsync(string query, CancellationToken ct)
     {
@@ -567,7 +893,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Searching the connected device failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_SearchFailedFormat"]);
+            if (IsPhoneSource)
+                ShowPhoneFailure(ex);
+            else
+                SetStatus(() => LocalizationService.Instance["FileTransfer_SearchFailedFormat"]);
         }
         finally
         {
@@ -720,7 +1049,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         EnqueueUploads(localPaths, kind);
     }
 
-    private bool CanUpload() => SelectedRemoteRoot is { IsWritable: true } && _connection.IsConnected;
+    private bool CanUpload() => SelectedRemoteRoot is { IsWritable: true } && IsSourceConnected;
+
+    /// <summary>
+    /// Folder upload needs mkdir on the destination, which a phone is not sent from the PC (RemEx-xt0af):
+    /// managing files on the phone is a separate decision. Individual files still upload.
+    /// </summary>
+    private bool CanUploadFolder() => !IsPhoneSource && CanUpload();
 
     /// <summary>Enqueues an upload of each local file into the current remote folder. Shared by the
     /// upload button and drag-drop from the desktop. The send-to-device button was removed with
@@ -735,6 +1070,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
 
         var targetFolder = RemotePath;
+        var client = _client;
+        var phoneId = SelectedPhoneId;
         foreach (var localPath in localPaths)
         {
             if (string.IsNullOrWhiteSpace(localPath) || !File.Exists(localPath))
@@ -742,8 +1079,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
             var fileName = Path.GetFileName(localPath);
             var remoteFile = CombineRemotePath(targetFolder, fileName);
-            var item = TransferQueue.Enqueue(kind, fileName, (progress, ct) =>
-                _client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct));
+            var remoteDirectory = ToRootRelative(targetFolder);
+
+            // A PHONE'S BYTES ARE MOVED BY THE HOST (RemEx-xt0af): they ride the phone's own file
+            // channel, which only the host can reach. The PC's own host keeps its existing path.
+            var item = TransferQueue.Enqueue(kind, fileName, (progress, ct) => phoneId is null
+                ? client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct)
+                : RequirePhoneTransfers().UploadAsync(phoneId, localPath, root.RootId, remoteDirectory, progress, ct));
 
             // Refresh the folder if the completed upload landed in the folder currently on screen.
             item.Completion.Task.ContinueWith(_ =>
@@ -792,10 +1134,31 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var root = SelectedRemoteRoot;
         var fileName = SelectedRemoteEntry.Name;
         var remoteFile = CombineRemotePath(RemotePath, fileName);
-        TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, (progress, ct) =>
-            _client.DownloadAsync(root.RootId, remoteFile, localFile!, progress, ct));
+        TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, DownloadWork(root.RootId, remoteFile, localFile!));
         SetStatus(() => LocalizationService.Instance["FileTransfer_QueuedForDownload"]);
     }
+
+    /// <summary>
+    /// The queue work for downloading one file from the CURRENT source, captured now so a later source
+    /// switch cannot redirect a transfer that was already queued (RemEx-xt0af).
+    /// </summary>
+    private Func<IProgress<TransferProgress>, CancellationToken, Task> DownloadWork(
+        string rootId, string remotePath, string localPath)
+    {
+        var client = _client;
+        var phoneId = SelectedPhoneId;
+        return (progress, ct) => phoneId is null
+            ? client.DownloadAsync(rootId, remotePath, localPath, progress, ct)
+            : RequirePhoneTransfers().DownloadAsync(phoneId, rootId, remotePath, localPath, progress, ct);
+    }
+
+    /// <summary>The host's phone transfer engine, or the phone-gone failure when there is none.</summary>
+    private IPhoneFileTransfers RequirePhoneTransfers() =>
+        _resolvePhoneTransfers() ?? throw new PhoneNotConnectedException();
+
+    /// <summary>A folder path from the breadcrumb form ("/a/b") to the root-relative form ("a/b").</summary>
+    private static string ToRootRelative(string remotePath) =>
+        remotePath is "/" or "\\" or "" ? string.Empty : remotePath.Replace('\\', '/').Trim('/');
 
     // ─── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
     //
@@ -874,25 +1237,27 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanDownloadFolder()
-        => SupportsFolderTransfer && SelectedRemoteEntry is { IsDirectory: true } && SelectedRemoteRoot is not null && _connection.IsConnected;
+        => SupportsFolderTransfer && SelectedRemoteEntry is { IsDirectory: true } && SelectedRemoteRoot is not null && IsSourceConnected;
 
     /// <summary>
     /// Creates the local directory shape and enqueues one download per file. Returns how many transfers
     /// were queued.
     /// </summary>
-    private int EnqueueSubtreeDownloads(FileSharedRoot root, RemoteSubtree subtree, string localRoot)
+    internal int EnqueueSubtreeDownloads(FileSharedRoot root, RemoteSubtree subtree, string localRoot)
     {
         // Directories are created up front, empty ones included. Leaving them to the file downloads
         // would quietly drop every empty folder — the one part of the shape no file can imply.
         foreach (var directory in subtree.Entries.Where(candidate => candidate.IsDirectory))
         {
-            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(directory));
-            if (relative is null)
+            if (!LocalDownloadPath.TryResolve(localRoot, subtree.ToDestinationRelative(directory), out var localDirectory)
+                || localDirectory is null)
+            {
                 continue;
+            }
 
             try
             {
-                Directory.CreateDirectory(Path.Combine(localRoot, relative));
+                Directory.CreateDirectory(localDirectory);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -904,11 +1269,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var queued = 0;
         foreach (var file in subtree.Files)
         {
-            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(file));
-            if (relative is null)
+            // THE REMOTE SIDE'S PATHS ARE INPUT, NOT TRUTH — and since RemEx-xt0af the remote side can
+            // be a phone. LocalDownloadPath refuses anything that would land outside localRoot.
+            if (!LocalDownloadPath.TryResolve(localRoot, subtree.ToDestinationRelative(file), out var localPath)
+                || localPath is null)
+            {
                 continue;
+            }
 
-            var localPath = Path.Combine(localRoot, relative);
             var parent = Path.GetDirectoryName(localPath);
             if (!string.IsNullOrEmpty(parent))
             {
@@ -922,9 +1290,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 }
             }
 
-            var remotePath = file.RelativePath;
-            TransferQueue.Enqueue(FileTransferQueueKind.Download, Path.GetFileName(localPath), (progress, ct) =>
-                _client.DownloadAsync(root.RootId, remotePath, localPath, progress, ct));
+            TransferQueue.Enqueue(
+                FileTransferQueueKind.Download, Path.GetFileName(localPath), DownloadWork(root.RootId, file.RelativePath, localPath));
             queued++;
         }
 
@@ -935,7 +1302,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// Uploads a local FOLDER into the current remote folder. No manifest is involved — the tree is
     /// right here, so the client walks it directly and enqueues the same per-file uploads.
     /// </summary>
-    [RelayCommand(CanExecute = nameof(CanUpload))]
+    [RelayCommand(CanExecute = nameof(CanUploadFolder))]
     private async Task UploadFolderAsync()
     {
         var root = SelectedRemoteRoot;
@@ -970,6 +1337,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// </summary>
     public async Task EnqueueFolderUploadAsync(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
     {
+        // A folder dropped onto a phone's folder: the folders would have to be made on the phone, and the
+        // PC does not manage files there (RemEx-xt0af). Said plainly rather than queueing files that fail.
+        if (IsPhoneSource)
+        {
+            SetStatus(() => LocalizationService.Instance["FileTransfer_PhoneFolderUploadUnavailable"]);
+            return;
+        }
+
         var root = SelectedRemoteRoot;
         if (root is not { IsWritable: true })
         {
@@ -1167,46 +1542,22 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             .ToList();
     }
 
-    /// <summary>
-    /// Turns a host-supplied subtree-relative path into one that is safe to combine with a local folder,
-    /// or null when it is not.
-    /// </summary>
-    /// <remarks>
-    /// <b>THE HOST'S PATHS ARE INPUT, NOT TRUTH.</b> A folder download is the one flow that takes remote
-    /// strings and writes to arbitrary local paths built from them, so <c>..</c>, a rooted path, or a
-    /// drive-qualified segment must be refused here rather than reaching <c>Path.Combine</c> —
-    /// which would happily let a rooted segment discard the destination folder entirely.
-    /// </remarks>
-    private static string? ToSafeLocalRelativePath(string subtreeRelative)
-    {
-        if (string.IsNullOrWhiteSpace(subtreeRelative))
-            return null;
-
-        var segments = subtreeRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length == 0)
-            return null;
-
-        foreach (var segment in segments)
-        {
-            if (segment is "." or "..")
-                return null;
-            if (Path.IsPathRooted(segment) || segment.Contains(':', StringComparison.Ordinal))
-                return null;
-            if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-                return null;
-        }
-
-        return Path.Combine(segments);
-    }
-
     /// <summary>Folder name usable as a local directory, falling back when the remote name is not.</summary>
-    private static string SanitizeLocalName(string name)
+    /// <remarks>
+    /// The remote name is input (RemEx-xt0af: it can come from a phone). Separators of BOTH platforms and
+    /// the drive colon are replaced, not just this platform's invalid characters, so a name cannot become
+    /// a path on either OS; a name that is only dots or spaces falls back.
+    /// </remarks>
+    internal static string SanitizeLocalName(string name)
     {
-        var cleaned = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).Trim(' ', '.');
-        return string.IsNullOrEmpty(cleaned) ? "folder" : cleaned;
+        var cleaned = string.Concat(name.Select(c =>
+            Path.GetInvalidFileNameChars().Contains(c) || c is '/' or '\\' or ':' ? '_' : c)).Trim(' ', '.');
+        if (cleaned.Length > LocalDownloadPath.MaxSegmentLength)
+            cleaned = cleaned[..LocalDownloadPath.MaxSegmentLength].TrimEnd(' ', '.');
+        return string.IsNullOrEmpty(cleaned) || LocalDownloadPath.ToSafeRelativePath(cleaned) is null ? "folder" : cleaned;
     }
 
-    private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && SelectedRemoteRoot is not null && _connection.IsConnected;
+    private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && SelectedRemoteRoot is not null && IsSourceConnected;
 
     // ─── Delete (single + multi) ────────────────────────────────────────────────
 
@@ -1273,7 +1624,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     private bool CanDeleteRemote()
     {
-        if (SelectedRemoteRoot is not { CanDelete: true }) return false;
+        if (IsPhoneSource || SelectedRemoteRoot is not { CanDelete: true }) return false;
         if (IsRenaming || IsCreatingFolder) return false;
         return EffectiveSelection().Count > 0;
     }
@@ -1639,7 +1990,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanStartRename() =>
-        SelectedRemoteEntry is { Name: not ".." }
+        !IsPhoneSource
+        && SelectedRemoteEntry is { Name: not ".." }
         && SelectedRemoteRoot is { CanRename: true }
         && !IsRenaming
         && !IsCreatingFolder;
@@ -1784,6 +2136,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             SelectedMetadata = await _client.GetMetadataRemoteAsync(SelectedRemoteRoot.RootId, relativePath, CancellationToken.None);
         }
+        catch (Exception ex) when (IsPhoneSource)
+        {
+            _logger.LogWarning(ex, "Loading item details from the phone failed");
+            ShowPhoneFailure(ex);
+        }
         catch (FileTransferHostException ex)
         {
             _logger.LogWarning(ex, "Loading item details from the phone failed - the phone refused it");
@@ -1812,7 +2169,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanShowProperties() =>
-        _client.SupportsV3 && SelectedRemoteEntry is { Name: not ".." } && SelectedRemoteRoot is not null && _connection.IsConnected;
+        _client.SupportsV3 && SelectedRemoteEntry is { Name: not ".." } && SelectedRemoteRoot is not null && IsSourceConnected;
+
+    /// <summary>
+    /// Words a failed phone request for the person at the PC (RemEx-xt0af). The phone's own settings
+    /// decide what it shares, so every refusal points there rather than at this PC.
+    /// </summary>
+    private void ShowPhoneFailure(Exception ex)
+    {
+        var key = ex switch
+        {
+            PhoneNotConnectedException => "FileTransfer_PhoneDisconnected",
+            _ when _phoneConnection?.IsConnected != true => "FileTransfer_PhoneDisconnected",
+            TimeoutException => "FileTransfer_PhoneNoAnswer",
+            _ => "FileTransfer_PhoneRefused",
+        };
+        SetStatus(() => LocalizationService.Instance[key]);
+    }
 
     [RelayCommand]
     private void CloseProperties()
@@ -1835,7 +2208,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [RelayCommand(CanExecute = nameof(CanLoadVolumes))]
     private async Task LoadVolumesAsync()
     {
-        if (!SupportsFullBrowse || !_connection.IsConnected)
+        if (!CanLoadVolumes())
             return;
 
         try
@@ -1852,6 +2225,13 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             // both and useful for only one: the peer being unreachable is the case with an action
             // attached, and it used to arrive as the same flat no.
             var outcome = VolumesResponseClassifier.Classify(granted, denyReason, errorMessage: null);
+
+            // BROWSABLE, NOT JUST LISTED (RemEx-xt0af). The phone exposes whole-device browsing as one
+            // storage folder the person picked; the phone's file host resolves it like any shared
+            // folder, so it joins the folder picker as a read-only entry.
+            if (outcome == VolumesOutcome.Granted)
+                AddVolumesAsRoots(volumes);
+
             var volumeCount = Volumes.Count;
             SetStatus(() => outcome switch
             {
@@ -1859,19 +2239,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                     LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], volumeCount),
                 VolumesOutcome.PeerUnreachable => LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"],
                 VolumesOutcome.HostPromptTimedOut => LocalizationService.Instance["FileTransfer_VolumesHostPromptTimedOut"],
-                _ => LocalizationService.Instance["FileTransfer_VolumesDenied"],
+                // The phone's own switch decides this, so the message says where it is.
+                _ => LocalizationService.Instance["FileTransfer_PhoneVolumesDenied"],
             });
-        }
-        catch (FileTransferHostException ex)
-        {
-            _logger.LogWarning(ex, "Listing the phone's drives failed - the phone refused it");
-            // The phone answers these with copy a user can act on, so show it verbatim.
-            StatusText = ex.HostMessage;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Listing the phone's drives failed");
-            SetStatus(() => LocalizationService.Instance["FileTransfer_VolumesFailedFormat"]);
+            _logger.LogWarning(ex, "Listing the phone's storage failed");
+            ShowPhoneFailure(ex);
         }
         finally
         {
@@ -1879,7 +2254,24 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
     }
 
-    private bool CanLoadVolumes() => SupportsFullBrowse && _connection.IsConnected;
+    private bool CanLoadVolumes() => ShowVolumesButton && IsSourceConnected;
+
+    /// <summary>Adds each whole-device volume to the folder picker as a read-only root, once.</summary>
+    private void AddVolumesAsRoots(IEnumerable<FileVolumeInfo> volumes)
+    {
+        foreach (var volume in volumes)
+        {
+            if (RemoteRoots.Any(root => string.Equals(root.RootId, volume.Id, StringComparison.Ordinal)))
+                continue;
+
+            RemoteRoots.Add(new FileSharedRoot
+            {
+                RootId = volume.Id,
+                DisplayName = volume.Label,
+                IsWritable = false,
+            });
+        }
+    }
 
     // ─── SHA-256 verification (kept from 2.0) ───────────────────────────────────────
 
@@ -1917,9 +2309,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanVerifyHash() =>
-        SelectedRemoteEntry is { IsDirectory: false }
+        !IsPhoneSource
+        && SelectedRemoteEntry is { IsDirectory: false }
         && SelectedRemoteRoot is not null
-        && _connection.IsConnected;
+        && IsSourceConnected;
 
     // ─── Root management (kept from 2.0) ─────────────────────────────────────────────
 
@@ -1954,7 +2347,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanPinCurrentFolder() =>
-        SelectedRemoteRoot is not null
+        !IsPhoneSource
+        && SelectedRemoteRoot is not null
         && RemotePath != "/" && RemotePath != "\\"
         && !IsRenaming;
 
@@ -1990,7 +2384,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanRemoveCurrentRoot() =>
-        SelectedRemoteRoot is { CanRemoveRoot: true }
+        !IsPhoneSource
+        && SelectedRemoteRoot is { CanRemoveRoot: true }
         && !IsRenaming;
 
     private void ReplaceRemoteRoots(IReadOnlyList<FileSharedRoot> roots)
@@ -2039,7 +2434,15 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // A paste parked on an unanswered collision would never resume, so its continuation — and
         // the IsLoading it restores — would be stranded for the life of the process.
         EndConflictPrompt(FileConflictAction.Cancel);
-        _client.Dispose();
+
+        if (_subscribedPhoneAccess is not null)
+        {
+            _subscribedPhoneAccess.AvailabilityChanged -= OnPhoneAvailabilityChanged;
+            _subscribedPhoneAccess = null;
+        }
+
+        ClosePhoneConnection();
+        _pcClient.Dispose();
     }
 
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -2060,11 +2463,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             // NOBODY IS LEFT TO ANSWER A COLLISION ONCE THE PHONE IS GONE. The retry would fail on a
             // dead socket anyway, and leaving the prompt up asks the user to choose between three
             // buttons that can no longer do anything.
-            if (!_connection.IsConnected)
+            if (!_connection.IsConnected && !IsPhoneSource)
                 EndConflictPrompt(FileConflictAction.Cancel);
 
-            if (_connection.IsConnected && RemoteRoots.Count == 0)
+            // The PC's own host coming back says nothing about a phone being browsed.
+            if (_connection.IsConnected && !IsPhoneSource && RemoteRoots.Count == 0)
                 _ = LoadRemoteRootsAsync();
+            else
+                RefreshSources();
         });
     }
 

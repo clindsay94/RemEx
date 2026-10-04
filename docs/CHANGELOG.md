@@ -13,6 +13,16 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
+  paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
+  details and thumbnails, download files and folders to the PC, and upload files into a phone folder
+  shared for writing. What the PC can see is exactly what you allow on the phone under **Access from
+  your PC**; the phone does not ask again, and the PC cannot rename, delete or move anything there. The
+  phone still makes every connection: the PC sends the phone's existing file requests down the phone's
+  own session, and no new message types were added (`docs/API_CONTRACTS.md` §3). A download into a
+  slow drive such as a USB stick or a network share is not reported as the phone stopping responding,
+  failures are worded in your language, and a name Windows would merge with another (one ending in a
+  dot or a space) is left out of a folder download instead of overwriting its twin. (RemEx-xt0af)
 - **The phone's Home tab is filled in.** The PC card shows your PC's name, whether it's online, how
   long it has been up, and Lock and Sleep (Sleep only when the PC can do it; Wake when it's off).
   Below it are your pinned sensors, an Open Sensors card, shortcuts to Desktop, Files and Routines, and
@@ -206,6 +216,20 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 - Phone screens slide in from the side, sensor readings roll up or down when they change, buttons
   change shape while pressed, and the Open Sensors card grows into the Sensors screen. All of it
   turns off with the system's "Remove animations" setting. (RemEx-wqo7a.7)
+- The phone app has Material 3 Expressive motion: buttons squeeze slightly while pressed, chips and
+  status pills fade between states, play/pause and pin icons swap smoothly, and your PCs slide into
+  their new order. With "Remove animations" on, loading indicators, progress waves and tutorial
+  animations stay still. (RemEx-wqo7a.8)
+- The phone gives a short vibration for switches, the contrast slider's -1, 0 and 1 stops,
+  long-presses, sent commands, pairing results and finished file transfers. Plain taps stay quiet,
+  and it follows your phone's touch feedback setting. (RemEx-wqo7a.8)
+- The PC app moves like the phone: pages slide in and settle, the tray menu eases up as it opens,
+  and new activity on Home fades in. (RemEx-pp4cm.1)
+- Buttons, cards and menus answer hover and clicks with short, smooth feedback. (RemEx-pp4cm.1)
+- Clicking quickly through the sidebar doesn't wait for the last page to finish settling. The next
+  page starts as soon as the old one is gone. (RemEx-pp4cm.1)
+- With Reduced motion on, every animation is instant, and the switch takes effect immediately.
+  (RemEx-pp4cm.1)
 - **The phone app has five tabs: Home, Desktop, Apps, Control and More.** Labels are one word and
   always shown. Home is new: for now it has the PC card (online status, or Connect and Wake when the
   PC is offline) and an Open Sensors card, with more to come. The Sensors canvas moved into More and
@@ -485,6 +509,9 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   needs pairing again and offer Pair, instead of showing the PC as online and spinning forever. A
   PC older than 3.0 is never flagged this way. (RemEx-wqo7a.7)
 - The phone tutorial's QR step names the PC's real "Pair a phone" button. (RemEx-wqo7a.7)
+- **The PC's whole-device button no longer shows a confusing error.** It asked the PC to list its own
+  drives and was refused with "A paired client identity is required to browse volumes". It now only
+  appears while you are browsing a phone that has full-device browsing turned on. (RemEx-xt0af)
 - The PC downloading a folder from the phone no longer skips or repeats files inside subfolders: the
   phone's folder listing pages the same way as the PC's (one shared cursor rule). (RemEx-pp4cm)
 - Large file transfers from older PCs no longer lose pieces when the phone is busy saving: file
@@ -586,6 +613,20 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   the base colour and Aurora looked like a flat black or white sheet. The radii are percentages
   now and the test refuses anything else. (RemEx-uil4h)
 
+### Security
+
+- Apps and links RemEx opens on your PC now run with your normal permissions instead of
+  administrator rights. That covers apps started from the phone, the Apps page or a routine, the
+  links on the Home and About pages, and the logs folder. Apps that need administrator rights still
+  start as before, and so does everything else if Windows' desktop isn't running yet. (RemEx-pp4cm.2)
+
+- **The phone only opens folders you share.** When the PC asks the phone for a file, the phone now
+  checks the folder against your current **Access from your PC** settings (so turning full-device
+  browsing off takes effect even if Android still remembers that folder) and refuses `.` and `..` in
+  paths. This covers the older transfer path too. A new name for a rename, a new folder, a copy or move
+  destination, or an uploaded file must be a plain name: `.`, `..`, slashes and similar are refused.
+  Replies to the PC's file requests are accepted only from the phone that was asked, while it is still
+  paired, never from a connection on the PC itself. (RemEx-xt0af)
 
 ## [2.5.0] — 2026-09-10
 

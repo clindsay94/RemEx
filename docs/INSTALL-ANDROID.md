@@ -51,8 +51,8 @@ or [LINUX_INSTALL.md](LINUX_INSTALL.md) for the full Linux walkthrough.
 2. Open the app on your phone. On a fresh install, a short first-run tutorial walks you through the
    basics; you can watch it again later. The in-app FAQ (the More tab on the phone, the About page
    on the PC) covers that under "Can I watch the tutorial again?".
-3. On the Connection screen, tap **Add a PC**, then **Discover Automatically** to find your PC on
-   the network. If it isn't found, scan the QR code the PC shows (**Scan QR Code**), or choose
+3. On the Connection screen, tap **Add a PC**, then **Discover automatically** to find your PC on
+   the network. If it isn't found, scan the QR code the PC shows (**Scan QR code**), or choose
    **Add manually** and type the address the PC's dashboard displays (FAQ: "How do I find my PC's IP
    address?", "Auto-discovery isn't finding my PC").
 4. Connect. The PC shows a **6-digit PIN** on its screen. Type that PIN into your phone within

@@ -93,7 +93,7 @@
     <value>Dosyalar</value>
   </data>
   <data name="Nav_RemoteDesktop" xml:space="preserve">
-    <value>Uzak Masaüstü</value>
+    <value>Uzak masaüstü</value>
   </data>
 
   
@@ -113,10 +113,10 @@
     <value>Gözat...</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Başlat</value>
+    <value>Başlat</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Durdur</value>
+    <value>Durdur</value>
   </data>
 
   
@@ -165,25 +165,25 @@
     <value>Ayarlar</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>← Ana Sayfa</value>
+    <value>Ana Sayfa'ya dön</value>
   </data>
   <data name="Settings_SaveChanges" xml:space="preserve">
-    <value>Değişiklikleri Kaydet</value>
+    <value>Değişiklikleri kaydet</value>
   </data>
   <data name="Settings_SavedStatus" xml:space="preserve">
-    <value>Ayarlar Kaydedildi!</value>
+    <value>Ayarlar kaydedildi</value>
   </data>
   <data name="Settings_Connection" xml:space="preserve">
     <value>Bağlantı</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
-    <value>Kılavuza Yapıştır</value>
+    <value>Kılavuza yapıştır</value>
   </data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve">
     <value>Kartlar bırakıldığında en yakın kılavuz çizgisine yapışır</value>
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
-    <value>Kılavuz Boyutu</value>
+    <value>Kılavuz boyutu</value>
   </data>
   <data name="Settings_PinnedSensors" xml:space="preserve">
     <value>Sabitlenmiş sensörler</value>
@@ -202,7 +202,7 @@
 
   
   <data name="TaskMgr_Header" xml:space="preserve">
-    <value>▤  İşlemler</value>
+    <value>İşlemler</value>
   </data>
   <data name="TaskMgr_Subheader" xml:space="preserve">
     <value>Bu bilgisayarda neler çalışıyor</value>
@@ -211,7 +211,7 @@
     <value>Ada veya PID'e göre ara...</value>
   </data>
   <data name="TaskMgr_KillProcess" xml:space="preserve">
-    <value>Süreci Sonlandır</value>
+    <value>Süreci sonlandır</value>
   </data>
   <data name="TaskMgr_SortName" xml:space="preserve">
     <value>Ad</value>
@@ -231,16 +231,16 @@
     <value>Telefonunuzun başlatabileceği programlar</value>
   </data>
   <data name="AppLauncher_AddProgram" xml:space="preserve">
-    <value>+ Program Ekle</value>
+    <value>Program ekle</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
     <value>Yapılandırılmış uygulama yok.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
-    <value>Sola Taşı</value>
+    <value>Sola taşı</value>
   </data>
   <data name="AppLauncher_MoveRight" xml:space="preserve">
-    <value>Sağa Taşı</value>
+    <value>Sağa taşı</value>
   </data>
   <data name="AppLauncher_Remove" xml:space="preserve">
     <value>Kaldır</value>
@@ -248,13 +248,13 @@
 
   
   <data name="AddProgram_Title" xml:space="preserve">
-    <value>Program Ekle</value>
+    <value>Program ekle</value>
   </data>
   <data name="AddProgram_Header" xml:space="preserve">
-    <value>Yeni Program Ekle</value>
+    <value>Yeni program ekle</value>
   </data>
   <data name="AddProgram_ExePath" xml:space="preserve">
-    <value>Yürütülebilir Yol</value>
+    <value>Program yolu</value>
   </data>
   <data name="AddProgram_DisplayName" xml:space="preserve">
     <value>Görünen Ad</value>
@@ -263,7 +263,7 @@
     <value>Vurgu Rengi (Hex)</value>
   </data>
   <data name="AddProgram_IconPreview" xml:space="preserve">
-    <value>Simge Önizleme</value>
+    <value>Simge önizleme</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
     <value>C:\Uygulama\Yolu\App.exe</value>
@@ -277,7 +277,7 @@
 
   
   <data name="TrayFlyout_Title" xml:space="preserve">
-    <value>Canlı Bakış</value>
+    <value>Sensörler</value>
   </data>
 
   
@@ -306,7 +306,7 @@
     <value>Yeni sensörler</value>
   </data>
   <data name="Canvas_AddCard" xml:space="preserve">
-    <value>+ Kart Ekle</value>
+    <value>Kart ekle</value>
   </data>
   <data name="Canvas_Save" xml:space="preserve">
     <value>Kaydet</value>
@@ -324,7 +324,7 @@
     <value>Bağlantıyı Kes</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
-    <value>⚡ Bağlan</value>
+    <value>Bağlan</value>
   </data>
 
   
@@ -344,10 +344,10 @@
     <value>Sınırsız</value>
   </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
-    <value>⚠ Akış Hatası</value>
+    <value>Akış hatası</value>
   </data>
   <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
-    <value>Uzak Masaüstü</value>
+    <value>Uzak masaüstü</value>
   </data>
   <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve">
     <value>Bağlanın ve yayına başlamak için Başlat'a basın.</value>
@@ -373,13 +373,13 @@
 
   
   <data name="Custom_CornerRadius" xml:space="preserve">
-    <value>Köşe Yarıçapı</value>
+    <value>Köşe yarıçapı</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
     <value>Kart opaklığı</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Pencere Opaklığı</value>
+    <value>Pencere opaklığı</value>
   </data>
   <data name="Custom_SectionFlyout" xml:space="preserve">
     <value>Tepsi açılır penceresi</value>
@@ -394,7 +394,7 @@
     <value>Kartlar</value>
   </data>
   <data name="Custom_FlyoutCards_NoPins" xml:space="preserve">
-    <value>Burada göstermek için tuvale bir sensör sabitleyin.</value>
+    <value>Burada göstermek için Sensörler sayfasında bir sensör sabitleyin.</value>
   </data>
   <data name="Custom_FlyoutButtons" xml:space="preserve">
     <value>Düğmeler</value>
@@ -406,13 +406,13 @@
     <value>Kısayol seçmek için Uygulamalar sayfasında uygulama ekleyin.</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
-    <value>Parlaklık Gücü</value>
+    <value>Parlaklık gücü</value>
   </data>
   <data name="Custom_BackgroundMode" xml:space="preserve">
-    <value>Arka Plan Modu</value>
+    <value>Arka plan modu</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Tema Varsayılanlarına Sıfırla</value>
+    <value>Tema varsayılanlarına sıfırla</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -477,10 +477,10 @@
     <value>Zoom: {0:F1}×</value>
   </data>
   <data name="Status_PadCompact" xml:space="preserve">
-    <value>Pad: Kompakt</value>
+    <value>Pad: kompakt</value>
   </data>
   <data name="Status_PadFull" xml:space="preserve">
-    <value>Pad: Tam</value>
+    <value>Pad: tam</value>
   </data>
   <data name="Status_PadCompactTooltip" xml:space="preserve">
     <value>Kompakt imleç pad etkinleştirildi</value>
@@ -592,7 +592,7 @@
 
   
   <data name="Wol_EnterMac" xml:space="preserve">
-    <value>⚠ Önce bir MAC adresi girin.</value>
+    <value>Önce bir MAC adresi girin.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
     <value>PC aracılığıyla sihirli paket gönderiliyor…</value>
@@ -601,13 +601,13 @@
     <value>Sihirli paket yerel olarak gönderiliyor…</value>
   </data>
   <data name="Wol_SentToFormat" xml:space="preserve">
-    <value>✅ Paket {0} adresine gönderildi</value>
+    <value>Uyandırma sinyali {0} adresine gönderildi</value>
   </data>
   <data name="Wol_SuccessFormat" xml:space="preserve">
-    <value>✅ {0}</value>
+    <value>{0}</value>
   </data>
   <data name="Wol_ErrorFormat" xml:space="preserve">
-    <value>❌ {0}</value>
+    <value>Bu işlem yapılamadı: {0}</value>
   </data>
   <data name="Wol_LockSent" xml:space="preserve">
     <value>Kilitleme gönderildi</value>
@@ -641,16 +641,16 @@
     <value>Başlarken</value>
   </data>
   <data name="Tutorial_Skip" xml:space="preserve">
-    <value>Atla ✕</value>
+    <value>Atla</value>
   </data>
   <data name="Tutorial_Back" xml:space="preserve">
-    <value>← Geri</value>
+    <value>Geri</value>
   </data>
   <data name="Tutorial_Next" xml:space="preserve">
     <value>İleri →</value>
   </data>
   <data name="Tutorial_Finish" xml:space="preserve">
-    <value>Başla ✓</value>
+    <value>Başla</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Bu eğitimi bir daha gösterme</value>
@@ -663,55 +663,55 @@
     <value>RemEx'e Hoş Geldiniz</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx, bilgisayarınızı güvenli bir uzaktan komuta merkezine dönüştürür. Telefonunuzdan donanım sensörlerini izleyebilir, uygulamalar açabilir, dosya ve süreçleri yönetebilir ve masaüstünüzü canlı izleyebilirsiniz.
+    <value>RemEx, bu bilgisayarı telefonunuzdan güvenle kontrol etmenizi sağlar. Donanım sensörlerini izleyebilir, uygulamalar açabilir, dosya ve süreçleri yönetebilir ve masaüstünüzü canlı izleyebilirsiniz.
 
 RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı TLS ve PIN ile eşleştirme koruması altındadır.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
-    <value>Nasıl Çalışır</value>
+    <value>Nasıl çalışır</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Bu masaüstü uygulaması, otomatik olarak başlayan gömülü bir RemEx PC içerir. Android telefonunuz ona bağlanır — tersi değil.</value>
+    <value>RemEx bu bilgisayarda çalışır ve otomatik olarak başlar. Android telefonunuz ona bağlanır — tersi değil.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
     <value>RemEx, bu bilgisayarda oturum açtığınızda kendiliğinden başlar — Windows'ta bir oturum açma görevi, Linux'ta bir otomatik başlatma girdisi ile. Böylece oturumunuz açık olduğu sürece telefonunuz bağlanabilir. Ekran kilitliyken sensör izleme ve güç komutları çalışmayı sürdürür, ancak masaüstünü canlı izlemek veya denetlemek için oturumun kilidinin açık olması gerekir. Bilgisayar kapalıysa veya oturum kapatılmışsa, Wake-on-LAN ile uyandırın ve önce oturum açın.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
-    <value>HWInfo Entegrasyonu (Önerilen)</value>
+    <value>HWiNFO (önerilen)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
     <value>Ayrıntılı donanım izleme (300+ sensör) için HWiNFO64 yükleyin — kişisel kullanım için ücretsizdir.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. hwinfo.com adresinden indirin
-2. HWInfo'yu çalıştırın → Settings (⚙) → Main Settings
+2. HWiNFO'yu çalıştırın → Settings → Main Settings
 3. 'Shared Memory Support' seçeneğini işaretleyin → OK
-4. RemEx'in sensörleri okuyabilmesi için HWInfo açık kalmalıdır</value>
+4. RemEx'in sensörleri okuyabilmesi için HWiNFO açık kalmalıdır</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ HWInfo'nun Paylaşılan Belleği 12 saat sonra otomatik olarak devre dışı bırakılır (ücretsiz sürüm). Periyodik olarak yeniden etkinleştirin veya Pro lisansını düşünün.</value>
+    <value>HWiNFO'nun Paylaşılan Belleği 12 saat sonra otomatik olarak devre dışı bırakılır (ücretsiz sürüm). Periyodik olarak yeniden etkinleştirin veya Pro lisansını düşünün.</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
-    <value>Sensör İzleme</value>
+    <value>Sensör izleme</value>
   </data>
   <data name="Tutorial_P5_Body1" xml:space="preserve">
     <value>RemEx iki telemetri kaynağını destekler:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ sensör — CPU sıcaklıkları, GPU saat hızları, fan hızları, voltajlar, güç tüketimi. HWInfo'nun çalışmasını gerektirir.</value>
+    <value>HWiNFO: 300+ sensör — CPU sıcaklıkları, GPU saat hızları, fan hızları, voltajlar, güç tüketimi. HWiNFO'nun çalışmasını gerektirir.</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 Yerleşik: Temel sensörler — CPU kullanımı, RAM, disk G/Ç, ağ hızları. Her zaman mevcuttur, ek yazılım gerektirmez.</value>
+    <value>Yerleşik: Temel sensörler — CPU kullanımı, RAM, disk G/Ç, ağ hızları. Her zaman mevcuttur, ek yazılım gerektirmez.</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
     <value>Favori sensörlerinizi Kişiselleştir → Düzen → Sabitlenmiş sensörler bölümünden Ana Sayfa'ya sabitleyin.</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
-    <value>Uygulamaları Ayarlama</value>
+    <value>Uygulamaları ayarlama</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
     <value>Uygulamalar sayfası, telefonunuzdan bilgisayarınızdaki programları başlatmanızı sağlar. Önce onları buraya ekleyin.</value>
@@ -727,7 +727,7 @@ RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı 
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
-    <value>Telefonunuzu Bağlama</value>
+    <value>Telefonunuzu bağlama</value>
   </data>
   <data name="Tutorial_P7_Body1" xml:space="preserve">
     <value>Android uygulamanız bu bilgisayarı mDNS kullanarak otomatik olarak bulur. Her iki cihaz da aynı Wi-Fi / LAN ağında olmalıdır.</value>
@@ -744,7 +744,7 @@ Linux: ip addr  veya  hostname -I</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Kodu ile Eşleştirme</value>
+    <value>QR kodu ile eşleştirme</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
     <value>Telefonunuzu bağlamanın en hızlı yolu bir QR kodu taramaktır. Bilgisayar, mobil uygulamanızın ihtiyaç duyduğu her şeyi içeren bir eşleştirme kodu oluşturur.</value>
@@ -753,14 +753,14 @@ Linux: ip addr  veya  hostname -I</value>
     <value>1. Bilgisayarda Ayarlar → Bağlantı bölümünü açın
 2. QR kodunu göstermek için "Telefon eşleştir" düğmesine tıklayın
 3. RemEx mobil uygulamasını açın
-4. Bağlantı ekranındaki QR tarayıcı simgesine dokunun
+4. Bağlantı ekranında "Bilgisayar ekle"ye, ardından "QR Kodunu Tara"ya dokunun
 5. Kamerayı koda doğrultun — bağlantı otomatik kurulur!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>Yazmak yok, IP adresi yok — sadece tarayın ve başlayın. Bağlantı bilgileri kaydedilir, bu yüzden yalnızca bir kez taramanız yeterlidir.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>Dosyalar ve Paylaşılan Klasörler</value>
+    <value>Dosyalar ve paylaşılan klasörler</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
     <value>Dosyalar yalnızca bu bilgisayarın paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için bunları bu bilgisayardaki Ayarlar'dan yapılandırın.</value>
@@ -800,7 +800,7 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="Home_QrCodeButton" xml:space="preserve">
-    <value>QR Kodu</value>
+    <value>QR kodu</value>
   </data>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Telefon eşleştir</value>
@@ -865,7 +865,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Yardım</value>
   </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
-    <value>📖 Öğreticiyi Tekrar İzle</value>
+    <value>Öğreticiyi tekrar izle</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Başlangıç öğreticisini yeniden izleyin</value>
@@ -877,10 +877,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Bu bilgisayardaki hangi klasörlerin Dosyalar'da görüneceğini seçin. Salt okunur klasörlerde gezinip indirme yapılabilir, yazılabilir klasörler ise telefonunuzdan yüklenen dosyaları da kabul eder.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
-    <value>+ Klasör Ekle</value>
+    <value>Klasör ekle</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
-    <value>Varsayılanları Geri Yükle</value>
+    <value>Varsayılanları geri yükle</value>
   </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Yüklemeye izin ver</value>
@@ -918,7 +918,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Telefonunuzun göz atabileceği ve dosya gönderebileceği klasörler</value>
   </data>
   <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
-    <value>Paylaşılan Klasör</value>
+    <value>Paylaşılan klasör</value>
   </data>
   <data name="FileTransfer_ReloadTooltip" xml:space="preserve">
     <value>Paylaşılan klasörleri yenile</value>
@@ -933,13 +933,13 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Geçerli klasörü yenile</value>
   </data>
   <data name="FileTransfer_UploadBtn" xml:space="preserve">
-    <value>Dosya Yükle</value>
+    <value>Dosya yükle</value>
   </data>
   <data name="FileTransfer_UploadTooltip" xml:space="preserve">
     <value>Yerel bir dosya seçin ve bu uzak klasöre yükleyin</value>
   </data>
   <data name="FileTransfer_DownloadBtn" xml:space="preserve">
-    <value>Seçileni İndir</value>
+    <value>Seçileni indir</value>
   </data>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Seçilen uzak dosyayı nereye kaydedeceğinizi seçin</value>
@@ -1010,7 +1010,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>{0} öğe silindi.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Tümünü Seç</value>
+    <value>Tümünü seç</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
     <value>Geçerli dizindeki tüm dosyaları ve klasörleri seç</value>
@@ -1135,7 +1135,7 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
-    <value>Tam Ekrandan Çık</value>
+    <value>Tam ekrandan çık</value>
   </data>
   <data name="RemoteDesktop_Host" xml:space="preserve">
     <value>PC:</value>
@@ -1150,7 +1150,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Kalem Modu: dokun = anında tıkla, sürükle = tıkla-ve-sürükle</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Yakınlaştırmayı Sıfırla</value>
+    <value>Yakınlaştırmayı sıfırla</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Kalem: bas = tıkla, yan düğme = sağ tıkla</value>
@@ -1165,10 +1165,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Kompakt imleç pedini aç/kapat</value>
   </data>
   <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
-    <value>İmleç Pedini Aç/Kapat</value>
+    <value>İmleç pedini göster veya gizle</value>
   </data>
   <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
-    <value>Tam Ekranı Aç/Kapat</value>
+    <value>Tam ekrana geç veya çık</value>
   </data>
   <data name="RemoteDesktop_TogglePen" xml:space="preserve">
     <value>Kalem</value>
@@ -1191,7 +1191,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>UEFI'ye Yeniden Başlat</value>
   </data>
   <data name="Canvas_TogglePinToHome" xml:space="preserve">
-    <value>Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
+    <value>Ana Sayfa'ya sabitle veya kaldır</value>
   </data>
 
   
@@ -1206,13 +1206,13 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Android Uygulaması → bağlanır → 🖥️ Your PC'a (bu makine)</value>
+    <value>Telefonunuz  →  bağlanır  →  bu bilgisayara</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Öğreticiyi atla — Ayarlar'dan tekrar izleyebilirsiniz</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Sözlük: Komut Paleti</value>
+    <value>Sözlük: Komut paleti</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
     <value>Ekranlara atlamak, hızlı eylemleri tetiklemek ve RemEx'te anında arama yapmak için Ctrl+K'ye basın.</value>
@@ -1230,10 +1230,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Bilgisayarda çalışan işlemleri inceleyin, kullanıma göre sıralayın ve takılan görevleri yerinizden kalkmadan sonlandırın.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Sözlük: Sensör Tuvali</value>
+    <value>Sözlük: Sensörler</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Sensörleri sabitleyerek, kartları yeniden boyutlandırarak ve serbest tuvalde düzenleyerek canlı bir telemetri duvarı oluşturun.</value>
+    <value>Sensörleri sabitleyerek, kartları yeniden boyutlandırarak ve Sensörler sayfasında serbestçe düzenleyerek canlı bir telemetri duvarı oluşturun.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
     <value>Sözlük: Dosyalar</value>
@@ -1242,7 +1242,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Yalnızca PC'nin paylaştığı klasörlere göz atın, yazılabilir konumlara yükleme yapın ve SHA-256 doğrulamasıyla dosya indirin.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Sözlük: Uzak Masaüstü</value>
+    <value>Sözlük: Uzak masaüstü</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
     <value>Netlik ile bant genişliği arasında denge kurabilmek için bilgisayar ekranınızı ayarlanabilir kalite, ölçek ve FPS ile aktarın.</value>
@@ -1273,16 +1273,16 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Adsız Uygulama</value>
+    <value>Adsız uygulama</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Uygulama Seç</value>
+    <value>Uygulama seç</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
     <value>Uygulamalar</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>Tüm Dosyalar</value>
+    <value>Tüm dosyalar</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
     <value>Bilinmeyen</value>
@@ -1311,7 +1311,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Açık kaynaklı ve ücretsiz. (lütfen bir yıldız verin, kedimi rehin aldılar!)</value>
   </data>
   <data name="About_ViewGitHub" xml:space="preserve">
-    <value>GitHub'da Kaynak Kodunu Görüntüle</value>
+    <value>GitHub'da kaynak kodunu görüntüle</value>
   </data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Denver, Colorado'da ❤️ ile yapıldı</value>
@@ -1319,46 +1319,46 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Kapat — Emin misiniz?</value>
+    <value>Bu bilgisayar kapatılsın mı?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
+    <value>Bu bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Kapat</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Yeniden Başlat — Emin misiniz?</value>
+    <value>Bu bilgisayar yeniden başlatılsın mı?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
+    <value>Bu bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Yeniden Başlat</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Zorla Kapat — Emin misiniz?</value>
+    <value>Bu bilgisayar zorla kapatılsın mı?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Bu, uzaktaki bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
+    <value>Bu, bu bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Zorla Kapat</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Zorla Yeniden Başlat — Emin misiniz?</value>
+    <value>Bu bilgisayar zorla yeniden başlatılsın mı?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Bu, uzaktaki bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
+    <value>Bu, bu bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Zorla Yeniden Başlat</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>UEFI'ye Yeniden Başlat — Emin misiniz?</value>
+    <value>Bu bilgisayar UEFI'ye yeniden başlatılsın mı?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
+    <value>Bu bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI'ye Yeniden Başlat</value>
@@ -1369,10 +1369,10 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Klavye Kısayolları</value>
+    <value>Klavye kısayolları</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Komut Paleti</value>
+    <value>Komut paleti</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
     <value>Düzen değişikliğini geri al</value>
@@ -1468,7 +1468,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Kalite kaydırıcısını düşürün.
-• Hedef FPS'yi azaltın — 15-20 genellikle yeterlidir.
+• Hedef FPS'yi azaltın. Telefon 120'den başlar; bu bir söz değil, bir üst sınırdır. Görüntü hâlâ takılıyorsa Wi-Fi'da 30–60 FPS yeterlidir.
 • Ölçeği düşürün.
 • Hızlı bir yerel ağ kullanın. 5 GHz Wi-Fi veya kablolu bağlantı en iyisidir — gecikmenin en yaygın nedeni budur.
 • Ekran yakalamayı ayarlamanıza gerek yok. RemEx, bilgisayarınızın desteklediği en hızlı yöntemi otomatik olarak seçer.</value>
@@ -1477,7 +1477,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Wake-on-LAN (WOL) nedir?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN, bilgisayarınızı uzaktan açmanızı sağlar. BIOS/UEFI'de ve ağ bağdaştırıcısı özelliklerinde etkinleştirin. Ardından Bağlantı ekranında bilgisayarınızın MAC adresini girin.&#xD;&#xA;&#xD;&#xA;Bilgisayarı uyandırmak, ona yeniden erişmekle aynı şey değildir. Wake-on-LAN makineyi açar ve makine oturum açma ekranında bekler; RemEx ancak biri bilgisayarda oturum açtığında başlar.</value>
+    <value>Wake-on-LAN, bilgisayarınızı uzaktan açmanızı sağlar. BIOS/UEFI'de ve ağ bağdaştırıcısı özelliklerinde etkinleştirin. Telefonunuz bağlandıktan sonra bu bilgisayarın MAC adresini genellikle kendisi öğrenir. Yalnızca eksikse telefondaki Bağlantı ekranına yazın.&#xD;&#xA;&#xD;&#xA;Bilgisayarı uyandırmak, ona yeniden erişmekle aynı şey değildir. Wake-on-LAN makineyi açar ve makine oturum açma ekranında bekler; RemEx ancak biri bilgisayarda oturum açtığında başlar.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Dosyaları nasıl aktarırım?</value>
@@ -1508,7 +1508,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Yinele</value>
   </data>
   <data name="Canvas_ResetView" xml:space="preserve">
-    <value>Görünümü Sıfırla</value>
+    <value>Görünümü sıfırla</value>
   </data>
   <data name="Canvas_Map" xml:space="preserve">
     <value>Harita</value>
@@ -1541,7 +1541,7 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Yoğun</value>
   </data>
   <data name="Custom_SplashScreen" xml:space="preserve">
-    <value>Açılış Ekranı</value>
+    <value>Açılış ekranı</value>
   </data>
   <data name="Custom_ReducedMotionTitle" xml:space="preserve">
     <value>Azaltılmış hareket</value>
@@ -1559,16 +1559,16 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Günlükler ve Tanılama</value>
   </data>
   <data name="Logs_LiveTab" xml:space="preserve">
-    <value>Canlı Uygulama Günlükleri</value>
+    <value>Canlı uygulama günlükleri</value>
   </data>
   <data name="Logs_VerbosityFilter" xml:space="preserve">
-    <value>Ayrıntı Filtresi:</value>
+    <value>Ayrıntı filtresi:</value>
   </data>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Yenile</value>
   </data>
   <data name="Logs_CopySelected" xml:space="preserve">
-    <value>Seçilenleri Kopyala</value>
+    <value>Seçilenleri kopyala</value>
   </data>
   <data name="Logs_CopyMessage" xml:space="preserve">
     <value>Mesajı kopyala</value>
@@ -1586,10 +1586,10 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Klasörü aç</value>
   </data>
   <data name="Logs_Clear" xml:space="preserve">
-    <value>Günlükleri Temizle</value>
+    <value>Günlükleri temizle</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Sistem Olay Günlükleri</value>
+    <value>Sistem olay günlükleri</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Windows Olay Görüntüleyicisi veya Linux systemd günlüğünden alınan en son olay günlüğü sorgusu.</value>
@@ -1615,7 +1615,7 @@ Bu normaldir — RemEx buraya yalnızca ciddi başlangıç sorunlarında yazar, 
 Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran masaüstlerinde beklenen bir durumdur — işletim sistemi çıktısını orada asla yakalamaz. Yukarıdaki {0} RemEx'in kendi kaydıdır ve her yerde çalışır.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Sistem Olay Günlüklerini Sorgula</value>
+    <value>Sistem olay günlüklerini sorgula</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Ekran</value>
@@ -1642,7 +1642,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Gezin</value>
   </data>
   <data name="Palette_SensorCanvas" xml:space="preserve">
-    <value>Sensör Tuvali</value>
+    <value>Sensörler</value>
   </data>
   <data name="Palette_RemoteControl" xml:space="preserve">
     <value>Komutlar</value>
@@ -1654,7 +1654,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>İşlemler</value>
   </data>
   <data name="Palette_RemoteDesktop" xml:space="preserve">
-    <value>Uzak Masaüstü</value>
+    <value>Uzak masaüstü</value>
   </data>
   <data name="Palette_FileTransfer" xml:space="preserve">
     <value>Dosyalar</value>
@@ -1663,28 +1663,28 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Ayarlar</value>
   </data>
   <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
-    <value>Ayarlar Panelini Aç/Kapat</value>
+    <value>Kişiselleştir panelini göster veya gizle</value>
   </data>
   <data name="PaletteCategory_Interface" xml:space="preserve">
     <value>Arayüz</value>
   </data>
   <data name="Palette_CloseSettingsPanel" xml:space="preserve">
-    <value>Ayarlar Panelini Kapat</value>
+    <value>Kişiselleştir panelini kapat</value>
   </data>
   <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
-    <value>Gezinti Çekmecesini Aç/Kapat</value>
+    <value>Kenar çubuğunu göster veya gizle</value>
   </data>
   <data name="Palette_UndoCanvasEdit" xml:space="preserve">
-    <value>Tuval Düzenlemesini Geri Al</value>
+    <value>Düzen değişikliğini geri al</value>
   </data>
   <data name="PaletteCategory_Canvas" xml:space="preserve">
     <value>Tuval</value>
   </data>
   <data name="Palette_RedoCanvasEdit" xml:space="preserve">
-    <value>Tuval Düzenlemesini Yeniden Yap</value>
+    <value>Düzen değişikliğini yinele</value>
   </data>
   <data name="Palette_DismissConnectionBanner" xml:space="preserve">
-    <value>Bağlantı Banner'ını Kapat</value>
+    <value>Bağlantı banner'ını kapat</value>
   </data>
   <data name="PaletteCategory_Status" xml:space="preserve">
     <value>Durum</value>
@@ -1738,34 +1738,34 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Bağlan</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>RemEx Masaüstü - Uzaktan Çalıştırma</value>
+    <value>RemEx</value>
   </data>
   <data name="Tray_TooltipFormat" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
-    <value>Komut Paleti</value>
+    <value>Komut paleti</value>
   </data>
   <data name="CommandPalette_SearchWatermark" xml:space="preserve">
     <value>Komutları ara…</value>
   </data>
   <data name="SetAlert_Title" xml:space="preserve">
-    <value>Sensör Uyarısı Ayarla</value>
+    <value>Sensör uyarısı ayarla</value>
   </data>
   <data name="SetAlert_Header" xml:space="preserve">
-    <value>Sensör Uyarısı</value>
+    <value>Sensör uyarısı</value>
   </data>
   <data name="SetAlert_ThresholdValue" xml:space="preserve">
-    <value>Eşik Değeri</value>
+    <value>Eşik değeri</value>
   </data>
   <data name="SetAlert_TriggerDirection" xml:space="preserve">
-    <value>Şu Değerde Tetikle:</value>
+    <value>Şu değerde tetikle:</value>
   </data>
   <data name="SetAlert_Severity" xml:space="preserve">
     <value>Önem Derecesi</value>
   </data>
   <data name="SetAlert_SetAlertBtn" xml:space="preserve">
-    <value>Uyarısı Ayarla</value>
+    <value>Uyarıyı ayarla</value>
   </data>
   <data name="Btn_Clear" xml:space="preserve">
     <value>Temizle</value>
@@ -1855,7 +1855,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Sensör uyarıları</value>
   </data>
   <data name="Settings_Alerts_Empty" xml:space="preserve">
-    <value>Yapılandırılmış uyarı yok. Bir tane ayarlamak için tuvaldeki bir sensör kartına sağ tıklayın.</value>
+    <value>Yapılandırılmış uyarı yok. Bir tane ayarlamak için Sensörler sayfasındaki bir sensör kartına sağ tıklayın.</value>
   </data>
   <data name="Settings_Alerts_Edit" xml:space="preserve">
     <value>Düzenle</value>
@@ -1915,7 +1915,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Yeniden Yap (Ctrl+Y)</value>
   </data>
   <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
-    <value>Minik Haritayı Aç/Kapat</value>
+    <value>Mini haritayı göster veya gizle</value>
   </data>
   <data name="Canvas_ExportPngTooltip" xml:space="preserve">
     <value>Tuvali Resimler klasörüne PNG olarak kaydet</value>
@@ -1951,16 +1951,16 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Mutlak piksel cinsinden kılavuz yerleşim artış sınırları</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
-    <value>Komut Paletini Aç (Ctrl+K)</value>
+    <value>Komut paletini aç (Ctrl+K)</value>
   </data>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
-    <value>Kenar Çubuğunu Aç/Kapat</value>
+    <value>Kenar çubuğunu göster veya gizle</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Kılavuzu tekrar görmek ister misiniz?</value>
   </data>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
-    <value>Ana Pencereyi Göster</value>
+    <value>Ana pencereyi göster</value>
   </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Çıkış</value>
@@ -1993,7 +1993,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Aktarımları aç</value>
   </data>
   <data name="Tray_Menu_PairDevice" xml:space="preserve">
-    <value>Bir cihaz eşleştir</value>
+    <value>Telefon eşleştir</value>
   </data>
   <data name="Tray_Menu_OpenLogsFolder" xml:space="preserve">
     <value>Günlük klasörünü aç</value>
@@ -2062,10 +2062,10 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>RemEx'in hatırladığı her şeyi —tuval düzeninizi, başlatıcı uygulamalarını, paylaşılan klasörleri ve temayı— tek bir dosyaya aktarın veya geri yüklemek için bir dosya içe aktarın. Eşleştirmeler ve sertifikalar asla dahil edilmez; geri yüklemeden sonra telefonunuzu yeniden eşleştirmeniz gerekir.</value>
   </data>
   <data name="Settings_ExportButton" xml:space="preserve">
-    <value>Ayarları Dışa Aktar</value>
+    <value>Ayarları dışa aktar</value>
   </data>
   <data name="Settings_ImportButton" xml:space="preserve">
-    <value>Ayarları İçe Aktar</value>
+    <value>Ayarları içe aktar</value>
   </data>
   <data name="Settings_ExportDone" xml:space="preserve">
     <value>Ayarlar dışa aktarıldı.</value>
@@ -2080,10 +2080,10 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Bu dosya geçerli bir RemEx kayıt dosyası değil.</value>
   </data>
   <data name="Settings_SavefileType" xml:space="preserve">
-    <value>RemEx Kayıt Dosyası</value>
+    <value>RemEx kayıt dosyası</value>
   </data>
   <data name="Restore_PromptTitle" xml:space="preserve">
-    <value>Önceki Ayarlar Geri Yüklensin mi?</value>
+    <value>Önceki ayarlar geri yüklensin mi?</value>
   </data>
   <data name="Restore_PromptMessage" xml:space="preserve">
     <value>{0} tarihli otomatik bir yedek bulduk. Tuval düzeninizi, başlatıcı uygulamalarınızı ve ayarlarınızı bundan geri yüklemek ister misiniz?</value>
@@ -2092,7 +2092,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Geri Yükle</value>
   </data>
   <data name="Restore_Skip" xml:space="preserve">
-    <value>Sıfırdan Başla</value>
+    <value>Sıfırdan başla</value>
   </data>
   <data name="AppLauncher_Sort" xml:space="preserve">
     <value>Sırala</value>
@@ -2110,14 +2110,14 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Arama etkinken sürükleyerek yeniden sıralama devre dışıdır. Bunun yerine ok düğmelerini kullanın.</value>
   </data>
   <data name="AddProgram_EditTitle" xml:space="preserve">
-    <value>Programı Düzenle</value>
+    <value>Programı düzenle</value>
   </data>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
-    <value>Simgeyi Yenile</value>
+    <value>Simgeyi yenile</value>
   </data>
 
   <data name="FileConsent_WindowTitle" xml:space="preserve">
-    <value>İzin İsteği</value>
+    <value>İzin isteği</value>
   </data>
   <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
     <value>Tam cihaz gezintisine izin verilsin mi?</value>
@@ -2139,7 +2139,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Ana Sayfa</value>
   </data>
   <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
-    <value>Yeni Klasör</value>
+    <value>Yeni klasör</value>
   </data>
   <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
     <value>Burada yeni bir klasör oluşturun.</value>
@@ -2429,7 +2429,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Sinyal Pong</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
-    <value>Yazılım Güncellemesi</value>
+    <value>Yazılım güncellemesi</value>
   </data>
   <data name="About_Update_Checking" xml:space="preserve">
     <value>Güncellemeler denetleniyor…</value>
@@ -2510,13 +2510,13 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Çift metrik</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
-    <value>İkinci Metrik</value>
+    <value>İkinci metrik</value>
   </data>
   <data name="Canvas_SelectedCountFormat" xml:space="preserve">
     <value>{0} seçili</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
-    <value>İçerik Yazı Tipi</value>
+    <value>İçerik yazı tipi</value>
   </data>
   <data name="Custom_ContentFontTip" xml:space="preserve">
     <value>Gövde ve içerik metni için yazı tipi — açıklamalar, etiketler ve Sensörler sayfası. Sabit genişlikli veri göstergeleri eş aralıklı yazı tiplerini korur.</value>
@@ -2525,7 +2525,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Bu yazı tipi bu bilgisayarda yüklenemedi ve yüklü olmayabilir: {0}. Bunun yerine varsayılan yazı tipi kullanılıyor.</value>
   </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
-    <value>Sayfa Başlığı Yazı Tipi</value>
+    <value>Sayfa başlığı yazı tipi</value>
   </data>
   <data name="Custom_PageTitleFontTip" xml:space="preserve">
     <value>Büyük sayfa başlıkları için yazı tipi. Uygulamanın görüntü yazı tiplerini ve bu sistem üzerinde yüklü olan yazı tiplerini içerir.</value>
@@ -2561,7 +2561,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Google Play'den Android için RemEx indirin.</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
-    <value>Hakkında ve Yardım</value>
+    <value>Hakkında ve yardım</value>
   </data>
   <data name="Home_QsApps" xml:space="preserve">
     <value>Uygulamalar</value>
@@ -2630,7 +2630,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Kapsam:</value>
   </data>
   <data name="Logs_ExportTitle" xml:space="preserve">
-    <value>Günlükleri Dışa Aktar</value>
+    <value>Günlükleri dışa aktar</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
     <value>Ön Ayar:</value>
@@ -2639,22 +2639,22 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Tümü</value>
   </data>
   <data name="Logs_PresetConnection" xml:space="preserve">
-    <value>Bağlantı ve Eşleştirme</value>
+    <value>Bağlantı ve eşleştirme</value>
   </data>
   <data name="Logs_PresetErrors" xml:space="preserve">
-    <value>Hatalar ve Uyarılar</value>
+    <value>Hatalar ve uyarılar</value>
   </data>
   <data name="Logs_PresetFileTransfer" xml:space="preserve">
     <value>Dosya aktarımları</value>
   </data>
   <data name="Logs_PresetInput" xml:space="preserve">
-    <value>Giriş ve Komutlar</value>
+    <value>Giriş ve komutlar</value>
   </data>
   <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
-    <value>Uzak Masaüstü</value>
+    <value>Uzak masaüstü</value>
   </data>
   <data name="Logs_PresetStartup" xml:space="preserve">
-    <value>Başlangıç ve Yükseltme</value>
+    <value>Başlangıç ve yükseltme</value>
   </data>
   <data name="Logs_ScopeCurrentView" xml:space="preserve">
     <value>Geçerli görünüm</value>
@@ -2684,7 +2684,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Wake-on-LAN, telefonunuzun bu bilgisayarı ağ üzerinden uzaktan açmasını sağlar — hatta uyku veya tamamen kapalı olduğu zaman bile. "Sihirli paket" adlı küçük bir paket göndererek bu bilgisayara açılması talimatını verir.</value>
   </data>
   <data name="Remote_WakeInstruction" xml:space="preserve">
-    <value>Kurulum için: telefonunuzda RemEx uygulamasını açın, Ayarlar → Wake-on-LAN'a gidin ve yukarıdaki adresi girin. Telefonunuz daha sonra aynı ağdayken bu bilgisayarı istediği zaman uyandırabilir.</value>
+    <value>Telefonunuz bağlandıktan sonra bu adresi genellikle kendisi alır. Eksikse telefonunuzda RemEx uygulamasını açın, Bağlantı ekranına gidin, bu bilgisayarın kartını açın, Bağlantı ayrıntılarını düzenle'ye dokunun ve yukarıdaki adresi girin. Telefonunuz daha sonra aynı ağdayken bu bilgisayarı istediği zaman uyandırabilir.</value>
   </data>
   <data name="Remote_WakeTitle" xml:space="preserve">
     <value>Bu bilgisayarı telefonunuzdan uyandırın</value>
@@ -2699,10 +2699,10 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Ayarla</value>
   </data>
   <data name="SecondMetric_Title" xml:space="preserve">
-    <value>İkinci Metriği Seçin</value>
+    <value>İkinci metriği seçin</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Sil — Emin misiniz?</value>
+    <value>Kalıcı olarak silinsin mi?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>"{0}" kalıcı olarak silinecek. Bu işlem geri alınamaz.</value>
@@ -2773,25 +2773,25 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>Tanılama günlüğü temizlensin mi? Burada listelenen kayıtlar silinir. Diske daha önce yazılmış günlük dosyaları etkilenmez.</value>
   </data>
   <data name="Confirm_KillProcess_Title" xml:space="preserve">
-    <value>Süreci Sonlandır — Emin misiniz?</value>
+    <value>Bu süreç sonlandırılsın mı?</value>
   </data>
   <data name="Confirm_RemoveApp_Title" xml:space="preserve">
-    <value>Programı Kaldır — Emin misiniz?</value>
+    <value>Bu program kaldırılsın mı?</value>
   </data>
   <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
     <value>Kaldır</value>
   </data>
   <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
-    <value>Paylaşımı Durdur — Emin misiniz?</value>
+    <value>Bu klasörün paylaşımı durdurulsun mu?</value>
   </data>
   <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
-    <value>Erişimi İptal Et — Emin misiniz?</value>
+    <value>Dosya erişimi iptal edilsin mi?</value>
   </data>
   <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
-    <value>Varsayılanları Geri Yükle — Emin misiniz?</value>
+    <value>Varsayılan klasörler geri yüklensin mi?</value>
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
-    <value>Günlükleri Temizle — Emin misiniz?</value>
+    <value>Günlük temizlensin mi?</value>
   </data>
   <data name="TaskMgr_PidFormat" xml:space="preserve">
     <value>PID: {0}</value>
@@ -2887,13 +2887,13 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>"{0}" (PID {1}) siz karar verirken kapandı, bu yüzden hiçbir şey sonlandırılmadı. O PID artık başka bir programa ait olabilir. Liste yenilendi — programı yeniden bulup tekrar deneyin.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
-    <value>Oturumu Kapat — Emin misiniz?</value>
+    <value>Bu bilgisayarda oturum kapatılsın mı?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayarda açık olan her şey kapatılacak ve kaydedilmemiş çalışmalar kaybolacak. Bilgisayar açık kalır, ancak RemEx bağlantısı kesilir ve siz bilgisayarda yeniden oturum açmadıkça ona yeniden ulaşamaz.</value>
+    <value>Bu bilgisayarda açık olan her şey kapatılacak ve kaydedilmemiş çalışmalar kaybolacak. Bilgisayar açık kalır, ancak RemEx bağlantısı kesilir ve siz bilgisayarda yeniden oturum açmadıkça ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
-    <value>Oturumu Kapat</value>
+    <value>Oturumu kapat</value>
   </data>
   <data name="Status_FailedGeneratePin" xml:space="preserve">
     <value>Eşleştirme PIN'i oluşturulamadı</value>
@@ -2992,7 +2992,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>Eğitimi tekrar izleyebilir miyim?</value>
   </data>
   <data name="Faq_Q16_Answer" xml:space="preserve">
-    <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Eğitimi Yeniden Oynat" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
+    <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Öğreticiyi tekrar izle" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
   </data>
   <data name="Faq_Q17_Question" xml:space="preserve">
     <value>Rutinler nedir?</value>
@@ -3325,7 +3325,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>JSON içe aktar</value>
   </data>
   <data name="Custom_PaletteFileType" xml:space="preserve">
-    <value>RemEx Paleti</value>
+    <value>RemEx paleti</value>
   </data>
   <data name="Notification_PaletteCopied_Title" xml:space="preserve">
     <value>Palet kopyalandı</value>
@@ -3928,7 +3928,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>Bu bilgisayarda henüz çalışan rutin yok</value>
   </data>
   <data name="Routines_Empty_Body" xml:space="preserve">
-    <value>Rutinler telefonunuzdaki RemEx uygulamasında, Rutinler bölümünde oluşturulur. Bu bilgisayarda çalışanlar burada görünür.</value>
+    <value>Rutinler telefonunuzdaki RemEx uygulamasında, Diğer ve ardından Rutinler bölümünde oluşturulur. Bu bilgisayarda çalışanlar burada görünür.</value>
   </data>
   <data name="Routines_Empty_Learn" xml:space="preserve">
     <value>Rutinler hakkında bilgi edinin</value>
@@ -4133,5 +4133,68 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="Canvas_GraphBigValue" xml:space="preserve">
     <value>Büyük değer</value>
+  </data>
+  <data name="Launch_OpenFailed_Title" xml:space="preserve">
+    <value>Açılamadı</value>
+  </data>
+  <data name="Launch_OpenFailed_Message" xml:space="preserve">
+    <value>RemEx bunu normal izinlerinizle açamadı. Biraz bekleyip yeniden deneyin.</value>
+  </data>
+  <data name="FileTransfer_SourceLabel" xml:space="preserve">
+    <value>Kaynak</value>
+  </data>
+  <data name="FileTransfer_SourceTooltip" xml:space="preserve">
+    <value>Kimin dosyalarının gösterileceğini seçin: bu PC'nin paylaşılan klasörleri ya da bağlı bir telefonunkiler.</value>
+  </data>
+  <data name="FileTransfer_SourceThisPc" xml:space="preserve">
+    <value>Bu PC</value>
+  </data>
+  <data name="FileTransfer_SourceUnnamedPhone" xml:space="preserve">
+    <value>Telefonunuz</value>
+  </data>
+  <data name="FileTransfer_SourceNoPhonesHint" xml:space="preserve">
+    <value>Telefonunuza burada göz atmak için onu bu PC'ye bağlayın, ardından telefondaki RemEx'te PC'nizden erişim altında bir klasör paylaşın.</value>
+  </data>
+  <data name="FileTransfer_PhoneSourceHint" xml:space="preserve">
+    <value>Telefonunuza göz atıyorsunuz. Dosya indirebilir ve telefonun yazmak için paylaştığı klasörlere dosya yükleyebilirsiniz. Bu PC'nin neleri görebileceğini değiştirmek için telefonda RemEx'i açın ve PC'nizden erişim bölümüne gidin.</value>
+  </data>
+  <data name="FileTransfer_PhoneNotConnected" xml:space="preserve">
+    <value>Bu telefon şu anda bağlı değil. Telefonda RemEx'i açın, bu PC'ye bağlanın ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneDisconnected" xml:space="preserve">
+    <value>Telefonunuzun bağlantısı kesildi, bu yüzden bu PC'nin klasörlerine geri döndünüz. Tekrar göz atmak için telefonu yeniden bağlayın.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoAnswer" xml:space="preserve">
+    <value>Telefonunuz zamanında yanıt vermedi. Telefonda RemEx'in açık ve bağlı olduğundan emin olun, ardından tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneRefused" xml:space="preserve">
+    <value>Telefonunuz buna izin vermedi. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve neleri paylaştığınızı kontrol edin.</value>
+  </data>
+  <data name="FileTransfer_PhoneNoSharedFolders" xml:space="preserve">
+    <value>Telefonunuz henüz hiçbir klasör paylaşmıyor. Telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve paylaşılan bir klasör ekleyin.</value>
+  </data>
+  <data name="FileTransfer_PhoneVolumesDenied" xml:space="preserve">
+    <value>Telefonunuzda tüm cihazda gezinme kapalı. Kullanmak için telefonda RemEx'i açın, PC'nizden erişim bölümüne gidin ve Tüm cihazda gezinmeye izin ver seçeneğini açın.</value>
+  </data>
+  <data name="FileTransfer_PhoneFolderUploadUnavailable" xml:space="preserve">
+    <value>Klasörler henüz telefona yüklenemiyor. Bunun yerine içindeki dosyaları yükleyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneDisconnected" xml:space="preserve">
+    <value>Aktarım bitmeden telefonunuzun bağlantısı kesildi. Yeniden bağlayın ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneIntegrity" xml:space="preserve">
+    <value>Dosya telefonun gönderdiğiyle eşleşmediği için silindi. Yeniden indirmeyi deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrPhoneStopped" xml:space="preserve">
+    <value>Telefonunuz aktarımı durdurdu. Telefondaki RemEx'i kontrol edin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrTooLarge" xml:space="preserve">
+    <value>Dosya gönderilemeyecek kadar büyük. Daha küçük bir dosya seçin.</value>
+  </data>
+  <data name="FileTransfer_ErrFileChanged" xml:space="preserve">
+    <value>Dosya gönderilirken değişti. Onu kaydeden bir şey kalmayana kadar bekleyin ve tekrar deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
+    <value>Bu dosya adı aktarılamaz. Dosyayı yeniden adlandırın ve tekrar deneyin.</value>
   </data>
 </root>

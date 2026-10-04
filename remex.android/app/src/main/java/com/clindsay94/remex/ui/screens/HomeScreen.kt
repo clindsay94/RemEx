@@ -434,8 +434,16 @@ private fun PcCard(
                             online = !state.needsPairing
                     )
                     state.uptime?.takeUnless { state.needsPairing }?.let { up ->
+                        val parts =
+                                HomeLogic.uptimeParts(up).map { (unit, n) ->
+                                    when (unit) {
+                                        UptimeUnit.DAYS -> stringResource(R.string.home_pc_uptime_days, n)
+                                        UptimeUnit.HOURS -> stringResource(R.string.home_pc_uptime_hours, n)
+                                        UptimeUnit.MINUTES -> stringResource(R.string.home_pc_uptime_minutes, n)
+                                    }
+                                }
                         Text(
-                                stringResource(R.string.home_pc_uptime, up.days, up.hours, up.minutes),
+                                stringResource(R.string.home_pc_uptime, parts.joinToString(" ")),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

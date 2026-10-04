@@ -33,6 +33,30 @@
                 <!-- Row 0: Root selector + search + volumes -->
                 <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
                     <StackPanel Spacing="6">
+                    <!-- Source: This PC, or a paired phone that is connected right now (RemEx-xt0af). The
+                         phone half is read-only: browse, search, details, download, and upload of files.
+                         The labels are localized here rather than stored on the option, so a language
+                         switch re-words the picker without rebuilding it. -->
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SourceLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" MinWidth="180" HorizontalAlignment="Stretch" AutomationProperties.Name="{local:Localize FileTransfer_SourceLabel}" ToolTip.Tip="{local:Localize FileTransfer_SourceTooltip}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:FileSourceOption">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <mi:MaterialIcon Kind="Monitor" Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding IsThisPc}"/>
+                                        <mi:MaterialIcon Kind="Cellphone" Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding !IsThisPc}"/>
+                                        <TextBlock Text="{local:Localize FileTransfer_SourceThisPc}" VerticalAlignment="Center" IsVisible="{Binding IsThisPc}"/>
+                                        <TextBlock Text="{Binding DeviceName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasDeviceName}"/>
+                                        <TextBlock Text="{local:Localize FileTransfer_SourceUnnamedPhone}" VerticalAlignment="Center" IsVisible="{Binding IsUnnamedPhone}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <TextBlock Text="{local:Localize FileTransfer_SourceNoPhonesHint}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasPhoneSources}"/>
+                    <TextBlock Text="{local:Localize FileTransfer_PhoneSourceHint}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsPhoneSource}"/>
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SharedFolderLabel}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="180" HorizontalAlignment="Stretch" AutomationProperties.Name="{local:Localize FileTransfer_SharedFolderLabel}">
@@ -48,7 +72,7 @@
 
                         <TextBox Grid.Column="2" Text="{Binding SearchQuery}" PlaceholderText="{local:Localize FileTransfer_SearchWatermark}" Width="200" Margin="10,0,0,0" IsEnabled="{Binding SupportsSearch}" IsVisible="{Binding SupportsSearch}" VerticalContentAlignment="Center" AutomationProperties.Name="{local:Localize FileTransfer_SearchWatermark}"/>
 
-                        <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0">
+                        <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding ShowVolumesButton}" Margin="6,0,0,0">
                             <mi:MaterialIcon Kind="Harddisk" Width="18" Height="18"/>
                         </Button>
                         <Button Grid.Column="4" Classes="tertiary icon-button" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0">
@@ -85,10 +109,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                        <Button Grid.Column="1" Classes="tertiary icon-button" Command="{Binding PinCurrentFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0">
+                        <Button Grid.Column="1" Classes="tertiary icon-button" Command="{Binding PinCurrentFolderCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_PinFolderTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_PinFolderTooltip}" Margin="4,0,0,0">
                             <mi:MaterialIcon Kind="Pin" Width="18" Height="18"/>
                         </Button>
-                        <Button Grid.Column="2" Classes="tertiary icon-button" Command="{Binding RemoveCurrentRootCommand}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0">
+                        <Button Grid.Column="2" Classes="tertiary icon-button" Command="{Binding RemoveCurrentRootCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_RemoveRootTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_RemoveRootTooltip}" Margin="4,0,0,0">
                             <mi:MaterialIcon Kind="Close" Width="18" Height="18"/>
                         </Button>
                         <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0">
@@ -138,18 +162,18 @@
                                  The button beside it, Upload, is what this actually did. Restore a phone-directed
                                  action when there is a PC-to-phone channel to carry it (RemEx-uov9y), and give it
                                  its own code path rather than this one. -->
-                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="secondary compact" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="secondary compact" Command="{Binding UploadFolderCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadBtn}" Classes="secondary compact" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="secondary compact" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="secondary compact" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
-                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_RenameBtn}" Classes="secondary compact" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_RenameBtn}" Classes="secondary compact" Command="{Binding StartRenameCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CopyBtn}" Classes="secondary compact" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_CutBtn}" Classes="secondary compact" Command="{Binding CutSelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CutTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PasteBtn}" Classes="secondary compact" Command="{Binding PasteCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_PasteTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_PropertiesBtn}" Classes="secondary compact" Command="{Binding ShowPropertiesCommand}" ToolTip.Tip="{local:Localize FileTransfer_PropertiesTooltip}"/>
                             <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_SelectAllBtn}" Classes="secondary compact" Command="{Binding SelectAllCommand}" ToolTip.Tip="{local:Localize FileTransfer_SelectAllTooltip}"/>
-                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="secondary compact" Command="{Binding VerifyHashCommand}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
-                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DeleteBtn}" Classes="secondary danger compact" Command="{Binding DeleteRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_VerifyHashBtn}" Classes="secondary compact" Command="{Binding VerifyHashCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_VerifyHashTooltip}"/>
+                            <Button Margin="0,0,8,8" Content="{local:Localize FileTransfer_DeleteBtn}" Classes="secondary danger compact" Command="{Binding DeleteRemoteCommand}" IsVisible="{Binding CanManageFiles}" ToolTip.Tip="{local:Localize FileTransfer_DeleteTooltip}"/>
                         </WrapPanel>
 
                         <!-- New folder input -->

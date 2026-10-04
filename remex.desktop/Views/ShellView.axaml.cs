@@ -17,6 +17,7 @@ using Material.Styles.Models;
 using Remex.Desktop.Controls;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
+using Motion = Remex.Desktop.Styles.Motion;
 
 namespace Remex.Desktop.Views;
 
@@ -31,18 +32,20 @@ public partial class ShellView : UserControl
     internal const string ShellSnackbarHostName = "ShellSnackbar";
 
     /// <summary>
-    /// How long a page transition runs. Material's figure for a shared-axis transition, and the
-    /// upper end of what the shell can afford: this fires on every navigation, so a slow one makes
-    /// the whole app feel slow.
+    /// How long the host's transition runs before it reports itself finished, and so how long the
+    /// next navigation can be held back: M3's 200 ms emphasized-accelerate exit (RemEx-pp4cm.1; the
+    /// timings live in <see cref="Motion"/>). The 400 ms emphasized-decelerate enter starts as soon as
+    /// the old page has faded and keeps running after this, outside the host's view.
     /// </summary>
     /// <remarks>
     /// It used to be shorter for a defensive reason — the window in which a second navigation could
     /// interrupt the first was exactly this duration, and an interrupted transition left the content
     /// area blank (RemEx-yj3x2). <see cref="PageHostSequencer"/> removed interruption rather than
     /// shortening the window it happens in, so the duration is free to be chosen for how it looks
-    /// again (RemEx-yzu5m).
+    /// again (RemEx-yzu5m). Only the exit is held, though: holding the whole 500 ms made a second
+    /// sidebar click wait for the first page's arrival to finish (review of RemEx-pp4cm.1).
     /// </remarks>
-    private static readonly TimeSpan TransitionDuration = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan TransitionDuration = new SharedAxisPageTransition().HoldDuration;
 
     /// <summary>
     /// How long to wait for a transition to report itself finished before assuming it never will.
@@ -148,7 +151,7 @@ public partial class ShellView : UserControl
             _pageHost.PageTransition = NewPageTransition(reducedMotion: false);
 
         if (_immersiveHost != null)
-            _immersiveHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+            _immersiveHost.PageTransition = NewImmersiveTransition(reducedMotion: false);
 
         // Guarded because OnLoaded runs again on every reattach to the visual tree, the same reason
         // the toast host and boot splash below are guarded.
@@ -316,7 +319,7 @@ public partial class ShellView : UserControl
         }
 
         if (_immersiveHost != null)
-            _immersiveHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+            _immersiveHost.PageTransition = NewImmersiveTransition(reducedMotion: false);
 
         if (DataContext is ShellViewModel vm)
         {
@@ -752,8 +755,11 @@ public partial class ShellView : UserControl
         // The direction only raises a notification when it actually changes, which is correct here:
         // two navigations the same way down the sidebar want the same transition, and the one
         // already installed is it.
+        // IsWindowVisible too (RemEx-pp4cm.1): a navigation while the window is minimised or hidden
+        // in the tray (the tray's own page shortcuts) swaps instantly instead of animating unseen.
         if ((e.PropertyName == nameof(ShellViewModel.TransitionDirection) ||
-             e.PropertyName == nameof(ShellViewModel.IsReducedMotion)) &&
+             e.PropertyName == nameof(ShellViewModel.IsReducedMotion) ||
+             e.PropertyName == nameof(ShellViewModel.IsWindowVisible)) &&
             sender is ShellViewModel vm)
         {
             ApplyPageTransition(vm);
@@ -777,23 +783,42 @@ public partial class ShellView : UserControl
 
         // The former IsAndroid early-return was unreachable here (RemEx-f167).
         _pageHost.IsTransitionReversed = vm.TransitionDirection < 0;
-        _pageHost.PageTransition = NewPageTransition(vm.IsReducedMotion);
+        var instant = vm.IsReducedMotion || !vm.IsWindowVisible;
+        _pageHost.PageTransition = NewPageTransition(instant);
+
+        if (_immersiveHost != null)
+            _immersiveHost.PageTransition = NewImmersiveTransition(instant);
     }
 
     /// <summary>
-    /// Builds the shell's page transition: Material's shared axis, or a plain cross-fade for anyone
-    /// who has asked for reduced motion.
+    /// Builds the shell's page transition: Material's shared axis, or an instant swap for anyone
+    /// who has asked for reduced motion (and while the window is off screen).
     /// </summary>
     /// <remarks>
-    /// Avalonia exposes no system reduced-motion setting, so this follows the app's own preference,
-    /// which now has a switch alongside the other personalisation toggles. Reduced motion means no
-    /// travel at all rather than less of it — a shortened slide is still a slide — so the fade is
-    /// what is left, at half the duration since there is nothing to follow across the screen.
+    /// Reduced motion means no animation at all rather than less of it (RemEx-pp4cm.1) — a shortened
+    /// slide is still a slide, and the half-length cross-fade this used to fall back to was still a
+    /// fade. <see cref="InstantPageTransition"/> completes at once but still goes through
+    /// <c>TransitioningContentControl</c>'s continuation, so <see cref="PageHostSequencer"/> is released
+    /// exactly as it is after an animated navigation.
     /// </remarks>
     internal static IPageTransition NewPageTransition(bool reducedMotion) =>
         new InterruptSafePageTransition(reducedMotion
-            ? new CrossFade(TransitionDuration / 2)
-            : new SharedAxisPageTransition(TransitionDuration));
+            ? new InstantPageTransition()
+            : new SharedAxisPageTransition());
+
+    /// <summary>
+    /// The full-screen remote desktop host's transition: a short standard-eased cross-fade in and out
+    /// of the stream page, never a slide (the stream surface is guarded; nothing here touches it), or
+    /// an instant swap under reduced motion.
+    /// </summary>
+    internal static IPageTransition NewImmersiveTransition(bool reducedMotion) =>
+        new InterruptSafePageTransition(reducedMotion
+            ? new InstantPageTransition()
+            : new CrossFade(Motion.Short4)
+            {
+                FadeInEasing = Motion.Standard,
+                FadeOutEasing = Motion.Standard,
+            });
 
     /// <summary>
     /// Commits navigation for a nav-list destination on pointer/touch activation (RemEx-zi3ua).

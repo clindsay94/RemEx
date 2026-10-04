@@ -22,6 +22,7 @@
      DynamicResource; no hard-coded colours; no FontSize. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:Remex.Desktop.Styles"
                      xmlns:ctrl="using:Remex.Desktop.Controls"
                      xmlns:conv="using:Remex.Desktop.Converters">
 
@@ -46,11 +47,7 @@
                     <Border Name="PART_SurfaceBorder" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{DynamicResource Elevation1Shadow}" Padding="0">
                         <Border.Transitions>
                             <Transitions>
-                                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.6">
-                                    <BoxShadowsTransition.Easing>
-                                        <SpringEasing Mass="1" Stiffness="120" Damping="12"/>
-                                    </BoxShadowsTransition.Easing>
-                                </BoxShadowsTransition>
+                                <BoxShadowsTransition Property="BoxShadow" Duration="{x:Static motion:Motion.Lift}" Easing="{x:Static motion:Motion.Standard}"/>
                             </Transitions>
                         </Border.Transitions>
                         <Grid>
@@ -74,7 +71,7 @@
         </Setter>
         <Setter Property="Transitions">
             <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                <DoubleTransition Property="Opacity" Duration="{x:Static motion:Motion.StateChange}" Easing="{x:Static motion:Motion.Standard}"/>
             </Transitions>
         </Setter>
 

@@ -11,7 +11,7 @@ using Remex.Core.Validation;
 
 namespace Remex.Agent.Services.FileTransfer;
 
-public sealed class FileTransferService : IFileTransferService
+public sealed class FileTransferService : IFileTransferService, IStagedFilePromoter
 {
     private const long MaxUploadBytes = 5_000_000_000L;
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -266,11 +266,31 @@ public sealed class FileTransferService : IFileTransferService
         return resolved;
     }
 
-    public async Task PromoteStagedFileAsync(
+    public Task PromoteStagedFileAsync(
         string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct)
-    {
-        var destination = ResolveForWrite(rootId, relativePath, expectedBytes);
+        => PromoteStagedFileToPathAsync(stagingPath, ResolveForWrite(rootId, relativePath, expectedBytes), ct);
 
+    /// <summary>
+    /// Moves a verified staging file onto an absolute destination path: a rename on the same volume
+    /// (with the destination directory's inherited ACL restored), otherwise a copy beside the
+    /// destination that is renamed onto it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SPLIT OUT OF <see cref="PromoteStagedFileAsync"/> SO A PC-CHOSEN LOCAL FOLDER GETS THE SAME
+    /// LANDING (RemEx-xt0af). A file the PC pulls from a phone stages under the machine-wide staging
+    /// directory exactly like a phone push does, so it needs the same two protections: the atomic
+    /// replace, and the ACL repair that stops it arriving with ProgramData's permissions. The shared-root
+    /// method resolves and authorises its destination first and then calls this; the pull path's
+    /// destination is a folder the person at the PC picked, so it has no shared root to resolve.
+    /// </para>
+    /// <para>
+    /// THIS DOES NO AUTHORISATION OF ITS OWN. Every caller must already have decided the destination
+    /// is one it may write. Do not wire it to anything a phone can name.
+    /// </para>
+    /// </remarks>
+    public async Task PromoteStagedFileToPathAsync(string stagingPath, string destination, CancellationToken ct)
+    {
         // Same volume: a rename. This is the whole point of the bead — the previous code re-read the
         // staged file and streamed it to the destination, so a 5 GB push cost 10 GB of writes plus a
         // 5 GB read to move bytes that were already on the right disk.

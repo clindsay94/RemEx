@@ -127,15 +127,17 @@ class SafFileSystemFacade(
     override fun listVolumes(): List<VolumeDescriptor> = rootsProvider.fullBrowseVolumes()
 
     override fun resolve(rootId: String, relativePath: String): FileNode? {
-        val rootUri = Uri.parse(rootId)
-        var current = DocumentFile.fromTreeUri(context, rootUri) ?: return null
+        // ONLY A ROOT THE PERSON SHARES RIGHT NOW (RemEx-xt0af). The PC can drive every request this
+        // serves, and fromTreeUri would open any tree this app still holds a grant for — including the
+        // whole-device folder after the person turned whole-device browsing off. `.`, `..` and other
+        // unsafe names refuse the path; the rule lives in SharedPathPolicy so it is unit-tested.
+        val names = SharedPathPolicy.resolveSegments(rootId, relativePath, rootsProvider.allowedRootIds())
+            ?: return null
+
+        var current = DocumentFile.fromTreeUri(context, Uri.parse(rootId)) ?: return null
         if (!current.canRead()) return null
-        val trimmed = relativePath.trim('/')
-        if (trimmed.isNotEmpty()) {
-            for (part in trimmed.split('/')) {
-                if (part.isEmpty()) continue
-                current = current.findFile(part) ?: return null
-            }
+        for (part in names) {
+            current = current.findFile(part) ?: return null
         }
         return DocumentFileNode(context, current)
     }
@@ -189,4 +191,13 @@ interface SharedRootsProvider {
     fun sharedRoots(): List<RootDescriptor>
     fun fullBrowseVolumes(): List<VolumeDescriptor>
     fun isFullBrowseGranted(): Boolean
+
+    /**
+     * Every root id a request may name right now: the shared folders, plus the whole-device folder
+     * only while whole-device browsing is on (RemEx-xt0af). [SafFileSystemFacade.resolve] refuses
+     * anything else. The default derives it from the two lists above; the production provider
+     * overrides it with the raw settings so a resolve does not open a document per shared folder.
+     */
+    fun allowedRootIds(): Set<String> =
+        sharedRoots().map { it.rootId }.toSet() + fullBrowseVolumes().map { it.id }
 }
