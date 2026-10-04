@@ -13,6 +13,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **The other splash styles got their own worlds, on the PC and the phone.** Original Scan plays on a
+  command deck (a grid floor rolling toward you, falling data columns), Cosmic Zoom in deep space (a
+  nebula and stars that stretch into a warp before the strike), and Signal Pong on a glowing CRT
+  court that ripples on every hit. Each builds to a beat, follows your theme's colours (light, dark,
+  contrast and monochrome), and fades out into the app's own background. With reduced motion on, each
+  shows a still frame of its world for a moment instead of a blank. (RemEx-pp4cm.11)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder
@@ -490,6 +496,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- The Live Handshake splash plays its full show again. On the phone it opened before your PC had
+  finished the handshake, so the lock-on (the reticle snapping shut, the beam, the haptic tick and the
+  portal opening out of your PC) was skipped and the console said your PC was "not answering" right
+  before saying it answered. It now waits for a PC that answered, up to 3 seconds. On both apps the
+  shortest splash is now 1.9 seconds, so the second pulse and the console are actually seen, and on the
+  PC every splash style starts when the window is first drawn rather than while it is still hidden.
+  Cosmic Zoom's colour burst now rings the mark on high-density phones. (RemEx-pp4cm.11)
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

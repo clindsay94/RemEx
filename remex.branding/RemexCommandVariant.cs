@@ -11,9 +11,23 @@ namespace Remex.Branding;
 /// Landscape adaptation: Android renders portrait; here the composition is laid out for a
 /// landscape window. Positions are normalized (×w for x, ×h for y); hero elements and the
 /// dp→px scale are sized from S = min(w,h) so the scene reads the same at any aspect.
+///
+/// Since RemEx-pp4cm.11 the scene sits on a command deck (<see cref="SplashFilmField"/>): a grid floor
+/// rolling toward the viewer under a glowing horizon and two depths of falling data columns, speeding
+/// up pass by pass. Each pass ends on a beat (the outlines, the link, the session coming up), the last
+/// one from the lockup and the strongest. Under reduced motion it shows its designed still frame.
 /// </summary>
-public sealed class RemexCommandVariant : ISplashVariant
+public sealed class RemexCommandVariant : IFieldSplashVariant
 {
+    private volatile bool _reduced;
+    private volatile bool _field = true;
+
+    /// <inheritdoc />
+    public bool ReducedMotion { set => _reduced = value; }
+
+    /// <inheritdoc />
+    public bool FieldEnabled { set => _field = value; }
+
     // ── Timeline (seconds) — mirrors the Android LaunchedEffect sequence exactly ──────────────
     //   pass1 sweep 0→1 (540ms, FastOutSlowIn) · gap 95ms
     //   pass2 sweep 1→2 (540ms)                 · gap 95ms
@@ -32,7 +46,7 @@ public sealed class RemexCommandVariant : ISplashVariant
     private const float FadeDur = 0.400f;
     private const float FadeEnd = FadeStart + FadeDur;    // 2.960
 
-    public float Duration => FadeEnd; // 2.96s
+    public float Duration => _reduced ? SplashFilmField.StillDuration : FadeEnd; // 2.96s
 
     // In-monitor terminal reveal — literal command syntax stays English (not localized).
     private static readonly string[] TermLines =
@@ -53,6 +67,11 @@ public sealed class RemexCommandVariant : ISplashVariant
 
     public void Render(SKCanvas canvas, float width, float height, float t, float dt)
     {
+        if (_reduced)
+        {
+            SplashFilmField.DrawStill(canvas, width, height, SplashFilmStyle.Command, t, _field);
+            return;
+        }
         EnsureInit();
         Advance(dt);
 
@@ -125,7 +144,12 @@ public sealed class RemexCommandVariant : ISplashVariant
         }
 
         // ── Background (always) ───────────────────────────────────────────────────────────────
-        SplashScene.DrawBackdrop(canvas, w, h);
+        var beat = t >= P3End ? new FilmBeat(w * 0.5f, lockupCy, P3End, 1.15f)
+            : t >= P2End ? new FilmBeat(connEnd.X, connEnd.Y, P2End, 0.6f)
+            : t >= P1End ? new FilmBeat(monCx, monCy, P1End, 0.45f)
+            : FilmBeat.None;
+        SplashFilmField.Draw(canvas, w, h, SplashFilmStyle.Command, t, dp, new SKPoint(w * 0.5f, h * 0.56f),
+            Math.Clamp(sweep / 3f, 0f, 1f), beat, still: false, _field);
         SplashFx.DrawAmbientFx(canvas, w, h, _shapes, SplashBrand.WindowStroke, SplashBrand.SlateLo);
 
         // Rising embers (fade out as the solid pass takes over).
@@ -234,9 +258,9 @@ public sealed class RemexCommandVariant : ISplashVariant
 
         canvas.Restore(); // end camera
 
-        // ── Exit fade to the window-fill colour (screen space, guaranteed full coverage) ──────
+        // ── Exit fade to the palette's backdrop, the app's own surface (screen space, full coverage) ──
         if (fade > 0f)
-            using (var fp = new SKPaint { Color = SplashBrand.WindowFill.WithAlpha(A(fade)) })
+            using (var fp = new SKPaint { Color = SplashBrand.BackdropStart.WithAlpha(A(fade)) })
                 canvas.DrawRect(0, 0, w, h, fp);
     }
 
