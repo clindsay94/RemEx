@@ -59,8 +59,17 @@ public sealed class PhoneSensorAlertsBridgeTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    private PhoneSensorAlertsBridge Bridge() =>
+    /// <summary>
+    /// A bridge on a synchronous UI thread. The rules it publishes while being built are cleared, so each
+    /// test counts only what its own action causes; <see cref="TheBridgePublishesTheRulesOnceWhenItIsBuilt"/>
+    /// covers the construction publish.
+    /// </summary>
+    private PhoneSensorAlertsBridge Bridge()
+    {
         _bridge = new PhoneSensorAlertsBridge(_alerts, _store, _canvas, post: run => run());
+        _alerts.Rules.Clear();
+        return _bridge;
+    }
 
     private static TelemetryPayload Reading(string name, double value) => new()
     {
@@ -229,6 +238,42 @@ public sealed class PhoneSensorAlertsBridgeTests : IAsyncLifetime
         _alerts.Raise(new PhoneSensorAlertRequest(PhoneSensorAlertRequestKind.Get, "phone-1"));
 
         _alerts.Rules.Should().ContainSingle().Which.Should().ContainSingle().Which.CurrentValue.Should().Be(61);
+    }
+
+    [Fact]
+    public void TheBridgePublishesTheRulesOnceWhenItIsBuilt()
+    {
+        // A phone that asked before ShellViewModel built the bridge was never answered.
+        Know("cpu-pkg", 61);
+        _canvas.ApplySensorAlert("cpu-pkg", new SensorAlert { SensorName = "cpu-pkg", Threshold = 90 });
+
+        _bridge = new PhoneSensorAlertsBridge(_alerts, _store, _canvas, post: run => run());
+
+        _alerts.Rules.Should().ContainSingle("every connected phone is told the rules once, as soon as there is a bridge to answer")
+            .Which.Should().ContainSingle().Which.SensorName.Should().Be("cpu-pkg");
+    }
+
+    [Fact]
+    public void ABurstOfGetsCoalescesIntoOnePublish()
+    {
+        Know("cpu-pkg", 61);
+        var queue = new List<Action>();
+        _bridge = new PhoneSensorAlertsBridge(_alerts, _store, _canvas, post: queue.Add);
+        queue.ForEach(run => run());
+        queue.Clear();
+        _alerts.Rules.Clear();
+
+        for (var i = 0; i < 200; i++)
+        {
+            _alerts.Raise(new PhoneSensorAlertRequest(PhoneSensorAlertRequestKind.Get, "phone-1"));
+        }
+
+        queue.Should().ContainSingle("a phone asking in a loop costs one UI-thread post, not one per message");
+        queue.ForEach(run => run());
+        _alerts.Rules.Should().ContainSingle();
+
+        _alerts.Raise(new PhoneSensorAlertRequest(PhoneSensorAlertRequestKind.Get, "phone-1"));
+        queue.Should().HaveCount(2, "once a publish has run, the next Get is answered too");
     }
 
     // ── Refusals ─────────────────────────────────────────────────────────────

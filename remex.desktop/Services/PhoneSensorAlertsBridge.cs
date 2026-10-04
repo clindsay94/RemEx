@@ -32,7 +32,7 @@ namespace Remex.Desktop.Services;
 /// </para>
 /// <para>
 /// **EVERY PHONE REQUEST IS ANSWERED BY PUBLISHING THE RULES**, accepted or refused, straight after it
-/// is applied. A refused edit (an unknown sensor, a full list) therefore puts the phone's optimistic
+/// is applied (a Get just publishes, coalesced with any publish already queued). A refused edit (an unknown sensor, a full list) therefore puts the phone's optimistic
 /// change back. Rule changes by any other route (the PC's own dialog, an import) are published too, so
 /// a connected phone never shows a rule list the PC no longer has.
 /// </para>
@@ -68,6 +68,10 @@ public sealed class PhoneSensorAlertsBridge : IDisposable
         _canvas.SensorAlertFired += OnAlertFired;
         _store.Changed += OnStoreChanged;
         _alerts.PhoneRequested += OnPhoneRequested;
+
+        // A phone that connected, and asked, before this bridge existed was never answered. Tell every
+        // connected phone the rules once now; the request coalesces with any other publish.
+        RequestPublish();
     }
 
     private void OnAlertFired(SensorAlert alert, double value)
@@ -96,7 +100,18 @@ public sealed class PhoneSensorAlertsBridge : IDisposable
         RequestPublish();
     }
 
-    private void OnPhoneRequested(PhoneSensorAlertRequest request) => _post(() => ApplyFromPhone(request));
+    private void OnPhoneRequested(PhoneSensorAlertRequest request)
+    {
+        if (request.Kind == PhoneSensorAlertRequestKind.Get)
+        {
+            // A Get changes nothing, so it only needs the rules published. Going through the coalescer
+            // means a phone asking in a loop costs one pass per UI turn, not one per message.
+            RequestPublish();
+            return;
+        }
+
+        _post(() => ApplyFromPhone(request));
+    }
 
     private void ApplyFromPhone(PhoneSensorAlertRequest request)
     {

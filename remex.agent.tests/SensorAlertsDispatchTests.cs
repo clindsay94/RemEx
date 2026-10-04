@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Agent.Handlers;
 using Remex.Agent.Services;
+using Remex.Agent.Services.Alerts;
 using Remex.Agent.Services.Media;
 using Remex.Agent.Services.Security;
 using Remex.Agent.Services.Telemetry;
@@ -219,6 +220,26 @@ public class SensorAlertsDispatchTests
         var set = Assert.Single(requests, r => r.Kind == PhoneSensorAlertRequestKind.Set);
         Assert.Equal("GPU Temp", set.Change!.SensorName);
         Assert.DoesNotContain(requests, r => r.Kind == PhoneSensorAlertRequestKind.Remove);
+    }
+
+    [Fact]
+    public async Task ABurstOfRequestsPastTheSessionGateIsDroppedAndRepublishedAsGets()
+    {
+        var alerts = new RecordingAlerts();
+        var secret = RandomNumberGenerator.GetBytes(32);
+        var burst = PhoneSensorAlertGate.MaxRequestsPerWindow + 15;
+        var script = Authenticate(secret).Concat(Enumerable.Range(0, burst).Select(i => Send(Set(threshold: 50 + i))));
+        var socket = new InteractiveWebSocket([.. script]);
+
+        await RunAsync(socket, alerts, secret, isLoopback: false);
+
+        var requests = alerts.Snapshot();
+        Assert.Equal(PhoneSensorAlertGate.MaxRequestsPerWindow, requests.Count(r => r.Kind == PhoneSensorAlertRequestKind.Set));
+        // Every refused Set still reaches the desktop as a Get, so the phone's optimistic edit is put back
+        // (the desktop coalesces those into one publish).
+        Assert.Equal(15, requests.Count(r => r.Kind == PhoneSensorAlertRequestKind.Get));
+        Assert.All(requests.Where(r => r.Kind == PhoneSensorAlertRequestKind.Set).Select((r, i) => (r, i)), x =>
+            Assert.Equal(50 + x.i, x.r.Change!.Threshold));
     }
 
     [Fact]

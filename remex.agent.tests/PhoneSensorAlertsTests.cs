@@ -201,6 +201,53 @@ public sealed class PhoneSensorAlertsTests : IDisposable
         Assert.Single(here.MessagesOfType(MessageTypes.SensorAlertFired));
     }
 
+    /// <summary>A socket that is open but never takes a send: it waits until the send is cancelled.</summary>
+    private sealed class StalledSocket : WebSocket
+    {
+        public override async Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType type, bool end, CancellationToken ct)
+            => await Task.Delay(Timeout.Infinite, ct);
+
+        public override WebSocketState State => WebSocketState.Open;
+        public override WebSocketCloseStatus? CloseStatus => null;
+        public override string? CloseStatusDescription => null;
+        public override string? SubProtocol => null;
+        public override void Abort() { }
+        public override void Dispose() { }
+        public override Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task CloseOutputAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> b, CancellationToken c)
+            => throw new NotSupportedException("the reader loop is not part of these tests");
+    }
+
+    [Fact]
+    public async Task AStalledPhoneDoesNotDelayTheOthersAndIsAbandonedAfterTheTimeout()
+    {
+        var alerts = new PhoneSensorAlerts(
+            _kit.Sessions, _kit.Paired, NullLogger<PhoneSensorAlerts>.Instance, _time, sendTimeout: TimeSpan.FromSeconds(2));
+
+        // The stalled phone connects first, so a one-after-another broadcast would reach it first and wait.
+        _kit.Paired.RegisterClient("stalled", new byte[32]);
+        var stalledSession = _kit.Sessions.Register("192.168.1.51", new StalledSocket());
+        _kit.Sessions.Identify(stalledSession, "stalled", null);
+        _kit.Sessions.MarkAuthenticated(stalledSession, identityProven: true);
+        _sessions.Add(stalledSession);
+        var (healthy, _) = ConnectProvenPhone("phone-1");
+
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var publish = alerts.PublishFiredAsync(Fired());
+
+        while (healthy.MessagesOfType(MessageTypes.SensorAlertFired).Count == 0 && started.Elapsed < TimeSpan.FromSeconds(1.5))
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.Single(healthy.MessagesOfType(MessageTypes.SensorAlertFired));
+        Assert.False(publish.IsCompleted, "the stalled phone is still being waited on, but it is not holding the healthy one up");
+
+        await publish.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(started.Elapsed >= TimeSpan.FromSeconds(1.5), "the stalled send was given its timeout, not abandoned at once");
+    }
+
     [Fact]
     public async Task PublishingWithNoPhoneConnectedIsQuiet()
     {

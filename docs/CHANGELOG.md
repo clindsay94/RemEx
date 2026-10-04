@@ -526,6 +526,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A phone can no longer flood the PC with alert requests, and one stuck phone no longer delays
+  alerts to the others.** A phone asking for the PC's alert rules in a loop now costs the PC one
+  refresh, not one per message, and a phone making more than 10 alert requests in 10 seconds has the
+  extras ignored (it is sent the PC's unchanged rules). Alerts and rule updates now go to all connected
+  phones at once with a 5 second limit per phone. A phone that asked for the rules just before the PC
+  finished starting is answered as soon as the PC is ready. `docs/API_CONTRACTS.md` section 11 now
+  says the rules are sent to every connected phone, not only the one that asked. (RemEx-pp4cm.12)
 - **Two-finger scroll works again in Remote desktop, including in portrait (RemEx-pp4cm.10).**
   Portrait opens the PC picture fitted to the screen height, which is zoomed in, and a zoomed view used
   to treat every two-finger drag as "move the picture", so nothing reached the PC. Two fingers now

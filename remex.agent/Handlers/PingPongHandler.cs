@@ -142,6 +142,7 @@ public sealed class PingPongHandler(
         // This connection's own pacing for the phone's log and status reads (RemEx-pp4cm.13): one request
         // of each kind a second, per session, so two phones never share a budget.
         var diagnosticsGate = phoneDiagnostics?.CreateSessionGate();
+        var alertGate = phoneSensorAlerts is null ? null : new Remex.Agent.Services.Alerts.PhoneSensorAlertGate(TimeProvider.System);
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -690,7 +691,8 @@ public sealed class PingPongHandler(
                     // through SensorAlertStore on its UI thread and ANSWERS BY PUBLISHING THE RULES,
                     // accepted or refused, so the phone hears back through sensor_alert_rules. Input that
                     // fails the shape check is dropped with a warning, and the unchanged rules are sent
-                    // anyway so the phone's optimistic edit is put back.
+                    // anyway so the phone's optimistic edit is put back. A per-session PhoneSensorAlertGate
+                    // paces all three; past its budget a request becomes a Get.
                     case MessageTypes.SensorAlertsGet:
                     case MessageTypes.SensorAlertSet:
                     case MessageTypes.SensorAlertRemove:
@@ -702,6 +704,17 @@ public sealed class PingPongHandler(
                         }
 
                         var alertClientId = connectionClientId ?? string.Empty;
+                        if (alertGate is not null && !alertGate.TryEnter())
+                        {
+                            // A phone asking faster than a person can edit. The request is dropped, and a Get
+                            // goes instead (the desktop coalesces those into one publish), so an optimistic
+                            // edit on the phone is still put back and the PC does one pass, not one per message.
+                            logger.LogDebug("Rate-limited {Type} from {ClientId}.", message.Type, connectionClientId);
+                            phoneSensorAlerts.RequestFromPhone(new PhoneSensorAlertRequest(
+                                PhoneSensorAlertRequestKind.Get, alertClientId));
+                            break;
+                        }
+
                         if (message.Type == MessageTypes.SensorAlertSet
                             && SensorAlertValidation.IsWellFormedChange(message.SensorAlertChange))
                         {
