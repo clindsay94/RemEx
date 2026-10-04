@@ -602,6 +602,7 @@
     <string name="rd_err_handshake_timeout">Ваш ПК за адресою %1$s відповів, але перестав відповідати під час перевірки цього пристрою. Можливо, він перейшов у режим сну. Спробуйте підключитися ще раз.</string>
     <string name="cd_clear_search">Очистити пошук</string>
     <string name="pairing_error_timeout">ПК не відповів. Перевірте, чи він увімкнений і підключений до тієї самої мережі, а потім спробуйте ще раз.</string>
+    <string name="connection_error_timeout_vpn">ПК не відповів. Перевірте, чи Tailscale (або ваш VPN) увімкнено і на цьому телефоні, і на ПК, а потім спробуйте ще раз.</string>
     <string name="host_discovered_snackbar">Знайдено ПК: %1$s</string>
     <string name="widget_refresh">Оновити</string>
     <string name="widget_toast_refreshing">Оновлення…</string>

@@ -588,6 +588,7 @@
     <string name="rd_err_handshake_timeout">Votre PC à l’adresse %1$s a répondu, puis s’est arrêté pendant la vérification de cet appareil. Il s’est peut-être mis en veille. Réessayez de vous connecter.</string>
     <string name="cd_clear_search">Effacer la recherche</string>
     <string name="pairing_error_timeout">Le PC n’a pas répondu. Vérifiez qu’il est allumé et connecté au même réseau, puis réessayez.</string>
+    <string name="connection_error_timeout_vpn">Le PC n’a pas répondu. Vérifiez que Tailscale (ou votre VPN) est activé sur ce téléphone et sur le PC, puis réessayez.</string>
     <string name="host_discovered_snackbar">PC trouvé : %1$s</string>
     <string name="widget_refresh">Actualiser</string>
     <string name="widget_toast_refreshing">Actualisation…</string>

@@ -797,6 +797,7 @@
     <string name="rd_err_handshake_timeout">Your PC at %1$s answered but then stopped responding while checking this device. It may have gone to sleep. Try connecting again.</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="pairing_error_timeout">The PC didn’t respond. Check that it’s turned on and connected to the same network, then try again.</string>
+    <string name="connection_error_timeout_vpn">The PC didn’t respond. Check that Tailscale (or your VPN) is turned on for both this phone and the PC, then try again.</string>
     <string name="host_discovered_snackbar">PC found: %1$s</string>
     <string name="file_transfer_service_title">RemEx file transfers</string>
     <string name="file_transfer_service_active">Syncing files with your PC…</string>

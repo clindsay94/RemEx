@@ -450,10 +450,13 @@ fun DashboardScreenContent(
                         }
                 )
 
+                val dashboardScroll = rememberScrollState()
+                // Tapping the tab you are on goes back to the top (RemEx-pp4cm.3).
+                com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Dashboard) { dashboardScroll.animateScrollTo(0) }
                 Column(
                         modifier =
                                 Modifier.fillMaxSize()
-                                        .verticalScroll(rememberScrollState())
+                                        .verticalScroll(dashboardScroll)
                                         .padding(horizontal = 16.dp)
                                         .padding(top = 8.dp)
                                         .padding(

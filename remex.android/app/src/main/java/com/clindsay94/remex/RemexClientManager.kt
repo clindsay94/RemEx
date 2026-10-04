@@ -1508,7 +1508,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         Log.w("RemexManager", "InitRemex failed for $host:$port: $reason")
                         val res =
                                 if (reason.isBlank()) R.string.connection_error_generic
-                                else ConnectionFailures.messageRes(ConnectionFailures.classify(reason))
+                                else ConnectionFailures.messageRes(ConnectionFailures.classify(reason), host)
                         _connectionError.tryEmit(
                                 res?.let { context.applicationContext.getString(it) } ?: reason
                         )
@@ -1967,7 +1967,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             // and swaps in its own message and repair button.
             Log.w("RemexManager", "Connection failed: $raw")
             val message =
-                    ConnectionFailures.messageRes(ConnectionFailures.classify(raw))?.let { res ->
+                    ConnectionFailures.messageRes(ConnectionFailures.classify(raw), pendingTarget?.first)?.let { res ->
                         settingsManager?.context?.applicationContext?.getString(res)
                     }
             _connectionError.tryEmit(message ?: raw)

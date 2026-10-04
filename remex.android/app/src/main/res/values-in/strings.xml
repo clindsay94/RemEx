@@ -581,6 +581,7 @@
     <string name="rd_err_handshake_timeout">PC Anda di %1$s menjawab, tetapi berhenti merespons saat memeriksa perangkat ini. Mungkin PC tertidur. Coba hubungkan lagi.</string>
     <string name="cd_clear_search">Hapus pencarian</string>
     <string name="pairing_error_timeout">PC tidak merespons. Pastikan PC menyala dan terhubung ke jaringan yang sama, lalu coba lagi.</string>
+    <string name="connection_error_timeout_vpn">PC tidak merespons. Pastikan Tailscale (atau VPN Anda) aktif di ponsel ini dan di PC, lalu coba lagi.</string>
     <string name="host_discovered_snackbar">PC ditemukan: %1$s</string>
     <string name="widget_refresh">Segarkan</string>
     <string name="widget_toast_refreshing">Menyegarkan…</string>

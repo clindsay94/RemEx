@@ -526,6 +526,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **Phone comb review fixes.** The battery-settings button now has one tested launcher shared by the first-run
+  tutorial and the routines notice (it falls back to the battery list and never crashes on a phone with no such
+  screen). The address form no longer keeps one PC's Wake-on-LAN address when you connect to another, so a
+  failed card connect followed by a manual Connect can't save PC A's address for PC B. Tapping the tab you are
+  on now scrolls Settings, Files, Routines, Sensors and Connection back to the top, like the other tabs. A
+  timeout against a Tailscale or `*.ts.net` address now says to check Tailscale on both devices instead of
+  "same network". (RemEx-pp4cm.3)
 - **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
   last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
   Home's Connect ask for the local-network permission like the Connection screen does, and say so on

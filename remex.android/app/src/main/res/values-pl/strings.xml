@@ -581,6 +581,7 @@
     <string name="rd_err_handshake_timeout">Komputer pod adresem %1$s odpowiedział, ale przestał reagować podczas sprawdzania tego urządzenia. Mógł przejść w stan uśpienia. Spróbuj połączyć się ponownie.</string>
     <string name="cd_clear_search">Wyczyść wyszukiwanie</string>
     <string name="pairing_error_timeout">Komputer nie odpowiedział. Sprawdź, czy jest włączony i połączony z tą samą siecią, a następnie spróbuj ponownie.</string>
+    <string name="connection_error_timeout_vpn">Komputer nie odpowiedział. Sprawdź, czy Tailscale (lub Twój VPN) jest włączony zarówno na tym telefonie, jak i na komputerze, a następnie spróbuj ponownie.</string>
     <string name="host_discovered_snackbar">Znaleziono komputer: %1$s</string>
     <string name="widget_refresh">Odśwież</string>
     <string name="widget_toast_refreshing">Odświeżanie…</string>

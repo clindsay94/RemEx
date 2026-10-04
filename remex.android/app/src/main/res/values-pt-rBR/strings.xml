@@ -588,6 +588,7 @@
     <string name="rd_err_handshake_timeout">Seu PC em %1$s respondeu, mas parou de responder ao verificar este dispositivo. Ele pode ter entrado em suspensão. Tente conectar de novo.</string>
     <string name="cd_clear_search">Limpar pesquisa</string>
     <string name="pairing_error_timeout">O PC não respondeu. Verifique se ele está ligado e conectado à mesma rede e tente novamente.</string>
+    <string name="connection_error_timeout_vpn">O PC não respondeu. Verifique se o Tailscale (ou a sua VPN) está ligado neste celular e no PC e tente novamente.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
     <string name="widget_refresh">Atualizar</string>
     <string name="widget_toast_refreshing">Atualizando…</string>

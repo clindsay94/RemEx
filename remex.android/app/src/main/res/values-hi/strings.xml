@@ -588,6 +588,7 @@
     <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="connection_error_timeout_vpn">पीसी ने जवाब नहीं दिया। जांचें कि Tailscale (या आपका VPN) इस फ़ोन और पीसी, दोनों पर चालू है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
     <string name="widget_refresh">रिफ़्रेश करें</string>
     <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>

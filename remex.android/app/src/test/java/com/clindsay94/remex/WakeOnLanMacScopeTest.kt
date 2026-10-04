@@ -68,4 +68,28 @@ class WakeOnLanMacScopeTest {
             SettingsManager.resolveMacAddress(
                 manual = a, manualHost = "pc-a", hostReported = "", currentHost = "pc-b"))
     }
+
+    // The address form's field (RemEx-pp4cm.3): a card connect to PC B retargets the form, and the
+    // MAC typed for PC A must not stay in it for the next manual Connect to save as PC B's.
+
+    @Test
+    fun `the form keeps the mac for the pc it was typed for`() {
+        assertEquals(a, SettingsManager.macInputFor(manual = a, manualHost = "pc-a", host = "pc-a"))
+        assertEquals(a, SettingsManager.macInputFor(manual = a, manualHost = "pc-a", host = " pc-a "))
+    }
+
+    @Test
+    fun `the form clears the mac when the target changes to another pc`() {
+        assertEquals("", SettingsManager.macInputFor(manual = a, manualHost = "pc-a", host = "pc-b"))
+    }
+
+    @Test
+    fun `the form keeps a mac with no recorded host, like the resolver`() {
+        assertEquals(a, SettingsManager.macInputFor(manual = a, manualHost = "", host = "pc-b"))
+    }
+
+    @Test
+    fun `the form never shows a host-reported mac`() {
+        assertEquals("", SettingsManager.macInputFor(manual = "", manualHost = "", host = "pc-b"))
+    }
 }
