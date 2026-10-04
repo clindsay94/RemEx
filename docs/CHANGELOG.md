@@ -520,6 +520,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **Two-finger scroll works again in Remote desktop, including in portrait (RemEx-pp4cm.10).**
+  Portrait opens the PC picture fitted to the screen height, which is zoomed in, and a zoomed view used
+  to treat every two-finger drag as "move the picture", so nothing reached the PC. Two fingers now
+  always scroll the PC at any zoom. Pinching still zooms, and moving your fingers while you pinch
+  moves the zoomed picture; the picture also follows the cursor when it nears an edge.
 - **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
   last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
   Home's Connect ask for the local-network permission like the Connection screen does, and say so on
