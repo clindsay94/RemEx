@@ -526,6 +526,27 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A refused alert Save now says why.** Pressing Save on a sensor alert used to close the sheet whether or
+  not anything was sent. The sheet now stays open with the reason when the alert could not be sent (not
+  connected, PC too old, or the PC already holds as many alerts as it allows), and if the PC accepts it and
+  then answers without keeping it, a message names the sensor. (RemEx-pp4cm.12)
+- **PC logs screen and alert sheets, review fixes.** The PC logs rows, "latest" button and the alert remove
+  button now use local icon glyphs instead of adding more uses of the deprecated extended icon set; the log
+  text takes its size from the theme instead of a fixed 11/12 sp; a repeated log sequence number or summary
+  key from the PC can no longer crash the list; and a PC cancelling a download now has a test proving the
+  running download's wait ends. (RemEx-pp4cm.13)
+- **Download notifications show up again on Samsung phones.** The file-transfer notification channel was
+  low importance, which One UI files under "Silent" with no status-bar icon, so downloads were announced but
+  looked like nothing happened. Transfers now use a new channel (`remex_file_transfer_v2`) at default
+  importance with sound and vibration off, so the icon and progress show without ever making a noise. The
+  old channel is deleted on startup. (RemEx-pp4cm.8)
+- **Phone comb review fixes.** The battery-settings button now has one tested launcher shared by the first-run
+  tutorial and the routines notice (it falls back to the battery list and never crashes on a phone with no such
+  screen). The address form no longer keeps one PC's Wake-on-LAN address when you connect to another, so a
+  failed card connect followed by a manual Connect can't save PC A's address for PC B. Tapping the tab you are
+  on now scrolls Settings, Files, Routines, Sensors and Connection back to the top, like the other tabs. A
+  timeout against a Tailscale or `*.ts.net` address now says to check Tailscale on both devices instead of
+  "same network". (RemEx-pp4cm.3)
 - **A phone can no longer flood the PC with alert requests, and one stuck phone no longer delays
   alerts to the others.** A phone asking for the PC's alert rules in a loop now costs the PC one
   refresh, not one per message, and a phone making more than 10 alert requests in 10 seconds has the

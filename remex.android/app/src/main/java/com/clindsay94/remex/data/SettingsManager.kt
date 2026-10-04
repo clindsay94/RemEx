@@ -52,6 +52,23 @@ class SettingsManager(val context: Context) {
                         return if (manualAppliesHere) manual else hostReported
                 }
 
+                /**
+                 * The MAC the address form's field should show for [host] (RemEx-pp4cm.3).
+                 *
+                 * The form used to prefill the raw stored MAC whatever host it was pointed at, so a
+                 * Known PCs card connect that changed the host to PC B left PC A's MAC in the field,
+                 * and the next manual Connect saved it as PC B's. Wake on PC B then woke PC A. This is
+                 * [resolveMacAddress] with no host-reported fallback: the field only ever holds a MAC
+                 * someone typed, and only for the PC it was typed for.
+                 */
+                internal fun macInputFor(manual: String, manualHost: String, host: String): String =
+                        resolveMacAddress(
+                                manual = manual,
+                                manualHost = manualHost.trim(),
+                                hostReported = "",
+                                currentHost = host.trim(),
+                        )
+
                 /** The address form's write: host, port and the Wake-on-LAN fields it shows. */
                 internal fun writeConnectionSettings(
                         preferences: MutablePreferences,
@@ -251,6 +268,8 @@ class SettingsManager(val context: Context) {
                 val host: String = DEFAULT_HOST_PLACEHOLDER,
                 val port: Int = 5005,
                 val macAddress: String = "",
+                /** The host [macAddress] was typed for; blank on data from before RemEx-263f. */
+                val macManualHost: String = "",
                 val broadcastIp: String = "255.255.255.255",
                 val subnetMask: String = "255.255.255.0"
         )
@@ -466,6 +485,7 @@ class SettingsManager(val context: Context) {
                                 host = preferences[HOST_KEY] ?: DEFAULT_HOST_PLACEHOLDER,
                                 port = preferences[PORT_KEY] ?: 5005,
                                 macAddress = preferences[MAC_KEY] ?: "",
+                                macManualHost = preferences[MAC_MANUAL_HOST_KEY] ?: "",
                                 broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
                                 subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
                         )

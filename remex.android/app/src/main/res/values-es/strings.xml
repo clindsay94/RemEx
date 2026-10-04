@@ -584,6 +584,7 @@
     <string name="rd_err_handshake_timeout">Tu PC en %1$s respondió, pero dejó de hacerlo mientras verificaba este dispositivo. Puede que se haya suspendido. Intenta conectarte de nuevo.</string>
     <string name="cd_clear_search">Borrar búsqueda</string>
     <string name="pairing_error_timeout">El PC no respondió. Comprueba que esté encendido y conectado a la misma red y vuelve a intentarlo.</string>
+    <string name="connection_error_timeout_vpn">El PC no respondió. Comprueba que Tailscale (o tu VPN) esté activado tanto en este teléfono como en el PC y vuelve a intentarlo.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
     <string name="widget_refresh">Actualizar</string>
     <string name="widget_toast_refreshing">Actualizando…</string>
@@ -1621,6 +1622,8 @@
     <string name="sensor_alert_remove">Quitar alerta</string>
     <string name="sensor_alert_blocked_not_connected">Conéctate a tu PC para configurar alertas.</string>
     <string name="sensor_alert_blocked_pc_too_old">Actualiza RemEx en tu PC para configurar alertas desde tu teléfono.</string>
+    <string name="sensor_alert_save_failed">La alerta no se envió a tu PC. Comprueba que el teléfono siga conectado a él y vuelve a intentarlo.</string>
+    <string name="sensor_alert_refused_snackbar">Tu PC no guardó la alerta de %1$s. Puede que ya no reconozca ese sensor.</string>
     <string name="sensor_alert_blocked_too_many">Tu PC ya tiene todas las alertas que puede guardar. Quita una primero.</string>
     <string name="sensor_alerts_title">Alertas del PC</string>
     <string name="sensor_alerts_empty">Aún no hay alertas. Abre las opciones de una tarjeta de sensor y elige Avisarme… para añadir una.</string>

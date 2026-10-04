@@ -577,6 +577,7 @@
     <string name="rd_err_handshake_timeout">Komputer pod adresem %1$s odpowiedział, ale przestał reagować podczas sprawdzania tego urządzenia. Mógł przejść w stan uśpienia. Spróbuj połączyć się ponownie.</string>
     <string name="cd_clear_search">Wyczyść wyszukiwanie</string>
     <string name="pairing_error_timeout">Komputer nie odpowiedział. Sprawdź, czy jest włączony i połączony z tą samą siecią, a następnie spróbuj ponownie.</string>
+    <string name="connection_error_timeout_vpn">Komputer nie odpowiedział. Sprawdź, czy Tailscale (lub Twój VPN) jest włączony zarówno na tym telefonie, jak i na komputerze, a następnie spróbuj ponownie.</string>
     <string name="host_discovered_snackbar">Znaleziono komputer: %1$s</string>
     <string name="widget_refresh">Odśwież</string>
     <string name="widget_toast_refreshing">Odświeżanie…</string>
@@ -1645,6 +1646,8 @@
     <string name="sensor_alert_remove">Usuń alert</string>
     <string name="sensor_alert_blocked_not_connected">Połącz się z komputerem, aby ustawić alerty.</string>
     <string name="sensor_alert_blocked_pc_too_old">Zaktualizuj RemEx na komputerze, aby ustawiać alerty z telefonu.</string>
+    <string name="sensor_alert_save_failed">Alert nie został wysłany do komputera. Sprawdź, czy telefon nadal jest z nim połączony, a następnie spróbuj ponownie.</string>
+    <string name="sensor_alert_refused_snackbar">Komputer nie zachował alertu dla: %1$s. Być może już nie rozpoznaje tego czujnika.</string>
     <string name="sensor_alert_blocked_too_many">Komputer ma już tyle alertów, ile może przechowywać. Najpierw usuń jeden.</string>
     <string name="sensor_alerts_title">Alerty z komputera</string>
     <string name="sensor_alerts_empty">Brak alertów. Otwórz opcje karty czujnika i wybierz Powiadom mnie…, aby dodać alert.</string>

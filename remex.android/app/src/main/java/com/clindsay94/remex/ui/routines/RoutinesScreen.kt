@@ -361,6 +361,12 @@ private fun RoutinesListPane(
     }
     val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
+    val routinesListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Tapping Routines while on Routines goes back to the top (RemEx-pp4cm.3). A list that is not
+    // on screen (loading, unreadable store) cannot scroll, so there is nothing to do.
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Routines) {
+        if (routinesListState.canScrollBackward) routinesListState.animateScrollToItem(0)
+    }
     val readOnly = status.readOnly
     val canEdit = status.health == RoutineStoreHealth.OK && !readOnly
 
@@ -523,6 +529,7 @@ private fun RoutinesListPane(
                 status.health == RoutineStoreHealth.UNREADABLE -> UnreadableState(viewModel, Modifier.padding(padding))
                 else ->
                     LazyColumn(
+                        state = routinesListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = padding.calculateBottomPadding() + 96.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -70,9 +70,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.remexIconSquircle
 import androidx.compose.ui.res.stringResource
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
@@ -477,17 +474,8 @@ private fun TutorialPageContent(
             val context = LocalContext.current
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
-                // GUARDED, like HomeCaptureSheet's copy of this button: some phones (work profiles,
-                // trimmed vendor builds) have no screen for the direct request, and an unresolved
-                // startActivity here crashed the very first run. Fall back to the battery
-                // optimisation list, and if that is missing too, do nothing rather than crash.
-                val direct = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                    .setData(Uri.parse("package:" + context.packageName))
-                runCatching { context.startActivity(direct) }
-                    .recoverCatching {
-                        context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                    }
-                    .onFailure { android.util.Log.w("TutorialScreen", "No battery optimisation screen on this phone", it) }
+                // Guarded and shared with the routines notice; see openBatteryOptimisationSettings.
+                openBatteryOptimisationSettings(context, context::startActivity)
             },
                 shapes = rememberRemexButtonShapes(),
                 contentPadding = ButtonDefaults.ContentPadding,

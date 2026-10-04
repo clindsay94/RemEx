@@ -81,7 +81,8 @@ object FileTransferEngine {
      * A running download's "the stream is over" signal, by transferId, so a `cancel` the PC sends
      * (it gives up on a peer that stopped acknowledging) ends the wait instead of being ignored.
      */
-    private val downloadAborts = ConcurrentHashMap<String, CompletableDeferred<Boolean>>()
+    // internal so DownloadCancelRoutingTest can register a run's wait and send a cancel at it (RemEx-pp4cm.13).
+    internal val downloadAborts = ConcurrentHashMap<String, CompletableDeferred<Boolean>>()
 
     /** Callback the foreground service sets so it can stop itself once the queue is idle. */
     @Volatile var onQueueIdle: (() -> Unit)? = null
@@ -696,7 +697,7 @@ object FileTransferEngine {
         }
     }
 
-    private fun onControlMessage(json: String) {
+    internal fun onControlMessage(json: String) {
         val obj = try { JSONObject(json) } catch (e: Exception) { return }
         when (obj.optString("type")) {
             "file_transfer_ready" -> {

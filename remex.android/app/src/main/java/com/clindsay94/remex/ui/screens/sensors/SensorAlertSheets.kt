@@ -10,8 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteOutline
+import com.clindsay94.remex.ui.components.DeleteOutlineGlyph
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,12 +66,14 @@ private fun blockedText(block: SensorAlertBlock): Int =
                 SensorAlertBlock.NOT_CONNECTED -> R.string.sensor_alert_blocked_not_connected
                 SensorAlertBlock.PC_TOO_OLD -> R.string.sensor_alert_blocked_pc_too_old
                 SensorAlertBlock.TOO_MANY -> R.string.sensor_alert_blocked_too_many
+                SensorAlertBlock.NOT_SENT -> R.string.sensor_alert_save_failed
         }
 
 /**
  * The "Alert me..." sheet for one sensor (RemEx-pp4cm.12): Above or Below, a threshold in the sensor's
  * unit, a severity, and Save / Remove. The PC owns the rule: Save sends it, and the PC's next list is
- * what confirms it, so the sheet closes at once and the card's bell follows.
+ * what confirms it, so the sheet closes once the rule is sent and the card's bell follows. A Save that
+ * could not be sent leaves the sheet open with the reason ([saveFailure]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,11 +83,16 @@ fun SensorAlertEditorSheet(
         onSave: (threshold: Double, direction: SensorAlertDirection, severity: SensorAlertSeverity) -> Unit,
         onRemove: () -> Unit,
         onDismiss: () -> Unit,
+        /**
+         * Why the last Save was not sent, shown in place of the note. The sheet stays open on one so
+         * the person sees it instead of a sheet that vanished with nothing saved (RemEx-pp4cm.12).
+         */
+        saveFailure: SensorAlertBlock? = null,
 ) {
         val haptics = rememberRemexHaptics()
         val existing = state.ruleFor(target.sensorName)
         var draft by remember(target.sensorName) { mutableStateOf(SensorAlertEditorLogic.draftFor(existing, target.currentValue)) }
-        val blocked = SensorAlertEditorLogic.blockedReason(state, existing)
+        val blocked = saveFailure ?: SensorAlertEditorLogic.blockedReason(state, existing)
         val canSave = SensorAlertEditorLogic.canSave(draft, state, existing)
         val unit = target.unit?.trim().orEmpty()
 
@@ -273,7 +279,7 @@ private fun SensorAlertRuleRow(rule: SensorAlertRule, canEdit: Boolean, onEdit: 
                         )
                 }
                 FilledTonalIconButton(onClick = onRemove, enabled = canEdit, shapes = rememberRemexIconButtonShapes()) {
-                        Icon(Icons.Filled.DeleteOutline, contentDescription = stringResource(R.string.sensor_alerts_remove_cd, rule.displayName))
+                        Icon(DeleteOutlineGlyph, contentDescription = stringResource(R.string.sensor_alerts_remove_cd, rule.displayName))
                 }
         }
 }

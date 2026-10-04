@@ -584,6 +584,7 @@
     <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="connection_error_timeout_vpn">पीसी ने जवाब नहीं दिया। जांचें कि Tailscale (या आपका VPN) इस फ़ोन और पीसी, दोनों पर चालू है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
     <string name="widget_refresh">रिफ़्रेश करें</string>
     <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>
@@ -1621,6 +1622,8 @@
     <string name="sensor_alert_remove">चेतावनी हटाएँ</string>
     <string name="sensor_alert_blocked_not_connected">चेतावनियाँ सेट करने के लिए अपने PC से जुड़ें।</string>
     <string name="sensor_alert_blocked_pc_too_old">अपने फ़ोन से चेतावनियाँ सेट करने के लिए अपने PC पर RemEx अपडेट करें।</string>
+    <string name="sensor_alert_save_failed">चेतावनी आपके PC को नहीं भेजी गई। जांचें कि आपका फ़ोन अब भी उससे जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="sensor_alert_refused_snackbar">आपके PC ने %1$s की चेतावनी नहीं रखी। हो सकता है कि वह अब उस सेंसर को न पहचानता हो।</string>
     <string name="sensor_alert_blocked_too_many">आपके PC में उतनी चेतावनियाँ हैं जितनी वह रख सकता है। पहले कोई एक हटाएँ।</string>
     <string name="sensor_alerts_title">PC की चेतावनियाँ</string>
     <string name="sensor_alerts_empty">अभी कोई चेतावनी नहीं है। किसी सेंसर कार्ड के विकल्प खोलें और जोड़ने के लिए मुझे बताएँ… चुनें।</string>

@@ -232,6 +232,14 @@ fun FileTransferScreen(
     }
 
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
+    val fileGridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    val fileListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Tapping Files while on Files goes back to the top of whichever view is showing
+    // (RemEx-pp4cm.3). The unattached state is left alone: it cannot scroll.
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.FileTransfer) {
+        if (viewMode == FileViewMode.GRID) fileGridState.animateScrollToItem(0)
+        else fileListState.animateScrollToItem(0)
+    }
     // Name the read-only state next to the folder it applies to, so a user looking at
     // greyed-out upload and new-folder buttons has the reason on screen (RemEx-dc57).
     // Note this passes selectedRoot?.isWritable, NOT canWrite - see the rule in
@@ -447,7 +455,7 @@ fun FileTransferScreen(
                                         )
                                     }
                                     FileManagerBodyState.Kind.Content -> if (state.viewMode == FileViewMode.GRID) {
-                                        LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
+                                        LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), state = fileGridState, modifier = Modifier.fillMaxSize()) {
                                             items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
                                                 FileManagerGridItem(
                                                     modifier = Modifier.animateItem(
@@ -472,7 +480,7 @@ fun FileTransferScreen(
                                             }
                                         }
                                     } else {
-                                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                        LazyColumn(state = fileListState, modifier = Modifier.fillMaxSize()) {
                                             items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
                                                 FileManagerListItem(
                                                     modifier = Modifier.animateItem(
