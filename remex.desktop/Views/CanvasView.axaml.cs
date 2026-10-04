@@ -9,7 +9,9 @@ using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Remex.Desktop.Controls;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -312,11 +314,18 @@ public partial class CanvasView : UserControl
             // naming the encoder also makes the .png extension above and the format agree out loud.
             rtb.Save(filePath, PngBitmapEncoderOptions.Default);
 
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Saved to {fileName}");
+            // Localized, and no raw exception text on screen (3.0 comb, canvas-status-english): the
+            // detail goes to Logs & Diagnostics, the user gets a sentence and a next step. These
+            // messages clear themselves after four seconds, so a formatted snapshot is fine here.
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus(string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Canvas_SnapshotSaved"], fileName));
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}", succeeded: false);
+            InMemoryLogSink.Append(LogLevel.Warning, "Canvas", "Saving a canvas snapshot failed", ex);
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus(
+                LocalizationService.Instance["Canvas_SnapshotSaveFailed"], succeeded: false);
         }
     }
 
@@ -336,18 +345,22 @@ public partial class CanvasView : UserControl
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel?.Clipboard is null)
             {
-                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable", succeeded: false);
+                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus(
+                    LocalizationService.Instance["Canvas_ClipboardUnavailable"], succeeded: false);
                 return;
             }
 
             await topLevel.Clipboard.SetBitmapAsync(rtb);
             await topLevel.Clipboard.FlushAsync();
 
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Copied to clipboard");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus(
+                LocalizationService.Instance["Canvas_SnapshotCopied"]);
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}", succeeded: false);
+            InMemoryLogSink.Append(LogLevel.Warning, "Canvas", "Copying a canvas snapshot failed", ex);
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus(
+                LocalizationService.Instance["Canvas_SnapshotCopyFailed"], succeeded: false);
         }
     }
 }

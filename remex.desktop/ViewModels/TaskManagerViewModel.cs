@@ -4,6 +4,8 @@ using System.Windows.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
 
@@ -36,6 +38,14 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string? _killError;
+
+    /// <summary>
+    /// True while the last attempt to refresh the process list failed (3.0 comb, taskmgr-poll-fault).
+    /// The poll used to swallow the failure and leave a stale list on screen with no sign anything
+    /// was wrong. The view shows a localized line while this is set; the next good refresh clears it.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasRefreshError;
 
     /// <summary>Full scale of the CPU mini bars: the busiest listed process (RemEx-kq10x.5).</summary>
     [ObservableProperty]
@@ -390,7 +400,15 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         _pollingCts?.Cancel();
     }
 
-    private async Task PollAsync(CancellationToken ct)
+    private Task PollAsync(CancellationToken ct) => PollAsync(ct, RefreshProcessesAsync, PollInterval);
+
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// The poll loop, with the refresh and the pause between rounds passed in so a test can drive a
+    /// failing refresh without a live host.
+    /// </summary>
+    internal async Task PollAsync(CancellationToken ct, Func<Task> refresh, TimeSpan interval)
     {
         while (!ct.IsCancellationRequested)
         {
@@ -406,11 +424,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
                     continue;
                 }
 
-                await RefreshProcessesAsync();
-                await Task.Delay(2000, ct); // Poll every 2 seconds
+                await refresh();
+                HasRefreshError = false;
+                await Task.Delay(interval, ct);
             }
             catch (OperationCanceledException) { /* polling was cancelled because the view went away */ }
-            catch { await Task.Delay(2000, ct); }
+            catch (Exception ex)
+            {
+                // The retry pause lives in its OWN try: Task.Delay(ct) throws when polling is stopped
+                // during it, and from inside this catch block that exception escaped the loop and
+                // faulted the fire-and-forget poll task unobserved.
+                InMemoryLogSink.Append(LogLevel.Warning, "Processes", "Refreshing the process list failed", ex);
+                HasRefreshError = true;
+                try { await Task.Delay(interval, ct); }
+                catch (OperationCanceledException) { /* polling was stopped while waiting to retry */ }
+            }
         }
     }
 

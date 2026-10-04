@@ -728,13 +728,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             }));
     }
 
-    [RelayCommand]
-    private async Task SaveAsync()
-    {
-        Save();
-        await _layoutService.FlushAsync();
-        ShowTransientStatus(LocalizationService.Instance["Settings_SavedStatus"]);
-    }
+    // No SaveCommand (3.0 comb, redundant-save): every setting on this page saves as it changes,
+    // through Save() below and the layout service's debounced write, so the header's "Save changes"
+    // button only ever re-saved what was already saved. The page shows a passive note instead.
 
     // ═══════════════ Navigation ═══════════════
 

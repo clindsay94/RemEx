@@ -54,4 +54,10 @@
             <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="primary" />
         </Grid>
     </Grid>
+    <!-- ESCAPE CANCELS, ENTER SAVES (3.0 comb, addprogram-no-escape; same rule as CopyAlertDialog).
+         SaveAsync already ignores an incomplete form, so Enter on an empty name does nothing. -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Enter" Command="{Binding SaveCommand}"/>
+    </Window.KeyBindings>
 </Window>

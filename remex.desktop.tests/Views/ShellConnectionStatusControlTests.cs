@@ -138,7 +138,7 @@ public class ShellConnectionStatusControlTests
     [Theory]
     [InlineData("Shell_LogsDiagnostics", "NavigateToDiagnosticLogsCommand", "Presence.IsHostDown")]
     [InlineData("Btn_Connect", "Connection.ConnectCommand", "Presence.IsHostDown")]
-    [InlineData("Home_PairPhoneButton", "NavigateToSettingsCommand", "Presence.HasNoPhone")]
+    [InlineData("Home_PairPhoneButton", "StartPairingCommand", "Presence.HasNoPhone")]
     [InlineData("Nav_Settings", "NavigateToSettingsCommand", "Presence.HasPhone")]
     public void EachFlyoutActionIsGatedOnExactlyItsState(string key, string command, string gate)
     {

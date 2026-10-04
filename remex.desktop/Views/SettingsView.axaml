@@ -78,11 +78,10 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <!-- Padding/CornerRadius stay inline: this is the header's own Save CTA, deliberately
-                         larger than the CornerRadiusSmall card buttons below it (RemEx-cgrv3). -->
-                    <Button Classes="primary" Command="{Binding SaveCommand}" Padding="20,10" CornerRadius="10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_SaveChanges}">
-                        <TextBlock Text="{local:Localize Settings_SaveChanges}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold"/>
-                    </Button>
+                    <!-- NO SAVE BUTTON (3.0 comb, redundant-save). Every control on this page saves the
+                         moment it changes, so a "Save changes" CTA told the user there were unsaved
+                         edits when there never were. A passive note says how it works instead. -->
+                    <TextBlock Text="{local:Localize Settings_AutoSaveNote}" IsVisible="{Binding !SavedStatus.Length}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
 
