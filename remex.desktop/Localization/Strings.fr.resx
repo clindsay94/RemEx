@@ -2572,7 +2572,16 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Obtenir l'application téléphone</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Téléchargez RemEx pour Android sur Google Play.</value>
+    <value>Scannez un code avec votre téléphone pour obtenir RemEx pour Android.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Scannez ce code avec l'appareil photo de votre téléphone pour obtenir RemEx sur Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Ouvrir plutôt dans le navigateur</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Code QR de RemEx sur Google Play</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
     <value>À propos et aide</value>

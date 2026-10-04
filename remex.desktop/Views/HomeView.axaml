@@ -546,7 +546,12 @@
                         </StackPanel>
                     </Grid>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
+                <!-- The Play card opens a scan-to-install QR code (RemEx-2p7um): opening the listing in
+                     a browser on the PC doesn't help someone who needs the app on their phone. No Command
+                     on this Button on purpose (RemEx-acvny): Button.OnClick opens the Flyout and then runs
+                     the Command, and a Command here would be a second owner of the click. The browser
+                     route lives on inside the flyout instead. -->
+                <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="card interactive" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemSuccessBackgroundBrush}" Margin="0,0,14,0">
                             <mi:MaterialIcon Kind="GooglePlay" Foreground="{DynamicResource SystemSuccessBrush}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -556,6 +561,23 @@
                             <TextBlock Text="{local:Localize Home_PlayStoreCardDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
+                    <Button.Flyout>
+                        <Flyout Placement="Top">
+                            <Border Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16">
+                                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                    <!-- Deliberately a hardcoded White plate rather than a theme brush, the
+                                         same exemption PairingQrPanelView's plate carries: a QR code needs a
+                                         light quiet zone and dark modules to scan, under every theme. -->
+                                    <Border Background="White" Padding="8" CornerRadius="8" HorizontalAlignment="Center">
+                                        <!-- Interpolation off so the modules stay sharp-edged when scaled. -->
+                                        <Image Source="{Binding PlayStoreQrImage}" Width="200" Height="200" RenderOptions.BitmapInterpolationMode="None" AutomationProperties.Name="{local:Localize Home_PlayStoreQrName}"/>
+                                    </Border>
+                                    <TextBlock Text="{local:Localize Home_PlayStoreQrHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="216" HorizontalAlignment="Center"/>
+                                    <Button Classes="tertiary" Content="{local:Localize Home_PlayStoreOpenInBrowser}" Command="{Binding OpenPlayStoreCommand}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Flyout>
+                    </Button.Flyout>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">

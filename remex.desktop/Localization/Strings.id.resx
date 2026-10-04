@@ -2668,7 +2668,16 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Dapatkan aplikasi ponsel</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Unduh RemEx untuk Android di Google Play.</value>
+    <value>Pindai kode dengan ponsel Anda untuk mendapatkan RemEx untuk Android.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Pindai ini dengan kamera ponsel Anda untuk mendapatkan RemEx dari Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Buka di browser saja</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Kode QR untuk RemEx di Google Play</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>Metrik ganda</value>

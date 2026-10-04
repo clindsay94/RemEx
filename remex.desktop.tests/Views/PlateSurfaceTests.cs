@@ -80,8 +80,17 @@ public class PlateSurfaceTests
     [Fact]
     public void HomeViewHasNoRemainingGlassBaseDarkBrushPlate()
     {
-        Count(Markup("HomeView.axaml"), @"\{DynamicResource GlassBaseDarkBrush\}").Should().Be(0,
-            "every in-content plate in HomeView was swept — none should still reference the window glass brush");
+        // The one survivor is the Play card's QR flyout (RemEx-2p7um). A flyout is a floating
+        // surface over the window, the same out-of-scope shape as the About and Shell flyouts, not a
+        // plate inside a card. Pinned the CanvasView way: an exact count plus where the one use is,
+        // so a swept plate that regresses still fails here.
+        Markup("HomeView.axaml").Should().MatchRegex(
+            @"<Flyout Placement=""Top"">\s*<Border Background=""\{DynamicResource GlassBaseDarkBrush\}""",
+            "the Play card's QR flyout is a floating surface and keeps the window glass brush");
+
+        Count(Markup("HomeView.axaml"), @"\{DynamicResource GlassBaseDarkBrush\}").Should().Be(1,
+            "every in-content plate in HomeView was swept — only the Play card's flyout surface should "
+            + "still reference the window glass brush");
     }
 
     [Fact]

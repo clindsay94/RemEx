@@ -2044,7 +2044,16 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Get the phone app</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Download RemEx for Android on Google Play.</value>
+    <value>Scan a code with your phone to get RemEx for Android.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Scan this with your phone's camera to get RemEx from Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Open in browser instead</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>QR code for RemEx on Google Play</value>
   </data>
   <data name="Home_HwInfoCard" xml:space="preserve">
     <value>Get HWiNFO</value>

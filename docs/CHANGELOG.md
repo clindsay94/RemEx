@@ -13,6 +13,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Scan to get the phone app.** On the PC's Home screen, the **Get the phone app** card now shows a QR code
+  instead of opening Google Play in a browser on the PC. Point your phone's camera at it to go straight to RemEx
+  on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
+  there. (RemEx-2p7um)
 - **Change files on your phone from the PC.** In File Transfer, with your phone chosen as the source, you can now
   make a new folder, rename, move, copy, cut, paste and delete files on the phone, and upload a whole folder to
   it. It stays off until you allow it on the phone: **Settings > Access from your PC > Let your PC change

@@ -121,10 +121,11 @@ public class HomeViewCharacterisationTests
     {
         // A number in a diff, the same device TheAllowListHasNotGrown uses. Twenty is the figure
         // RemEx-1qpjh recorded and it is the one RemEx-oszfm is verified against.
-        Count(Home(), @"<Button[\s>]").Should().Be(19,
+        Count(Home(), @"<Button[\s>]").Should().Be(20,
             "the dashboard had 20 buttons when it was characterised, then lost the footer Connect and "
-            + "Disconnect (3.0 comb, home-disconnect: they drove the window's link to its own host) and gained "
-            + "the Pair a phone button (home-pair-cta-missing); a rewrite that ends with fewer "
+            + "Disconnect (3.0 comb, home-disconnect: they drove the window's link to its own host), gained "
+            + "the Pair a phone button (home-pair-cta-missing), and gained the Play card flyout's Open in "
+            + "browser instead button (RemEx-2p7um); a rewrite that ends with fewer "
             + "has dropped an action, and one that ends with more has grown scope");
     }
 
@@ -313,8 +314,9 @@ public class HomeViewCharacterisationTests
         // The earlier version of this comment enumerated seven controls, called it eighteen, and
         // claimed all eighteen were icon-or-glyph. Review caught it against §7 of the document, which
         // had the split right.
-        Count(Home(), @"AutomationProperties\.Name").Should().Be(19,
-            "19 controls (18 plus the Pair a phone button, which also has a visible caption) on this view carry an automation name and 13 of them have no other "
+        Count(Home(), @"AutomationProperties\.Name").Should().Be(20,
+            "20 controls (18 plus the Pair a phone button, which also has a visible caption, plus the Play "
+            + "flyout's QR code image, RemEx-2p7um) on this view carry an automation name and 14 of them have no other "
             + "accessible label; a restyle that drops one makes that control unreachable to a screen "
             + "reader with no visible sign");
     }

@@ -2572,7 +2572,16 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Obter o aplicativo do telefone</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Baixe RemEx para Android no Google Play.</value>
+    <value>Escaneie um código com o celular para baixar o RemEx para Android.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Escaneie isto com a câmera do celular para baixar o RemEx no Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Abrir no navegador</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Código QR do RemEx no Google Play</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
     <value>Sobre e ajuda</value>

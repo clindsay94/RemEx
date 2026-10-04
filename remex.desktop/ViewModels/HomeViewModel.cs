@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QRCoder;
 using Remex.Core.Messages;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Launching;
@@ -252,8 +253,54 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenGitHub() => OpenUrl("https://github.com/clindsay94/remex");
 
+    /// <summary>The RemEx listing on Google Play, opened by "Open in browser instead".</summary>
+    internal const string PlayStoreUrl = "https://play.google.com/store/apps/details?id=com.clindsay94.remex";
+
+    /// <summary>
+    /// What the Play card's scan-to-install QR code encodes: the listing plus a Play Console
+    /// install-attribution referrer, so installs that came from this code show up as such in the
+    /// console. Nothing in the app reads the referrer.
+    /// </summary>
+    internal const string PlayStoreQrUrl =
+        PlayStoreUrl + "&referrer=utm_source%3Dremex_pc%26utm_medium%3Dqr";
+
+    private Avalonia.Media.Imaging.Bitmap? _playStoreQrImage;
+
+    /// <summary>
+    /// The scan-to-install QR code shown in the Play card's flyout, built the first time it is read
+    /// and kept for the life of this view model.
+    /// </summary>
+    /// <remarks>
+    /// LAZY ON PURPOSE. Flyout content is only realized when the flyout opens, so a user who never
+    /// clicks the card never pays for the encode. The URL is a constant, so there is nothing that
+    /// could ever make a rebuild necessary.
+    /// </remarks>
+    public Avalonia.Media.Imaging.Bitmap PlayStoreQrImage
+    {
+        get
+        {
+            if (_playStoreQrImage is null)
+            {
+                using var ms = new MemoryStream(BuildQrPng(PlayStoreQrUrl));
+                _playStoreQrImage = new Avalonia.Media.Imaging.Bitmap(ms);
+            }
+            return _playStoreQrImage;
+        }
+    }
+
+    /// <summary>
+    /// Encodes <paramref name="text"/> as a QR code PNG: error correction level M, 10 pixels per
+    /// module, QRCoder's default black on white. Pure, so it can be tested without a renderer.
+    /// </summary>
+    internal static byte[] BuildQrPng(string text)
+    {
+        using var generator = new QRCodeGenerator();
+        using var data = generator.CreateQrCode(text, QRCodeGenerator.ECCLevel.M);
+        return new PngByteQRCode(data).GetGraphic(10);
+    }
+
     [RelayCommand]
-    private void OpenPlayStore() => OpenUrl("https://play.google.com/store/apps/details?id=com.clindsay94.remex");
+    private void OpenPlayStore() => OpenUrl(PlayStoreUrl);
 
     [RelayCommand]
     private void OpenHwInfo() => OpenUrl("https://www.hwinfo.com/download/");
@@ -281,5 +328,7 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         LocalizationService.Instance.PropertyChanged -= OnLinkInputsChanged;
         Connection.TelemetryReceived -= _onTelemetry;
         ActivityService.Instance.Recent.CollectionChanged -= _onActivityChanged;
+        _playStoreQrImage?.Dispose();
+        _playStoreQrImage = null;
     }
 }

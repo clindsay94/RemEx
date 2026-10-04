@@ -2576,7 +2576,16 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Telefon uygulamasını al</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Google Play'den Android için RemEx indirin.</value>
+    <value>Android için RemEx'i almak üzere telefonunuzla bir kod tarayın.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Google Play'den RemEx'i almak için bunu telefonunuzun kamerasıyla tarayın.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Bunun yerine tarayıcıda aç</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Google Play'deki RemEx için QR kodu</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
     <value>Hakkında ve yardım</value>

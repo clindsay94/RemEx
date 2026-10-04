@@ -2665,7 +2665,16 @@ Linux: ip addr  या  hostname -I</value>
     <value>फ़ोन ऐप प्राप्त करें</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Google Play पर Android के लिए RemEx डाउनलोड करें।</value>
+    <value>Android के लिए RemEx पाने के लिए अपने फ़ोन से एक कोड स्कैन करें।</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Google Play से RemEx पाने के लिए इसे अपने फ़ोन के कैमरे से स्कैन करें।</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>इसके बजाय ब्राउज़र में खोलें</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Google Play पर RemEx का QR कोड</value>
   </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>दोहरा मीट्रिक</value>

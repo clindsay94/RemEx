@@ -2584,7 +2584,16 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Obtener la aplicación de teléfono</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Descarga RemEx para Android en Google Play.</value>
+    <value>Escanea un código con tu teléfono para obtener RemEx para Android.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Escanea esto con la cámara de tu teléfono para obtener RemEx en Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Abrir en el navegador</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Código QR de RemEx en Google Play</value>
   </data>
   <data name="Home_RecentActivity" xml:space="preserve">
     <value>Actividad reciente</value>

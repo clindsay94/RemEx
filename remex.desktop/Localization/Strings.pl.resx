@@ -2573,7 +2573,16 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Pobierz aplikację na telefon</value>
   </data>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
-    <value>Pobierz RemEx na Androida z Google Play.</value>
+    <value>Zeskanuj kod telefonem, aby pobrać RemEx na Androida.</value>
+  </data>
+  <data name="Home_PlayStoreQrHint" xml:space="preserve">
+    <value>Zeskanuj ten kod aparatem telefonu, aby pobrać RemEx z Google Play.</value>
+  </data>
+  <data name="Home_PlayStoreOpenInBrowser" xml:space="preserve">
+    <value>Otwórz w przeglądarce</value>
+  </data>
+  <data name="Home_PlayStoreQrName" xml:space="preserve">
+    <value>Kod QR do RemEx w Google Play</value>
   </data>
   <data name="Home_QsAbout" xml:space="preserve">
     <value>Informacje i pomoc</value>
