@@ -45,14 +45,10 @@
     <string name="status_disconnected">Déconnecté</string>
     <string name="status_connected">Connecté</string>
     <string name="status_connecting">Connexion à %1$s:%2$d…</string>
-    <string name="status_awaiting_metadata">En attente des détails du PC</string>
     <string name="status_metadata_unavailable">Détails du PC indisponibles</string>
     <string name="status_native_lib_not_loaded">RemEx n\'a pas pu démarrer son moteur de connexion</string>
     <string name="error_no_host_found">Aucun PC RemEx trouvé sur le réseau</string>
-    <string name="error_discovery_failed">Impossible de rechercher votre PC : %1$s</string>
     <string name="error_local_network_permission_denied">L\'accès au Réseau Local a été refusé. RemEx ne peut pas se connecter à votre PC sans cette autorisation sur Android 17+. Veuillez l\'accorder dans les Paramètres de l\'application.</string>
-    <string name="capability_desktop_available">bureau disponible</string>
-    <string name="capability_desktop_unavailable">bureau indisponible</string>
     <string name="notification_channel_name">Connexion RemEx</string>
     <string name="notification_channel_description">Maintient la connexion à votre PC</string>
     <string name="notification_title_connected">Connecté au PC</string>

@@ -1625,12 +1625,10 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                         }
 
-                                                                                                        when (twoFingerIntent
+                                                                                                        when (TwoFingerRouting.route(twoFingerIntent)
                                                                                                         ) {
-                                                                                                                TwoFingerIntent.Pinch -> {
-                                                                                                                        if (distDelta >
-                                                                                                                                        2f
-                                                                                                                        ) {
+                                                                                                                TwoFingerRoute.ZoomAndPan -> {
+                                                                                                                        if (distDelta > 2f) {
                                                                                                                                 val zoomDelta =
                                                                                                                                         dist /
                                                                                                                                                 prevTwoFingerDist
@@ -1664,127 +1662,78 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                         actualDelta) +
                                                                                                                                                 panOffsetY *
                                                                                                                                                         actualDelta
-                                                                                                                                val maxPanX =
-                                                                                                                                        imageSize.width *
-                                                                                                                                                (zoomFactor -
-                                                                                                                                                        1f) /
-                                                                                                                                                2f
-                                                                                                                                val maxPanY =
-                                                                                                                                        imageSize.height *
-                                                                                                                                                (zoomFactor -
-                                                                                                                                                        1f) /
-                                                                                                                                                2f
-                                                                                                                                panOffsetX =
-                                                                                                                                        panOffsetX
-                                                                                                                                                .coerceIn(
-                                                                                                                                                        -maxPanX,
-                                                                                                                                                        maxPanX
-                                                                                                                                                )
-                                                                                                                                panOffsetY =
-                                                                                                                                        panOffsetY
-                                                                                                                                                .coerceIn(
-                                                                                                                                                        -maxPanY,
-                                                                                                                                                        maxPanY
-                                                                                                                                                )
-                                                                                                                                suppressPanFollowUntilMs = System.currentTimeMillis() + 350
                                                                                                                         }
+                                                                                                                        // Pinch-and-drag: the fingers' midpoint travel pans the view. This is
+                                                                                                                        // how a zoomed view is moved by hand now that two fingers always
+                                                                                                                        // scroll the PC (RemEx-pp4cm.10); cursor pan-follow does the rest.
+                                                                                                                        panOffsetX += moveDelta.x
+                                                                                                                        panOffsetY += moveDelta.y
+                                                                                                                        val maxPanX = imageSize.width * (zoomFactor - 1f) / 2f
+                                                                                                                        val maxPanY = imageSize.height * (zoomFactor - 1f) / 2f
+                                                                                                                        panOffsetX = panOffsetX.coerceIn(-maxPanX, maxPanX)
+                                                                                                                        panOffsetY = panOffsetY.coerceIn(-maxPanY, maxPanY)
+                                                                                                                        suppressPanFollowUntilMs = System.currentTimeMillis() + 350
                                                                                                                 }
-                                                                                                                TwoFingerIntent.Scroll -> {
-                                                                                                                        if (zoomFactor >
-                                                                                                                                        1.05f
+                                                                                                                TwoFingerRoute.ScrollHost -> {
+                                                                                                                        // Two fingers ALWAYS scroll the PC, at any zoom (RemEx-pp4cm.10).
+                                                                                                                        // Mouse wheel scroll with accumulator
+                                                                                                                        scrollAccumX +=
+                                                                                                                                moveDelta
+                                                                                                                                        .x *
+                                                                                                                                        1.5f *
+                                                                                                                                        hScrollSensState
+                                                                                                                                                .value
+                                                                                                                        scrollAccumY +=
+                                                                                                                                moveDelta
+                                                                                                                                        .y *
+                                                                                                                                        1.5f *
+                                                                                                                                        vScrollSensState
+                                                                                                                                                .value
+                                                                                                                        val sx =
+                                                                                                                                scrollAccumX
+                                                                                                                                        .toInt()
+                                                                                                                        val sy =
+                                                                                                                                scrollAccumY
+                                                                                                                                        .toInt()
+                                                                                                                        if (sx !=
+                                                                                                                                        0 ||
+                                                                                                                                        sy !=
+                                                                                                                                                0
                                                                                                                         ) {
-                                                                                                                                // Panning zoomed view
-                                                                                                                                panOffsetX +=
-                                                                                                                                        moveDelta
-                                                                                                                                                .x
-                                                                                                                                panOffsetY +=
-                                                                                                                                        moveDelta
-                                                                                                                                                .y
-                                                                                                                                val maxPanX =
-                                                                                                                                        imageSize.width *
-                                                                                                                                                (zoomFactor -
-                                                                                                                                                        1f) /
-                                                                                                                                                2f
-                                                                                                                                val maxPanY =
-                                                                                                                                        imageSize.height *
-                                                                                                                                                (zoomFactor -
-                                                                                                                                                        1f) /
-                                                                                                                                                2f
-                                                                                                                                panOffsetX =
-                                                                                                                                        panOffsetX
-                                                                                                                                                .coerceIn(
-                                                                                                                                                        -maxPanX,
-                                                                                                                                                        maxPanX
-                                                                                                                                                )
-                                                                                                                                panOffsetY =
-                                                                                                                                        panOffsetY
-                                                                                                                                                .coerceIn(
-                                                                                                                                                        -maxPanY,
-                                                                                                                                                        maxPanY
-                                                                                                                                                )
-                                                                                                                                suppressPanFollowUntilMs = System.currentTimeMillis() + 350
-                                                                                                                        } else {
-                                                                                                                                // Mouse wheel scroll
-                                                                                                                                // with accumulator
-                                                                                                                                scrollAccumX +=
-                                                                                                                                        moveDelta
-                                                                                                                                                .x *
-                                                                                                                                                1.5f *
-                                                                                                                                                hScrollSensState
-                                                                                                                                                        .value
-                                                                                                                                scrollAccumY +=
-                                                                                                                                        moveDelta
-                                                                                                                                                .y *
-                                                                                                                                                1.5f *
-                                                                                                                                                vScrollSensState
-                                                                                                                                                        .value
-                                                                                                                                val sx =
-                                                                                                                                        scrollAccumX
-                                                                                                                                                .toInt()
-                                                                                                                                val sy =
-                                                                                                                                        scrollAccumY
-                                                                                                                                                .toInt()
-                                                                                                                                if (sx !=
-                                                                                                                                                0 ||
-                                                                                                                                                sy !=
-                                                                                                                                                        0
+                                                                                                                                // P1-17: throttle wheel-scroll
+                                                                                                                                // sends to ~30Hz like every
+                                                                                                                                // other pointer send here; the
+                                                                                                                                // accumulator keeps summing
+                                                                                                                                // every sample regardless, so
+                                                                                                                                // no motion is lost, only
+                                                                                                                                // coalesced across sends.
+                                                                                                                                // Review fix: uptimeMillis, not
+                                                                                                                                // currentTimeMillis - a wall-clock
+                                                                                                                                // adjustment mid-gesture could
+                                                                                                                                // otherwise go negative and
+                                                                                                                                // freeze scrolling.
+                                                                                                                                val scrollNow =
+                                                                                                                                        SystemClock
+                                                                                                                                                .uptimeMillis()
+                                                                                                                                if (scrollNow -
+                                                                                                                                                lastScrollSendTime >=
+                                                                                                                                                MOVE_THROTTLE_MS
                                                                                                                                 ) {
-                                                                                                                                        // P1-17: throttle wheel-scroll
-                                                                                                                                        // sends to ~30Hz like every
-                                                                                                                                        // other pointer send here; the
-                                                                                                                                        // accumulator keeps summing
-                                                                                                                                        // every sample regardless, so
-                                                                                                                                        // no motion is lost, only
-                                                                                                                                        // coalesced across sends.
-                                                                                                                                        // Review fix: uptimeMillis, not
-                                                                                                                                        // currentTimeMillis - a wall-clock
-                                                                                                                                        // adjustment mid-gesture could
-                                                                                                                                        // otherwise go negative and
-                                                                                                                                        // freeze scrolling.
-                                                                                                                                        val scrollNow =
-                                                                                                                                                SystemClock
-                                                                                                                                                        .uptimeMillis()
-                                                                                                                                        if (scrollNow -
-                                                                                                                                                        lastScrollSendTime >=
-                                                                                                                                                        MOVE_THROTTLE_MS
-                                                                                                                                        ) {
-                                                                                                                                                lastScrollSendTime =
-                                                                                                                                                        scrollNow
-                                                                                                                                                onSendMouseScroll(
-                                                                                                                                                        -sx,
-                                                                                                                                                        -sy
-                                                                                                                                                )
-                                                                                                                                                scrollAccumX -=
-                                                                                                                                                        sx
-                                                                                                                                                scrollAccumY -=
-                                                                                                                                                        sy
-                                                                                                                                        }
+                                                                                                                                        lastScrollSendTime =
+                                                                                                                                                scrollNow
+                                                                                                                                        onSendMouseScroll(
+                                                                                                                                                -sx,
+                                                                                                                                                -sy
+                                                                                                                                        )
+                                                                                                                                        scrollAccumX -=
+                                                                                                                                                sx
+                                                                                                                                        scrollAccumY -=
+                                                                                                                                                sy
                                                                                                                                 }
                                                                                                                         }
                                                                                                                 }
-                                                                                                                null -> {
-                                                                                                                        // Still inside the slop
-                                                                                                                        // window: nothing yet.
+                                                                                                                TwoFingerRoute.None -> {
+                                                                                                                        // Still inside the slop window: nothing yet.
                                                                                                                 }
                                                                                                         }
                                                                                                 }

@@ -335,6 +335,21 @@ the compositor scales that fixed buffer to the layout bounds with no surface chu
 The MJPEG fallback (a Compose `Image`) still uses `graphicsLayer` correctly — only the SurfaceView
 needs layout-based scaling. This was latent until fit-to-height (RD-A3) made the default zoom > 1.
 
+### Two fingers ALWAYS scroll the PC — the zoom level never gates it (RemEx-pp4cm.10)
+
+`remex.android/.../ui/screens/RemoteDesktopScreen.kt:1628-1735` (`when (TwoFingerRouting.route(twoFingerIntent))`)
+sends a classified `Scroll` gesture to `onSendMouseScroll` unconditionally; only a `Pinch`
+(`TwoFingerRoute.ZoomAndPan`, `:1630`) touches `zoomFactor`/`panOffset`, and it pans by the fingers'
+midpoint travel (`:1669`). The decision lives in `TwoFingerGestureClassifier.kt` (`TwoFingerRouting`).
+
+**Symptom when violated:** "two-finger scroll stopped working" in PORTRAIT only. Portrait opens
+fit-to-height at about 3x, and the old `if (zoomFactor > 1.05f)` branch on the Scroll intent turned
+every two-finger drag into a view pan with zero PC sends. Landscape (1x) looked fine, so the bug hid.
+
+**Rule:** never add a zoom/pan condition to the Scroll branch. A zoomed view moves by pinch-and-drag
+and by cursor pan-follow only. `RemoteDesktopTwoFingerScrollTest.zoomedPortrait_sendsScroll` (AVD)
+and `TwoFingerRoutingTest` pin it.
+
 ### The H.264 `AndroidView`'s `key()` must include `imageSize`
 
 Alongside the stream dimensions. A surface created against transient geometry freezes its content

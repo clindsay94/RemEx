@@ -5,7 +5,7 @@ import kotlin.math.hypot
 
 /** What a two-finger gesture on the remote-desktop surface is doing, once it has been decided. */
 internal enum class TwoFingerIntent {
-    /** Fingers travel together: wheel-scroll the host (or pan the view when zoomed in). */
+    /** Fingers travel together: wheel-scroll the host, at any zoom level. */
     Scroll,
 
     /** Finger spacing changes: zoom the local view. */
@@ -58,4 +58,33 @@ internal object TwoFingerGestureClassifier {
         return if (spanChange > travel * PINCH_DOMINANCE) TwoFingerIntent.Pinch
         else TwoFingerIntent.Scroll
     }
+}
+
+/** What one two-finger frame does, once its [TwoFingerIntent] is known. */
+internal enum class TwoFingerRoute {
+    /** Still inside the classifier's slop window: do nothing yet. */
+    None,
+
+    /** Send a mouse-wheel scroll to the PC. */
+    ScrollHost,
+
+    /** Zoom the local view and pan it by the fingers' midpoint travel (pinch-and-drag). */
+    ZoomAndPan,
+}
+
+/**
+ * Where a classified two-finger frame goes (RemEx-pp4cm.10).
+ *
+ * The zoom level is deliberately NOT an input. Portrait opens fit-to-height at about 3x, and the old
+ * rule turned every two-finger drag into a view pan whenever zoom > 1.05, so two fingers could never
+ * scroll the PC there. Two fingers always scroll the PC; panning a zoomed view is the pinch's job
+ * (its midpoint travel pans) plus cursor pan-follow.
+ */
+internal object TwoFingerRouting {
+    fun route(intent: TwoFingerIntent?): TwoFingerRoute =
+        when (intent) {
+            null -> TwoFingerRoute.None
+            TwoFingerIntent.Scroll -> TwoFingerRoute.ScrollHost
+            TwoFingerIntent.Pinch -> TwoFingerRoute.ZoomAndPan
+        }
 }
