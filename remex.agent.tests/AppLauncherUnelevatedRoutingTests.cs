@@ -105,7 +105,8 @@ public sealed class AppLauncherUnelevatedRoutingTests : IDisposable
         Assert.Empty(_standardStarts);
     }
 
-    [Fact]
+    [WindowsOnlyFact("a backslash UNC path is only a network path on Windows; on Linux '\\\\attacker\\share\\evil.exe' "
+        + "is an ordinary relative file name, and a Linux share is just a mounted directory")]
     public async Task ANetworkPathNeverReachesEitherLauncherEvenWhenAllowlisted()
     {
         const string unc = @"\\attacker\share\evil.exe";

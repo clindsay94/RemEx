@@ -1414,13 +1414,31 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Perbaikan transfer file</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File di ponsel menyembunyikan item tersembunyi dan item sistem sampai Anda memintanya.</value>
+    <value>Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File di ponsel menyembunyikan item tersembunyi dan item sistem sampai Anda memintanya. PC kini juga bisa menjelajahi folder bersama di ponsel Anda.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Layar pembuka baru</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>Saat RemEx dibuka, layar pembuka kini menunjukkan aplikasi benar-benar memulai dan terhubung, bukan memutar animasi tetap.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Peringatan sensor di ponsel</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Peringatan yang Anda atur di PC kini sampai ke ponsel sebagai notifikasi. Anda bisa menambah, mengubah, atau menghapusnya dari salah satunya.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Log dan diagnostik PC di ponsel</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>Di Lainnya, ada halaman baru yang menampilkan apa yang dicatat PC Anda beserta pemeriksaan kondisi yang sama seperti di PC. Halaman ini hanya untuk dibaca.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Lebih banyak cara mempersonalisasi ponsel</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Pilih latar belakang, lebih banyak bentuk kartu, dan tujuh Nerd Font, lalu atur lebar kisi Sensor.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

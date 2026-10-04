@@ -484,9 +484,15 @@
     <string name="about_whats_new_4_label">El mismo aspecto en las dos aplicaciones</string>
     <string name="about_whats_new_4_body">El teléfono y el PC ahora usan las mismas palabras, fuentes, tarjetas y colores. Una instalación nueva empieza con los colores de RemEx.</string>
     <string name="about_whats_new_5_label">Arreglos en la transferencia de archivos</string>
-    <string name="about_whats_new_5_body">Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos no muestra los elementos ocultos ni los del sistema hasta que activas Mostrar elementos ocultos.</string>
+    <string name="about_whats_new_5_body">Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos no muestra los elementos ocultos ni los del sistema hasta que activas Mostrar elementos ocultos. El PC ahora también puede explorar las carpetas compartidas de tu teléfono.</string>
     <string name="about_whats_new_6_label">Una nueva pantalla de inicio</string>
     <string name="about_whats_new_6_body">Al abrir RemEx, la pantalla de inicio muestra cómo arranca y se conecta de verdad, en lugar de una animación fija.</string>
+    <string name="about_whats_new_7_label">Alertas de sensores en el teléfono</string>
+    <string name="about_whats_new_7_body">Las alertas que creas en el PC ahora llegan al teléfono como notificaciones. Puedes añadirlas, cambiarlas o quitarlas desde cualquiera de los dos.</string>
+    <string name="about_whats_new_8_label">Registros y diagnósticos del PC en el teléfono</string>
+    <string name="about_whats_new_8_body">En Más hay una página nueva con lo que ha registrado tu PC y las mismas comprobaciones de estado que muestra el PC. Es de solo lectura.</string>
+    <string name="about_whats_new_9_label">Más formas de personalizar el teléfono</string>
+    <string name="about_whats_new_9_body">Elige un fondo, más formas de tarjeta y siete Nerd Fonts, y decide el ancho de la cuadrícula de Sensores.</string>
     <string name="about_whats_new_title">Novedades de la versión %1$s</string>
     <string name="app_launcher_recent">Recientes</string>
     <string name="cd_close_settings">Cerrar configuración</string>

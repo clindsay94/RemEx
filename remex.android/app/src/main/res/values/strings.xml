@@ -410,9 +410,15 @@
     <string name="about_whats_new_4_label">One look on both apps</string>
     <string name="about_whats_new_4_body">The phone and the PC now use the same words, fonts, cards and colors. A fresh install starts on the RemEx colors.</string>
     <string name="about_whats_new_5_label">File transfer fixes</string>
-    <string name="about_whats_new_5_body">Folder downloads, either way, no longer skip or repeat files. Files hides hidden and system items until you turn on Show hidden items.</string>
+    <string name="about_whats_new_5_body">Folder downloads, either way, no longer skip or repeat files. Files hides hidden and system items until you turn on Show hidden items. The PC can now browse your phone\'s shared folders too.</string>
     <string name="about_whats_new_6_label">A new startup splash</string>
     <string name="about_whats_new_6_body">When RemEx opens, the splash now shows it really starting up and connecting, instead of playing a fixed animation.</string>
+    <string name="about_whats_new_7_label">Sensor alerts on your phone</string>
+    <string name="about_whats_new_7_body">The alerts you set on the PC now reach your phone as notifications. You can add, change or remove them from either one.</string>
+    <string name="about_whats_new_8_label">PC logs and diagnostics on your phone</string>
+    <string name="about_whats_new_8_body">In More, a new page shows what your PC has logged and the same health checks the PC shows. It is read-only.</string>
+    <string name="about_whats_new_9_label">More ways to personalize the phone</string>
+    <string name="about_whats_new_9_body">Pick a background, more card shapes and seven Nerd Fonts, and choose how wide the Sensors grid is.</string>
     <string name="faq_header">Frequently asked questions</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>

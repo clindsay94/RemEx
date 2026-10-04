@@ -1414,13 +1414,31 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Dosya aktarımı düzeltmeleri</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Telefondaki Dosyalar, siz isteyene kadar gizli ve sistem öğelerini göstermez.</value>
+    <value>Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Telefondaki Dosyalar, siz isteyene kadar gizli ve sistem öğelerini göstermez. Bilgisayar artık telefonunuzun paylaşılan klasörlerine de göz atabilir.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Yeni başlangıç ekranı</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>RemEx açılırken başlangıç ekranı artık sabit bir animasyon oynatmak yerine uygulamanın gerçekten başlayıp bağlandığını gösteriyor.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Telefonda sensör uyarıları</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Bilgisayarda oluşturduğunuz uyarılar artık telefonunuza bildirim olarak geliyor. Bunları ikisinden de ekleyebilir, değiştirebilir veya kaldırabilirsiniz.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Telefonda bilgisayar günlükleri ve tanılama</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>Diğer'de yeni bir sayfa, bilgisayarınızın neleri kaydettiğini ve bilgisayarda görünen aynı durum denetimlerini gösterir. Yalnızca okunabilir.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Telefonu kişiselleştirmenin daha fazla yolu</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Bir arka plan, daha fazla kart şekli ve yedi Nerd Font seçin; Sensörler ızgarasının genişliğini belirleyin.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

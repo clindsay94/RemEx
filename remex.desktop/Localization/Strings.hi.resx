@@ -1414,13 +1414,31 @@ Linux: ip addr  या  hostname -I</value>
     <value>फ़ाइल ट्रांसफ़र में सुधार</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>किसी भी तरफ़ पूरा फ़ोल्डर डाउनलोड करने पर अब फ़ाइलें छूटती या दोहराई नहीं जातीं। फ़ोन की फ़ाइलें स्क्रीन छिपे हुए और सिस्टम आइटम तब तक नहीं दिखाती, जब तक आप न कहें।</value>
+    <value>किसी भी तरफ़ पूरा फ़ोल्डर डाउनलोड करने पर अब फ़ाइलें छूटती या दोहराई नहीं जातीं। फ़ोन की फ़ाइलें स्क्रीन छिपे हुए और सिस्टम आइटम तब तक नहीं दिखाती, जब तक आप न कहें। अब PC आपके फ़ोन के साझा फ़ोल्डर भी ब्राउज़ कर सकता है।</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>नई स्प्लैश स्क्रीन</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>RemEx खुलते समय स्प्लैश अब कोई तय एनीमेशन नहीं चलाती, बल्कि दिखाती है कि ऐप सच में कैसे शुरू होकर कनेक्ट होता है।</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>फ़ोन पर सेंसर चेतावनियाँ</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>PC पर बनाई गई चेतावनियाँ अब आपके फ़ोन पर नोटिफ़िकेशन के रूप में आती हैं। आप उन्हें दोनों में से किसी से भी जोड़, बदल या हटा सकते हैं।</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>फ़ोन पर PC के लॉग और जाँच</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>अधिक में एक नया पेज है, जो दिखाता है कि आपके PC ने क्या दर्ज किया और PC जैसी ही स्वास्थ्य जाँचें भी। यह केवल पढ़ने के लिए है।</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>फ़ोन को अपने ढंग से सजाने के और तरीके</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>पृष्ठभूमि, कार्ड के और आकार और सात Nerd Fonts चुनें, और तय करें कि सेंसर ग्रिड कितना चौड़ा हो।</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

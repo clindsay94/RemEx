@@ -246,16 +246,6 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   sends it to the phone. Power actions on Linux are now only offered when the system says they are
   available. The Routines page on the PC comes next. (RemEx-pp0rt.9)
 
-- Routines (3.0): the PC side of routines that run on the PC. The PC now keeps each phone's PC-run
-  routines in `routines.json` (only the elevated agent can write it on Windows, owner-only on Linux),
-  checks every one again when it arrives, and runs them itself when the PC goes idle or is locked or
-  unlocked, on Windows and Linux. A phone can also ask the PC to run one of its routines now. The PC
-  can switch a routine off, pause everything, or block a phone, and a connected phone hears about it
-  at once; a phone that has not been seen for 30 days has its routines paused until it syncs again,
-  and unpairing a phone removes its routines and history. The PC keeps a history of what it ran and
-  sends it to the phone. Power actions on Linux are now only offered when the system says they are
-  available. The Routines page on the PC comes next. (RemEx-pp0rt.9)
-
 - Routines (3.0): a Routines page on the PC, right after Commands in the menu. It lists the routines
   your phones have set to run on this PC, grouped by phone, with each one's trigger and steps, when it
   last ran and how that went. Each routine has a switch to turn it off on this PC only, and Run now:
@@ -294,6 +284,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Changed
 
+- The 3.0 What's New list, on the PC's About page and the phone's About screen, now has nine items. It adds
+  sensor alerts on the phone, the PC's logs and diagnostics on the phone, and the phone's new personalization
+  options, and the file transfer item now says the PC can browse the phone. All nine languages on both apps.
+  The 3.0.0 release notes are in `docs/RELEASE-NOTES-3.0.0.md` and the Google Play text is in
+  `docs/PLAY-WHATS-NEW-3.0.0.md`. (RemEx-pp4cm.19)
 - The tray popup's sensor cards grow to fill the popup: when you resize it, the cards in each row
   widen to use the space instead of leaving a gap at the end. (RemEx-8tm8l)
 - The phone's contrast slider in Personalize clicks onto Standard and both ends, the same as on the

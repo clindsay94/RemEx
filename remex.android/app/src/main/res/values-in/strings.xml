@@ -477,9 +477,15 @@
     <string name="about_whats_new_4_label">Satu tampilan di kedua aplikasi</string>
     <string name="about_whats_new_4_body">Ponsel dan PC kini memakai kata, font, kartu, dan warna yang sama. Instalasi baru dimulai dengan warna RemEx.</string>
     <string name="about_whats_new_5_label">Perbaikan transfer file</string>
-    <string name="about_whats_new_5_body">Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File menyembunyikan item tersembunyi dan item sistem sampai Anda menyalakan Tampilkan item tersembunyi.</string>
+    <string name="about_whats_new_5_body">Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File menyembunyikan item tersembunyi dan item sistem sampai Anda menyalakan Tampilkan item tersembunyi. PC kini juga bisa menjelajahi folder bersama di ponsel Anda.</string>
     <string name="about_whats_new_6_label">Layar pembuka baru</string>
     <string name="about_whats_new_6_body">Saat RemEx dibuka, layar pembuka kini menunjukkan aplikasi benar-benar memulai dan terhubung, bukan memutar animasi tetap.</string>
+    <string name="about_whats_new_7_label">Peringatan sensor di ponsel</string>
+    <string name="about_whats_new_7_body">Peringatan yang Anda atur di PC kini sampai ke ponsel sebagai notifikasi. Anda bisa menambah, mengubah, atau menghapusnya dari salah satunya.</string>
+    <string name="about_whats_new_8_label">Log dan diagnostik PC di ponsel</string>
+    <string name="about_whats_new_8_body">Di Lainnya, ada halaman baru yang menampilkan apa yang dicatat PC Anda beserta pemeriksaan kondisi yang sama seperti di PC. Halaman ini hanya untuk dibaca.</string>
+    <string name="about_whats_new_9_label">Lebih banyak cara mempersonalisasi ponsel</string>
+    <string name="about_whats_new_9_body">Pilih latar belakang, lebih banyak bentuk kartu, dan tujuh Nerd Font, lalu atur lebar kisi Sensor.</string>
     <string name="about_whats_new_title">Yang baru di %1$s</string>
     <string name="app_launcher_recent">Terbaru</string>
     <string name="cd_close_settings">Tutup pengaturan</string>

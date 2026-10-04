@@ -1414,13 +1414,31 @@ Sur la page Routines, vous pouvez les voir, les désactiver et consulter leur hi
     <value>Corrections du transfert de fichiers</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Télécharger un dossier, dans un sens comme dans l'autre, ne saute ni ne répète plus aucun fichier. Fichiers, sur le téléphone, masque les éléments cachés et système sauf si vous le demandez.</value>
+    <value>Télécharger un dossier, dans un sens comme dans l'autre, ne saute ni ne répète plus aucun fichier. Fichiers, sur le téléphone, masque les éléments cachés et système sauf si vous le demandez. Le PC peut aussi parcourir les dossiers partagés de votre téléphone.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Un nouvel écran de démarrage</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>À l'ouverture, l'écran de démarrage montre RemEx qui démarre et se connecte vraiment, au lieu d'une animation figée.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Alertes de capteurs sur le téléphone</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Les alertes que vous créez sur le PC arrivent maintenant sur le téléphone sous forme de notifications. Vous pouvez les ajouter, les modifier ou les supprimer depuis l'un ou l'autre.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Journaux et diagnostics du PC sur le téléphone</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>Dans Plus, une nouvelle page montre ce que votre PC a consigné et les mêmes vérifications d'état que sur le PC. Elle est en lecture seule.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Plus de façons de personnaliser le téléphone</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Choisissez un arrière-plan, d'autres formes de cartes et sept Nerd Fonts, ainsi que la largeur de la grille de Capteurs.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

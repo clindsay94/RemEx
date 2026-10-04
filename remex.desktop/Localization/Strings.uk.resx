@@ -1414,13 +1414,31 @@ Linux: ip addr  або  hostname -I</value>
     <value>Виправлення передавання файлів</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Завантаження теки, в будь-який бік, більше не пропускає й не повторює файли. Файли на телефоні не показують прихованих і системних елементів, доки ви про це не попросите.</value>
+    <value>Завантаження теки, в будь-який бік, більше не пропускає й не повторює файли. Файли на телефоні не показують прихованих і системних елементів, доки ви про це не попросите. ПК тепер також може переглядати спільні теки вашого телефону.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
     <value>Нова заставка</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
     <value>Під час відкриття заставка тепер показує, як RemEx справді запускається й підключається, а не відтворює фіксовану анімацію.</value>
+  </data>
+  <data name="About_WhatsNew_7_Title" xml:space="preserve">
+    <value>Оповіщення датчиків на телефоні</value>
+  </data>
+  <data name="About_WhatsNew_7_Body" xml:space="preserve">
+    <value>Оповіщення, які ви створюєте на ПК, тепер приходять на телефон як сповіщення. Додавати, змінювати й вилучати їх можна з будь-якого з двох пристроїв.</value>
+  </data>
+  <data name="About_WhatsNew_8_Title" xml:space="preserve">
+    <value>Журнали та діагностика ПК на телефоні</value>
+  </data>
+  <data name="About_WhatsNew_8_Body" xml:space="preserve">
+    <value>У розділі «Більше» нова сторінка показує, що записав ваш ПК, і ті самі перевірки стану, що й на ПК. Вона лише для читання.</value>
+  </data>
+  <data name="About_WhatsNew_9_Title" xml:space="preserve">
+    <value>Більше способів персоналізувати телефон</value>
+  </data>
+  <data name="About_WhatsNew_9_Body" xml:space="preserve">
+    <value>Виберіть тло, більше форм карток і сім шрифтів Nerd Fonts та задайте ширину сітки Датчиків.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
