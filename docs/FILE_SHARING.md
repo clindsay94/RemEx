@@ -95,6 +95,11 @@ full browse — until then, there's nothing extra to see. On the PC's Files page
 whole‑device button only shows while you're browsing a **phone** that has full
 browse turned on; for the PC itself, use File Explorer.
 
+**Hidden items.** The phone's **Files** screen leaves out hidden and system items
+until you turn on **Show hidden items** in its **Sort** menu. If a folder holds
+nothing but hidden items, it tells you so instead of looking empty. This only
+changes what you see; it doesn't change what the PC shares.
+
 ---
 
 ## 3. Share to PC — send files from any app on your phone
