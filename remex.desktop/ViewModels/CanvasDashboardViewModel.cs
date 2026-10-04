@@ -412,6 +412,29 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
             })
             .ToList();
 
+    /// <summary>
+    /// The latest reading a card for <paramref name="name"/> has received (case-insensitive), for the
+    /// phone's alert list (RemEx-pp4cm.12). False when no card for it has reported yet, or while the
+    /// host is disconnected, for the same reason <see cref="SensorInfo.IsConnected"/> is gated on it:
+    /// <see cref="SensorViewModel.RawReading"/> is never cleared, so without the gate a sensor that
+    /// reported once would show its last value as current forever.
+    /// </summary>
+    public bool TryGetLiveValue(string name, out double value)
+    {
+        value = 0;
+        if (!Connection.IsConnected) return false;
+
+        var reading = Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null
+                && string.Equals(c.Sensor.Name, name, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Sensor!.RawReading)
+            .FirstOrDefault(r => r is not null);
+        if (reading is null) return false;
+
+        value = reading.Value;
+        return true;
+    }
+
     /// <inheritdoc />
     public bool TryResolve(string name, [MaybeNullWhen(false)] out SensorInfo info)
     {

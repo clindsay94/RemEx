@@ -18,6 +18,12 @@ import com.clindsay94.remex.data.HomePinsCache
 import com.clindsay94.remex.data.HomePinsRepository
 import com.clindsay94.remex.data.HomePinsState
 import com.clindsay94.remex.data.HomePinsStore
+import com.clindsay94.remex.alerts.PcAlertNotificationPresenter
+import com.clindsay94.remex.data.SensorAlertDirection
+import com.clindsay94.remex.data.SensorAlertSeverity
+import com.clindsay94.remex.data.SensorAlerts
+import com.clindsay94.remex.data.SensorAlertsRepository
+import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.data.MediaArtworkCache
 import com.clindsay94.remex.data.MediaPlaybackSnapshot
 import com.clindsay94.remex.data.MediaSeekReconciler
@@ -475,6 +481,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         managerScope.launch(Dispatchers.IO) { Routines.syncClient(appContext).run() }
 
         startHomePinsSync(appContext, settings)
+
+        startSensorAlerts(appContext, settings)
 
         startTelemetryBackgroundPause(appContext)
 
@@ -1108,6 +1116,101 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         managerScope.launch(Dispatchers.IO) { homePinsRepository.setPinned(sensorName, pinned) }
     }
 
+    /**
+     * Every `sensor_alert_*` envelope from the PC and the epoch of the connection it arrived on (null:
+     * none known). EVENTS, not state: no replay, so a firing is posted once and a late collector never
+     * re-posts an old one. The buffer holds a burst (a PC that rebuilds its list and fires in the same
+     * tick) rather than dropping the first.
+     */
+    private val _sensorAlertMessages =
+            MutableSharedFlow<SensorAlertInbound>(replay = 0, extraBufferCapacity = 32, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** One `sensor_alert_*` envelope and the epoch of the connection it arrived on (null: none known). */
+    data class SensorAlertInbound(val connectionEpoch: Long?, val json: String)
+
+    /**
+     * The connected PC's sensor alert rules (RemEx-pp4cm.12), fed from [_sensorAlertMessages],
+     * [hostInfoForConnection] and the connection flows by [startSensorAlerts]. One instance for the whole
+     * app, because the Sensors cards' bells and the Alerts list must show the same rules.
+     */
+    private val sensorAlertsRepository =
+            SensorAlertsRepository(
+                    send = { json ->
+                        RemexCoreClient.SendMessage(json).onFailure {
+                            Log.w("RemexManager", "Sending a sensor alert request failed", it)
+                        }
+                    },
+                    isAuthenticated = { _isAuthenticated.value },
+            )
+
+    val sensorAlerts: StateFlow<SensorAlertsState> = sensorAlertsRepository.state
+
+    /**
+     * Sets (adds or replaces) the alert on [sensorName] on the connected PC. Off the main thread because
+     * the send is a blocking JNI call; see [SensorAlertsRepository.setRule] for when nothing happens.
+     */
+    fun setSensorAlert(
+            sensorName: String,
+            displayName: String,
+            unit: String?,
+            threshold: Double,
+            direction: SensorAlertDirection,
+            severity: SensorAlertSeverity,
+    ) {
+        managerScope.launch(Dispatchers.IO) {
+            sensorAlertsRepository.setRule(sensorName, displayName, unit, threshold, direction, severity)
+        }
+    }
+
+    /** Removes the alert on [sensorName] from the connected PC. */
+    fun removeSensorAlert(sensorName: String) {
+        managerScope.launch(Dispatchers.IO) { sensorAlertsRepository.removeRule(sensorName) }
+    }
+
+    /** Asks the connected PC for its alert rules again, for a screen that wants them fresh. */
+    fun refreshSensorAlerts() {
+        managerScope.launch(Dispatchers.IO) { sensorAlertsRepository.refresh() }
+    }
+
+    /**
+     * Wires [sensorAlertsRepository] and the notification shade to the connection (RemEx-pp4cm.12).
+     * Four collectors on IO (the sends are blocking JNI calls), each handing the repository one kind of
+     * event; it serialises them and handles their ordering itself. A `sensor_alert_fired` is posted as a
+     * notification only while "Alerts from your PC" is on; nothing is queued for a phone that is not
+     * connected, which is the whole promise the settings text makes.
+     */
+    private fun startSensorAlerts(appContext: Context, settings: SettingsManager) {
+        val presenter = PcAlertNotificationPresenter(appContext)
+        managerScope.launch(Dispatchers.IO) {
+            connectedHost.collect { connection ->
+                if (connection == null) sensorAlertsRepository.onDisconnected()
+                else sensorAlertsRepository.onConnected(connection.epoch)
+            }
+        }
+        managerScope.launch(Dispatchers.IO) {
+            hostInfoForConnection.collect { info ->
+                if (info != null) sensorAlertsRepository.onHostInfo(info.connection.epoch, info.json)
+            }
+        }
+        managerScope.launch(Dispatchers.IO) {
+            authenticatedConnection.collect { connection ->
+                if (connection != null) sensorAlertsRepository.onAuthenticated()
+            }
+        }
+        // UNDISPATCHED for the reason the routine collector above gives: no replay, so a message that
+        // arrives before this subscribes would be dropped in silence.
+        managerScope.launch(Dispatchers.IO, start = CoroutineStart.UNDISPATCHED) {
+            _sensorAlertMessages.collect { inbound ->
+                // The parsers never throw and return null for the other type, so each envelope is read
+                // as whichever of the two it is.
+                SensorAlerts.parseFired(inbound.json)?.let { fired ->
+                    if (settings.pcAlertsEnabledFlow.first()) presenter.post(fired)
+                    return@collect
+                }
+                sensorAlertsRepository.onRulesMessage(inbound.json, inbound.connectionEpoch)
+            }
+        }
+    }
     /**
      * Wires [homePinsRepository] to the connection (RemEx-wqo7a.6). Four collectors on IO (the
      * cache is DataStore and the pin lookup is disk), each handing the repository one kind of event;
@@ -1804,6 +1907,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             is RoutineInboundMessage.Ignored -> Unit
             else -> _routineMessages.tryEmit(message)
         }
+    }
+
+    override fun onSensorAlertMessage(json: String?) {
+        // Raw, parsed by the consumer, for the same reason as onHomePinsMessage: nothing above a JNI
+        // callback can catch an exception.
+        json?.let { _sensorAlertMessages.tryEmit(SensorAlertInbound(_connectedHost.value?.epoch, it)) }
     }
 
     override fun onHomePinsMessage(json: String?) {

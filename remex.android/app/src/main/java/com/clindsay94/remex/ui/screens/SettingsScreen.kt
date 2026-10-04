@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.*
@@ -88,6 +89,7 @@ enum class SettingsCategory : Parcelable {
     PERSONALIZATION,
     INPUT,
     FILE_TRANSFER,
+    NOTIFICATIONS,
     HELP;
 
     val titleRes: Int
@@ -96,6 +98,7 @@ enum class SettingsCategory : Parcelable {
             PERSONALIZATION -> R.string.settings_tab_personalization
             INPUT -> R.string.settings_tab_input
             FILE_TRANSFER -> R.string.settings_tab_file_transfer
+            NOTIFICATIONS -> R.string.settings_tab_notifications
             HELP -> R.string.settings_tab_help
         }
 
@@ -105,6 +108,7 @@ enum class SettingsCategory : Parcelable {
             PERSONALIZATION -> Icons.Default.Palette
             INPUT -> Icons.AutoMirrored.Filled.Input
             FILE_TRANSFER -> Icons.Default.FolderOpen
+            NOTIFICATIONS -> Icons.Default.Notifications
             HELP -> Icons.AutoMirrored.Filled.Help
         }
 }
@@ -338,6 +342,7 @@ private fun SettingsDetailContent(
         SettingsCategory.PERSONALIZATION -> PersonalizationScreen(showHeader = true)
         SettingsCategory.INPUT -> InputTab()
         SettingsCategory.FILE_TRANSFER -> FileTransferSettingsTab()
+        SettingsCategory.NOTIFICATIONS -> NotificationsTab()
         SettingsCategory.HELP -> HelpTab(
             onReplayTutorial = onReplayTutorial,
             onNavigateToAbout = onNavigateToAbout,
@@ -770,6 +775,73 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
     }
 }
 
+/**
+ * Notification settings (RemEx-pp4cm.12): today just "Alerts from your PC", on until switched off. It
+ * says plainly that alerts only arrive while the phone is connected to the PC, because the PC sends
+ * each one down the live connection and keeps none for a phone that is not there.
+ */
+@Composable
+private fun NotificationsTab() {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val scope = rememberCoroutineScope()
+    val haptics = rememberRemexHaptics()
+    val enabled by settingsManager.pcAlertsEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
+
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
+    Scaffold(
+            modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
+            topBar = {
+                RemexFlexibleTopBar(
+                        title = stringResource(R.string.settings_tab_notifications),
+                        scrollBehavior = topBarScrollBehavior,
+                )
+            }
+    ) { innerPadding ->
+        Column(
+                modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card(
+                    colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+            ) {
+                Row(
+                        modifier = Modifier.fillMaxWidth()
+                                .toggleable(
+                                        value = enabled,
+                                        role = Role.Switch,
+                                        onValueChange = { on ->
+                                            haptics.perform(RemexHaptics.toggle(on))
+                                            scope.launch { settingsManager.setPcAlertsEnabled(on) }
+                                        }
+                                )
+                                .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                                text = stringResource(R.string.settings_pc_alerts_title),
+                                style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                                text = stringResource(R.string.settings_pc_alerts_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = enabled, onCheckedChange = null)
+                }
+            }
+        }
+    }
+}
 @Composable
 private fun HelpTab(
     onReplayTutorial: (() -> Unit)?,

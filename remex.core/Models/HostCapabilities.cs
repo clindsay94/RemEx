@@ -139,4 +139,15 @@ public sealed record HostCapabilities
     /// sees false never sends one and keeps a phone-local pinned list instead, with no error shown.
     /// </remarks>
     public bool SupportsHomePinsSync { get; init; }
+
+    /// <summary>
+    /// Whether this host mirrors its sensor alert rules to the phone: sends <c>sensor_alert_fired</c> and
+    /// <c>sensor_alert_rules</c>, and accepts <c>sensor_alerts_get</c>, <c>sensor_alert_set</c> and
+    /// <c>sensor_alert_remove</c> (RemEx-pp4cm.12).
+    /// </summary>
+    /// <remarks>
+    /// ADDITIVE, AND ABSENT MEANS FALSE ON PURPOSE: an older host would ignore every request, so a phone
+    /// that sees false hides its alert controls instead of offering buttons that do nothing.
+    /// </remarks>
+    public bool SupportsSensorAlerts { get; init; }
 }

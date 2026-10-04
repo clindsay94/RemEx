@@ -35,7 +35,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -526,7 +529,11 @@ fun DisplayModePickerSheet(
     onDismiss: () -> Unit,
     onPickDisplayMode: (String, TelemetryDisplayMode, String?) -> Unit,
     onSetTitle: (String, String?) -> Unit,
-    onSetValueOverlay: (String, Boolean) -> Unit
+    onSetValueOverlay: (String, Boolean) -> Unit,
+    /** "Alert me..." (RemEx-pp4cm.12). Null hides the row: no PC that mirrors alerts is connected. */
+    onAlertMe: (() -> Unit)? = null,
+    /** An alert already watches this sensor, so the row says so by showing the bell. */
+    hasAlert: Boolean = false
 ) {
     val haptics = rememberRemexHaptics()
     val sheetState = rememberBottomSheetState(SheetValue.Hidden)
@@ -568,6 +575,25 @@ fun DisplayModePickerSheet(
                     checked = currentShowValueOverlay,
                     onCheckedChange = null
                 )
+            }
+            if (onAlertMe != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable {
+                            haptics.perform(RemexHapticEvent.Press)
+                            onAlertMe()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Notifications,
+                        contentDescription = null,
+                        tint = if (hasAlert) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(stringResource(R.string.sensor_alert_me), style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
         AnimatedContent(

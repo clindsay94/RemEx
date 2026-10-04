@@ -13,6 +13,21 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Your PC's sensor alerts now reach your phone.** The alert rules you set on the PC (a sensor going
+  above or below a number, as a warning or a critical alert) show up as notifications on your phone while
+  it is connected to the PC. Critical alerts pop up; warnings arrive quietly. Tapping one opens Sensors.
+  There is one set of rules and it lives on the PC: on the phone, choose **Alert me...** in a sensor card's
+  options to add or change one (Above or Below, a number in the sensor's own unit, Warning or Critical),
+  see a small bell on every card that has a rule, and open **PC alerts** from the Sensors top bar to see
+  every rule and remove any. Anything you change on the phone is saved on the PC and shows in the PC's own
+  Alerts list straight away, and the other way round. Alerts only arrive while the phone is connected to
+  the PC, and **Alerts from your PC** (Settings > Notifications) turns the notifications off. The PC sends
+  an alert only when it would show its own, so the 60-second wait between repeats applies on the phone
+  too. A PC that has not been updated simply does not offer the alert controls. New messages
+  `sensor_alert_fired`, `sensor_alert_rules`, `sensor_alerts_get`, `sensor_alert_set` and
+  `sensor_alert_remove` (the first two travel host to phone) and a `supportsSensorAlerts` host flag,
+  documented in `docs/API_CONTRACTS.md` section 10; pairing and the message envelope are unchanged.
+  (RemEx-pp4cm.12)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder

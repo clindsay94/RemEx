@@ -164,6 +164,12 @@ namespace Remex.Core.Serialization;
 // Home pinned sensors (RemEx-wqo7a.5): read through the lenient converter, which resolves them here.
 [JsonSerializable(typeof(HomePinnedSensors))]
 [JsonSerializable(typeof(HomePinChange))]
+// Phone telemetry alerts (RemEx-pp4cm.12): read through the lenient converter, which resolves them here.
+[JsonSerializable(typeof(SensorAlertRules))]
+[JsonSerializable(typeof(SensorAlertRule))]
+[JsonSerializable(typeof(SensorAlertFiredEvent))]
+[JsonSerializable(typeof(SensorAlertChange))]
+[JsonSerializable(typeof(SensorAlertRemoval))]
 // ── 3.0 Routines (RemEx-pp0rt.3). The lenient converters resolve nested types through this context
 //    (options.GetTypeInfo), so every routine type they read must be listed here too. ──
 [JsonSerializable(typeof(RoutineSet))]

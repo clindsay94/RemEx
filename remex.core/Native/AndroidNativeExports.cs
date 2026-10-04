@@ -224,6 +224,9 @@ public static class AndroidNativeExports
 
     /// <summary>Carries every <c>home_pins_*</c> envelope to Kotlin (RemEx-wqo7a.5).</summary>
     private static IntPtr _onHomePinsMessageMethodId;
+
+    /// <summary>Carries every <c>sensor_alert_*</c> envelope to Kotlin (RemEx-pp4cm.12).</summary>
+    private static IntPtr _onSensorAlertMessageMethodId;
     private static IntPtr _onLinkQualityMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
@@ -373,6 +376,7 @@ public static class AndroidNativeExports
         _onClipboardMessageMethodId = IntPtr.Zero;
         _onRoutineMessageMethodId = IntPtr.Zero;
         _onHomePinsMessageMethodId = IntPtr.Zero;
+        _onSensorAlertMessageMethodId = IntPtr.Zero;
         _onLinkQualityMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
@@ -489,6 +493,7 @@ public static class AndroidNativeExports
                 var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
                 var onRoutineMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onRoutineMessage", "(Ljava/lang/String;)V");
                 var onHomePinsMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onHomePinsMessage", "(Ljava/lang/String;)V");
+                var onSensorAlertMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onSensorAlertMessage", "(Ljava/lang/String;)V");
                 var onLinkQualityMethodId = GetRequiredCallbackMethodId(env, clazz, "onLinkQuality", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
@@ -514,6 +519,7 @@ public static class AndroidNativeExports
                     || onClipboardMessageMethodId == IntPtr.Zero
                     || onRoutineMessageMethodId == IntPtr.Zero
                     || onHomePinsMessageMethodId == IntPtr.Zero
+                    || onSensorAlertMessageMethodId == IntPtr.Zero
                     || onLinkQualityMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
@@ -544,6 +550,7 @@ public static class AndroidNativeExports
                 _onClipboardMessageMethodId = onClipboardMessageMethodId;
                 _onRoutineMessageMethodId = onRoutineMessageMethodId;
                 _onHomePinsMessageMethodId = onHomePinsMessageMethodId;
+                _onSensorAlertMessageMethodId = onSensorAlertMessageMethodId;
                 _onLinkQualityMethodId = onLinkQualityMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
@@ -2105,6 +2112,20 @@ public static class AndroidNativeExports
         {
             NotifyJavaData(
                 _onHomePinsMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
+        }
+
+        // THE WHOLE sensor_alert_ FAMILY, BY PREFIX (RemEx-pp4cm.12). sensor_alert_fired is the PC's
+        // alert reaching the phone's notification shade, and sensor_alert_rules is the list the phone's
+        // Alerts screen shows; without this line the host sends them, the send succeeds, and the phone
+        // never hears - the RemEx-y6x6 failure mode again, looking like a PC that never alerts. The
+        // phone -> host sensor_alert_set / sensor_alert_remove match the prefix too but never arrive on
+        // this side. The whole envelope, like the families above, because Kotlin checks `type`. Do NOT
+        // narrow it to an explicit type list.
+        if (msg.Type is { } sensorAlertType && sensorAlertType.StartsWith("sensor_alert_", StringComparison.Ordinal))
+        {
+            NotifyJavaData(
+                _onSensorAlertMessageMethodId,
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Relaxed.RemexMessage));
         }
 

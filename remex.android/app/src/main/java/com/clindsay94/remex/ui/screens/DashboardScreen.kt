@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -103,7 +104,13 @@ import com.clindsay94.remex.ui.components.UndoGlyph
 import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
 import com.clindsay94.remex.ui.components.navigationBarBottomInset
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
+import com.clindsay94.remex.data.SensorAlertDirection
+import com.clindsay94.remex.data.SensorAlertSeverity
+import com.clindsay94.remex.data.SensorAlertsState
 import com.clindsay94.remex.ui.screens.sensors.CardPinControl
+import com.clindsay94.remex.ui.screens.sensors.SensorAlertEditorSheet
+import com.clindsay94.remex.ui.screens.sensors.SensorAlertTarget
+import com.clindsay94.remex.ui.screens.sensors.SensorAlertsListSheet
 import com.clindsay94.remex.ui.screens.sensors.SensorGrid
 import com.clindsay94.remex.ui.screens.sensors.SensorGridCard
 import com.clindsay94.remex.ui.screens.sensors.SensorLayout
@@ -171,6 +178,8 @@ fun DashboardScreen(
     val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsStateWithLifecycle()
     val categoryShapePresets by viewModel.categoryShapePresets.collectAsStateWithLifecycle(initialValue = emptyMap())
     val homePins by viewModel.homePins.collectAsStateWithLifecycle()
+    val sensorAlerts by viewModel.sensorAlerts.collectAsStateWithLifecycle()
+    val pcAlertsEnabled by viewModel.pcAlertsEnabled.collectAsStateWithLifecycle()
     val coachStep by viewModel.coachStep.collectAsStateWithLifecycle()
     // Live on-screen centre of the ⋮ menu, so the coach pointer lands on it whatever the insets.
     var menuAnchor by remember { mutableStateOf(Offset.Zero) }
@@ -187,6 +196,12 @@ fun DashboardScreen(
                 editMode = editMode,
                 draggingCardId = draggingCardId,
                 homePins = homePins,
+                sensorAlerts = sensorAlerts,
+                pcAlertsEnabled = pcAlertsEnabled,
+                onSetPcAlertsEnabled = viewModel::setPcAlertsEnabled,
+                onSetSensorAlert = viewModel::setSensorAlert,
+                onRemoveSensorAlert = viewModel::removeSensorAlert,
+                onRefreshSensorAlerts = viewModel::refreshSensorAlerts,
                 cornerRadius = cornerRadius,
                 cardOpacity = cardOpacity,
                 // ONE tile shape for the whole grid: the global telemetry / per-category choice,
@@ -276,6 +291,14 @@ fun DashboardScreenContent(
         /** Counts layout edits, so the card-removed Undo targets only its own removal (review R5). */
         editRevision: StateFlow<Long> = MutableStateFlow(0L),
         onUndoIfUnchanged: (Long) -> Unit = {},
+        /** The PC's alert rules (RemEx-pp4cm.12): the cards' bells, the "Alert me..." sheet and the Alerts list. */
+        sensorAlerts: SensorAlertsState = SensorAlertsState(),
+        pcAlertsEnabled: Boolean = true,
+        onSetPcAlertsEnabled: (Boolean) -> Unit = {},
+        onSetSensorAlert: (String, String, String?, Double, SensorAlertDirection, SensorAlertSeverity) -> Unit =
+                { _, _, _, _, _, _ -> },
+        onRemoveSensorAlert: (String) -> Unit = {},
+        onRefreshSensorAlerts: () -> Unit = {},
 ) {
     val haptics = rememberRemexHaptics()
     val chrome = SensorsChrome.forMode(editMode)
@@ -317,6 +340,8 @@ fun DashboardScreenContent(
     var showCardDrawer by remember { mutableStateOf(false) }
     var pickerCardId by remember { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
+    var alertTarget by remember { mutableStateOf<SensorAlertTarget?>(null) }
+    var showAlertList by remember { mutableStateOf(false) }
     val visibleCards = layout.visibleCards
 
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -346,6 +371,21 @@ fun DashboardScreenContent(
                                     contentPadding = ButtonDefaults.TextButtonContentPadding,
                                 ) { Text(stringResource(R.string.button_done)) }
                             } else {
+                                if (sensorAlerts.canEdit) {
+                                    IconButton(
+                                            onClick = {
+                                                haptics.perform(RemexHapticEvent.Press)
+                                                onRefreshSensorAlerts()
+                                                showAlertList = true
+                                            },
+                                            shapes = rememberRemexIconButtonShapes(),
+                                    ) {
+                                        Icon(
+                                                Icons.Filled.Notifications,
+                                                contentDescription = stringResource(R.string.cd_sensor_alerts_open),
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = onReplayCoach, shapes = rememberRemexIconButtonShapes()) {
                                     Icon(
                                             Icons.AutoMirrored.Filled.HelpOutline,
@@ -514,6 +554,7 @@ fun DashboardScreenContent(
                                         shapeIndex = shapeIndex,
                                         showValueOverlay = card.showValueOverlay,
                                         selectionActive = !chrome.showViewPicker,
+                                        hasAlert = sensorAlerts.ruleFor(sensorName) != null,
                                         onOpenPicker = { pickerCardId = card.id }
                                 )
                             }
@@ -572,9 +613,55 @@ fun DashboardScreenContent(
                         pickerCardId = null
                     },
                     onSetTitle = onSetCardTitle,
-                    onSetValueOverlay = onSetValueOverlay
+                    onSetValueOverlay = onSetValueOverlay,
+                    onAlertMe =
+                            if (sensorAlerts.canEdit && pickedSensor != null) {
+                                {
+                                    pickerCardId = null
+                                    alertTarget =
+                                            SensorAlertTarget(
+                                                    sensorName = pickedSensor.name,
+                                                    displayName = pickedSensor.name,
+                                                    unit = formatSensor(pickedSensor).unit.ifBlank { null },
+                                                    currentValue = pickedSensor.value,
+                                            )
+                                }
+                            } else {
+                                null
+                            },
+                    hasAlert = pickedSensor != null && sensorAlerts.ruleFor(pickedSensor.name) != null
             )
         }
+    }
+
+    alertTarget?.let { target ->
+        SensorAlertEditorSheet(
+                target = target,
+                state = sensorAlerts,
+                onSave = { threshold, direction, severity ->
+                    onSetSensorAlert(target.sensorName, target.displayName, target.unit, threshold, direction, severity)
+                    alertTarget = null
+                },
+                onRemove = {
+                    onRemoveSensorAlert(target.sensorName)
+                    alertTarget = null
+                },
+                onDismiss = { alertTarget = null },
+        )
+    }
+
+    if (showAlertList) {
+        SensorAlertsListSheet(
+                state = sensorAlerts,
+                pcAlertsEnabled = pcAlertsEnabled,
+                onSetPcAlertsEnabled = onSetPcAlertsEnabled,
+                onEdit = { rule ->
+                    showAlertList = false
+                    alertTarget = SensorAlertTarget(rule.sensorName, rule.displayName, rule.unit, rule.currentValue)
+                },
+                onRemove = { rule -> onRemoveSensorAlert(rule.sensorName) },
+                onDismiss = { showAlertList = false },
+        )
     }
 }
 
@@ -901,6 +988,7 @@ private fun TelemetryCardContent(
         shapeIndex: Float,
         showValueOverlay: Boolean,
         selectionActive: Boolean,
+        hasAlert: Boolean,
         onOpenPicker: () -> Unit
 ) {
     val dynamicPadding = cardInnerPadding()
@@ -963,6 +1051,16 @@ private fun TelemetryCardContent(
                                     Modifier.clip(RoundedCornerShape(6.dp))
                                             .background(accent.chip)
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+                // A small bell on a sensor the PC watches with an alert rule (RemEx-pp4cm.12). Always shown,
+                // edit mode included: it is a status, not a control.
+                if (hasAlert) {
+                    Icon(
+                            Icons.Filled.Notifications,
+                            contentDescription = stringResource(R.string.cd_sensor_alert_bell),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 4.dp).size(14.dp)
                     )
                 }
                 // Hidden in edit mode: a card has one set of controls at a time.
