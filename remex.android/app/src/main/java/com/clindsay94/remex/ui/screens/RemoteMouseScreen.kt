@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.shapeSafeArea
 import com.clindsay94.remex.ui.components.RemexHapticEvent
 import com.clindsay94.remex.ui.components.rememberRemexHaptics
 import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
@@ -195,7 +196,7 @@ fun RemoteMouseScreenContent(
                         color = trackpadColor,
                         tonalElevation = 4.dp
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.shapeSafeArea(shapePreset), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                     imageVector = Icons.Default.Mouse,

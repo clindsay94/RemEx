@@ -13,6 +13,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **More card shapes on the phone.** Personalize > Shapes offers six more shapes next to Rounded rectangle and
+  Cut corner: Slanted, Clover, Clam shell, Arch, Sunny and Pixel circle. Each option shows a small live swatch of
+  the real shape, with the area its content gets drawn inside it. Shapes that would have clipped text (hearts,
+  triangles, diamonds, spiky stars) stay out. Each card measures the largest rectangle that fits inside its
+  shape and keeps its label and value inside it, so nothing is cut off. A shape you chose before the earlier
+  clean-up comes back as itself; one that is no longer offered becomes its closest cousin (smooth shapes stay a
+  rounded rectangle, angular ones become a cut corner). Full-width bars, like the Processes search field, stay
+  rounded whatever you pick. (RemEx-pp4cm.14)
 - **See the PC's logs and status from your phone.** More has a new **PC logs & diagnostics** page with two
   tabs. **Logs** shows what the PC has recorded, with level chips, search, a Live switch that refreshes every
   2 seconds only while the page is open, Jump to latest, and Copy or Share as text. **Diagnostics** lists the

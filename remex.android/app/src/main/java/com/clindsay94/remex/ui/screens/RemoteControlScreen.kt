@@ -613,7 +613,7 @@ fun RemoteControlScreenContent(
                     playback = uiState.playback,
                     artwork = uiState.artwork,
                     shape =
-                            com.clindsay94.remex.ui.theme.cardShape(
+                            com.clindsay94.remex.ui.theme.CardShapes.stripShapeFor(
                                     uiState.shapePreset,
                                     uiState.cornerRadius
                             ),

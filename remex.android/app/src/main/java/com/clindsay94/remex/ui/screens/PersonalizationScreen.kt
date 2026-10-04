@@ -55,6 +55,8 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.shapeSafeArea
+import com.clindsay94.remex.ui.theme.ShapeSwatch
 import com.clindsay94.remex.ui.theme.isDarkThemeFor
 import com.clindsay94.remex.ui.theme.rememberPaletteColorScheme
 import com.clindsay94.remex.ui.theme.CardShapes
@@ -1120,8 +1122,9 @@ fun PersonalizationScreenContent(
                                     }
                                 }
                             }
-                            // Auto + the content-safe shapes only (RemEx-kq10x.5). The old 0-24
-                            // morph slider offered blobs and clovers that clipped tile content.
+                            // Auto + the content-safe shapes only (RemEx-kq10x.5, pp4cm.14). The old
+                            // 0-24 morph slider offered blobs and hearts that clipped tile content;
+                            // every shape here has a measured safe area its card pads content to.
                             // Each chip draws its own shape as the leading swatch, and its
                             // description names the row, so fifteen rows of identical chips stay
                             // tellable apart for a screen-reader user (RemEx-pmo4).
@@ -1146,19 +1149,15 @@ fun PersonalizationScreenContent(
                                                 setter(choice)
                                             },
                                             label = { Text(choiceName) },
+                                            // A live swatch: the real shape at card proportions, with the
+                                            // safe rectangle its content is confined to drawn inside it
+                                            // (RemEx-pp4cm.14).
                                             leadingIcon = {
-                                                Box(
-                                                        modifier =
-                                                                Modifier.size(16.dp)
-                                                                        .clip(
-                                                                                cardShape(
-                                                                                        choice,
-                                                                                        cornerRadius
-                                                                                )
-                                                                        )
-                                                                        .background(
-                                                                                MaterialTheme.colorScheme.primary
-                                                                        )
+                                                ShapeSwatch(
+                                                        shapeIndex = choice,
+                                                        cornerRadiusDp = cornerRadius,
+                                                        shapeColor = MaterialTheme.colorScheme.primary,
+                                                        contentColor = MaterialTheme.colorScheme.onPrimary
                                                 )
                                             },
                                             modifier =
@@ -1441,6 +1440,7 @@ private fun MiniCardPreview(
                     Modifier.size(width = 140.dp, height = 100.dp)
                             .clip(cardShape(shapePreset, cornerRadius))
                             .background(animatedColor.copy(alpha = opacity))
+                            .shapeSafeArea(shapePreset)
                             .padding(adaptivePadding)
     ) {
         Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {

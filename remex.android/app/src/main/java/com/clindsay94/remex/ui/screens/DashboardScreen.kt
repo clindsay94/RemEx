@@ -118,6 +118,7 @@ import com.clindsay94.remex.ui.screens.sensors.SensorsChrome
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import com.clindsay94.remex.ui.telemetry.SensorAccents
 import com.clindsay94.remex.ui.theme.CardShapes
+import com.clindsay94.remex.ui.theme.shapeSafeArea
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
@@ -971,7 +972,9 @@ private fun titleBandIntrusion(
         bandBottomPx: Float,
         density: Density
 ): Pair<Float, Float> {
-    if (shapePreset >= 23.5f || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
+    // Polygons are already confined to their safe rectangle (shapeSafeArea), so only the cut corner
+    // could intrude on the title band; it sits at the top of the range and measures zero here today.
+    if (shapePreset >= 23.5f || CardShapes.isPolygon(shapePreset) || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
     val outline =
             cardShape(shapePreset, 0)
                     .createOutline(GeoSize(cardWidthPx.toFloat(), cardHeightPx.toFloat()), LayoutDirection.Ltr, density)
@@ -1014,7 +1017,9 @@ private fun TelemetryCardContent(
     val density = LocalDensity.current
     val titleLineHeight = MaterialTheme.typography.labelSmall.lineHeight
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    // A polygon shape (Slanted, Clover...) confines the content to its measured safe rectangle
+    // (RemEx-pp4cm.14); the rounded rectangle and cut corner use the whole tile.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().shapeSafeArea(shapeIndex)) {
         val contentWidthPx = constraints.maxWidth
         val contentHeightPx = constraints.maxHeight
         // Extra start/end inset for the title row (RemEx-0ukf): the uniform adaptive padding is
