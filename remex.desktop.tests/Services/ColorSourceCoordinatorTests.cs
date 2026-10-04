@@ -285,7 +285,9 @@ public class ColorSourceCoordinatorTests : IDisposable
     /// nothing persisted until the next unrelated control was touched, at which point the corrupted
     /// value became the new persisted request.
     /// </summary>
-    [Fact]
+    [WindowsOnlyFact("the Windows-accent colour source only exists on Windows: CustomizationViewModel resolves a "
+        + "stored WindowsAccent onto Custom everywhere else (spec section 9) and ignores the coordinator's seed, "
+        + "so this sheet-open-during-accent-sync scenario cannot occur on Linux")]
     public async Task ACustomizationAppliedFromTheCoordinatorKeepsTheLiveRequestEvenWhenTheHueCannotHoldIt()
     {
         var theme = new ThemeService { PostToUiThread = action => action() };
