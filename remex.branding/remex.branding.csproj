@@ -17,5 +17,7 @@
     <!-- The Live Handshake field (RemEx-8g6n0). Byte-identical twin of the Android .agsl; a parity
          test compares the two files on disk, and LiveHandshakeField compiles this embedded copy. -->
     <EmbeddedResource Include="Shaders\live_handshake_field.sksl" LogicalName="Remex.Branding.Shaders.live_handshake_field.sksl" />
+    <!-- The film splashes' field (RemEx-pp4cm.11): same rules, twin of splash_film_field.agsl. -->
+    <EmbeddedResource Include="Shaders\splash_film_field.sksl" LogicalName="Remex.Branding.Shaders.splash_film_field.sksl" />
   </ItemGroup>
 </Project>

@@ -45,14 +45,10 @@
     <string name="status_disconnected">Bağlantı kesildi</string>
     <string name="status_connected">Bağlandı</string>
     <string name="status_connecting">%1$s:%2$d adresine bağlanılıyor…</string>
-    <string name="status_awaiting_metadata">PC ayrıntıları bekleniyor</string>
     <string name="status_metadata_unavailable">PC ayrıntıları mevcut değil</string>
     <string name="status_native_lib_not_loaded">RemEx bağlantı motorunu başlatamadı</string>
     <string name="error_no_host_found">Ağda RemEx çalıştıran bir PC bulunamadı</string>
-    <string name="error_discovery_failed">Bilgisayarınız aranamadı: %1$s</string>
     <string name="error_local_network_permission_denied">Yerel Ağ erişimi reddedildi. Android 17+ sürümlerinde RemEx bu izin olmadan bilgisayarınıza bağlanamaz. Lütfen Uygulama Ayarları\'ndan izin verin.</string>
-    <string name="capability_desktop_available">masaüstü kullanılabilir</string>
-    <string name="capability_desktop_unavailable">masaüstü kullanılamıyor</string>
     <string name="notification_channel_name">RemEx Bağlantısı</string>
     <string name="notification_channel_description">Bilgisayarınızla olan bağlantıyı açık tutar</string>
     <string name="notification_title_connected">Bilgisayara bağlandı</string>

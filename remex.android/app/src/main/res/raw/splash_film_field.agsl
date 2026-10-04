@@ -1,0 +1,248 @@
+// RemEx 3.0 film splashes - the backdrop field (RemEx-pp4cm.11).
+//
+// ONE shader, two platforms, like live_handshake_field. This file and
+//   remex.android/app/src/main/res/raw/splash_film_field.agsl
+// must stay byte-identical: SkiaSharp compiles it as an SKRuntimeEffect on the PC, Android
+// compiles it as an android.graphics.RuntimeShader (AGSL is SkSL). A parity test on each side
+// enforces it. Edit both together or not at all.
+//
+// The fixed-length splashes (RemEx Command, Cosmic Zoom, Pong) draw their vectors over this field.
+// uStyle picks the world:
+//   0 RemEx Command - a command deck: a perspective grid floor rolling toward the viewer under a
+//     glowing horizon, two depths of falling data columns, scanlines. The build-up (uDrive) speeds
+//     the floor and the rain; the "session ready" beat runs a shockwave across the floor.
+//   1 Cosmic Zoom - deep space: a seed-tinted nebula and three layers of stars flying out of the
+//     centre, stretching into warp streaks as uDrive builds; the impact beat splits chroma.
+//   2 Pong - a CRT court: glowing rails and a dashed net, phosphor scanlines and an aperture grid.
+//     Every paddle contact is a beat that ripples the court; the rally heat (uDrive) brightens it.
+// Colours are the resolved theme's (uBg0/uBg1 ground, uPri/uSec light, uAcc the brand amber unless
+// it fails contrast), so seed, light/dark, contrast and monochrome all reach the splash.
+//
+// uBeat = (x, y, startTime, strength); strength 0 means no beat. uStill = 1 freezes every moving
+// layer at the frame the host chose (reduced motion): the host also passes a fixed uTime.
+// Units: pixels, origin top-left; uPx is pixels per dp. Output is premultiplied (opaque * uAlpha).
+// Constraints for both compilers: constant loop bounds, no int uniforms, float3 colours in sRGB.
+
+uniform float2 uRes;
+uniform float uTime;
+uniform float uPx;
+uniform float2 uCenter;
+uniform float3 uBg0;
+uniform float3 uBg1;
+uniform float3 uPri;
+uniform float3 uSec;
+uniform float3 uAcc;
+uniform float uStyle;
+uniform float4 uBeat;
+uniform float uDrive;
+uniform float uStill;
+uniform float uAlpha;
+
+float sfHash(float2 p) {
+    p = fract(p * float2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+float sfNoise(float2 p) {
+    float2 i = floor(p);
+    float2 f = fract(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(sfHash(i), sfHash(i + float2(1.0, 0.0)), u.x),
+               mix(sfHash(i + float2(0.0, 1.0)), sfHash(i + float2(1.0, 1.0)), u.x), u.y);
+}
+
+float sfFbm(float2 p) {
+    float a = 0.5;
+    float s = 0.0;
+    for (int i = 0; i < 4; i++) {
+        s += a * sfNoise(p);
+        p = p * 2.03 + float2(17.1, 9.2);
+        a *= 0.5;
+    }
+    return s;
+}
+
+// The beat's shockwave crest at radial offset `shift` (pixels), so a caller can split chroma.
+float sfCrest(float2 p, float shift) {
+    if (uBeat.w <= 0.0) { return 0.0; }
+    float age = uTime - uBeat.z;
+    if (age < 0.0) { return 0.0; }
+    float band = length(p - uBeat.xy) - age * length(uRes) / 1.1 + shift;
+    float w = 22.0 * uPx;
+    return exp(-(band * band) / (w * w)) * uBeat.w * exp(-age * 1.1);
+}
+
+// The afterglow the beat leaves behind its crest.
+float sfWake(float2 p) {
+    if (uBeat.w <= 0.0) { return 0.0; }
+    float age = uTime - uBeat.z;
+    if (age < 0.0) { return 0.0; }
+    float band = length(p - uBeat.xy) - age * length(uRes) / 1.1;
+    float behind = band < 0.0 ? exp(band / (240.0 * uPx)) : 0.0;
+    return behind * uBeat.w * exp(-age * 1.4);
+}
+
+// A grid line's coverage: g is the fractional coordinate, fw its change per pixel.
+float sfGrid(float g, float fw) {
+    float d = min(g, 1.0 - g);
+    return 1.0 - smoothstep(0.0, fw * 1.6, d);
+}
+
+float3 sfCommand(float2 p, float t, float crest) {
+    float W = uRes.x;
+    float H = uRes.y;
+    float3 col = float3(0.0);
+    float horizon = H * 0.56;
+
+    // Horizon glow: the deck's light source.
+    float hd = abs(p.y - horizon);
+    col += uSec * 0.20 * exp(-hd / (26.0 * uPx)) * (0.6 + 0.4 * uDrive);
+    col += uPri * 0.07 * exp(-hd / (140.0 * uPx));
+
+    // Grid floor, rolling toward the viewer; faster as the build-up drives it.
+    if (p.y > horizon + uPx) {
+        float span = H - horizon;
+        float dy = (p.y - horizon) / span;
+        float z = 1.0 / dy;
+        float x = (p.x - uCenter.x) / (W * 0.5) * z;
+        float roll = t * (0.55 + 2.4 * uDrive * uDrive);
+        float gz = fract(z * 0.45 - roll);
+        float gx = fract(x * 1.2 + 0.5);
+        float fwz = 0.45 * z * z / span;
+        float fwx = 1.2 * z / (W * 0.5);
+        float lines = max(sfGrid(gz, fwz) * (1.0 - smoothstep(0.12, 0.42, fwz)),
+                          sfGrid(gx, fwx) * (1.0 - smoothstep(0.12, 0.42, fwx)));
+        float fog = pow(dy, 0.55);
+        float3 lineCol = mix(uPri, uAcc, clamp(crest * 1.6, 0.0, 1.0));
+        col += lineCol * lines * fog * (0.30 + 0.25 * uDrive + 1.4 * crest);
+        col += uPri * 0.035 * fog;
+    } else {
+        // Two depths of data columns falling behind the devices.
+        for (int i = 0; i < 2; i++) {
+            float fi = float(i);
+            float pitch = (fi < 0.5 ? 26.0 : 15.0) * uPx;
+            float ci = floor(p.x / pitch);
+            float h = sfHash(float2(ci, 3.7 + fi * 7.1));
+            float on = step(0.58, sfHash(float2(ci, 11.3 + fi * 5.3)));
+            float speed = (34.0 + 80.0 * h) * uPx * (fi < 0.5 ? 1.0 : 0.55) * (1.0 + 1.6 * uDrive);
+            float len = H * (0.18 + 0.22 * h);
+            float y = p.y + t * speed + h * H * 3.0;
+            float seg = fract(y / len);
+            float tail = pow(seg, 5.0) * step(0.32, fract(p.y / (5.5 * uPx * (1.0 + fi * 0.4))));
+            float cx = (ci + 0.5) * pitch;
+            float core = smoothstep((1.1 - fi * 0.3) * uPx + uPx, 0.2 * uPx, abs(p.x - cx));
+            float a = (fi < 0.5 ? 0.20 : 0.09) * smoothstep(0.0, horizon * 0.35, horizon - p.y + 30.0 * uPx);
+            col += mix(uPri, uSec, h) * core * tail * on * a;
+        }
+    }
+
+    // Scanlines and a slow rolling bar.
+    col *= 0.90 + 0.10 * sin(p.y * 3.14159 / (1.6 * uPx));
+    float bar = fract(p.y / H - t * 0.11);
+    col += uPri * 0.035 * exp(-(bar - 0.5) * (bar - 0.5) * 60.0);
+    return col;
+}
+
+float3 sfCosmic(float2 p, float t) {
+    float mn = min(uRes.x, uRes.y);
+    float2 d = p - uCenter;
+    float r = length(d) / mn;
+    float a = atan(d.y, d.x);
+    float3 col = float3(0.0);
+
+    // Nebula: two folded fbm layers, slowly turning, drawn in toward the centre by the warp.
+    float2 q = d / (mn * 0.45);
+    float rot = t * 0.035;
+    float cr = cos(rot);
+    float sr = sin(rot);
+    q = float2(q.x * cr - q.y * sr, q.x * sr + q.y * cr) * (1.0 + 0.6 * uDrive);
+    float n1 = sfFbm(q * 1.5 + float2(t * 0.02, 0.0));
+    float n2 = sfFbm(q * 3.0 - float2(0.0, t * 0.03) + n1 * 1.7);
+    float neb = smoothstep(0.30, 0.85, n2) * (0.45 + 0.55 * n1);
+    col += mix(uPri, uSec, smoothstep(0.3, 0.7, n1)) * neb * 0.38;
+    col += uPri * 0.10 * exp(-r * r * 9.0) * (0.5 + 0.5 * uDrive);
+
+    // Stars in (angle, log radius) space, so every layer flies out of the centre. The streak grows
+    // with the warp; the far layer is dim and slow, the near one bright and fast.
+    float lr = log(max(r, 0.002));
+    float v = 0.25 + 1.8 * uDrive * uDrive;
+    float streak = (1.0 + 26.0 * uDrive * uDrive) * uPx;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float na = 48.0 + fi * 36.0;
+        float nl = 5.0 + fi * 3.0;
+        float2 g = float2(a / 6.2831853 * na, lr * nl - t * v * nl * (0.45 + 0.4 * fi));
+        float2 cell = floor(g);
+        float2 f = fract(g);
+        float h = sfHash(cell + fi * 13.7);
+        float2 sp = float2(0.2 + 0.6 * sfHash(cell + 3.1), 0.2 + 0.6 * sfHash(cell + 7.7));
+        float cw = 6.2831853 * r * mn / na;
+        float cl = r * mn / nl;
+        float px = (f.x - sp.x) * cw;
+        float py = abs(f.y - sp.y) * cl;
+        float ry = max(0.0, py - streak * (0.5 + fi * 0.35) * r * 2.0);
+        float rad = (0.55 + 0.45 * fi) * uPx;
+        float star = smoothstep(rad + uPx, rad - 0.5 * uPx, length(float2(px, ry)));
+        float tw = 0.75 + 0.25 * sin(t * 3.0 + h * 40.0);
+        float show = step(0.86 - fi * 0.04, h) * smoothstep(0.02, 0.16, r);
+        col += mix(float3(1.0), uPri, 0.35 - fi * 0.1) * star * show * tw * (0.25 + 0.25 * fi);
+    }
+    return col;
+}
+
+float3 sfPong(float2 p, float t, float crest) {
+    float W = uRes.x;
+    float H = uRes.y;
+    float top = H * 0.315;
+    float bot = H * 0.61;
+    float3 col = float3(0.0);
+    float heat = 0.45 + 0.55 * uDrive + 1.6 * crest;
+
+    // The court: rails, a dashed net, a faint floor between them.
+    float inX = smoothstep(0.06 * W, 0.12 * W, p.x) * smoothstep(0.06 * W, 0.12 * W, W - p.x);
+    float inY = step(top, p.y) * step(p.y, bot);
+    float rail = smoothstep(2.4 * uPx, 0.6 * uPx, abs(p.y - top)) + smoothstep(2.4 * uPx, 0.6 * uPx, abs(p.y - bot));
+    float railGlow = exp(-abs(p.y - top) / (16.0 * uPx)) + exp(-abs(p.y - bot) / (16.0 * uPx));
+    col += uPri * (rail * 0.55 + railGlow * 0.14) * inX * heat;
+    float dash = step(0.45, fract((p.y - top) / (16.0 * uPx)));
+    float net = smoothstep(2.8 * uPx, 0.8 * uPx, abs(p.x - uCenter.x)) * dash * inY;
+    float netGlow = exp(-abs(p.x - uCenter.x) / (22.0 * uPx)) * inY;
+    col += uPri * (net * 0.42 + netGlow * 0.08) * heat;
+    col += uSec * 0.06 * inY * inX;
+
+    // Phosphor: an aperture grid, scanlines and a faint flicker that rises with the rally.
+    float ap = 0.92 + 0.08 * sin(p.x * 3.14159 / (1.5 * uPx));
+    float sl = 0.84 + 0.16 * sin(p.y * 3.14159 / (1.4 * uPx));
+    float flick = 1.0 + 0.03 * sin(t * 57.0) * uDrive * (1.0 - uStill);
+    col += uPri * 0.04 * sfNoise(p / (3.0 * uPx) + t * 9.0) * uDrive * (1.0 - uStill);
+    return col * ap * sl * flick;
+}
+
+half4 main(float2 p) {
+    float t = uTime;
+    float2 uv = p / uRes;
+    float3 col = mix(uBg0, uBg1, clamp(uv.x * 0.35 + uv.y * 0.65, 0.0, 1.0));
+    float crest = sfCrest(p, 0.0);
+    float wake = sfWake(p);
+
+    if (uStyle < 0.5) {
+        col += sfCommand(p, t, crest);
+    } else if (uStyle < 1.5) {
+        col += sfCosmic(p, t);
+        // The impact splits chroma: three crests a few dp apart.
+        float s = 7.0 * uPx;
+        col += float3(sfCrest(p, -s), crest, sfCrest(p, s)) * 0.55;
+    } else {
+        col += sfPong(p, t, crest);
+    }
+
+    // Every beat lights the world in the accent: its crest and the wake behind it.
+    col += uAcc * (crest * 0.45 + wake * 0.20);
+
+    float2 vv = uv - 0.5;
+    col *= 1.0 - (uStyle > 1.5 ? 1.15 : 0.8) * dot(vv, vv);
+    // Dither: a dark gradient bands visibly without it.
+    col += (sfHash(p + fract(t) * 97.0) - 0.5) * (2.0 / 255.0);
+    return half4(half3(col * uAlpha), half(uAlpha));
+}

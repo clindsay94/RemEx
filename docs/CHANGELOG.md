@@ -60,6 +60,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   button. It opens Settings with the QR code and PIN already on screen. The sidebar status menu, the
   tray menu, the tray panel and the command palette do the same, so pairing takes one click instead of
   two. (RemEx-pp4cm.5)
+- **The other splash styles got their own worlds, on the PC and the phone.** Original Scan plays on a
+  command deck (a grid floor rolling toward you, falling data columns), Cosmic Zoom in deep space (a
+  nebula and stars that stretch into a warp before the strike), and Signal Pong on a glowing CRT
+  court that ripples on every hit. Each builds to a beat, follows your theme's colours (light, dark,
+  contrast and monochrome), and fades out into the app's own background. With reduced motion on, each
+  shows a still frame of its world for a moment instead of a blank. (RemEx-pp4cm.11)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder
@@ -540,6 +546,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A phone can no longer flood the PC with alert requests, and one stuck phone no longer delays
+  alerts to the others.** A phone asking for the PC's alert rules in a loop now costs the PC one
+  refresh, not one per message, and a phone making more than 10 alert requests in 10 seconds has the
+  extras ignored (it is sent the PC's unchanged rules). Alerts and rule updates now go to all connected
+  phones at once with a 5 second limit per phone. A phone that asked for the rules just before the PC
+  finished starting is answered as soon as the PC is ready. `docs/API_CONTRACTS.md` section 11 now
+  says the rules are sent to every connected phone, not only the one that asked. (RemEx-pp4cm.12)
+- **Two-finger scroll works again in Remote desktop, including in portrait (RemEx-pp4cm.10).**
+  Portrait opens the PC picture fitted to the screen height, which is zoomed in, and a zoomed view used
+  to treat every two-finger drag as "move the picture", so nothing reached the PC. Two fingers now
+  always scroll the PC at any zoom. Pinching still zooms, and moving your fingers while you pinch
+  moves the zoomed picture; the picture also follows the cursor when it nears an edge.
 - **Phone behaviour fixes from the 3.0 review.** Connecting to a different PC no longer carries the
   last PC's Wake-on-LAN address over, so Wake wakes the PC you are looking at; a scanned QR code and
   Home's Connect ask for the local-network permission like the Connection screen does, and say so on
@@ -595,6 +613,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   for the file, stops waiting after 90 seconds of silence, and ends the wait when the PC says it has
   let the transfer go. (`FileTransferEngine.kt`, `EarlyFrameSink.kt`, `DownloadStreamWait.kt`;
   RemEx-pp4cm.9)
+- The Live Handshake splash plays its full show again. On the phone it opened before your PC had
+  finished the handshake, so the lock-on (the reticle snapping shut, the beam, the haptic tick and the
+  portal opening out of your PC) was skipped and the console said your PC was "not answering" right
+  before saying it answered. It now waits for a PC that answered, up to 3 seconds. On both apps the
+  shortest splash is now 1.9 seconds, so the second pulse and the console are actually seen, and on the
+  PC every splash style starts when the window is first drawn rather than while it is still hidden.
+  Cosmic Zoom's colour burst now rings the mark on high-density phones. (RemEx-pp4cm.11)
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

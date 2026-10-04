@@ -32,18 +32,24 @@ public sealed class PhoneSensorAlerts : IPhoneSensorAlerts
     private readonly PairedClientRegistry _paired;
     private readonly ILogger<PhoneSensorAlerts> _logger;
     private readonly TimeProvider _time;
+    private readonly TimeSpan _sendTimeout;
     private long _revision;
+
+    /// <summary>How long one phone gets to take a message before the PC stops waiting for it.</summary>
+    public static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(5);
 
     public PhoneSensorAlerts(
         ClientSessionRegistry sessions,
         PairedClientRegistry paired,
         ILogger<PhoneSensorAlerts> logger,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        TimeSpan? sendTimeout = null)
     {
         _sessions = Guard.NotNull(sessions);
         _paired = Guard.NotNull(paired);
         _logger = Guard.NotNull(logger);
         _time = timeProvider ?? TimeProvider.System;
+        _sendTimeout = sendTimeout is { } t && t > TimeSpan.Zero ? t : DefaultSendTimeout;
     }
 
     /// <inheritdoc />
@@ -102,26 +108,38 @@ public sealed class PhoneSensorAlerts : IPhoneSensorAlerts
         PhoneRequested?.Invoke(request!);
     }
 
-    /// <summary>Sends <paramref name="message"/> to every client that passes the push gate.</summary>
-    private async Task BroadcastAsync(RemexMessage message)
+    /// <summary>
+    /// Sends <paramref name="message"/> to every client that passes the push gate, all at once, so one
+    /// phone whose socket is open but not draining cannot hold up the others. Each send gets
+    /// <see cref="DefaultSendTimeout"/> and is then abandoned.
+    /// </summary>
+    private Task BroadcastAsync(RemexMessage message)
     {
-        foreach (var clientId in _sessions.ProvenOpenClientIds())
-        {
-            if (!_paired.IsClientPaired(clientId))
-            {
-                continue;
-            }
+        var sends = _sessions.ProvenOpenClientIds().Select(clientId => SendToAsync(clientId, message));
+        return Task.WhenAll(sends);
+    }
 
-            try
-            {
-                await _sessions.TrySendAsync(clientId, message, CancellationToken.None);
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                // TrySendAsync reports an unreachable phone as false; anything thrown is a fault in
-                // building the message. Neither may stop the next phone from being told.
-                _logger.LogWarning(ex, "Sending {Type} to a phone failed.", message.Type);
-            }
+    private async Task SendToAsync(string clientId, RemexMessage message)
+    {
+        if (!_paired.IsClientPaired(clientId))
+        {
+            return;
+        }
+
+        using var timeout = new CancellationTokenSource(_sendTimeout);
+        try
+        {
+            await _sessions.TrySendAsync(clientId, message, timeout.Token);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            _logger.LogWarning("Sending {Type} to a phone timed out; the PC stopped waiting for it.", message.Type);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // TrySendAsync reports an unreachable phone as false; anything thrown is a fault in
+            // building the message. Neither may stop the other phones from being told.
+            _logger.LogWarning(ex, "Sending {Type} to a phone failed.", message.Type);
         }
     }
 }

@@ -6,7 +6,8 @@ namespace Remex.Branding;
 /// One splash animation. Pure SkiaSharp so a frame can be rendered to a PNG for verification
 /// without a running Avalonia app. The host control owns the frame loop, tap-to-skip, version
 /// label, and completion; a variant just advances its own state and draws the current frame.
-/// Fixed brand palette (SplashBrand) — never theme-adaptive.
+/// Colours come from <see cref="SplashBrand"/>, which the host recolours from the user's seed
+/// (RemEx-alwfa.1) before the first frame.
 /// </summary>
 public interface ISplashVariant
 {
@@ -36,28 +37,38 @@ public interface ISplashVariant
 }
 
 /// <summary>
+/// A splash that draws a GPU field and honours reduced motion: Live Handshake and, since
+/// RemEx-pp4cm.11, every fixed-length film. The host sets both before each frame it renders.
+/// </summary>
+public interface IFieldSplashVariant : ISplashVariant
+{
+    /// <summary>
+    /// Reduced motion. Live Handshake: no pulses, no displacement, final-state nodes, a fade instead
+    /// of a portal. A film: its designed still frame, held and then faded, instead of the film.
+    /// </summary>
+    bool ReducedMotion { set; }
+
+    /// <summary>
+    /// Whether the GPU field shader may run this frame. The host sets it from the leased canvas: on a
+    /// raster lease a runtime shader costs ~200 ms a frame, so the variant falls back to a gradient.
+    /// </summary>
+    bool FieldEnabled { set; }
+}
+
+/// <summary>
 /// A splash driven by the real startup rather than a clock alone (RemEx-8g6n0, Live Handshake). The
 /// host feeds it what it observes, forwards the pointer and a click, and asks <see cref="ISplashVariant.IsComplete"/>
 /// every tick. <see cref="Update"/> and <see cref="RequestSkip"/> arrive on the UI thread while
 /// <see cref="ISplashVariant.Render"/> may run on the render thread, so implementations treat the
 /// snapshot as an immutable value swapped whole.
 /// </summary>
-public interface ILiveSplashVariant : ISplashVariant
+public interface ILiveSplashVariant : IFieldSplashVariant
 {
     /// <summary>What the host has observed so far; times are seconds on the splash's own clock.</summary>
     void Update(HandshakeSnapshot snapshot);
 
     /// <summary>Click/tap: hand off now, from wherever the splash is.</summary>
     void RequestSkip();
-
-    /// <summary>Reduced motion: no pulses, no displacement, final-state nodes, a fade instead of a portal.</summary>
-    bool ReducedMotion { set; }
-
-    /// <summary>
-    /// Whether the GPU field shader may run this frame. The host sets it from the leased canvas: on a
-    /// raster lease the shader costs ~200 ms a frame, so the variant falls back to a gradient.
-    /// </summary>
-    bool FieldEnabled { set; }
 
     /// <summary>Pointer position for parallax, each axis in [-1, 1] (0 = centre).</summary>
     void SetPointer(float nx, float ny);

@@ -47,6 +47,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import androidx.compose.ui.graphics.lerp
+import com.clindsay94.remex.ui.splash.FilmBeat
+import com.clindsay94.remex.ui.splash.FilmStyle
+import com.clindsay94.remex.ui.splash.SplashFilmStill
+import com.clindsay94.remex.ui.splash.drawFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmField
+import com.clindsay94.remex.ui.splash.rememberFilmPalette
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.materialShapesList
 import androidx.graphics.shapes.Morph
@@ -71,26 +78,34 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  * Extracted verbatim from the former monolithic SplashScreen.kt (behavior-identical). The
  * orchestrator hands down [skipRequested]; this variant runs the original skip fade then
  * [onFinished], calling [onSkipConsumed] last.
+ *
+ * Since RemEx-pp4cm.11 the scene sits on a command deck (the film field): a grid floor rolling
+ * toward the viewer under a glowing horizon and two depths of falling data columns, speeding up
+ * pass by pass; each pass ends on a beat, the session coming up the strongest. Colours come from the
+ * app's scheme ([rememberFilmPalette]). Under reduced motion it shows its designed still frame.
  */
 @Composable
 fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
-        // Reduce motion: no scanline/sweep/zoom choreography — static terminal frame, finish now.
+        // Reduce motion: no scanline/sweep/zoom choreography — the designed still frame instead.
         if (LocalReducedMotion.current) {
-                SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+                SplashFilmStill(FilmStyle.Command, onFinished, skipRequested, onSkipConsumed)
                 return
         }
         val scope = rememberCoroutineScope()
         val view = LocalView.current
+        val field = rememberFilmField()
+        val palette = rememberFilmPalette()
         var elapsed by remember { mutableStateOf(0f) }
         var completed by remember { mutableStateOf(false) }
 
-        // ── Fixed brand palette — the splash is a brand moment, never theme-adaptive.
-        // Ported 1:1 from the launcher icon via SplashBrand; ZERO MaterialTheme reads. ──
-        val substrateColor = SplashBrand.WindowFill   // darkest base: device screens, box bg, fade target
-        val onBackground = SplashBrand.OffWhite       // primary text
-        val deviceLight = SplashBrand.SlateLo         // device outlines, stand, ambient embers
-        val deviceDark = SplashBrand.SlateHi          // darker slate — ambient floating shapes
-        val accent = SplashBrand.Amber                // scan reveal, connection energy, "Ex"/completion text
+        // ── Palette (RemEx-pp4cm.11): the app's scheme through [FilmPalette], so seed, mode,
+        // contrast and monochrome reach the splash; the device screens keep the brand's near-black
+        // glass. The exit fades to the app's own background so the hand-off is one colour. ──
+        val substrateColor = SplashBrand.WindowFill   // device screens
+        val onBackground = palette.ink                // primary text
+        val deviceLight = palette.muted               // device outlines, stand, ambient embers
+        val deviceDark = lerp(palette.bg1, palette.muted, 0.35f) // darker slate — ambient floating shapes
+        val accent = palette.accent                   // scan reveal, connection energy, "Ex"/completion text
 
         // Animation States — 3-pass sweep reveal (replaces the old scan/wave/connectionGlow radar)
         val sweep = remember { Animatable(0f) } // 0→3 across the three top-to-bottom sweep passes
@@ -312,7 +327,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
         Box(
                 modifier =
                         Modifier.fillMaxSize()
-                                .background(substrateColor)
+                                .background(palette.bg0)
                                 .graphicsLayer { alpha = skipAlpha.value },
                 contentAlignment = Alignment.Center
         ) {
@@ -400,11 +415,22 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         // BACKGROUND LAYER (always visible, subtle)
                         // ═════════════════════════════════════════════════════════════
-                        // Fixed brand backdrop — full-bleed diagonal gradient (the first draw).
-                        drawRect(brush = SplashBrand.backdropBrush(size))
                         // Subscribes this draw to the frame clock so the floating morph-shapes animate.
                         redrawOnFrame(particleFrame)
-                        drawRemexCommandAmbientFx(floatingShapes, SplashBrand.WindowStroke, SplashBrand.SlateLo)
+                        // The command deck (RemEx-pp4cm.11): the floor and the rain speed up pass by
+                        // pass, and each pass ends on a beat. Pass ends follow the LaunchedEffect's
+                        // 540 ms sweeps with 95 ms gaps: 0.54 s, 1.175 s, 1.81 s.
+                        val deckBeat = when {
+                                elapsed >= 1.81f -> FilmBeat(width * 0.5f, wmCy, 1.81f, 1.15f)
+                                elapsed >= 1.175f -> FilmBeat(connEnd.x, connEnd.y, 1.175f, 0.6f)
+                                elapsed >= 0.54f -> FilmBeat(monitorCx, monitorCy, 0.54f, 0.45f)
+                                else -> FilmBeat.None
+                        }
+                        drawFilmField(
+                                field, FilmStyle.Command, palette, elapsed, density.density,
+                                Offset(width * 0.5f, height * 0.56f), (sweep.value / 3f).coerceIn(0f, 1f), deckBeat,
+                        )
+                        drawRemexCommandAmbientFx(floatingShapes, palette.muted, palette.primary)
 
                         // Particle embers
                         if (p2 < 0.5f) {
@@ -812,7 +838,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         if (fadeOverlay.value > 0f) {
                                 drawRect(
-                                        color = substrateColor.copy(alpha = fadeOverlay.value),
+                                        // Out to the app's own background: the hand-off is one colour.
+                                        color = palette.exit.copy(alpha = fadeOverlay.value),
                                         size = size
                                 )
                         }

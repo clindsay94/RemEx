@@ -42,14 +42,10 @@
     <string name="status_disconnected">Rozłączono</string>
     <string name="status_connected">Połączono</string>
     <string name="status_connecting">Łączenie z %1$s:%2$d…</string>
-    <string name="status_awaiting_metadata">Oczekiwanie na szczegóły PC</string>
     <string name="status_metadata_unavailable">Szczegóły PC niedostępne</string>
     <string name="status_native_lib_not_loaded">RemEx nie mógł uruchomić mechanizmu połączenia</string>
     <string name="error_no_host_found">Nie znaleziono PC z RemEx w sieci</string>
-    <string name="error_discovery_failed">Nie udało się wyszukać komputera: %1$s</string>
     <string name="error_local_network_permission_denied">Odmówiono dostępu do sieci lokalnej. RemEx nie może połączyć się z komputerem bez tego uprawnienia w systemie Android 17+. Nadaj je w Ustawieniach aplikacji.</string>
-    <string name="capability_desktop_available">pulpit dostępny</string>
-    <string name="capability_desktop_unavailable">pulpit niedostępny</string>
     <string name="screen_task_manager_title">Procesy</string>
     <string name="task_manager_search_hint">Szukaj nazwy procesu lub PID</string>
     <string name="sort_by">Sortuj według:</string>
