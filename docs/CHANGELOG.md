@@ -526,6 +526,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **PC logs screen and alert sheets, review fixes.** The PC logs rows, "latest" button and the alert remove
+  button now use local icon glyphs instead of adding more uses of the deprecated extended icon set; the log
+  text takes its size from the theme instead of a fixed 11/12 sp; a repeated log sequence number or summary
+  key from the PC can no longer crash the list; and a PC cancelling a download now has a test proving the
+  running download's wait ends. (RemEx-pp4cm.13)
 - **Download notifications show up again on Samsung phones.** The file-transfer notification channel was
   low importance, which One UI files under "Silent" with no status-bar icon, so downloads were announced but
   looked like nothing happened. Transfers now use a new channel (`remex_file_transfer_v2`) at default

@@ -85,3 +85,70 @@ val WifiGlyph: ImageVector by lazy {
             "M5,13l2,2c2.76,-2.76 7.24,-2.76 10,0l2,-2C15.14,9.14 8.87,9.14 5,13z",
     )
 }
+
+/** Filled.Lan: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val LanGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.Lan",
+        "M13 22l8 0l0 -7l-3 0l0 -4l-5 0l0 -2l3 0l0 -7l-8 0l0 7l3 0l0 2l-5 0l0 4l-3 0l0 7l8 0l0 -7l-3 0" +
+            "l0 -2l8 0l0 2l-3 0z",
+    )
+}
+
+/** Filled.VerifiedUser: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val VerifiedUserGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.VerifiedUser",
+        "M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16 -1.26 9 -6.45 9 -12L21 5l-9 -4zM10 17l-4 -4l1.41 -1.41" +
+            "L10 14.17l6.59 -6.59L18 9l-8 8z",
+    )
+}
+
+/** Filled.AdminPanelSettings: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val AdminPanelSettingsGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.AdminPanelSettings",
+        "M17 11c0.34 0 0.67 0.04 1 0.09V6.27L10.5 3L3 6.27v4.91c0 4.54 3.2 8.79 7.5 9.82" +
+            "c0.55 -0.13 1.08 -0.32 1.6 -0.55C11.41 19.47 11 18.28 11 17C11 13.69 13.69 11 17 11zM17 13" +
+            "c-2.21 0 -4 1.79 -4 4c0 2.21 1.79 4 4 4s4 -1.79 4 -4C21 14.79 19.21 13 17 13zM17 14.38" +
+            "c0.62 0 1.12 0.51 1.12 1.12s-0.51 1.12 -1.12 1.12s-1.12 -0.51 -1.12 -1.12S16.38 14.38 17 14.38z" +
+            "M17 19.75c-0.93 0 -1.74 -0.46 -2.24 -1.17c0.05 -0.72 1.51 -1.08 2.24 -1.08s2.19 0.36 2.24 1.08" +
+            "C18.74 19.29 17.93 19.75 17 19.75z",
+    )
+}
+
+/** Filled.Memory: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val MemoryGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.Memory",
+        "M15 9L9 9v6h6L15 9zM13 13h-2v-2h2v2zM21 11L21 9h-2L19 7c0 -1.1 -0.9 -2 -2 -2h-2L15 3h-2v2h-2" +
+            "L11 3L9 3v2L7 5c-1.1 0 -2 0.9 -2 2v2L3 9v2h2v2L3 13v2h2v2c0 1.1 0.9 2 2 2h2v2h2v-2h2v2h2v-2h2" +
+            "c1.1 0 2 -0.9 2 -2v-2h2v-2h-2v-2h2zM17 17L7 17L7 7h10v10z",
+    )
+}
+
+/** Filled.KeyboardDoubleArrowDown: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val KeyboardDoubleArrowDownGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.KeyboardDoubleArrowDown",
+        "M18 6.41l-1.41 -1.41l-4.59 4.58l-4.59 -4.58l-1.41 1.41l6 6zM18 13l-1.41 -1.41l-4.59 4.58" +
+            "l-4.59 -4.58l-1.41 1.41l6 6z",
+    )
+}
+
+/** Filled.WarningAmber: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val WarningAmberGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.WarningAmber",
+        "M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2L12 2zM13 16l-2 0l0 2l2 0zM13 10l-2 0l0 5l2 0z",
+    )
+}
+
+/** Filled.DeleteOutline: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
+val DeleteOutlineGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.DeleteOutline",
+        "M6 19c0 1.1 0.9 2 2 2h8c1.1 0 2 -0.9 2 -2L18 7L6 7v12zM8 9h8v10L8 19L8 9zM15.5 4l-1 -1h-5l-1 1" +
+            "L5 4v2h14L19 4z",
+    )
+}

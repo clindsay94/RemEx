@@ -10,8 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteOutline
+import com.clindsay94.remex.ui.components.DeleteOutlineGlyph
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -273,7 +272,7 @@ private fun SensorAlertRuleRow(rule: SensorAlertRule, canEdit: Boolean, onEdit: 
                         )
                 }
                 FilledTonalIconButton(onClick = onRemove, enabled = canEdit, shapes = rememberRemexIconButtonShapes()) {
-                        Icon(Icons.Filled.DeleteOutline, contentDescription = stringResource(R.string.sensor_alerts_remove_cd, rule.displayName))
+                        Icon(DeleteOutlineGlyph, contentDescription = stringResource(R.string.sensor_alerts_remove_cd, rule.displayName))
                 }
         }
 }

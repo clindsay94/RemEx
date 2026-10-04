@@ -126,7 +126,10 @@ object PcDiagnostics {
                         }
                     }
                     LogsResult(
-                            lines = lines,
+                            // The screen keys its list by seq, and a second row with the same key
+                            // crashes a LazyColumn. The PC is trusted to number lines once, not to
+                            // never repeat one in a page, so the first of a repeat wins.
+                            lines = lines.distinctBy { it.seq },
                             lastSeq = payload.optLong("lastSeq", 0L),
                             truncated = payload.optBoolean("truncated", false),
                             error = payload.optStringOrNull("error"),
@@ -158,7 +161,8 @@ object PcDiagnostics {
                                     )
                         }
                     }
-                    SummaryResult(rows = rows, error = payload.optStringOrNull("error"))
+                    // Keyed by `key` in the list, so a repeated key keeps its first row only.
+                    SummaryResult(rows = rows.distinctBy { it.key }, error = payload.optStringOrNull("error"))
                 }
                 .getOrNull()
     }
