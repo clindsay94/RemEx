@@ -82,8 +82,8 @@ This release covers everything since 2.5.0. The complete list is in [`docs/CHANG
 
 | Platform | File | Size |
 |---|---|---|
-| **Windows** | `RemEx-v3.0.0-Setup.exe` | TBD |
-| **Android** | `RemEx-V3.0.0-release.apk` (sideload) | TBD |
-| **Linux (x64)** | `remex-agent-v3.0.0-linux-x64.tar.gz` | TBD |
+| **Windows** | `RemEx-v3.0.0-Setup.exe` | 55.6 MB |
+| **Android** | `RemEx-V3.0.0-release.apk` (sideload) | 38.2 MB |
+| **Linux (x64)** | `remex-agent-v3.0.0-linux-x64.tar.gz` | 69.7 MB |
 
 Full detail is in [`docs/CHANGELOG.md`](https://github.com/clindsay94/RemEx/blob/main/docs/CHANGELOG.md).
