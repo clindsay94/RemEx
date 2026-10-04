@@ -344,6 +344,47 @@ public class DashboardLayoutClobberTests : IDisposable
             + "for the next caller to trip over");
     }
 
+    /// <summary>
+    /// Makes every save to <paramref name="filePath"/> fail to land until the returned handle is disposed,
+    /// in the way each OS actually honours. Returns <c>null</c> when this OS/user cannot be made to refuse
+    /// the write (Linux as root ignores directory permissions), so the caller can say so instead of
+    /// asserting a failure that cannot happen.
+    /// </summary>
+    /// <remarks>
+    /// Windows: an open <see cref="FileShare.None"/> handle denies the move's delete access on the
+    /// destination (<see cref="UnauthorizedAccessException"/>). Linux: <c>FileShare.None</c> is only an
+    /// advisory <c>flock</c> and <c>rename(2)</c> ignores it, so the save is refused by taking write
+    /// permission off the containing directory instead, which stops both the temp-file create and the
+    /// rename with <see cref="UnauthorizedAccessException"/>. Reads of the file still work.
+    /// </remarks>
+    private static IDisposable? BlockSavesLanding(string filePath)
+    {
+        if (OperatingSystem.IsWindows())
+            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        var directory = Path.GetDirectoryName(filePath)!;
+        var original = File.GetUnixFileMode(directory);
+        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        var probe = Path.Combine(directory, "write-probe-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            File.WriteAllText(probe, string.Empty);
+            File.Delete(probe);
+            File.SetUnixFileMode(directory, original);
+            return null; // permissions are not enforced for this user (root)
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return new DirectoryWriteBlock(directory, original);
+        }
+    }
+
+    private sealed class DirectoryWriteBlock(string directory, UnixFileMode original) : IDisposable
+    {
+        public void Dispose() => File.SetUnixFileMode(directory, original);
+    }
+
     [Fact]
     public async Task SaveAsync_SurfacesAMoveFailureToItsCaller()
     {
@@ -372,7 +413,10 @@ public class DashboardLayoutClobberTests : IDisposable
         // Windows (MoveFileEx maps ERROR_ACCESS_DENIED to it), which is exactly why
         // IsTransientMoveFailure in the production code checks for both types rather than only the
         // one a locked READ throws.
-        using (new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None))
+        var block = BlockSavesLanding(service.FilePathForTests);
+        if (block is null)
+            return; // Linux as root: no way to make a save fail, so there is nothing to assert here.
+        using (block)
         {
             Func<Task> act = () => service.SaveAsync(attemptedProfile);
             await act.Should().ThrowAsync<UnauthorizedAccessException>(
@@ -441,7 +485,10 @@ public class DashboardLayoutClobberTests : IDisposable
         var attempted = BuildNonDefaultSettings(CustomizationMigration.CurrentSchemaVersion);
         var attemptedProfile = new DashboardProfile { Customization = attempted, Language = "attempted" };
 
-        using (new FileStream(service.FilePathForTests, FileMode.Open, FileAccess.Read, FileShare.None))
+        var block = BlockSavesLanding(service.FilePathForTests);
+        if (block is null)
+            return; // Linux as root: no way to make a save fail, so there is nothing to assert here.
+        using (block)
         {
             Func<Task> act = () => service.SaveAsync(attemptedProfile);
             await act.Should().ThrowAsync<UnauthorizedAccessException>(

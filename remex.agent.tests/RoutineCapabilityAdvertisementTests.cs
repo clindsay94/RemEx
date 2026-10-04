@@ -37,14 +37,21 @@ public class RoutineCapabilityAdvertisementTests
     {
         var verbs = Provider().GetCurrent().RoutinePowerVerbs!;
 
-        Assert.NotEmpty(verbs);
         Assert.DoesNotContain(RoutinePowerVerbs.ReservedWakeOnLan, verbs);
         Assert.All(verbs, v => Assert.Contains(v, RoutinePowerVerbs.All));
 
-        // These need no platform capability and are always offered.
-        Assert.Contains(RoutinePowerVerbs.Lock, verbs);
-        Assert.Contains(RoutinePowerVerbs.Shutdown, verbs);
-        Assert.Contains(RoutinePowerVerbs.MonitorOff, verbs);
+        // Windows only. On Linux the probe advertises a verb only when logind says yes (Shutdown,
+        // Lock) or an X11 session with xset exists (MonitorOff) - RemEx-pp0rt.9 - so a host without
+        // logind or X11 legitimately offers none of them; MapLinux's own tests pin that mapping.
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.NotEmpty(verbs);
+
+            // These need no platform capability and are always offered.
+            Assert.Contains(RoutinePowerVerbs.Lock, verbs);
+            Assert.Contains(RoutinePowerVerbs.Shutdown, verbs);
+            Assert.Contains(RoutinePowerVerbs.MonitorOff, verbs);
+        }
     }
 
     [Fact]
