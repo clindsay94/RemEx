@@ -13,6 +13,21 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Android app backgrounds (RemEx-pp4cm.17).** Personalize has a new **Background** section: None (the
+  default, so nothing changes until you pick one), six textures (Grain, Dots, Grid, Topographic, Hexagons,
+  Carbon) and three slow animated styles (Aurora drift, Mesh drift, Starfield), each shown as a live
+  swatch, plus an Intensity slider with detents. Colours come only from the active colour scheme (primary,
+  secondary, tertiary and the outline roles), so a background follows seed, dynamic and static colour,
+  light and dark, every style and every contrast level. Cards and other surfaces stay solid above it, and
+  the layer's opacity is capped per scheme so text drawn straight on the background keeps AAA contrast
+  (or 90% of its own contrast on a scheme that starts lower, such as contrast -1). One layer sits behind the
+  whole app; the remote desktop stream, the splash and the full-screen QR and pairing screens stay solid.
+  Textures are drawn once into a tile and repeated, with zero per-frame work. Animated styles run an AGSL
+  shader at up to 30 fps, and show a still frame instead while the app is in the background, when Battery
+  Saver is on, when animations are turned off, or while the stream covers them. New files:
+  `data/BackgroundStyles.kt`, `ui/theme/AppBackground.kt`, `BackgroundPalette.kt`, `BackgroundTiles.kt`,
+  `BackgroundShaders.kt`, `BackgroundGeometry.kt`, `ui/screens/BackgroundPicker.kt`; 16 new strings in all 9
+  languages.
 - **See the PC's logs and status from your phone.** More has a new **PC logs & diagnostics** page with two
   tabs. **Logs** shows what the PC has recorded, with level chips, search, a Live switch that refreshes every
   2 seconds only while the page is open, Jump to latest, and Copy or Share as text. **Diagnostics** lists the

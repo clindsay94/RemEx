@@ -92,6 +92,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.BackgroundIntensity
+import com.clindsay94.remex.data.BackgroundStyles
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.data.SplashStyles
 import com.clindsay94.remex.ui.splash.LiveHandshakeController
@@ -122,7 +124,10 @@ import com.clindsay94.remex.ui.screens.ShareDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
 import com.clindsay94.remex.ui.screens.rememberConnectPermissionGate
+import com.clindsay94.remex.ui.theme.AppBackgroundLayer
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
+import com.clindsay94.remex.ui.theme.OpaqueBackgroundRoute
+import com.clindsay94.remex.ui.theme.SeeThroughBackground
 import com.clindsay94.remex.ui.theme.LocalRemexRouteAnimatedScope
 import com.clindsay94.remex.ui.theme.LocalRemexSharedTransitionScope
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -202,6 +207,8 @@ fun AppNavigation() {
                                 isConnected = isConnected,
                                 showRoutinesBadge = !routinesOpened,
                                 splashStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).splashStyle,
+                                backgroundStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).backgroundStyle,
+                                backgroundIntensity = (personalization ?: SettingsManager.PersonalizationPreferences()).backgroundIntensity,
                                 liveHandshake = liveHandshake,
                                 onQrScanned = { host, port, pin ->
                                         // Through the same permission gate as every other connect
@@ -270,6 +277,8 @@ private fun AppNavigationContent(
         hasCompletedOnboarding: Boolean?,
         isConnected: Boolean,
         splashStyle: String,
+        backgroundStyle: String = BackgroundStyles.Default,
+        backgroundIntensity: Float = BackgroundIntensity.DEFAULT,
         liveHandshake: LiveHandshakeController? = null,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
@@ -574,6 +583,16 @@ private fun AppNavigationContent(
                 if (!isOn(Screen.Dashboard)) navigateTo(Screen.Dashboard)
         }
 
+        // The app background (RemEx-pp4cm.17): one layer behind the whole shell, not one per screen.
+        // Nothing is composed for None. The splash and the remote desktop stream cover it with
+        // opaque content, so an animated style stops drawing while either is up.
+        val backgroundVisible = BackgroundStyles.isVisible(backgroundStyle)
+        AppBackgroundLayer(
+                style = backgroundStyle,
+                intensity = backgroundIntensity,
+                covered = isOn(Screen.Splash) || isOn(Screen.RemoteDesktop),
+        )
+
         // ─── Adaptive layout shell ────────────────────────────────────────────────
         if (isNavBarLayout || !showNav) {
                 // ── Compact (phone) or full-screen routes: Scaffold-style with bottom
@@ -593,6 +612,7 @@ private fun AppNavigationContent(
                         Box(modifier = Modifier.weight(1f)) {
                                 RemexNavHost(
                                         navController = navController,
+                                        seeThroughBackground = backgroundVisible,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
@@ -908,6 +928,7 @@ private fun AppNavigationContent(
                         Box(modifier = Modifier.weight(1f)) {
                                 RemexNavHost(
                                         navController = navController,
+                                        seeThroughBackground = backgroundVisible,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
@@ -1037,6 +1058,8 @@ private fun androidx.navigation.NavBackStackEntry.isModalRoute(): Boolean =
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
+        /** True while an app background is showing: screens paint transparent so it shows between cards. */
+        seeThroughBackground: Boolean,
         hasCompletedOnboarding: Boolean,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
@@ -1073,6 +1096,7 @@ private fun RemexNavHost(
         // The shared-transition scope is what lets Home's Open Sensors card grow into the Sensors
         // route (a container transform). It draws its overlay over the NavHost with drawWithContent,
         // not a graphicsLayer, so the stream route's SurfaceView is not put under a layer.
+        SeeThroughBackground(active = seeThroughBackground) {
         SharedTransitionLayout(modifier = modifier) {
         CompositionLocalProvider(LocalRemexSharedTransitionScope provides this) {
         NavHost(
@@ -1111,6 +1135,7 @@ private fun RemexNavHost(
                                         launchSingleTop = true
                                 }
                         }
+                        OpaqueBackgroundRoute {
                         if (splashStyle == SplashStyles.LiveHandshake && onLiveHandshakeStart != null) {
                                 // Live Handshake plays as an overlay above the app (RemEx-8g6n0):
                                 // move on at once so the destination composes underneath and is
@@ -1126,6 +1151,7 @@ private fun RemexNavHost(
                                         splashStyle = splashStyle,
                                         onFinished = { goPastSplash() },
                                 )
+                        }
                         }
                 }
 
@@ -1213,6 +1239,9 @@ private fun RemexNavHost(
                         exitTransition = { motion.modalExit },
                         popExitTransition = { motion.modalExit },
                 ) {
+                        // A full-screen modal rising over the previous screen: opaque, so that
+                        // screen never shows through it (RemEx-pp4cm.17).
+                        OpaqueBackgroundRoute {
                         QrScannerScreen(
                                 onScanned = { host, port, pin ->
                                         onQrScanned(host, port, pin)
@@ -1224,6 +1253,7 @@ private fun RemexNavHost(
                                 },
                                 onBack = { navController.popBackStack() },
                         )
+                        }
                 }
 
                 composable<PairingRoute>(
@@ -1235,6 +1265,7 @@ private fun RemexNavHost(
                         popExitTransition = { motion.modalExit },
                 ) { backStackEntry ->
                         val pairing = backStackEntry.toRoute<PairingRoute>()
+                        OpaqueBackgroundRoute {
                         com.clindsay94.remex.ui.screens.PairingScreen(
                                 host = pairing.host,
                                 port = pairing.port,
@@ -1247,6 +1278,7 @@ private fun RemexNavHost(
                                         navController.popBackStack()
                                 }
                         )
+                        }
                 }
 
                 composable<Screen.RemoteDesktop>(
@@ -1259,7 +1291,7 @@ private fun RemexNavHost(
                 ) {
                         // Opened only by the Desktop tab's "Start streaming", so it starts the
                         // stream itself rather than asking for Start a second time (RemEx-wqo7a.2).
-                        RemoteDesktopScreen(startStreamingOnOpen = true)
+                        OpaqueBackgroundRoute { RemoteDesktopScreen(startStreamingOnOpen = true) }
                 }
 
                 composable<Screen.Settings> {
@@ -1321,6 +1353,7 @@ private fun RemexNavHost(
                                 RoutinesScreen(onNavigateToConnection = { onNavigateToConnection() })
                         }
                 }
+        }
         }
         }
         }

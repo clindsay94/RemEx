@@ -1641,4 +1641,21 @@
     <string name="rc_reboot_uefi_warning">रिमोट पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</string>
     <string name="relative_time_just_now">अभी-अभी</string>
     <string name="button_open_app_settings">सेटिंग्स खोलें</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">पृष्ठभूमि</string>
+    <string name="personalization_background_textures">टेक्सचर</string>
+    <string name="personalization_background_animated">एनिमेटेड</string>
+    <string name="personalization_background_none">कोई नहीं</string>
+    <string name="personalization_background_grain">दानेदार</string>
+    <string name="personalization_background_dots">बिंदु</string>
+    <string name="personalization_background_grid">ग्रिड</string>
+    <string name="personalization_background_topographic">भू-आकृति</string>
+    <string name="personalization_background_hexagons">षट्कोण</string>
+    <string name="personalization_background_carbon">कार्बन</string>
+    <string name="personalization_background_aurora">बहता ऑरोरा</string>
+    <string name="personalization_background_mesh">बहती मेश</string>
+    <string name="personalization_background_starfield">तारों भरा आकाश</string>
+    <string name="personalization_background_intensity">तीव्रता: %1$d%%</string>
+    <string name="cd_background_intensity">पृष्ठभूमि की तीव्रता</string>
+    <string name="personalization_background_note">ऐप के बैकग्राउंड में होने पर, बैटरी सेवर चालू होने पर या एनिमेशन बंद होने पर एनिमेटेड पृष्ठभूमि रुक जाती है।</string>
 </resources>

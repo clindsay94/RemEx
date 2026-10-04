@@ -1641,4 +1641,21 @@
     <string name="rc_reboot_uefi_warning">O PC remoto será reiniciado e iniciará diretamente nas configurações de firmware UEFI. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</string>
     <string name="relative_time_just_now">agora mesmo</string>
     <string name="button_open_app_settings">Abrir configurações</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Plano de fundo</string>
+    <string name="personalization_background_textures">Texturas</string>
+    <string name="personalization_background_animated">Animados</string>
+    <string name="personalization_background_none">Nenhum</string>
+    <string name="personalization_background_grain">Granulado</string>
+    <string name="personalization_background_dots">Pontos</string>
+    <string name="personalization_background_grid">Grade</string>
+    <string name="personalization_background_topographic">Topográfico</string>
+    <string name="personalization_background_hexagons">Hexágonos</string>
+    <string name="personalization_background_carbon">Carbono</string>
+    <string name="personalization_background_aurora">Aurora em movimento</string>
+    <string name="personalization_background_mesh">Malha em movimento</string>
+    <string name="personalization_background_starfield">Campo de estrelas</string>
+    <string name="personalization_background_intensity">Intensidade: %1$d%%</string>
+    <string name="cd_background_intensity">Intensidade do plano de fundo</string>
+    <string name="personalization_background_note">Os planos de fundo animados pausam quando o app está em segundo plano, quando a Economia de bateria está ativada ou quando as animações estão desativadas.</string>
 </resources>

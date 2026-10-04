@@ -1665,4 +1665,21 @@
     <string name="rc_reboot_uefi_warning">Віддалений ПК перезавантажиться й одразу завантажиться в налаштування мікропрограми UEFI. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</string>
     <string name="relative_time_just_now">щойно</string>
     <string name="button_open_app_settings">Відкрити налаштування</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Тло</string>
+    <string name="personalization_background_textures">Текстури</string>
+    <string name="personalization_background_animated">Анімовані</string>
+    <string name="personalization_background_none">Немає</string>
+    <string name="personalization_background_grain">Зерно</string>
+    <string name="personalization_background_dots">Крапки</string>
+    <string name="personalization_background_grid">Сітка</string>
+    <string name="personalization_background_topographic">Топографічне</string>
+    <string name="personalization_background_hexagons">Шестикутники</string>
+    <string name="personalization_background_carbon">Карбон</string>
+    <string name="personalization_background_aurora">Рухоме північне сяйво</string>
+    <string name="personalization_background_mesh">Рухома сітка кольорів</string>
+    <string name="personalization_background_starfield">Зоряне поле</string>
+    <string name="personalization_background_intensity">Інтенсивність: %1$d%%</string>
+    <string name="cd_background_intensity">Інтенсивність тла</string>
+    <string name="personalization_background_note">Анімовані тла призупиняються, коли застосунок працює у фоні, коли ввімкнено режим енергозбереження або коли анімації вимкнено.</string>
 </resources>

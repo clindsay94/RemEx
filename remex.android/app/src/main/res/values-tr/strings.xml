@@ -1643,4 +1643,21 @@
     <string name="rc_reboot_uefi_warning">Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</string>
     <string name="relative_time_just_now">az önce</string>
     <string name="button_open_app_settings">Ayarları aç</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Arka plan</string>
+    <string name="personalization_background_textures">Dokular</string>
+    <string name="personalization_background_animated">Animasyonlu</string>
+    <string name="personalization_background_none">Yok</string>
+    <string name="personalization_background_grain">Tanecik</string>
+    <string name="personalization_background_dots">Noktalar</string>
+    <string name="personalization_background_grid">Izgara</string>
+    <string name="personalization_background_topographic">Topografik</string>
+    <string name="personalization_background_hexagons">Altıgenler</string>
+    <string name="personalization_background_carbon">Karbon</string>
+    <string name="personalization_background_aurora">Kayan aurora</string>
+    <string name="personalization_background_mesh">Kayan ağ</string>
+    <string name="personalization_background_starfield">Yıldız alanı</string>
+    <string name="personalization_background_intensity">Yoğunluk: %%%1$d</string>
+    <string name="cd_background_intensity">Arka plan yoğunluğu</string>
+    <string name="personalization_background_note">Animasyonlu arka planlar uygulama arka plandayken, Pil Tasarrufu açıkken veya animasyonlar kapalıyken durur.</string>
 </resources>

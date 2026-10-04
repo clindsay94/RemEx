@@ -1636,4 +1636,21 @@
     <string name="rc_reboot_uefi_warning">PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</string>
     <string name="relative_time_just_now">baru saja</string>
     <string name="button_open_app_settings">Buka setelan</string>
+    <!-- App background (RemEx-pp4cm.17) -->
+    <string name="personalization_section_background">Latar belakang</string>
+    <string name="personalization_background_textures">Tekstur</string>
+    <string name="personalization_background_animated">Beranimasi</string>
+    <string name="personalization_background_none">Tidak ada</string>
+    <string name="personalization_background_grain">Butiran</string>
+    <string name="personalization_background_dots">Titik</string>
+    <string name="personalization_background_grid">Kisi</string>
+    <string name="personalization_background_topographic">Topografi</string>
+    <string name="personalization_background_hexagons">Heksagon</string>
+    <string name="personalization_background_carbon">Karbon</string>
+    <string name="personalization_background_aurora">Aurora bergerak</string>
+    <string name="personalization_background_mesh">Mesh bergerak</string>
+    <string name="personalization_background_starfield">Bidang bintang</string>
+    <string name="personalization_background_intensity">Intensitas: %1$d%%</string>
+    <string name="cd_background_intensity">Intensitas latar belakang</string>
+    <string name="personalization_background_note">Latar belakang beranimasi berhenti saat aplikasi berada di latar belakang, saat Penghemat Baterai aktif, atau saat animasi dimatikan.</string>
 </resources>

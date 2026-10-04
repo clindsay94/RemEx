@@ -19,6 +19,7 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
+import com.clindsay94.remex.ui.theme.LocalOpaqueBackground
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
@@ -208,7 +209,14 @@ fun rememberRemexCollapsingScrollBehavior(): TopAppBarScrollBehavior =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun remexFlexibleTopBarColors(): TopAppBarColors =
-    TopAppBarDefaults.topAppBarColors()
+    // While an app background shows (RemEx-pp4cm.17) the bar at rest is transparent like the screen
+    // around it, so it does not cut a hard line across the texture. Scrolled, it keeps its own
+    // opaque container, as before.
+    if (LocalOpaqueBackground.current != null) {
+        TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+    } else {
+        TopAppBarDefaults.topAppBarColors()
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)

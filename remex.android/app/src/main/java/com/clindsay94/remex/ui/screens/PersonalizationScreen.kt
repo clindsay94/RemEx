@@ -96,6 +96,7 @@ fun PersonalizationScreen(
         onDynamicColorChange = viewModel::setDynamicColor,
         categoryShapePresets = categoryShapePresets,
         onCategoryShapeChange = viewModel::setCategoryShapePreset,
+        onBackgroundChange = viewModel::setBackground,
         onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
@@ -159,6 +160,8 @@ fun PersonalizationScreenContent(
     /** The user's per-category shape choices; absent entries mean "inherit". */
     categoryShapePresets: Map<DashboardShapes.CardCategory, Float> = emptyMap(),
     onCategoryShapeChange: (DashboardShapes.CardCategory, Float) -> Unit = { _, _ -> },
+    /** Called with the new background style and intensity whenever either changes (RemEx-pp4cm.17). */
+    onBackgroundChange: (style: String, intensity: Float) -> Unit = { _, _ -> },
     onSave: (
         themeMode: String,
         themePalette: String,
@@ -216,6 +219,14 @@ fun PersonalizationScreenContent(
     }
     var splashStyle by remember { mutableStateOf(settings.splashStyle) }
     var showSplashPreview by remember { mutableStateOf(false) }
+    var backgroundStyle by remember { mutableStateOf(settings.backgroundStyle) }
+    var backgroundIntensity by remember { mutableFloatStateOf(settings.backgroundIntensity) }
+
+    // Only a choice the user made is saved, so opening the screen writes nothing.
+    var backgroundTouched by remember { mutableStateOf(false) }
+    LaunchedEffect(backgroundStyle, backgroundIntensity) {
+        if (backgroundTouched) onBackgroundChange(backgroundStyle, backgroundIntensity)
+    }
 
     LaunchedEffect(
             themeMode,
@@ -559,6 +570,37 @@ fun PersonalizationScreenContent(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.personalization_splash_preview))
                     }
+                }
+            }
+
+            // ═══ Background (RemEx-pp4cm.17) ═══
+            Card(
+                    colors =
+                            CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                    modifier = Modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
+            ) {
+                Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(
+                            stringResource(R.string.personalization_section_background),
+                            Icons.Default.Palette
+                    )
+                    BackgroundPicker(
+                            style = backgroundStyle,
+                            intensity = backgroundIntensity,
+                            onStyleChange = {
+                                backgroundTouched = true
+                                backgroundStyle = it
+                            },
+                            onIntensityChange = {
+                                backgroundTouched = true
+                                backgroundIntensity = it
+                            }
+                    )
                 }
             }
 

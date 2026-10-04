@@ -122,6 +122,10 @@ class SettingsManager(val context: Context) {
                 // see SplashStyles. Set by the migration AND by every personalization save, so a
                 // style chosen after the update is never migrated.
                 val SPLASH_STYLE_MIGRATED_V3_KEY = booleanPreferencesKey("splash_style_migrated_v3")
+                // App background (RemEx-pp4cm.17). Absent for every existing user, which reads as
+                // BackgroundStyles.None, so an upgrade changes nothing on screen.
+                val BACKGROUND_STYLE_KEY = stringPreferencesKey("background_style")
+                val BACKGROUND_INTENSITY_KEY = floatPreferencesKey("background_intensity")
                 val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
                 // How often (seconds) the home-screen widgets actively poll the PC for fresh
@@ -202,6 +206,12 @@ class SettingsManager(val context: Context) {
                  */
                 const val DEFAULT_HOST_PLACEHOLDER = ""
 
+                /** The background write [saveBackground] makes, kept pure so a round trip is unit-testable. */
+                internal fun writeBackground(preferences: MutablePreferences, style: String, intensity: Float) {
+                        preferences[BACKGROUND_STYLE_KEY] = BackgroundStyles.effective(style)
+                        preferences[BACKGROUND_INTENSITY_KEY] = BackgroundIntensity.clamp(intensity)
+                }
+
                 /**
                  * One DataStore snapshot read as [PersonalizationPreferences]: a stored value wins, and a
                  * missing one falls back to the same default the data class carries (ThemeDefaults for the
@@ -242,7 +252,11 @@ class SettingsManager(val context: Context) {
                                         splashStyle = SplashStyles.effective(
                                                 preferences[SPLASH_STYLE_KEY],
                                                 preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
-                                        )
+                                        ),
+                                        backgroundStyle = BackgroundStyles.effective(preferences[BACKGROUND_STYLE_KEY]),
+                                        backgroundIntensity =
+                                                preferences[BACKGROUND_INTENSITY_KEY]?.let(BackgroundIntensity::clamp)
+                                                        ?: BackgroundIntensity.DEFAULT,
                                 )
                 }
         }
@@ -289,7 +303,10 @@ class SettingsManager(val context: Context) {
                 val remoteDesktopCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteControlCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteMouseCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
-                val splashStyle: String = SplashStyles.Default
+                val splashStyle: String = SplashStyles.Default,
+                /** One of [BackgroundStyles.All]; [BackgroundStyles.None] until the user picks one. */
+                val backgroundStyle: String = BackgroundStyles.Default,
+                val backgroundIntensity: Float = BackgroundIntensity.DEFAULT
         )
 
         val appLauncherCardShapePresetFlow: Flow<Float> =
@@ -797,6 +814,15 @@ class SettingsManager(val context: Context) {
                         preferences[SPLASH_STYLE_KEY] = splashStyle
                         preferences[SPLASH_STYLE_MIGRATED_V3_KEY] = true
                 }
+        }
+
+        /**
+         * Persists the app background choice (RemEx-pp4cm.17). Its own write, not part of
+         * [savePersonalization]: that call carries every other appearance setting, and the
+         * background needs no one of them to change with it.
+         */
+        suspend fun saveBackground(style: String, intensity: Float) {
+                context.dataStore.edit { preferences -> writeBackground(preferences, style, intensity) }
         }
 
         /**
