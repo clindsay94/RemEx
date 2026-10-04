@@ -1,11 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import android.text.format.DateUtils
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -41,7 +35,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.EstablishedConnection
 import com.clindsay94.remex.R
@@ -76,7 +69,7 @@ fun ConnectionScreen(
         val status by viewModel.connectionStatus.collectAsStateWithLifecycle()
         val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
         val isCertMismatch by viewModel.isCertMismatch.collectAsStateWithLifecycle()
-        val capabilitySummary by viewModel.capabilitySummary.collectAsStateWithLifecycle()
+        val errorOpensAppSettings by viewModel.errorOpensAppSettings.collectAsStateWithLifecycle()
         val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
         val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
         val knownPcRows by viewModel.knownPcRows.collectAsStateWithLifecycle()
@@ -98,7 +91,8 @@ fun ConnectionScreen(
                 status = status,
                 connectionError = connectionError,
                 isCertMismatch = isCertMismatch,
-                capabilitySummary = capabilitySummary,
+                errorOpensAppSettings = errorOpensAppSettings,
+                onLocalNetworkRefused = { permanently -> viewModel.reportLocalNetworkRefused(permanently) },
                 isDiscovering = isDiscovering,
                 discoveredHost = discoveredHost,
                 knownPcRows = knownPcRows,
@@ -139,7 +133,6 @@ fun ConnectionScreenContent(
         status: String,
         connectionError: String?,
         isCertMismatch: Boolean,
-        capabilitySummary: String,
         isDiscovering: Boolean,
         discoveredHost: DiscoveredHost?,
         knownPcRows: List<KnownPcEntry>,
@@ -161,6 +154,10 @@ fun ConnectionScreenContent(
         onUnpairAddress: (android.content.Context, String) -> Unit,
         /** The connected PC no longer recognises this phone (sweep P3): its card says so. */
         connectedNeedsPairing: Boolean = false,
+        /** The error is a local-network refusal only the app's settings page can undo now. */
+        errorOpensAppSettings: Boolean = false,
+        /** A connect or discovery stopped because the local-network permission was refused. */
+        onLocalNetworkRefused: (permanently: Boolean) -> Unit = {},
 ) {
         val haptics = rememberRemexHaptics()
         val context = LocalContext.current
@@ -194,67 +191,22 @@ fun ConnectionScreenContent(
         var pairingEntry by remember { mutableStateOf<KnownPcEntry?>(null) }
         var rowPinInput by remember { mutableStateOf("") }
 
-        // Pending flags for deferred actions after permission grants
-        var pendingConnect by remember { mutableStateOf(false) }
-        var pendingConnectNeedsLan by remember { mutableStateOf(false) }
-        // The Known PCs row whose tap is waiting on a permission grant, if it was a row rather than
-        // the form, and the PIN that tap carried. Without these the deferred path falls through to
-        // doConnect(), which sends the FORM's pairing PIN — and a 6-digit PIN makes
-        // RemexClientManager drop the pinned hash and force a re-pair, so a tap meant to RECONNECT
-        // to an already-paired PC would try to pair it again with a PIN belonging to a different
-        // machine. The PIN is held alongside the row rather than re-read at resume time because the
-        // dialog that collected it is dismissed the moment the permission prompt appears.
-        var pendingKnownPc by remember { mutableStateOf<KnownPcEntry?>(null) }
-        var pendingKnownPcPin by remember { mutableStateOf("") }
-        var pendingDiscover by remember { mutableStateOf(false) }
-
-        // Snackbar state declared early so permission launchers below can reference it.
+        // Snackbar state, for the "PC found" message below.
         val snackbarHostState = remember { SnackbarHostState() }
-
-        // READ IN COMPOSABLE SCOPE, NOT INSIDE THE LAMBDAS THAT USE THEM (RemEx-2evl3). A resource
-        // read through LocalContext.current is not configuration-aware and can hand back a stale
-        // string after a Configuration change — and with nine locales shipped, a language change is
-        // the Configuration change these users actually make. stringResource cannot be called from
-        // the callbacks below because it is @Composable, so the value is hoisted and closed over.
-        val localNetworkDeniedMessage = stringResource(R.string.error_local_network_permission_denied)
 
         // THE FORMAT STRING RATHER THAN THE FORMATTED RESULT, because the host name is only known
         // inside the callback. Hoisting the template still gets the locale-correct text; only the
-        // substitution happens late.
+        // substitution happens late. Read in composable scope, not in the callback (RemEx-2evl3).
         val hostDiscoveredFormat = stringResource(R.string.host_discovered_snackbar)
 
-        // Runtime permissions required to connect, scoped to the target host. A loopback or
-        // VPN/Tailscale host is not on the local network, so the LAN-scoped permissions
-        // (NEARBY_WIFI_DEVICES / ACCESS_LOCAL_NETWORK) are irrelevant there and must NOT be
-        // requested or treated as blocking — only POST_NOTIFICATIONS (for the keepalive
-        // foreground service) applies. This is what lets a Tailscale connection proceed even
-        // when the user has declined local-network access.
-        fun connectPermissionsFor(host: String): Array<String> {
-                val needsLan =
-                        com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(host)
-                return buildList {
-                                add(Manifest.permission.POST_NOTIFICATIONS)
-                                if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
-                                // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN access.
-                                if (needsLan && Build.VERSION.SDK_INT >= 36) {
-                                        add("android.permission.ACCESS_LOCAL_NETWORK")
-                                }
-                        }
-                        .toTypedArray()
-        }
-
-        fun hasNearbyWifiPermission(): Boolean {
-                val hasNearby = ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.NEARBY_WIFI_DEVICES
-                ) == PackageManager.PERMISSION_GRANTED
-
-                val hasLocalNet = if (Build.VERSION.SDK_INT >= 36) {
-                        ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
-                } else true
-
-                return hasNearby && hasLocalNet
-        }
+        // The shared permission gate every connect path goes through (3.0 comb, qr-home-no-perms).
+        // Each attempt is handed to it as a closure carrying its own target and PIN, so an attempt
+        // that waits on the permission dialog resumes as itself. That matters for a Known PCs card:
+        // falling back to the FORM would send the form's pairing PIN, and a 6-digit PIN makes
+        // RemexClientManager drop the pinned hash and force a re-pair - a tap meant to RECONNECT to a
+        // paired PC would try to pair it again with a PIN belonging to a different machine. A
+        // Tailscale/VPN target needs no LAN permission, so a refusal there never blocks it.
+        val permissionGate = rememberConnectPermissionGate(onLocalNetworkRefused)
 
         fun doConnect() {
                 val p = portInput.toIntOrNull() ?: 5005
@@ -268,47 +220,19 @@ fun ConnectionScreenContent(
                 )
         }
 
-        // Permission launcher for "Save & Connect" — requests POST_NOTIFICATIONS,
-        // NEARBY_WIFI_DEVICES, and ACCESS_LOCAL_NETWORK (Android 17+ / API 37+).
-        // If ACCESS_LOCAL_NETWORK is denied on API 37+, we surface a clear rationale
-        // via snackbar before falling through to the connect attempt (which will fail
-        // at the socket layer with an equally clear error, but the rationale string
-        // explains *why* before that happens).
-        val connectPermissionLauncher =
-                rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestMultiplePermissions()
-                ) { results ->
-                        if (pendingConnect) {
-                                pendingConnect = false
-                                val knownPc = pendingKnownPc
-                                val knownPcPin = pendingKnownPcPin
-                                pendingKnownPc = null
-                                pendingKnownPcPin = ""
-                                // Only treat a LAN-permission denial as fatal when this connection
-                                // actually needs the local network. A Tailscale/VPN target does not,
-                                // so a denial there must still fall through to doConnect().
-                                val localNetworkDenied = pendingConnectNeedsLan &&
-                                        Build.VERSION.SDK_INT >= 37 &&
-                                        results["android.permission.ACCESS_LOCAL_NETWORK"] == false
-                                if (localNetworkDenied) {
-                                        scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                        localNetworkDeniedMessage
-                                                )
-                                        }
-                                        // Do not attempt connection — it will fail silently without LAN access.
-                                        return@rememberLauncherForActivityResult
-                                }
-                                // A deferred Known PCs tap resumes as that tap, not as the form.
-                                // doConnect() would carry the FORM's pairing PIN, which belongs to
-                                // whatever the user typed there — for a paired row that PIN makes
-                                // RemexClientManager drop the pinned hash and force a re-pair, and
-                                // for an unpaired row it is a PIN for the wrong machine. The row's
-                                // own PIN, captured with the tap, travels with it instead.
-                                if (knownPc != null) onConnectToKnownPc(knownPc, knownPcPin)
-                                else doConnect()
-                        }
-                }
+        /**
+         * The address form's Connect, from its button or the PIN field's Done key (3.0 comb,
+         * ime-done). Permissions are scoped to the typed host: a loopback or Tailscale/VPN target
+         * needs no LAN permission, so a refused local-network grant must NOT block it (the root cause
+         * of "won't even try to connect" over Tailscale).
+         */
+        fun submitForm() {
+                if (isConnecting || hostInput.isBlank()) return
+                permissionGate.connect(hostInput) { doConnect() }
+                // Back to Your PCs, where the status line and the card show how the attempt goes.
+                // A deferred attempt keeps working: doConnect reads the screen's own state.
+                connectionForm = null
+        }
 
         /**
          * Starts a Known PCs row's connection, asking for permissions first if they are missing.
@@ -318,52 +242,11 @@ fun ConnectionScreenContent(
          * proceed on a phone that has declined local-network access.
          */
         fun startKnownPcConnect(entry: KnownPcEntry, pin: String) {
-                // Fill the form as well as connect: it shows what was tapped, and the deferred
-                // permission path reads it back.
+                // Fill the form as well as connect: it shows what was tapped.
                 hostInput = entry.address
                 portInput = entry.port.toString()
-
-                val perms = connectPermissionsFor(entry.address)
-                pendingConnectNeedsLan =
-                        com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(
-                                entry.address
-                        )
-                val allGranted =
-                        perms.all {
-                                ContextCompat.checkSelfPermission(context, it) ==
-                                        PackageManager.PERMISSION_GRANTED
-                        }
-                if (perms.isNotEmpty() && !allGranted) {
-                        pendingKnownPc = entry
-                        pendingKnownPcPin = pin
-                        pendingConnect = true
-                        connectPermissionLauncher.launch(perms)
-                } else {
-                        onConnectToKnownPc(entry, pin)
-                }
+                permissionGate.connect(entry.address) { onConnectToKnownPc(entry, pin) }
         }
-
-        // Separate permission launcher for "Discover" — needs NEARBY_WIFI_DEVICES and
-        // ACCESS_LOCAL_NETWORK.  Same denial handling: show rationale and abort.
-        val discoverPermissionLauncher =
-                rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-                        results ->
-                        if (pendingDiscover) {
-                                pendingDiscover = false
-                                // Check if ACCESS_LOCAL_NETWORK was denied on Android 17+
-                                val localNetworkDenied = Build.VERSION.SDK_INT >= 37 &&
-                                        results["android.permission.ACCESS_LOCAL_NETWORK"] == false
-                                if (localNetworkDenied) {
-                                        scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                        localNetworkDeniedMessage
-                                                )
-                                        }
-                                        return@rememberLauncherForActivityResult
-                                }
-                                onDiscoverHost()
-                        }
-                }
 
         // Initialize inputs from saved values only once they are loaded
         // Remote Desktop defaults are no longer on this screen (RemEx-wqo7a.6): they live in the
@@ -441,17 +324,7 @@ fun ConnectionScreenContent(
         /** "Discover automatically", asking for the nearby-devices permission first if needed. */
         fun startDiscovery() {
                 if (isDiscovering) return
-                if (!hasNearbyWifiPermission()) {
-                        pendingDiscover = true
-                        val permsToRequest = if (Build.VERSION.SDK_INT >= 36) {
-                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES, "android.permission.ACCESS_LOCAL_NETWORK")
-                        } else {
-                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
-                        }
-                        discoverPermissionLauncher.launch(permsToRequest)
-                } else {
-                        onDiscoverHost()
-                }
+                permissionGate.discover { onDiscoverHost() }
         }
 
         /**
@@ -599,6 +472,21 @@ fun ConnectionScreenContent(
                                                                         ) {
                                                                                 Text(stringResource(R.string.connection_action_repair), color = MaterialTheme.colorScheme.onErrorContainer)
                                                                         }
+                                                                } else if (errorOpensAppSettings) {
+                                                                        // Android has stopped asking, so the
+                                                                        // settings page is the only way back
+                                                                        // (3.0 comb, qr-perm-deadend).
+                                                                        TextButton(
+                                                                                onClick = {
+                                                                                        haptics.perform(RemexHapticEvent.Press)
+                                                                                        openAppPermissionSettings(context)
+                                                                                },
+                                                                                modifier = Modifier.align(Alignment.End),
+                                                                                shapes = rememberRemexButtonShapes(),
+                                                                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                                                                        ) {
+                                                                                Text(stringResource(R.string.button_open_app_settings), color = MaterialTheme.colorScheme.onErrorContainer)
+                                                                        }
                                                                 }
                                                         }
                                                         IconButton(
@@ -634,8 +522,13 @@ fun ConnectionScreenContent(
                                 YourPcsSection(
                                         cards = yourPcCards,
                                         status = status,
-                                        isConnected = isConnected,
-                                        capabilitySummary = capabilitySummary,
+                                        headerStatus =
+                                                YourPcCards.headerStatus(
+                                                        cards = yourPcCards,
+                                                        isConnected = isConnected,
+                                                        isConnecting = isConnecting,
+                                                        connectedNeedsPairing = connectedNeedsPairing
+                                                ),
                                         enabled = !isConnecting,
                                         onConnect = { entry -> connectKnownPc(entry) },
                                         onDetails = { entry -> detailsEntry = entry },
@@ -694,7 +587,22 @@ fun ConnectionScreenContent(
                                                                                                                 .NumberPassword,
                                                                                                 imeAction =
                                                                                                         ImeAction.Done
-                                                                                        )
+                                                                                        ),
+                                                                        // Done pairs, like the Pair button,
+                                                                        // once there is a PIN to send
+                                                                        // (3.0 comb, ime-done).
+                                                                        keyboardActions =
+                                                                                androidx.compose.foundation.text.KeyboardActions(
+                                                                                        onDone = {
+                                                                                                val pin = rowPinInput.trim()
+                                                                                                if (pin.isNotBlank()) {
+                                                                                                        haptics.perform(RemexHapticEvent.Press)
+                                                                                                        pairingEntry = null
+                                                                                                        rowPinInput = ""
+                                                                                                        startKnownPcConnect(target, pin)
+                                                                                                }
+                                                                                        }
+                                                                                )
                                                                 )
                                                         }
                                                 },
@@ -1152,7 +1060,9 @@ fun ConnectionScreenContent(
         if (showAddPcSheet) {
                 AddPcSheet(
                         isDiscovering = isDiscovering,
-                        problem = connectionError,
+                        problem =
+                                if (isCertMismatch) stringResource(R.string.connection_error_cert_changed)
+                                else connectionError,
                         onDismiss = { showAddPcSheet = false },
                         onDiscover = { startDiscovery() },
                         onScanQr = {
@@ -1620,6 +1530,15 @@ fun ConnectionScreenContent(
                                                         keyboardType = KeyboardType.NumberPassword,
                                                         imeAction = ImeAction.Done
                                                 ),
+                                        // Done connects, as the button below does, instead of only
+                                        // hiding the keyboard (3.0 comb, ime-done).
+                                        keyboardActions =
+                                                androidx.compose.foundation.text.KeyboardActions(
+                                                        onDone = {
+                                                                haptics.perform(RemexHapticEvent.Press)
+                                                                submitForm()
+                                                        }
+                                                ),
                                         supportingText = {
                                                 Text(
                                                         stringResource(
@@ -1632,33 +1551,7 @@ fun ConnectionScreenContent(
                                 Button(
                                         onClick = {
                                                 haptics.perform(RemexHapticEvent.Press)
-                                                // Scope the required permissions to the target host: a
-                                                // loopback or Tailscale/VPN target needs no LAN permission,
-                                                // so a denied/undecided local-network grant must NOT block it
-                                                // (the root cause of "won't even try to connect" over Tailscale).
-                                                val targetHost = hostInput.trim()
-                                                val perms = connectPermissionsFor(targetHost)
-                                                pendingConnectNeedsLan =
-                                                        com.clindsay94.remex.security.TransportTrust
-                                                                .requiresLocalNetworkAccess(targetHost)
-                                                val allGranted =
-                                                        perms.all {
-                                                                ContextCompat.checkSelfPermission(
-                                                                        context,
-                                                                        it
-                                                                ) == PackageManager.PERMISSION_GRANTED
-                                                        }
-                                                if (perms.isNotEmpty() && !allGranted) {
-                                                        pendingConnect = true
-                                                        connectPermissionLauncher.launch(perms)
-                                                } else {
-                                                        doConnect()
-                                                }
-                                                // Back to Your PCs, where the status line and the
-                                                // card show how the attempt goes. The deferred
-                                                // permission path keeps working: its state lives
-                                                // on the screen, not in this sheet.
-                                                connectionForm = null
+                                                submitForm()
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         enabled = !isConnecting && hostInput.isNotEmpty(),
@@ -1800,7 +1693,6 @@ private fun ConnectionScreenPreview() {
             isConnected = true,
             status = "Connected",
             connectionError = null,
-            capabilitySummary = "Desktop, Shell, TaskManager",
             isDiscovering = false,
             discoveredHost = null,
             isCertMismatch = false,
@@ -1879,14 +1771,10 @@ private fun lastConnectedText(entry: KnownPcEntry): String =
                 stringResource(
                         R.string.connection_known_pc_last_connected,
                         // The system's own relative-time wording, so it is localized and formatted
-                        // the way the rest of the phone does it rather than by a string this app
-                        // would have to translate nine times.
-                        DateUtils.getRelativeTimeSpanString(
-                                        entry.lastConnectedAtMillis,
-                                        System.currentTimeMillis(),
-                                        DateUtils.MINUTE_IN_MILLIS
-                                )
-                                .toString()
+                        // the way the rest of the phone does it, except under a minute, where the
+                        // system says "0 minutes ago" (3.0 comb, zero-minutes-ago). The clock ticks
+                        // once a minute so the text moves on by itself.
+                        relativeTimeText(entry.lastConnectedAtMillis, rememberMinuteClock())
                 )
         } else {
                 stringResource(R.string.connection_known_pc_never_connected)
@@ -1902,9 +1790,10 @@ private fun lastConnectedText(entry: KnownPcEntry): String =
 @Composable
 private fun YourPcsSection(
         cards: List<YourPcCard>,
+        /** The view model's line, used while connecting ("Connecting to …") and when not connected. */
         status: String,
-        isConnected: Boolean,
-        capabilitySummary: String,
+        /** What the header says, from the same status the cards use ([YourPcCards.headerStatus]). */
+        headerStatus: YourPcStatus?,
         enabled: Boolean,
         onConnect: (KnownPcEntry) -> Unit,
         onDetails: (KnownPcEntry) -> Unit,
@@ -1918,25 +1807,31 @@ private fun YourPcsSection(
                                 text = stringResource(R.string.connection_your_pcs_title),
                                 style = MaterialTheme.typography.titleMediumEmphasized
                         )
+                        // One source for the header and the cards (3.0 comb, conn-header-contradicts):
+                        // it used to read "Connected" over a card saying "Needs pairing", with a raw
+                        // "windows / interactive / desktop available" line under it.
                         val statusColor by animateColorAsState(
                                 targetValue =
-                                        if (isConnected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        when (headerStatus) {
+                                                YourPcStatus.ConnectedNow -> MaterialTheme.colorScheme.primary
+                                                YourPcStatus.ConnectedNeedsPairing -> MaterialTheme.colorScheme.error
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                 animationSpec = motionScheme.defaultEffectsSpec(),
                                 label = "connectionStatusColor"
                         )
+                        val statusText =
+                                when (headerStatus) {
+                                        YourPcStatus.ConnectedNow -> stringResource(R.string.status_connected)
+                                        YourPcStatus.ConnectedNeedsPairing ->
+                                                stringResource(R.string.connection_known_pc_needs_pairing)
+                                        else -> status
+                                }
                         Text(
-                                text = stringResource(R.string.connection_status_label, status),
+                                text = stringResource(R.string.connection_status_label, statusText),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = statusColor
                         )
-                        if (isConnected) {
-                                Text(
-                                        text = capabilitySummary,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                        }
                 }
 
                 if (cards.isEmpty()) {

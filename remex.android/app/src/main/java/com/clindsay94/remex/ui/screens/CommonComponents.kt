@@ -43,8 +43,11 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -340,11 +343,20 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                 label = "chip_pulse_scale"
                         )
                 } else remember { mutableStateOf(1f) }
-        // M3: SuggestionChip replaces Surface+Row for semantic chip semantics
-        SuggestionChip(
-                onClick = {},
-                modifier = modifier,
-                icon = {
+        // A status pill, not a button (3.0 comb, chip-noop): it was a SuggestionChip with an empty
+        // onClick, which TalkBack announced as a button that did nothing. Same chip shape, border
+        // and colours, drawn on a plain Surface and read as one item.
+        Surface(
+                modifier = modifier.semantics(mergeDescendants = true) {},
+                shape = SuggestionChipDefaults.shape,
+                color = MaterialTheme.colorScheme.surfaceBright,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                border = SuggestionChipDefaults.suggestionChipBorder(enabled = true),
+        ) {
+                Row(
+                        modifier = Modifier.heightIn(min = 32.dp).padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
                         Box(
                                 modifier =
                                         Modifier.size(6.dp)
@@ -356,8 +368,7 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                                 }
                                                 .background(color = dotColor, shape = CircleShape)
                         )
-                },
-                label = {
+                        Spacer(Modifier.width(8.dp))
                         val labelFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
                         AnimatedContent(
                                 targetState = isConnected,
@@ -373,12 +384,8 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                         style = MaterialTheme.typography.labelSmall
                                 )
                         }
-                },
-                colors =
-                        SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceBright
-                        )
-        )
+                }
+        }
 }
 
 /**

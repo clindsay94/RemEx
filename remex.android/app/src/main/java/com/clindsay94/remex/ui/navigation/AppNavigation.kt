@@ -120,6 +120,7 @@ import com.clindsay94.remex.ui.screens.SettingsScreen
 import com.clindsay94.remex.ui.screens.ShareDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
+import com.clindsay94.remex.ui.screens.rememberConnectPermissionGate
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.LocalRemexRouteAnimatedScope
 import com.clindsay94.remex.ui.theme.LocalRemexSharedTransitionScope
@@ -135,6 +136,7 @@ import com.clindsay94.remex.ui.components.rememberRemexHaptics
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 import androidx.compose.material3.ButtonDefaults
 import com.clindsay94.remex.ui.components.TransferOutcomeHapticsEffect
+import com.clindsay94.remex.ui.components.LocalRemexUpAction
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.EnterTransition
 
@@ -163,6 +165,10 @@ fun AppNavigation() {
         val context = LocalContext.current
         val settingsManager = remember { SettingsManager(context) }
         val connectionViewModel: ConnectionViewModel = viewModel()
+        val qrPermissionGate =
+                rememberConnectPermissionGate { permanently ->
+                        connectionViewModel.reportLocalNetworkRefused(permanently)
+                }
 
         val hasCompletedOnboarding by
                 settingsManager.hasCompletedOnboardingFlow.collectAsStateWithLifecycle(initialValue = null)
@@ -197,7 +203,13 @@ fun AppNavigation() {
                                 splashStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).splashStyle,
                                 liveHandshake = liveHandshake,
                                 onQrScanned = { host, port, pin ->
-                                        connectionViewModel.applyQrResultAndConnect(host, port, pin)
+                                        // Through the same permission gate as every other connect
+                                        // (3.0 comb, qr-home-no-perms). Held up here, above the
+                                        // routes, because the scanner pops straight back to Home
+                                        // and the attempt has to outlive it while the system asks.
+                                        qrPermissionGate.connect(host) {
+                                                connectionViewModel.applyQrResultAndConnect(host, port, pin)
+                                        }
                                 },
                                 dashboardScreenContent = { onNav, isVisible ->
                                         DashboardScreen(onNavigateToConnection = onNav, isVisible = isVisible)
@@ -492,6 +504,19 @@ private fun AppNavigationContent(
                 }
         }
 
+        /**
+         * A More destination (3.0 comb, no-reselect): already on it, back to its top; something pushed
+         * on top of it (About or Share diagnostics over Settings), back down to it; otherwise go there.
+         * launchSingleTop alone did nothing in the first two cases.
+         */
+        fun reselectOrNavigateTo(screen: NavDestination) {
+                when {
+                        isOn(screen) -> TabReselect.emit(screen)
+                        navController.popBackStack(screen, inclusive = false) -> Unit
+                        else -> navigateTo(screen)
+                }
+        }
+
         fun navigateToConnection() {
                 navController.navigate(Screen.Connection) {
                         popUpTo(PrimaryNav) { saveState = true }
@@ -509,9 +534,21 @@ private fun AppNavigationContent(
                 // indexOf's parameter type is PrimaryDestination and would not accept `screen`.
                 val primaryIndex = navItems.indexOfFirst { it == screen }
                 if (primaryIndex >= 0) {
-                        navigateToPrimary(primaryIndex)
+                        // The tab already on screen: back to the top of it (3.0 comb, no-reselect).
+                        // Anything still sliding takes the normal path, which finishes the move.
+                        val reselect =
+                                TabReselect.isPrimaryReselect(
+                                        clickedIndex = primaryIndex,
+                                        selectedIndex = selectedPrimaryIndex,
+                                        isAtPrimary = isAtPrimary,
+                                        settledPage = pagerState.settledPage,
+                                        currentPage = pagerState.currentPage,
+                                        pageOffsetFraction = pagerState.currentPageOffsetFraction,
+                                        scrollInFlight = pagerState.isScrollInProgress || tabScrollTarget != null,
+                                )
+                        if (reselect) TabReselect.emit(screen) else navigateToPrimary(primaryIndex)
                 } else {
-                        navigateTo(screen)
+                        reselectOrNavigateTo(screen)
                 }
         }
 
@@ -590,20 +627,32 @@ private fun AppNavigationContent(
                                         navItems.forEachIndexed { index, screen ->
                                                 val isSelected =
                                                         isAtPrimary && selectedPrimaryIndex == index
+                                                val showDisconnectedBadge =
+                                                        screen == Screen.Home && !isConnected
+                                                val disconnectedLabel =
+                                                        stringResource(
+                                                                R.string.status_disconnected
+                                                        )
                                                 NavigationBarItem(
                                                         selected = isSelected,
                                                         onClick = { onNavItemClick(screen) },
+                                                        // ON THE ITEM, NOT THE ICON (3.0 comb,
+                                                        // badge-state-cleared): with a label showing,
+                                                        // NavigationBarItem wraps the icon in
+                                                        // clearAndSetSemantics, which silently dropped
+                                                        // the "Disconnected" state TalkBack was meant to
+                                                        // hear (8d9k). Only while the badge shows.
+                                                        modifier =
+                                                                Modifier.semantics {
+                                                                        if (showDisconnectedBadge) {
+                                                                                stateDescription =
+                                                                                        disconnectedLabel
+                                                                        }
+                                                                },
                                                         icon = {
                                                                 // A single BadgedBox keeps the icon identity
                                                                 // stable; the badge scales+fades in and out
-                                                                // (RemEx-pgzk). The TalkBack stateDescription
-                                                                // applies only while the badge shows (8d9k).
-                                                                val showDisconnectedBadge =
-                                                                        screen == Screen.Home && !isConnected
-                                                                val disconnectedLabel =
-                                                                        stringResource(
-                                                                                R.string.status_disconnected
-                                                                        )
+                                                                // (RemEx-pgzk).
                                                                 BadgedBox(
                                                                         badge = {
                                                                                 androidx.compose.animation.AnimatedVisibility(
@@ -626,13 +675,6 @@ private fun AppNavigationContent(
                                                                                         Badge()
                                                                                 }
                                                                         },
-                                                                        modifier =
-                                                                                Modifier.semantics {
-                                                                                        if (showDisconnectedBadge) {
-                                                                                                stateDescription =
-                                                                                                        disconnectedLabel
-                                                                                        }
-                                                                                },
                                                                 ) {
                                                                         Icon(
                                                                                 imageVector =
@@ -659,12 +701,19 @@ private fun AppNavigationContent(
 
                                         // "More" item — opens the overflow bottom sheet
                                         val moreSelected = moreItems.any { isOn(it) }
+                                        val moreNewLabel = stringResource(R.string.routines_badge_new)
                                         NavigationBarItem(
                                                 selected = moreSelected,
                                                 onClick = {
                                                         haptics.perform(RemexHapticEvent.Press)
                                                         showMoreSheet = true
                                                 },
+                                                // On the item for the same reason as the tabs': the
+                                                // icon's own semantics are cleared under a label.
+                                                modifier =
+                                                        Modifier.semantics {
+                                                                if (showRoutinesBadge) stateDescription = moreNewLabel
+                                                        },
                                                 icon = {
                                                         // "New" until Routines is opened once, with
                                                         // the disconnected badge's motion (spec M14).
@@ -728,23 +777,32 @@ private fun AppNavigationContent(
 
                                         // Primary items — top of rail
                                         navItems.forEachIndexed { index, screen ->
+                                                val showDisconnectedBadge =
+                                                        screen == Screen.Home && !isConnected
+                                                val disconnectedLabel =
+                                                        stringResource(
+                                                                R.string.status_disconnected
+                                                        )
                                                 NavigationRailItem(
                                                         selected =
                                                                 isAtPrimary &&
                                                                         selectedPrimaryIndex ==
                                                                                 index,
                                                         onClick = { onNavItemClick(screen) },
+                                                        // On the item, not the icon: the rail clears the
+                                                        // icon's semantics under a label too (3.0 comb,
+                                                        // badge-state-cleared).
+                                                        modifier =
+                                                                Modifier.semantics {
+                                                                        if (showDisconnectedBadge) {
+                                                                                stateDescription =
+                                                                                        disconnectedLabel
+                                                                        }
+                                                                },
                                                         icon = {
                                                                 // A single BadgedBox keeps the icon identity
                                                                 // stable; the badge scales+fades in and out
-                                                                // (RemEx-pgzk). The TalkBack stateDescription
-                                                                // applies only while the badge shows (8d9k).
-                                                                val showDisconnectedBadge =
-                                                                        screen == Screen.Home && !isConnected
-                                                                val disconnectedLabel =
-                                                                        stringResource(
-                                                                                R.string.status_disconnected
-                                                                        )
+                                                                // (RemEx-pgzk).
                                                                 BadgedBox(
                                                                         badge = {
                                                                                 androidx.compose.animation.AnimatedVisibility(
@@ -767,13 +825,6 @@ private fun AppNavigationContent(
                                                                                         Badge()
                                                                                 }
                                                                         },
-                                                                        modifier =
-                                                                                Modifier.semantics {
-                                                                                        if (showDisconnectedBadge) {
-                                                                                                stateDescription =
-                                                                                                        disconnectedLabel
-                                                                                        }
-                                                                                },
                                                                 ) {
                                                                         Icon(
                                                                                 imageVector =
@@ -808,9 +859,15 @@ private fun AppNavigationContent(
 
                                         // Overflow items — bottom of rail
                                         moreItems.forEach { screen ->
+                                                val railNewLabel = stringResource(R.string.routines_badge_new)
+                                                val railShowNew = showRoutinesBadge && screen == Screen.Routines
                                                 NavigationRailItem(
                                                         selected = isOn(screen),
                                                         onClick = { onNavItemClick(screen) },
+                                                        modifier =
+                                                                Modifier.semantics {
+                                                                        if (railShowNew) stateDescription = railNewLabel
+                                                                },
                                                         icon = {
                                                                 NewBadgedIcon(
                                                                         show = showRoutinesBadge && screen == Screen.Routines,
@@ -861,6 +918,7 @@ private fun AppNavigationContent(
                                         pagerState = pagerState,
                                         onLiveHandshakeStart = liveHandshake?.let { it::start },
                                         modifier = Modifier.fillMaxSize(),
+                                        moreItemsAreTopLevel = showNav,
                                 )
 
                                 if (showNav) {
@@ -917,7 +975,7 @@ private fun AppNavigationContent(
                                                                 // (double-tap race) must not fire
                                                                 // a stale navigation.
                                                                 if (cause == null)
-                                                                        navigateTo(screen)
+                                                                        reselectOrNavigateTo(screen)
                                                         }
                                         },
                                         modifier =
@@ -986,7 +1044,16 @@ private fun RemexNavHost(
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
         onLiveHandshakeStart: (() -> Unit)? = null,
         modifier: Modifier = Modifier,
+        /** The rail shows the More destinations as top-level items, so they get no Up arrow there. */
+        moreItemsAreTopLevel: Boolean = false,
 ) {
+        // The Up arrow for routes pushed over the tabs (3.0 comb, no-up-arrow). Guarded on there being
+        // something underneath: a double tap must not pop the tabs themselves and leave a blank screen.
+        val popUp: () -> Unit = {
+                if (navController.previousBackStackEntry != null) navController.popBackStack()
+        }
+        // The More destinations are pushed over the tabs on a phone, but top-level rail items wider up.
+        val moreUp: (() -> Unit)? = if (moreItemsAreTopLevel) null else popUp
         // NavHost's transition lambdas are NOT @Composable, so the transitions are built here in
         // composable scope (from MaterialTheme.motionScheme, collapsing to None under "Remove
         // animations") and closed over (phase 6, RemexNavMotion).
@@ -1102,7 +1169,10 @@ private fun RemexNavHost(
                 composable<Screen.Dashboard> {
                         // The other end of Home's Open Sensors container transform: opened from
                         // that card, the card grows into this screen; Back shrinks it home again.
-                        CompositionLocalProvider(LocalRemexRouteAnimatedScope provides this) {
+                        CompositionLocalProvider(
+                                LocalRemexRouteAnimatedScope provides this,
+                                LocalRemexUpAction provides moreUp,
+                        ) {
                                 Box(
                                         modifier =
                                                 Modifier.fillMaxSize()
@@ -1119,7 +1189,9 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.Connection> {
-                        connectionScreenContent { navController.navigate(Screen.QrScanner) }
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                                connectionScreenContent { navController.navigate(Screen.QrScanner) }
+                        }
                 }
 
                 composable<Screen.QrScanner>(
@@ -1179,6 +1251,7 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.Settings> {
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
                         SettingsScreen(
                                 onReplayTutorial = {
                                         navController.navigate(Screen.Tutorial) {
@@ -1201,26 +1274,40 @@ private fun RemexNavHost(
                                         }
                                 },
                         )
+                        }
                 }
 
-                composable<Screen.Faq> { FaqScreen() }
+                composable<Screen.Faq> {
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) { FaqScreen() }
+                }
 
                 composable<Screen.PcDiagnostics> {
-                    PcDiagnosticsScreen(onNavigateToConnection = { onNavigateToConnection() })
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                                PcDiagnosticsScreen(onNavigateToConnection = { onNavigateToConnection() })
+                        }
                 }
 
-                composable<Screen.ShareDiagnostics> { ShareDiagnosticsScreen() }
+                // Always pushed from Settings, so always an Up arrow, rail or not.
+                composable<Screen.ShareDiagnostics> {
+                        CompositionLocalProvider(LocalRemexUpAction provides popUp) { ShareDiagnosticsScreen() }
+                }
 
-                composable<Screen.About> { AboutScreen() }
+                composable<Screen.About> {
+                        CompositionLocalProvider(LocalRemexUpAction provides popUp) { AboutScreen() }
+                }
 
                 composable<Screen.FileTransfer> {
-                    FileTransferScreen(onNavigateToConnection = { onNavigateToConnection() })
+                    CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                        FileTransferScreen(onNavigateToConnection = { onNavigateToConnection() })
+                    }
                 }
 
                 // Routines (RemEx-pp0rt.6): list, gallery, editor, history and run detail are panes
                 // of one list-detail scaffold inside this destination (routines spec 2.1).
                 composable<Screen.Routines> {
-                        RoutinesScreen(onNavigateToConnection = { onNavigateToConnection() })
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                                RoutinesScreen(onNavigateToConnection = { onNavigateToConnection() })
+                        }
                 }
         }
         }
@@ -1229,11 +1316,11 @@ private fun RemexNavHost(
 
 /**
  * An icon with the "New" dot (routines spec 1.3, M14): the same scale + fade as the disconnected
- * badge, and TalkBack hears "New" as the state while it shows (R-UX-05).
+ * badge. TalkBack hears "New" from the navigation item that holds it, not from here: the bar and the
+ * rail clear an icon's semantics when the item has a label (3.0 comb, badge-state-cleared).
  */
 @Composable
 private fun NewBadgedIcon(show: Boolean, imageVector: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String) {
-        val newLabel = stringResource(R.string.routines_badge_new)
         BadgedBox(
                 badge = {
                         androidx.compose.animation.AnimatedVisibility(
@@ -1244,7 +1331,6 @@ private fun NewBadgedIcon(show: Boolean, imageVector: androidx.compose.ui.graphi
                                 Badge()
                         }
                 },
-                modifier = Modifier.semantics { if (show) stateDescription = newLabel },
         ) {
                 Icon(imageVector = imageVector, contentDescription = contentDescription)
         }

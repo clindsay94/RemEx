@@ -127,24 +127,37 @@
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Name="LauncherSections" Margin="32" Spacing="24">
 
-            <!-- ═══ Header ═══ -->
-            <Grid ColumnDefinitions="*, Auto, Auto">
-                <StackPanel Spacing="4" Grid.Column="0">
-                    <TextBlock Classes="page-title" Text="{local:Localize AppLauncher_Header}"/>
-                    <TextBlock Classes="page-subtitle" Text="{local:Localize AppLauncher_Subheader}"/>
-                </StackPanel>
+            <!-- ═══ Header ═══ (with the save-failure line, so this stays ONE section for the entrance
+                 animation's nth-child count) -->
+            <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="*, Auto, Auto">
+                    <StackPanel Spacing="4" Grid.Column="0">
+                        <TextBlock Classes="page-title" Text="{local:Localize AppLauncher_Header}"/>
+                        <TextBlock Classes="page-subtitle" Text="{local:Localize AppLauncher_Subheader}"/>
+                    </StackPanel>
 
-                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="tertiary" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
-                    <DropDownButton.Flyout>
-                        <MenuFlyout>
-                            <MenuItem Header="{local:Localize AppLauncher_SortNameAsc}" Command="{Binding SortByNameCommand}" CommandParameter="asc"/>
-                            <MenuItem Header="{local:Localize AppLauncher_SortNameDesc}" Command="{Binding SortByNameCommand}" CommandParameter="desc"/>
-                        </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                    <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="tertiary" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="{local:Localize AppLauncher_SortNameAsc}" Command="{Binding SortByNameCommand}" CommandParameter="asc"/>
+                                <MenuItem Header="{local:Localize AppLauncher_SortNameDesc}" Command="{Binding SortByNameCommand}" CommandParameter="desc"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
 
-                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="tertiary" Command="{Binding OpenAddProgramDialogCommand}" />
-            </Grid>
+                    <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="tertiary" Command="{Binding OpenAddProgramDialogCommand}" />
+                </Grid>
+
+                <!-- A change that could not be saved says so (3.0 comb, launcher-save-swallowed). The
+                     detail is in Logs & Diagnostics; this line is the plain-English half. -->
+                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding HasSaveError}">
+                    <mi:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource SystemErrorBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="1" Text="{local:Localize AppLauncher_SaveFailed}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Classes="tertiary icon-button compact" Command="{Binding DismissSaveErrorCommand}" AutomationProperties.Name="{local:Localize A11y_Dismiss}" ToolTip.Tip="{local:Localize A11y_Dismiss}" VerticalAlignment="Center">
+                        <mi:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                    </Button>
+                </Grid>
+            </StackPanel>
 
 
             <!-- ═══ Search ═══ -->
@@ -241,7 +254,14 @@
                  user with no apps to refine a search they never made (RemEx-n69m). -->
             <TextBlock Text="{local:Localize AppLauncher_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,24"/>
 
-            <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
+            <!-- An empty Apps page offers the one thing to do next as its PRIMARY action (3.0 comb,
+                 apps-empty-no-action). It used to be an italic sentence with only the header's small
+                 tertiary "+ Add Program" to act on. -->
+            <StackPanel IsVisible="{Binding !Launchers.Count}" Spacing="12" HorizontalAlignment="Center" Margin="0,40,0,0" MaxWidth="480">
+                <TextBlock Text="{local:Localize AppLauncher_NoApps}" Theme="{StaticResource Subtitle1TextBlock}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                <TextBlock Text="{local:Localize AppLauncher_EmptyBody}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                <Button Classes="primary" HorizontalAlignment="Center" Margin="0,4,0,0" Command="{Binding OpenAddProgramDialogCommand}" Content="{local:Localize AppLauncher_EmptyAddButton}" AutomationProperties.Name="{local:Localize AppLauncher_EmptyAddButton}"/>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

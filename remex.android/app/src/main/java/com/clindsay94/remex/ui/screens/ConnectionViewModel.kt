@@ -22,8 +22,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import android.content.Context
+import com.clindsay94.remex.ConnectionFailures
 import com.clindsay94.remex.security.HostCertificateProbe
 import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
@@ -124,9 +124,13 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _isCertMismatch = MutableStateFlow(false)
     val isCertMismatch: StateFlow<Boolean> = _isCertMismatch.asStateFlow()
 
-    private val _capabilitySummary =
-            MutableStateFlow(res.getString(R.string.status_awaiting_metadata))
-    val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
+    /**
+     * True while [connectionError] is a local-network refusal Android will not ask about again, so
+     * the error offers the app's settings page: that is the only place it can be changed now
+     * (3.0 comb, qr-perm-deadend).
+     */
+    private val _errorOpensAppSettings = MutableStateFlow(false)
+    val errorOpensAppSettings: StateFlow<Boolean> = _errorOpensAppSettings.asStateFlow()
 
     private val _isDiscovering = MutableStateFlow(false)
     val isDiscovering: StateFlow<Boolean> = _isDiscovering.asStateFlow()
@@ -180,6 +184,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     // shows "Connected" alongside an outdated error card after auto-reconnect.
                     _connectionError.value = null
                     _isCertMismatch.value = false
+                    _errorOpensAppSettings.value = false
                     _connectionStatus.value = res.getString(R.string.status_connected)
                 } else if (!_isConnecting.value) {
                     _connectionStatus.value = res.getString(R.string.status_disconnected)
@@ -196,23 +201,23 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
 
-        viewModelScope.launch {
-            RemexClientManager.hostCapabilities.collect { hostInfo ->
-                _capabilitySummary.value = buildCapabilitySummary(hostInfo)
-            }
-        }
+        // The "platform / runtime / desktop available" line this used to feed is gone (3.0 comb,
+        // conn-header-contradicts): raw host metadata under a header that could say "Connected"
+        // while the card below said "Needs pairing".
 
         viewModelScope.launch {
             RemexClientManager.connectionError.collect { error ->
                 _connectionError.value = error
-                _isCertMismatch.value = error.contains("SPKI", ignoreCase = true) ||
-                                         error.contains("certificate", ignoreCase = true) ||
-                                         error.contains("SSL", ignoreCase = true)
+                _isCertMismatch.value = ConnectionFailures.isCertificateProblem(error)
+                _errorOpensAppSettings.value = false
                 _connectionStatus.value = res.getString(R.string.status_disconnected)
             }
         }
     }
 
+    /**
+     * The address form's Connect: the one path that shows, and so may save, the Wake-on-LAN fields.
+     */
     fun connect(
             newHost: String,
             newPort: Int,
@@ -221,10 +226,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             subnetMask: String,
             pairingPin: String
     ) {
-        viewModelScope.launch {
-            _connectionError.value = null
-            _isCertMismatch.value = false
-            _isConnecting.value = true
+        startConnecting(newHost, newPort, pairingPin) {
             settingsManager.saveConnectionSettings(
                     host = newHost,
                     port = newPort,
@@ -232,6 +234,29 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     broadcast = broadcastIp,
                     subnetMask = subnetMask
             )
+        }
+    }
+
+    /**
+     * A connect that only says where to go (a card, Home, a QR code). Saves the host and port and
+     * nothing else: see [SettingsManager.saveConnectionHost] for why the MAC must not travel along.
+     */
+    private fun connectToHost(host: String, port: Int, pairingPin: String) {
+        startConnecting(host, port, pairingPin) { settingsManager.saveConnectionHost(host, port) }
+    }
+
+    private fun startConnecting(
+            newHost: String,
+            newPort: Int,
+            pairingPin: String,
+            save: suspend () -> Unit
+    ) {
+        viewModelScope.launch {
+            _connectionError.value = null
+            _isCertMismatch.value = false
+            _errorOpensAppSettings.value = false
+            _isConnecting.value = true
+            save()
             // Remote Desktop defaults are not written here any more (RemEx-wqo7a.6): the
             // Connection screen no longer shows them, and the stream's settings sheet
             // (RemoteDesktopViewModel) owns them. Connecting leaves whatever was saved alone.
@@ -257,6 +282,18 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     fun clearError() {
         _connectionError.value = null
         _isCertMismatch.value = false
+        _errorOpensAppSettings.value = false
+    }
+
+    /**
+     * The local-network permission was refused for an attempt that needed it (any connect path, via
+     * [ConnectPermissionGate]). Shown as the connection error, so it reaches whichever screen the
+     * attempt started from - Home, Connection, or Home again after a QR scan.
+     */
+    fun reportLocalNetworkRefused(permanently: Boolean) {
+        _isCertMismatch.value = false
+        _connectionError.value = res.getString(R.string.error_local_network_permission_denied)
+        _errorOpensAppSettings.value = permanently
     }
 
     /**
@@ -381,13 +418,11 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      * instead of leaving them aimed at whatever was typed into the form once.
      */
     fun connectToKnownPc(entry: KnownPcEntry, pairingPin: String = "") {
-        val cp = connectionPreferences.value
-        connect(
-                newHost = entry.address,
-                newPort = entry.port,
-                macAddress = cp?.macAddress ?: "",
-                broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
-                subnetMask = cp?.subnetMask ?: "255.255.255.0",
+        // Host and port only (3.0 comb, mac-leak): re-saving the form's MAC here stamped PC A's
+        // manual MAC as PC B's, and on a fresh process wiped it, since nothing had loaded the form.
+        connectToHost(
+                host = entry.address,
+                port = entry.port,
                 // BLANK FOR A TRUSTED ROW, and that is not merely an optimisation: a 6-digit PIN
                 // makes RemexClientManager drop the pinned hash and force a re-pair, so carrying one
                 // into a reconnect would break the thing it was trying to do. The caller supplies a
@@ -561,11 +596,16 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /**
+     * "Discover automatically" in the Add a PC sheet, and only that: a tap the person just made.
+     *
+     * RUNS WHILE CONNECTED TOO (3.0 comb, discover-noop). It used to return at once when connected
+     * (RemEx-fkz), so the button did nothing exactly when it is used most - adding a second PC, or
+     * re-pairing from a "Needs pairing" card, both of which happen with a connection up. RemEx-fkz's
+     * worry was a permission prompt landing on top of the stream; this is now reachable only from the
+     * sheet, never from a background path, and the permission is asked for before it is called.
+     */
     fun discoverHost() {
-        // Don't run local-network discovery while a connection is already established — it's
-        // unnecessary and, over a VPN such as Tailscale, only re-triggers Android's local-network
-        // permission prompt on top of the active stream. (RemEx-fkz)
-        if (RemexClientManager.isConnected.value) return
         // Cancel any still-running discovery before relaunching so overlapping manual + self-heal
         // calls don't stack NSD resolves or multicast-lock cycles (RemEx-4bb). One in-flight at a time.
         discoveryJob?.cancel()
@@ -573,52 +613,28 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             _isDiscovering.value = true
             _discoveredHost.value = null
             _connectionError.value = null
+            _errorOpensAppSettings.value = false
             try {
                 val result = nsdDiscoveryManager.discoverHost()
                 _discoveredHost.value = result
                 if (result == null) {
                     _connectionError.value = res.getString(R.string.error_no_host_found)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _connectionError.value =
-                        res.getString(R.string.error_discovery_failed, e.message ?: "")
+                // The exception's text is developer English; it goes to the log, and the person
+                // hears the plain outcome (3.0 comb, raw-errors).
+                android.util.Log.w("ConnectionVM", "Discovery failed", e)
+                _connectionError.value = res.getString(R.string.error_no_host_found)
             } finally {
                 _isDiscovering.value = false
             }
         }
     }
 
-    fun applyQrResultAndConnect(host: String, port: Int, _pin: String) {
-        val cp = connectionPreferences.value
-        connect(
-                newHost = host,
-                newPort = port,
-                macAddress = cp?.macAddress ?: "",
-                broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
-                subnetMask = cp?.subnetMask ?: "255.255.255.0",
-                pairingPin = _pin
-        )
-    }
-
-    private fun buildCapabilitySummary(hostInfo: String): String {
-        return try {
-            val json = JSONObject(hostInfo)
-            val runtimeMode = json.optString("runtimeMode", "unknown")
-            val platform = json.optString("platform", "unknown")
-            val supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false)
-            val remoteDesktopText =
-                    if (supportsRemoteDesktop) {
-                        res.getString(R.string.capability_desktop_available)
-                    } else {
-                        json.optString(
-                                "remoteDesktopUnavailableReason",
-                                res.getString(R.string.capability_desktop_unavailable)
-                        )
-                    }
-
-            "$platform / $runtimeMode / $remoteDesktopText"
-        } catch (_: Exception) {
-            res.getString(R.string.status_metadata_unavailable)
-        }
+    fun applyQrResultAndConnect(host: String, port: Int, pin: String) {
+        // Host and port only, like a Known PCs card (3.0 comb, mac-leak).
+        connectToHost(host = host, port = port, pairingPin = pin)
     }
 }

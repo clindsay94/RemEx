@@ -580,11 +580,22 @@ public partial class ShellView : UserControl
 
     private ShellViewModel? _previousVm;
 
+    /// <summary>
+    /// Reselecting the sidebar item you are on scrolls the page back to its top (3.0 comb,
+    /// no-reselect-to-top). The page's outermost <see cref="ScrollViewer"/> is the first one a
+    /// depth-first walk of <c>PageHost</c> meets; an instant jump, so reduced motion needs nothing.
+    /// </summary>
+    private void ScrollCurrentPageToTop()
+    {
+        _pageHost?.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault()?.ScrollToHome();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         if (_previousVm != null)
         {
             _previousVm.PropertyChanged -= OnViewModelPropertyChanged;
+            _previousVm.CurrentPageReselected -= ScrollCurrentPageToTop;
 
             // RemEx-8twk0.8 fix round, MEDIUM/LOW: mirrors the RequestPageView dual-hook below so a
             // DataContext that arrives (or changes) after OnLoaded's own hook attempt is still wired
@@ -597,6 +608,7 @@ public partial class ShellView : UserControl
         if (DataContext is ShellViewModel vm)
         {
             vm.PropertyChanged += OnViewModelPropertyChanged;
+            vm.CurrentPageReselected += ScrollCurrentPageToTop;
             _previousVm = vm;
 
             if (_bootSplash != null)

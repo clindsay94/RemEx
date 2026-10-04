@@ -63,12 +63,18 @@ fun DesktopTabScreen(
         onNavigateToConnection: () -> Unit,
 ) {
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     DesktopTabScreenContent(
             mode = mode,
             isConnected = isConnected,
+            needsPairing = isConnected && needsPairing,
             onModeChange = onModeChange,
             onStartStream = onStartStream,
             onNavigateToConnection = onNavigateToConnection,
+            onPair = {
+                ConnectionOpenRequests.requestAddPc()
+                onNavigateToConnection()
+            },
             trackpadContent = { RemoteMouseScreen(onNavigateToConnection = onNavigateToConnection) },
     )
 }
@@ -82,6 +88,14 @@ fun DesktopTabScreenContent(
         onStartStream: () -> Unit,
         onNavigateToConnection: () -> Unit,
         trackpadContent: @Composable () -> Unit,
+        /**
+         * Connected, but the PC no longer recognises this phone: both modes would be refused, so the
+         * tab says so instead of offering Start streaming or a trackpad that does nothing (3.0 comb,
+         * needs-pairing-gaps). Gated HERE, before the stream route is ever opened - the stream
+         * screen itself is left alone (docs/REGRESSION-GUARDS.md).
+         */
+        needsPairing: Boolean = false,
+        onPair: () -> Unit = onNavigateToConnection,
 ) {
     Scaffold(
             topBar = {
@@ -109,7 +123,9 @@ fun DesktopTabScreenContent(
             }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            when (mode) {
+            if (ConnectedPane.state(isConnected, needsPairing) == ConnectedPaneState.NeedsPairing) {
+                NeedsPairingContent(onPair = onPair, modifier = Modifier.align(Alignment.Center))
+            } else when (mode) {
                 DesktopMode.Stream ->
                         DesktopStreamPane(
                                 isConnected = isConnected,
@@ -129,7 +145,12 @@ private fun DesktopStreamPane(
         onNavigateToConnection: () -> Unit,
 ) {
     val haptics = rememberRemexHaptics()
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    val scrollState = rememberScrollState()
+    // Tapping Desktop while on Desktop goes back to the top (3.0 comb, no-reselect).
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Desktop) {
+        scrollState.animateScrollTo(0)
+    }
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
         NotConnectedBanner(
                 isConnected = isConnected,
                 onNavigateToConnection = onNavigateToConnection

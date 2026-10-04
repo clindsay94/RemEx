@@ -54,7 +54,7 @@ public class NavIndexToTitleConverterTests : IDisposable
     [InlineData(2, "Commands")]
     [InlineData(3, "Apps")]
     [InlineData(4, "Processes")]
-    [InlineData(5, "Remote Desktop")]
+    [InlineData(5, "Remote desktop")]
     [InlineData(6, "About")]
     [InlineData(7, "Files")]
     [InlineData(8, "Diagnostics")]

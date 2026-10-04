@@ -1006,10 +1006,10 @@
                                                     </StackPanel>
                                                     <!-- Action matrix (spec §4): HostDown is the only state offering two
                                                          actions — understand (Diagnostics) and act (Reconnect). The other
-                                                         two states are one obvious next step each. No Disconnect here —
-                                                         it already exists on Settings/Home and a click-outside-dismisses
-                                                         flyout is the wrong home for something you cannot undo without a
-                                                         reconnect round-trip. -->
+                                                         two states are one obvious next step each. No Disconnect here or
+                                                         anywhere: the link is this window's own in-process host and it
+                                                         reconnects by itself (3.0 comb, home-disconnect). "Pair a phone"
+                                                         opens Settings with the QR and PIN already showing. -->
                                                     <!-- CornerRadius=6 below is a deliberate flyout-scale exception to
                                                          CornerRadiusSmall (8) for this compact action row, not drift
                                                          (RemEx-cgrv3). The diagnostics button's Background/Foreground
@@ -1019,7 +1019,7 @@
                                                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                                                         <Button Classes="secondary compact" Content="{conv:Localize Shell_LogsDiagnostics}" Command="{Binding NavigateToDiagnosticLogsCommand}" IsVisible="{Binding Presence.IsHostDown}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
                                                         <Button Classes="primary success compact" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding Presence.IsHostDown}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
-                                                        <Button Classes="primary compact" Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasNoPhone}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
+                                                        <Button Classes="primary compact" Content="{conv:Localize Home_PairPhoneButton}" Command="{Binding StartPairingCommand}" IsVisible="{Binding Presence.HasNoPhone}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
                                                         <Button Classes="primary compact" Content="{conv:Localize Nav_Settings}" Command="{Binding NavigateToSettingsCommand}" IsVisible="{Binding Presence.HasPhone}" CornerRadius="6" FontWeight="SemiBold" Cursor="Hand"/>
                                                     </StackPanel>
                                                 </StackPanel>
@@ -1046,12 +1046,9 @@
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <mi:MaterialIcon Grid.Column="0" Kind="AlertOutline" Foreground="{DynamicResource SystemWarningBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <!-- Grid.Column="3" is a SECONDARY action (open settings) beside the PRIMARY
-                                     Connect button in Grid.Column="2" — it was previously painted with
-                                     AccentPrimaryBrush/AccentForegroundBrush inline, a second visual primary in
-                                     the same banner. Removed so the secondary class governs (RemEx-cgrv3). -->
+                                <!-- No "Open Settings" beside Connect (3.0 comb, feature-banner-dead-end):
+                                     Settings has nothing that fixes this link, so it was a dead end. -->
                                 <Button Grid.Column="2" Classes="primary success compact" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
-                                <Button Grid.Column="3" Classes="secondary compact" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
                                 <Button Classes="tertiary icon-button compact" AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
                                 </Button>

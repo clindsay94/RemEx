@@ -1622,4 +1622,12 @@
     <string name="pc_diag_state_warn">Warto sprawdzić</string>
     <string name="pc_diag_state_error">Problem</string>
     <string name="pc_diag_share_title">Logi komputera</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">Zdalny komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
+    <string name="rc_restart_warning">Zdalny komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
+    <string name="rc_force_shutdown_warning">To spowoduje natychmiastowe wyłączenie zdalnego komputera. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
+    <string name="rc_force_restart_warning">To spowoduje natychmiastowy restart zdalnego komputera. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
+    <string name="rc_reboot_uefi_warning">Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</string>
+    <string name="relative_time_just_now">przed chwilą</string>
+    <string name="button_open_app_settings">Otwórz ustawienia</string>
 </resources>

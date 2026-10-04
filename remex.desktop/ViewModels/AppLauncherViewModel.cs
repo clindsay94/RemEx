@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
@@ -350,10 +352,34 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     public async Task SaveLaunchersAsync()
     {
         await _storageService.SaveEntriesAsync(Launchers);
+        // A save that worked clears an earlier failure's message: the list on disk is current again.
+        HasSaveError = false;
         // Single hook point for every local (unconnected) launcher persist path — Remove, Submit
         // (Android add panel), PersistOrderAsync, and the add/edit dialogs all funnel through here.
         _savefileService?.NotifyStateChanged();
     }
+
+    /// <summary>
+    /// Whether the last change to the app list could not be saved (3.0 comb, launcher-save-swallowed).
+    /// The view shows a localized line for it; the text itself is a resource key in XAML, so a
+    /// language switch relabels it without this view model holding a formatted string.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasSaveError;
+
+    /// <summary>
+    /// Records a failed save from one of the view's add / edit / reorder / drop paths. Those used to
+    /// end in <c>Debug.WriteLine</c>, which is compiled out of a Release build, so the change looked
+    /// saved and was gone after a restart with nothing on screen or in Logs &amp; Diagnostics.
+    /// </summary>
+    public void ReportSaveFailure(Exception ex, string whatFailed)
+    {
+        InMemoryLogSink.Append(LogLevel.Warning, "Apps", whatFailed, ex);
+        HasSaveError = true;
+    }
+
+    [RelayCommand]
+    private void DismissSaveError() => HasSaveError = false;
 
     private static AppEntry NormalizeEntry(AppEntry entry)
     {

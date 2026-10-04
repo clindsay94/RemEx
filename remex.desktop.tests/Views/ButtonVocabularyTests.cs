@@ -276,9 +276,6 @@ public class ButtonVocabularyTests
             ["IsVisible=\"{Binding IsTutorialLastPage}\""] = "ShellView - see the !IsTutorialLastPage entry",
             ["x:Name=\"ActionButton\""] = "DialogContent - Classes=\"primary\" is only the XAML default; the constructor clears it and applies the caller's own classes, and Cancel is always \"secondary\" (RemEx-z7pnx.1)",
 
-            ["Dashboard_Connect"] = "CanvasView Actions card - Connect/CancelConnect/Disconnect are mutually exclusive by connection state",
-            ["Canvas_CancelConnect"] = "CanvasView Actions card - see the Dashboard_Connect entry",
-            ["Canvas_Disconnect"] = "CanvasView Actions card - see the Dashboard_Connect entry",
             ["Canvas_ActionDone"] = "CanvasView - the floating selection toolbar is a different surface from the dashboard cards",
             ["Canvas_CoachGotIt"] = "CanvasView - the coach-mark overlay is a different surface from the dashboard cards",
             ["Canvas_AddCard"] = "CanvasView - a per-staging-item template button, a different surface per card",
@@ -289,7 +286,6 @@ public class ButtonVocabularyTests
             ["About_ViewGitHub"] = "AboutView - the GitHub card is a different surface from the Software Update card",
 
             ["Home_InitializeSensors"] = "HomeView - the Sensors HUD empty-state card is a different surface from the phone-link card",
-            ["Home_InitializeLink"] = "HomeView - the phone-link card is a different surface from the Sensors HUD card",
 
             ["Routines_Coach_Next"] = "RoutinesView - the coach overlay is its own surface (the page itself has no primary), and its two cards are mutually exclusive by CoachStep",
             ["Routines_Coach_GotIt"] = "RoutinesView - see the Routines_Coach_Next entry",
@@ -412,7 +408,6 @@ public class ButtonVocabularyTests
 
             // ── Deliberate off-default fill/text for context (flyout chrome, toolbar tone) ──
             ["Command=\"{Binding NavigateToDiagnosticLogsCommand}\""] = "ShellView status flyout — reads as flyout chrome (matches the flyout's own GlassBaseDarkBrush), not a card surface",
-            ["Command=\"{Binding Connection.SendPingCommand}\""] = "CanvasView dashboard actions — lighter-than-resting-secondary tone against the canvas backdrop",
             ["Command=\"{Binding PinSelectedCommand}\""] = "CanvasView selection toolbar — same lighter tone as the Ping button above it",
             ["Command=\"{Binding ResetToDefaultCommand}\""] = "PersonalizationPanelView reset link — quieter than .tertiary's default TextSecondaryBrush on purpose",
             ["Command=\"{Binding Connection.GenerateQrCodeCommand}\""] = "SettingsView pair-phone button — muted TextSecondaryBrush instead of the default TextPrimaryBrush",
@@ -420,10 +415,9 @@ public class ButtonVocabularyTests
             // ── The compact flyout/banner action-row size (CornerRadius=6), documented once here
             //    rather than per button — every one below is the same intentional exception ──
             ["Command=\"{Binding Connection.ConnectCommand}\" IsVisible=\"{Binding Presence.IsHostDown}\""] = "ShellView flyout Connect — compact action-row CornerRadius=6 (RemEx-cgrv3)",
-            ["Command=\"{Binding NavigateToSettingsCommand}\" IsVisible=\"{Binding Presence.HasNoPhone}\""] = "ShellView flyout Pair — same compact action-row exception",
+            ["Command=\"{Binding StartPairingCommand}\" IsVisible=\"{Binding Presence.HasNoPhone}\""] = "ShellView flyout Pair — same compact action-row exception",
             ["Command=\"{Binding NavigateToSettingsCommand}\" IsVisible=\"{Binding Presence.HasPhone}\""] = "ShellView flyout Settings — same compact action-row exception",
             ["Grid.Column=\"2\" Classes=\"primary success compact\""] = "ShellView connection banner Connect — same compact action-row exception",
-            ["Grid.Column=\"3\" Classes=\"secondary compact\""] = "ShellView connection banner Settings — same compact action-row exception",
             ["Command=\"{Binding DismissConnectionBannerCommand}\""] = "ShellView connection banner dismiss — icon-button.compact's zero Padding doesn't fit this text-free chip; CornerRadius=6 matches the row",
             ["Command=\"{Binding DismissLayoutLoadWarningCommand}\""] = "ShellView layout-warning dismiss — same icon-button exception as the connection banner dismiss",
             ["Command=\"{Binding ConfirmCustomAccentCommand}\""] = "PersonalizationPanelView Apply — same compact action-row CornerRadius=6 exception",
@@ -443,14 +437,11 @@ public class ButtonVocabularyTests
             ["Command=\"{Binding NavigateToCanvasCommand}\" Padding=\"16,8\""] = "HomeView open-workspace chip",
             ["Command=\"{Binding NavigateToCanvasCommand}\" HorizontalAlignment=\"Center\" Padding=\"24,12\""] = "HomeView empty-state hero CTA",
             ["Command=\"{Binding ClearActivityCommand}\""] = "HomeView clear-activity chip",
-            ["Command=\"{Binding Connection.ConnectCommand}\" IsVisible=\"{Binding !Connection.IsConnected}\""] = "HomeView initialize-link CTA",
-            ["Classes=\"secondary pill danger\""] = "HomeView terminate-link CTA — matches the InitializeLink CTA's Padding",
             ["Command=\"{Binding StartStreamCommand}\""] = "RemoteDesktopView start-stream toolbar button",
             ["Command=\"{Binding StopStreamCommand}\""] = "RemoteDesktopView stop-stream toolbar button",
             ["Command=\"{Binding ApplySettingsCommand}\""] = "RemoteDesktopView apply-settings toolbar button",
             ["Command=\"{Binding GenerateQrCodeCommand}\" HorizontalAlignment=\"Center\""] = "PairingPinPanelView expired-PIN get-new button",
             ["Click=\"OnCopySnapshot\""] = "CanvasView copy-snapshot toolbar button",
-            ["Command=\"{Binding SaveCommand}\""] = "SettingsView header Save CTA",
             ["Command=\"{Binding ExitApplicationCommand}\""] = "SettingsView exit-app button",
             ["Command=\"{Binding ExportSettingsCommand}\""] = "SettingsView export-settings button",
             ["Command=\"{Binding ImportSettingsCommand}\""] = "SettingsView import-settings button",

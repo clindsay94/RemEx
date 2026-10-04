@@ -343,25 +343,12 @@
                                         <!-- ═══ ACTIONS ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
                                             <TextBlock Text="{local:Localize Canvas_Actions}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <Button Classes="primary" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
-                                            <!-- Connecting is the one action here with no end the user can see, so it is the one that
-                                                 needs a busy indicator rather than just a button that changed
-                                                 its label (RemEx-rcgmc). Indeterminate because a connection
-                                                 attempt has no percentage - a determinate bar here would be
-                                                 inventing progress. -->
-                                            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Connection.IsConnecting}">
-                                                <ProgressBar Grid.Column="0" Classes="circular" IsIndeterminate="True"
-                                                             Margin="0,0,10,0" VerticalAlignment="Center"
-                                                             AutomationProperties.Name="{local:Localize Status_Connecting}"/>
-                                                <Button Grid.Column="1" Classes="primary danger" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}"/>
-                                            </Grid>
-                                            <!-- Background stays (deliberately lighter than a resting .secondary
-                                                 card against the canvas backdrop); Foreground was a duplicate of
-                                                 the class default and is removed (RemEx-cgrv3). -->
-                                            <Button Classes="secondary" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}"/>
+                                            <!-- NO CONNECT, CANCEL, PING OR DISCONNECT (3.0 comb, home-disconnect; hard
+                                                 rule 1). They drove this window's link to its own in-process host, and
+                                                 Disconnect switched off auto-reconnect, freezing every sensor card on
+                                                 this canvas. Only real actions on this PC stay. -->
                                             <Button Classes="secondary" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
                                             <Button Classes="secondary" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).RestartToUefiCommand}"/>
-                                            <Button Classes="primary danger" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}"/>
                                         </StackPanel>
 
                                         <!-- ═══ LATENCY ═══ -->

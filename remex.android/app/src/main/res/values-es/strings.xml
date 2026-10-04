@@ -1598,4 +1598,12 @@
     <string name="pc_diag_state_warn">Conviene revisarlo</string>
     <string name="pc_diag_state_error">Problema</string>
     <string name="pc_diag_share_title">Registros del PC</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">El PC remoto se apagará. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</string>
+    <string name="rc_restart_warning">El PC remoto se reiniciará. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</string>
+    <string name="rc_force_shutdown_warning">Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</string>
+    <string name="rc_force_restart_warning">Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</string>
+    <string name="rc_reboot_uefi_warning">El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</string>
+    <string name="relative_time_just_now">hace un momento</string>
+    <string name="button_open_app_settings">Abrir ajustes</string>
 </resources>

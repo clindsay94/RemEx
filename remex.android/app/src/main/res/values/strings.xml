@@ -1698,4 +1698,12 @@
     <string name="pc_diag_state_warn">Needs a look</string>
     <string name="pc_diag_state_error">Problem</string>
     <string name="pc_diag_share_title">PC logs</string>
+    <!-- 3.0 comb, phone behaviour fixes (RemEx-pp4cm.3) -->
+    <string name="rc_shutdown_warning">The remote PC will shut down. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</string>
+    <string name="rc_restart_warning">The remote PC will restart. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</string>
+    <string name="rc_force_shutdown_warning">This will immediately shut down the remote PC. All unsaved work will be lost. Waking it with RemEx is not enough on its own — RemEx cannot reach it again until you sign in on the PC itself.</string>
+    <string name="rc_force_restart_warning">This will immediately restart the remote PC. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</string>
+    <string name="rc_reboot_uefi_warning">The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost. RemEx cannot reach it again until you sign in on the PC itself.</string>
+    <string name="relative_time_just_now">just now</string>
+    <string name="button_open_app_settings">Open settings</string>
 </resources>

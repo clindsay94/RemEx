@@ -200,13 +200,17 @@ private val remoteCommandCards =
                         "shutdown",
                         R.string.rc_shutdown,
                         "Shutdown",
-                        Icons.Default.PowerSettingsNew
+                        Icons.Default.PowerSettingsNew,
+                        // The PC's own consequence line, per locale (3.0 parity, restart-warning):
+                        // RemEx cannot reach it again until someone signs in on the PC.
+                        warningRes = R.string.rc_shutdown_warning
                 ),
                 RemoteCommandCard(
                         "restart",
                         R.string.rc_restart,
                         "Restart",
-                        Icons.Default.RestartAlt
+                        Icons.Default.RestartAlt,
+                        warningRes = R.string.rc_restart_warning
                 ),
                 RemoteCommandCard(
                         "sleep",
@@ -224,19 +228,22 @@ private val remoteCommandCards =
                         "force_shutdown",
                         R.string.rc_force_shutdown,
                         "ForceShutdown",
-                        Icons.Default.PowerOff
+                        Icons.Default.PowerOff,
+                        warningRes = R.string.rc_force_shutdown_warning
                 ),
                 RemoteCommandCard(
                         "force_restart",
                         R.string.rc_force_restart,
                         "ForceRestart",
-                        Icons.Default.Warning
+                        Icons.Default.Warning,
+                        warningRes = R.string.rc_force_restart_warning
                 ),
                 RemoteCommandCard(
                         "uefi",
                         R.string.rc_reboot_uefi,
                         "RestartToUefi",
-                        Icons.Default.Refresh
+                        Icons.Default.Refresh,
+                        warningRes = R.string.rc_reboot_uefi_warning
                 ),
                 RemoteCommandCard(
                         "monitor_off",
@@ -282,6 +289,8 @@ data class RemoteControlUiState(
         val shapePreset: Float = 0f,
         val cornerRadius: Int = 8,
         val isConnected: Boolean = false,
+        /** Connected, but the PC no longer recognises this phone (sweep P3, 3.0 comb needs-pairing-gaps). */
+        val needsPairing: Boolean = false,
         /**
          * Whether the host will act on key presses. ONE OF TWO gates on the media row - being
          * connected is the other, because the capability flow replays its last value and so
@@ -319,6 +328,7 @@ fun RemoteControlScreen(
     val shapePreset by viewModel.remoteControlCardShapePreset.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val supportsInputSimulation by
             viewModel.supportsInputSimulation.collectAsStateWithLifecycle()
     val powerVerbs by viewModel.powerVerbs.collectAsStateWithLifecycle()
@@ -336,6 +346,7 @@ fun RemoteControlScreen(
                     shapePreset = shapePreset,
                     cornerRadius = cornerRadius,
                     isConnected = isConnected,
+                    needsPairing = isConnected && needsPairing,
                     supportsInputSimulation = supportsInputSimulation,
                     playback = mediaState,
                     artwork = mediaArtwork,
@@ -362,7 +373,11 @@ fun RemoteControlScreen(
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onSeek = RemexClientManager::seekMedia,
             onClearCommandStatus = { viewModel.clearCommandStatus() },
-            headerAccessory = headerAccessory
+            headerAccessory = headerAccessory,
+            onPair = {
+                ConnectionOpenRequests.requestAddPc()
+                onNavigateToConnection()
+            },
     )
 }
 
@@ -385,9 +400,21 @@ fun RemoteControlScreenContent(
          * Shown directly under the header, inside the top bar slot so the content pads below it:
          * the Control tab's Commands | Processes switch (RemEx-wqo7a.2). Empty by default.
          */
-        headerAccessory: @Composable () -> Unit = {}
+        headerAccessory: @Composable () -> Unit = {},
+        /** Connection > Add a PC, for a PC that needs pairing again. */
+        onPair: () -> Unit = onNavigateToConnection,
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
+    val paneState = ConnectedPane.state(uiState.isConnected, uiState.needsPairing)
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    // Tapping Control while on Commands goes back to the top (3.0 comb, no-reselect).
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Control) {
+        gridState.animateScrollToItem(0)
+    }
+    // A confirm face armed before the link dropped must not send into a dead connection.
+    LaunchedEffect(uiState.isConnected) {
+        if (!uiState.isConnected) activeConfirmationId = null
+    }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -434,13 +461,28 @@ fun RemoteControlScreenContent(
         var sheetOpen by remember { mutableStateOf(false) }
 
       Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+       Column(modifier = Modifier.fillMaxSize()) {
+        // Offline, say so and keep only Wake usable (3.0 comb, commands-no-offline): every other card
+        // used to send anyway and come back as the native layer's untranslated "Client is not
+        // connected." Same banner as Processes, so the Control tab reads the same on both segments.
+        NotConnectedBanner(
+                isConnected = uiState.isConnected,
+                onNavigateToConnection = onNavigateToConnection
+        )
+       if (paneState == ConnectedPaneState.NeedsPairing) {
+        // The PC refuses every command until the phone pairs again (3.0 comb, needs-pairing-gaps).
+        Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            NeedsPairingContent(onPair = onPair)
+        }
+       } else {
         LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
+                state = gridState,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 // imePadding as well as the bottom inset below: the wait field sits mid-grid, so
                 // without it the keyboard covers the row being typed into (RemEx-a9ci).
-                modifier = Modifier.fillMaxSize().imePadding(),
+                modifier = Modifier.fillMaxWidth().weight(1f).imePadding(),
                 // Extra bottom inset so the docked mini-player never covers the last row.
                 contentPadding =
                         PaddingValues(
@@ -477,6 +519,7 @@ fun RemoteControlScreenContent(
                 ) { cmdCard ->
                     CommandCard(
                             card = cmdCard,
+                            available = ConnectedPane.isCommandAvailable(cmdCard.action, uiState.isConnected),
                             forced = group == CommandGroup.FORCED,
                             isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
                             timerText = timerInputs[cmdCard.id].orEmpty(),
@@ -549,6 +592,8 @@ fun RemoteControlScreenContent(
                 }
             }
         }
+       }
+       }
 
         // Docked directly on the nav bar (spec 4.1). AnimatedVisibility inside MediaMiniPlayer
         // itself handles the UNKNOWN-status show/hide, so this call is unconditional.
@@ -675,7 +720,9 @@ private fun CommandCard(
         onPrimaryClick: () -> Unit,
         onConfirm: () -> Unit,
         onCancel: () -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        /** False while the card cannot work (offline, anything but Wake): shown greyed and inert. */
+        available: Boolean = true,
 ) {
     val haptics = rememberRemexHaptics()
     val localizedTitle = stringResource(card.titleRes)
@@ -737,9 +784,11 @@ private fun CommandCard(
     val containerColor =
             if (forced) MaterialTheme.colorScheme.errorContainer
             else MaterialTheme.colorScheme.surfaceContainerHigh
-    val contentColor =
+    val baseContentColor =
             if (forced) MaterialTheme.colorScheme.onErrorContainer
             else MaterialTheme.colorScheme.onSurface
+    // The M3 disabled-content alpha, so an unavailable card reads as off without changing its place.
+    val contentColor = if (available) baseContentColor else baseContentColor.copy(alpha = 0.38f)
 
     // The whole card is the button: tapping it runs the action, or arms the confirm face for one
     // that loses work. While armed it stops being clickable, so a stray tap on the card's edge can
@@ -749,7 +798,7 @@ private fun CommandCard(
                 haptics.perform(RemexHapticEvent.CommandSent)
                 onPrimaryClick()
             },
-            enabled = !isAwaitingConfirmation,
+            enabled = available && !isAwaitingConfirmation,
             interactionSource = interactionSource,
             shape = RoundedCornerShape(corner),
             color = containerColor,

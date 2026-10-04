@@ -196,6 +196,19 @@ public sealed class TransferSessionManager : IDisposable
     /// </remarks>
     internal TimeSpan PeerIdleTimeout { get; init; } = TimeSpan.FromSeconds(60);
 
+    /// <summary>
+    /// How long the PC waits for the phone's verdict on an UPLOAD once every byte has been acknowledged
+    /// and the PC has announced completion (RemEx-5w3er).
+    /// </summary>
+    /// <remarks>
+    /// A separate, longer bound than <see cref="PeerIdleTimeout"/> because the situation is different:
+    /// no bytes move at all while the phone hashes the file and copies it out of its staging area onto
+    /// shared storage (a slow SD card or a SAF folder can take minutes), so an idle window cannot tell
+    /// that from a phone that went quiet. A phone that drops is still noticed at once (its control
+    /// socket closes); this only caps a phone that stays connected and never answers. Test seam only.
+    /// </remarks>
+    internal TimeSpan PeerVerdictTimeout { get; init; } = TimeSpan.FromMinutes(15);
+
     /// <summary>How often a PC-started transfer reports progress and checks for a stalled peer.</summary>
     internal TimeSpan PeerProgressInterval { get; init; } = TimeSpan.FromMilliseconds(250);
 
@@ -222,6 +235,26 @@ public sealed class TransferSessionManager : IDisposable
             get => _peerFinished;
             set => _peerFinished = value;
         }
+
+        private long _awaitingVerdictSinceTicks;
+
+        /// <summary>
+        /// When the PC finished an UPLOAD's side of the transfer: every byte acknowledged and
+        /// <c>file_transfer_complete</c> sent. From then on the phone is verifying and copying with no
+        /// bytes moving, so the idle timer stops and <see cref="PeerVerdictTimeout"/> takes over
+        /// (RemEx-5w3er). Null until then.
+        /// </summary>
+        public DateTime? AwaitingVerdictSince
+        {
+            get
+            {
+                var ticks = Interlocked.Read(ref _awaitingVerdictSinceTicks);
+                return ticks == 0 ? null : new DateTime(ticks, DateTimeKind.Utc);
+            }
+        }
+
+        public void MarkAwaitingVerdict() =>
+            Interlocked.CompareExchange(ref _awaitingVerdictSinceTicks, DateTime.UtcNow.Ticks, 0);
     }
 
     private readonly ConcurrentDictionary<string, PeerResultWaiter> _resultWaiters = new(StringComparer.Ordinal);
@@ -1616,6 +1649,32 @@ public sealed class TransferSessionManager : IDisposable
                 // it rather than reporting a slow local copy as a phone that stopped responding.
                 lastProgressAt = DateTime.UtcNow;
             }
+            else if (waiter.AwaitingVerdictSince is { } awaitingSince)
+            {
+                // An upload whose every byte the phone has acknowledged: it is hashing and copying the
+                // file into its shared folder, which can outlast the idle window on a slow SD card or
+                // SAF folder with no bytes moving (RemEx-5w3er). The idle timer must not call that "the
+                // phone stopped responding", so it stops, and the wait is bounded by its own, longer
+                // timeout. A phone that really went away is still caught straight away: its control
+                // socket is no longer open.
+                lastProgressAt = DateTime.UtcNow;
+                if (controlWs.State != WebSocketState.Open)
+                {
+                    _logger.LogWarning("The phone's connection closed while it was finishing {TransferId}.", transferId);
+                    RecordQueueState(transferId, TransferState.Failed, PeerTransferFailure.ConnectionDropped);
+                    return PeerFailure(transferId, PeerTransferFailure.ConnectionDropped);
+                }
+
+                if (DateTime.UtcNow - awaitingSince > PeerVerdictTimeout)
+                {
+                    _logger.LogWarning(
+                        "The phone acknowledged every byte of {TransferId} but sent no verdict within {Wait}; giving up.",
+                        transferId, PeerVerdictTimeout);
+                    await TryReleaseAtPeerAsync(controlWs, transferId);
+                    RecordQueueState(transferId, TransferState.Failed, PeerTransferFailure.NoAnswer);
+                    return PeerFailure(transferId, PeerTransferFailure.NoAnswer);
+                }
+            }
             else if (DateTime.UtcNow - lastProgressAt > PeerIdleTimeout)
             {
                 _logger.LogWarning("PC-started transfer {TransferId} made no progress for {Idle}; giving up.", transferId, PeerIdleTimeout);
@@ -2209,6 +2268,13 @@ public sealed class TransferSessionManager : IDisposable
             }, ct);
 
             _logger.LogInformation("Host-sent transfer {TransferId} streamed {Bytes} bytes, sha256={Sha}.", session.TransferId, sentOffset, sha256);
+
+            // EVERY BYTE IS ACKED AND THE PHONE HAS BEEN TOLD (RemEx-5w3er). What follows is the
+            // phone's hash check and its copy to shared storage; a PC-started upload's idle timer stops
+            // here, as the pull side's does once the phone says it is done. A no-op for transfers the
+            // PHONE started: they have no waiter.
+            if (_resultWaiters.TryGetValue(session.TransferId, out var verdictWaiter))
+                verdictWaiter.MarkAwaitingVerdict();
 
             // VERIFYING, NOT DONE. Every byte is on the wire and acked, but the peer has yet to compare
             // the hash — HandleResult is where this transfer reaches Done or Failed. Calling it Done
