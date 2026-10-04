@@ -106,7 +106,7 @@ public partial class AppLauncherView : UserControl
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Remex] Launcher drop failed: {ex.Message}");
+            (DataContext as AppLauncherViewModel)?.ReportSaveFailure(ex, "Adding dropped programs to Apps failed");
         }
     }
 
@@ -134,7 +134,7 @@ public partial class AppLauncherView : UserControl
                         }
                         catch (System.Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"[Remex] Failed to save launchers: {ex.Message}");
+                            viewModel.ReportSaveFailure(ex, "Saving a new program in Apps failed");
                         }
                     };
                 }
@@ -161,7 +161,7 @@ public partial class AppLauncherView : UserControl
                         }
                         catch (System.Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"[Remex] Failed to save edited launcher entry: {ex.Message}");
+                            viewModel.ReportSaveFailure(ex, "Saving an edited program in Apps failed");
                         }
                     };
                 }
@@ -316,7 +316,7 @@ public partial class AppLauncherView : UserControl
         }
         catch (System.Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Remex] Failed to persist launcher reorder: {ex.Message}");
+            vm?.ReportSaveFailure(ex, "Saving the new order in Apps failed");
         }
         finally
         {

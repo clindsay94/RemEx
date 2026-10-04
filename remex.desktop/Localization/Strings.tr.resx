@@ -234,7 +234,7 @@
     <value>+ Program Ekle</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
-    <value>Yapılandırılmış uygulama yok.</value>
+    <value>Henüz hiç program eklemediniz.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
     <value>Sola Taşı</value>
@@ -4196,5 +4196,41 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
     <value>Bu dosya adı aktarılamaz. Dosyayı yeniden adlandırın ve tekrar deneyin.</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Düzen kaydedildi</value>
+  </data>
+  <data name="Canvas_SnapshotSaved" xml:space="preserve">
+    <value>Resimler klasörünüze {0} adıyla kaydedildi</value>
+  </data>
+  <data name="Canvas_SnapshotSaveFailed" xml:space="preserve">
+    <value>Anlık görüntü kaydedilemedi. Resimler klasörünüze dosya kaydedebildiğinizden emin olun ve tekrar deneyin.</value>
+  </data>
+  <data name="Canvas_ClipboardUnavailable" xml:space="preserve">
+    <value>Panoya erişilemedi. Tekrar deneyin.</value>
+  </data>
+  <data name="Canvas_SnapshotCopied" xml:space="preserve">
+    <value>Panoya kopyalandı</value>
+  </data>
+  <data name="Canvas_SnapshotCopyFailed" xml:space="preserve">
+    <value>Anlık görüntü kopyalanamadı. Tekrar deneyin.</value>
+  </data>
+  <data name="Status_FeatureNeedsHost" xml:space="preserve">
+    <value>RemEx bu bilgisayarda çalışmıyor, bu yüzden {0} yüklenemiyor. Yeniden denemek için Bağlan'a tıklayın.</value>
+  </data>
+  <data name="AppLauncher_SaveFailed" xml:space="preserve">
+    <value>Uygulamalar'daki değişiklikleriniz kaydedilemedi. RemEx kapanınca kaybolacaklar. Ayrıntılar Günlükler ve Tanılama'da.</value>
+  </data>
+  <data name="AppLauncher_EmptyBody" xml:space="preserve">
+    <value>En çok açtığınız programları ve dosyaları ekleyin, sonra buradan veya telefonunuzdan başlatın.</value>
+  </data>
+  <data name="AppLauncher_EmptyAddButton" xml:space="preserve">
+    <value>Program ekle</value>
+  </data>
+  <data name="Settings_AutoSaveNote" xml:space="preserve">
+    <value>Değişiklikler otomatik olarak kaydedilir</value>
+  </data>
+  <data name="TaskMgr_RefreshFailed" xml:space="preserve">
+    <value>İşlem listesi yenilenemedi. Aşağıdaki liste RemEx'in aldığı son listedir ve denemeye devam edecek.</value>
   </data>
 </root>

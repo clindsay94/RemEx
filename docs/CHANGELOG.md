@@ -13,6 +13,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Added
 
+- **Pair a phone from the PC's Home page.** While no phone is connected, Home shows a **Pair a phone**
+  button. It opens Settings with the QR code and PIN already on screen. The sidebar status menu, the
+  tray menu, the tray panel and the command palette do the same, so pairing takes one click instead of
+  two. (RemEx-pp4cm.5)
 - **Browse your phone from the PC.** The PC's Files page has a **Source** picker: This PC, or any
   paired phone that is connected. Pick the phone to browse the folders it shares, search them, see
   details and thumbnails, download files and folders to the PC, and upload files into a phone folder
@@ -22,7 +26,10 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   own session, and no new message types were added (`docs/API_CONTRACTS.md` §3). A download into a
   slow drive such as a USB stick or a network share is not reported as the phone stopping responding,
   failures are worded in your language, and a name Windows would merge with another (one ending in a
-  dot or a space) is left out of a folder download instead of overwriting its twin. (RemEx-xt0af)
+  dot or a space) is left out of a folder download instead of overwriting its twin. An upload to the
+  phone is likewise not reported as the phone stopping responding while it finishes a slow final copy:
+  once every byte is acknowledged the PC waits for the phone's answer for up to fifteen minutes (or
+  until the phone disconnects) instead of running the idle timer. (RemEx-xt0af, RemEx-5w3er)
 - **The phone's Home tab is filled in.** The PC card shows your PC's name, whether it's online, how
   long it has been up, and Lock and Sleep (Sleep only when the PC can do it; Wake when it's off).
   Below it are your pinned sensors, an Open Sensors card, shortcuts to Desktop, Files and Routines, and
@@ -490,6 +497,33 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **Comb round 1, PC behaviour (RemEx-pp4cm.5).**
+  - Home, the Sensors Actions card and the command palette no longer offer Connect, Disconnect or Ping.
+    They drove the window's link to its own in-process host, and Disconnect froze Sensors and switched
+    off the automatic reconnect. The palette's **Settings** entry now opens the Settings page (it used
+    to toggle Personalize), and it gains **Logs & Diagnostics** and **Personalize** entries.
+  - Ctrl+1 to Ctrl+8 follow the sidebar from top to bottom. Routines was missing, so every shortcut
+    after Commands opened the item below the one beside it.
+  - Choosing the sidebar item you are already on scrolls its page back to the top.
+  - Escape on the first-run tutorial counts as Skip, so the tour no longer returns at every launch.
+  - The window cannot be made smaller than 720 by 560, and it starts no larger than the screen's
+    working area, so its title bar is not off-screen on a 1366 by 768 laptop.
+  - The tray tooltip reports whether a phone is connected instead of the window's own link, and is
+    spelled RemEx.
+  - The activity feed shows the command's name ("Force restart"), not its wire token, in your language.
+  - Routines relabels itself when you switch language.
+  - The "needs a connection" banner names the page the way the sidebar does, in your language, and no
+    longer sends you to Settings, where there was nothing to configure.
+  - Saving an app, an edit, a drop or a new order in Apps now says so when it fails, instead of looking
+    saved. The Sensors snapshot and layout messages are translated and no longer show raw error text.
+  - An empty Apps page offers an **Add a program** button.
+  - Settings no longer has a **Save changes** button: every setting already saves as you change it, and
+    a quiet note says so.
+  - Add program closes on Escape and saves on Enter.
+  - A failed process-list refresh says so instead of leaving a stale list, and stopping the Processes
+    page while it retries no longer throws behind your back.
+  - Tab and Escape no longer also act on the RemEx window while a Remote Desktop stream is forwarding
+    them to the other PC.
 - PC sliders show a keyboard focus ring: tabbing onto a slider now rings its thumb, the part that
   takes the focus, so you can see where you are. (RemEx-a9aez)
 - When a PC no longer recognises your phone, the phone's Home, Files, Apps and Processes say it

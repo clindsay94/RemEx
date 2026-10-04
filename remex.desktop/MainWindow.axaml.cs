@@ -51,6 +51,20 @@ public partial class MainWindow : Window
 
         WindowDecorationsTheme = decorationsTheme;
 
+        // FIT THE FIRST SIZE TO THE SCREEN (3.0 comb, window-min-size). The XAML asks for 1200x800,
+        // CenterScreen; on a 1366x768 laptop that is taller than the working area, so the title bar
+        // and its window buttons could start off-screen. Clamped here, before the window is shown,
+        // so CenterScreen centres the size that will actually be used.
+        if (Screens.Primary is { } primary)
+        {
+            var fitted = FitStartSize(
+                new Size(Width, Height),
+                primary.WorkingArea.Size.ToSize(primary.Scaling),
+                new Size(MinWidth, MinHeight));
+            Width = fitted.Width;
+            Height = fitted.Height;
+        }
+
         // RemEx-5253o: belt-and-braces exit for any future path into FullScreen (the chrome's own
         // fullscreen button is gated off non-macOS in WindowChrome.axaml, but Remote Desktop's
         // immersive mode or an OS shortcut could still land here). Registered on the Tunnel phase so
@@ -96,6 +110,22 @@ public partial class MainWindow : Window
             };
             Activated += (_, _) => _colorSources.PollNow();
         }
+    }
+
+    /// <summary>
+    /// The window's starting size: what the XAML asks for, shrunk to fit the screen's working area
+    /// (the desktop minus the taskbar), but never below the window's minimum size.
+    /// </summary>
+    /// <remarks>
+    /// The minimum wins over the working area on purpose: below it the shell's layout breaks, and a
+    /// window slightly larger than a tiny screen can still be moved, while a broken layout cannot be
+    /// fixed by the user.
+    /// </remarks>
+    internal static Size FitStartSize(Size requested, Size workingArea, Size minimum)
+    {
+        var width = Math.Max(minimum.Width, Math.Min(requested.Width, workingArea.Width));
+        var height = Math.Max(minimum.Height, Math.Min(requested.Height, workingArea.Height));
+        return new Size(width, height);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

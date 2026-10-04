@@ -63,7 +63,7 @@ public class PlateSurfaceTests
         @"<Border Grid\.Column=""2"" Background=""\{DynamicResource CardPlateNeutralBrush\}"" CornerRadius=""6"" Padding=""8,3""",
         "the command-palette search plate")]
     [InlineData(
-        @"<Border Background=""\{DynamicResource CardPlateNeutralBrush\}"" CornerRadius=""5"" Padding=""6,2""[^>]*>\s*<TextBlock Text=""Ctrl \+ 1–7""",
+        @"<Border Background=""\{DynamicResource CardPlateNeutralBrush\}"" CornerRadius=""5"" Padding=""6,2""[^>]*>\s*<TextBlock Text=""Ctrl \+ 1–8""",
         "the first keyboard-hint pill")]
     [InlineData(
         @"<Border Background=""\{DynamicResource CardPlateNeutralBrush\}"" CornerRadius=""5"" Padding=""6,2""[^>]*>\s*<TextBlock Text=""Ctrl \+ ,""",

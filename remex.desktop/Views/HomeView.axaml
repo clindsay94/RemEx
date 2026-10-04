@@ -155,6 +155,23 @@
                     <TextBlock Classes="page-title" Text="{local:Localize Home_WelcomeTitle}" HorizontalAlignment="Center" TextAlignment="Center"/>
                     <TextBlock Text="{local:Localize Home_WelcomeIntro}" Theme="{StaticResource Body2TextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="640" TextWrapping="Wrap" LineHeight="21"/>
 
+                    <!-- PAIR A PHONE, RIGHT HERE (3.0 comb, home-pair-cta-missing). The phone's tutorial
+                         tells the user to click "Pair a phone" on the PC's Home screen; Home used to
+                         only say "pair in Settings". Shown while the host is up and no phone is
+                         attached. It opens Settings with the QR code and PIN already showing
+                         (ShellViewModel.StartPairing runs the same command the Settings button runs),
+                         so there is still one pairing surface. -->
+                    <Button Classes="primary pill" HorizontalAlignment="Center"
+                            Command="{Binding Shell.StartPairingCommand}"
+                            IsVisible="{Binding Presence.HasNoPhone}"
+                            ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"
+                            AutomationProperties.Name="{local:Localize Home_PairPhoneButton}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <mi:MaterialIcon Kind="QrcodeScan" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_PairPhoneButton}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <!-- The remaining inline Padding values on .pill buttons in this file (here and
                          below) are each a deliberate, context-specific CTA size — a search-bar launcher,
                          a hero CTA, a small chip — not copy-paste drift off CornerRadiusSmall/.compact.
@@ -175,7 +192,7 @@
                     <WrapPanel HorizontalAlignment="Center" Margin="0,6,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,4" VerticalAlignment="Center">
                             <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="5" Padding="6,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <TextBlock Text="Ctrl + 1–7" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Ctrl + 1–8" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Border>
                             <TextBlock Text="{local:Localize Home_ScNav}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -582,10 +599,11 @@
                 <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{Binding Connection.LatencyText}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
-            <StackPanel Spacing="8">
-                <Button Classes="primary pill" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
-                <Button Classes="secondary pill danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
-            </StackPanel>
+            <!-- NO CONNECT / DISCONNECT HERE (3.0 comb, home-disconnect; hard rule 1). They drove this
+                 window's link to its OWN in-process host: Disconnect froze Sensors, disabled Commands
+                 and Processes, broke the tray's Lock and switched off auto-reconnect. The link is
+                 internal plumbing that reconnects by itself; the shell banner and the sidebar
+                 flyout still offer Connect for the one state that needs it (the host is down). -->
         </StackPanel>
     </material:Card>
 </Grid>

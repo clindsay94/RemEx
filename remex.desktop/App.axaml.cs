@@ -303,10 +303,12 @@ public partial class App : Application
                 UpdateTrayTooltip(viewModel.TrayStatusSummary);
             };
 
-            // Update tooltip once on connect/disconnect state change
-            viewModel.Connection.PropertyChanged += (_, e) =>
+            // Update the tooltip as soon as the PHONE presence line changes (a phone arrives or leaves,
+            // or the language switches) - not on the loopback link, which says nothing about a phone
+            // (3.0 comb, tray-tooltip-connected-lie). The presence poll runs while hidden to the tray.
+            viewModel.Presence.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
+                if (e.PropertyName == nameof(PhonePresenceMonitor.PresenceText))
                 {
                     viewModel.UpdateTrayStatus(viewModel.Connection.Telemetry);
                     UpdateTrayTooltip(viewModel.TrayStatusSummary);
@@ -776,7 +778,8 @@ public partial class App : Application
         pairItem.Click += (_, _) =>
         {
             BringMainWindowToFront();
-            Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
+            // Opens Settings with the QR code and PIN already showing (3.0 comb, pair-two-clicks).
+            Services.GetRequiredService<ShellViewModel>().StartPairing();
         };
 
         var logsFolderItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenLogsFolder"] };

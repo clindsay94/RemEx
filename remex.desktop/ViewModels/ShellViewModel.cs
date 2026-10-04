@@ -285,10 +285,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Formatted one-liner shown as the tray icon tooltip.
-    /// Example: "Remex — CPU: 54°C · RAM: 67% · Connected"
+    /// Example: "RemEx — CPU: 54°C · RAM: 67% · Pixel 9 connected"
     /// </summary>
     [ObservableProperty]
-    private string _trayStatusSummary = "Remex";
+    private string _trayStatusSummary = TrayBrand;
 
     /// <summary>How often the tray tooltip is rebuilt, however often telemetry arrives.</summary>
     /// <remarks>
@@ -322,21 +322,36 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// </remarks>
     public void UpdateTrayStatus(Remex.Core.Messages.TelemetryPayload? telemetry)
     {
-        var connected = Connection.IsConnected;
-        if (!ShouldRebuildTray(DateTime.UtcNow, _lastTrayUpdateUtc, connected, _lastTrayConnected, TrayTooltipInterval))
+        // PHONE PRESENCE, NOT THE LOOPBACK LINK (3.0 comb, tray-tooltip-connected-lie). The tooltip
+        // said "Connected" whenever this window's socket to its own in-process host was up, which is
+        // nearly always - including with no phone paired at all. It now carries the same localized
+        // presence line every other indicator shows (RemEx-7zzw), and a change in that line bypasses
+        // the throttle exactly as a connection flip used to.
+        var presenceText = Presence.PresenceText;
+        var connected = Presence.IsPhoneAttached;
+        if (!ShouldRebuildTray(DateTime.UtcNow, _lastTrayUpdateUtc, connected, _lastTrayConnected, TrayTooltipInterval)
+            && string.Equals(presenceText, _lastTrayPresenceText, StringComparison.Ordinal))
         {
             return;
         }
 
         _lastTrayUpdateUtc = DateTime.UtcNow;
         _lastTrayConnected = connected;
+        _lastTrayPresenceText = presenceText;
 
-        var connectionLabel = connected ? LocalizationService.Instance["Status_Connected"] : LocalizationService.Instance["Status_Disconnected"];
+        TrayStatusSummary = BuildTraySummary(telemetry, presenceText);
+    }
+
+    private string? _lastTrayPresenceText;
+
+    /// <summary>"RemEx — CPU: 54°C · RAM: 67% · {presence}", or "RemEx — {presence}" with no readings.</summary>
+    internal string BuildTraySummary(Remex.Core.Messages.TelemetryPayload? telemetry, string presenceText)
+    {
+        var connectionLabel = presenceText;
 
         if (telemetry?.Sensors is not { Count: > 0 })
         {
-            TrayStatusSummary = $"Remex — {connectionLabel}";
-            return;
+            return $"{TrayBrand} — {connectionLabel}";
         }
 
         var pinned = _layoutService.CurrentProfile?.PinnedSensorIds
@@ -358,10 +373,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 parts.Add($"{r.Name.Split(' ')[0]}: {r.Value:F0}{r.Unit}");
         }
 
-        TrayStatusSummary = parts.Count > 0
-            ? $"Remex — {string.Join(" · ", parts)} · {connectionLabel}"
-            : $"Remex — {connectionLabel}";
+        return parts.Count > 0
+            ? $"{TrayBrand} — {string.Join(" · ", parts)} · {connectionLabel}"
+            : $"{TrayBrand} — {connectionLabel}";
     }
+
+    /// <summary>The product name as it is spelled everywhere else ("Remex" was a stray casing).</summary>
+    internal const string TrayBrand = "RemEx";
 
     /// <summary>Index of the active navigation item (for highlight).</summary>
     [ObservableProperty]
@@ -421,9 +439,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Set while a Preview-triggered replay is in flight (RemEx-8twk0.8 fix round, HIGH). The replay's
     /// completion goes through the same <see cref="OnBootSequenceCompleted"/> path as the first boot,
-    /// so without this flag a fresh profile that dismissed the first-run tutorial without persisting
-    /// (Escape -&gt; <see cref="DismissOverlays"/>) would have the full onboarding overlay raised again
-    /// on top of the Personalize sheet. See <see cref="ResolveBootCompletion"/>.
+    /// so without this flag a fresh profile whose tutorial completion had not been persisted yet
+    /// (the save is debounced; Escape -&gt; <see cref="DismissOverlays"/> now counts as Skip) would
+    /// have the full onboarding overlay raised again on top of the Personalize sheet. See
+    /// <see cref="ResolveBootCompletion"/>.
     /// </summary>
     private bool _isSplashPreview;
 
@@ -1045,6 +1064,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         };
         Connection.PropertyChanged += _onConnectionChanged;
 
+        // The banner text is a formatted snapshot, so a language switch re-renders it (3.0 comb).
+        LocalizationService.Instance.PropertyChanged += OnBannerLocaleChanged;
+
         // The presence dot's pulse (RemEx-d7xj8) depends on the phone-attached flag from the
         // process-wide PhonePresenceMonitor singleton, not on anything this VM owns - re-raise
         // ShowPresencePulse whenever it flips so the badge's .pulse class tracks it live.
@@ -1199,6 +1221,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
+        LocalizationService.Instance.PropertyChanged -= OnBannerLocaleChanged;
         Presence.PropertyChanged -= _onPresenceChanged;
         _layoutService.ProfileReplaced -= _onProfileReplaced;
         _alertTracker.TrippedChanged -= _onTrippedChanged;
@@ -1526,16 +1549,42 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void DismissLayoutLoadWarning() => ShowLayoutLoadWarning = false;
 
     /// <summary>
-    /// Shows the connection banner if the host is not connected.
-    /// Returns true if disconnected (caller may still navigate for preview).
+    /// Shows the connection banner if this window's link to its own host is down (the caller still
+    /// navigates, so the page can be previewed).
     /// </summary>
-    private void NotifyIfDisconnected(string featureName)
+    /// <param name="featureNavKey">
+    /// The resx key of the page's SIDEBAR label (<c>Nav_*</c>), so the banner names the page the way
+    /// the sidebar does, in the current language (3.0 comb, feature-banner-dead-end). The callers
+    /// used to pass hardcoded English names from an older vocabulary ("Sensor Workspace").
+    /// </param>
+    private void NotifyIfDisconnected(string featureNavKey)
     {
         if (!Connection.IsConnected)
         {
-            ConnectionBannerMessage = string.Format(LocalizationService.Instance["Status_FeatureRequiresConnection"], featureName);
+            _connectionBannerFeatureKey = featureNavKey;
+            ConnectionBannerMessage = BuildConnectionBannerMessage(featureNavKey);
             ShowConnectionBanner = true;
         }
+    }
+
+    /// <summary>The page whose banner is showing, kept so a language switch can re-render it.</summary>
+    private string? _connectionBannerFeatureKey;
+
+    /// <summary>
+    /// "{page} can't reach RemEx on this PC…" with a Connect action beside it. The old text sent the
+    /// user to Settings "to configure your connection", where there is nothing to configure: this
+    /// link is the window's own in-process host, and Connect is the one thing that can help.
+    /// </summary>
+    internal static string BuildConnectionBannerMessage(string featureNavKey) =>
+        string.Format(
+            System.Globalization.CultureInfo.CurrentCulture,
+            LocalizationService.Instance["Status_FeatureNeedsHost"],
+            LocalizationService.Instance[featureNavKey]);
+
+    private void OnBannerLocaleChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_connectionBannerFeatureKey is { } key)
+            ConnectionBannerMessage = BuildConnectionBannerMessage(key);
     }
 
     private void CompleteTutorial()
@@ -1568,12 +1617,34 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // is one transition whose direction carries the meaning instead (RemEx-yzu5m).
         TransitionDirection = TransitionDirectionFor(ActiveNavIndex, targetIndex);
 
+        var reselected = ActiveNavIndex == targetIndex && ReferenceEquals(CurrentView, viewModel);
+
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;
         // Auto-close drawer on mobile/narrow after navigation
         IsDrawerOpen = false;
 
         UpdateRemoteDesktopStreamForeground();
+
+        if (reselected)
+            OnCurrentPageReselected(viewModel);
+    }
+
+    /// <summary>
+    /// Raised when navigation lands on the page that is already showing - the user picked the
+    /// sidebar item they are on (3.0 comb, no-reselect-to-top). The view scrolls the page back to
+    /// its top, the convention every tabbed app follows; before this, reselecting did nothing.
+    /// </summary>
+    public event Action? CurrentPageReselected;
+
+    private void OnCurrentPageReselected(ObservableObject page)
+    {
+        // Routines' detail pane is a selection, not a scroll offset: reselecting the page returns
+        // it to the list, the same "back to the start" the scroll reset gives every other page.
+        if (page is RoutinesViewModel routines)
+            routines.SelectedRoutine = null;
+
+        CurrentPageReselected?.Invoke();
     }
 
     /// <summary>
@@ -1606,7 +1677,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToCanvas()
     {
-        NotifyIfDisconnected("Sensor Workspace");
+        NotifyIfDisconnected("Nav_Sensors");
 
         // OPENING SENSORS NO LONGER ACKNOWLEDGES THE ALERTS (RemEx-8wpvr.3, superseding RemEx-rjnbo's
         // "arriving here IS having seen them"). The badge now means "how many sensors are still
@@ -1620,7 +1691,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToRemote()
     {
-        NotifyIfDisconnected("Remote Control");
+        NotifyIfDisconnected("Nav_Commands");
         _remoteViewModel ??= new RemoteViewModel(
             Connection, this,
             _services.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(),
@@ -1665,7 +1736,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToAppLauncher()
     {
-        NotifyIfDisconnected("App Launcher");
+        NotifyIfDisconnected("Nav_Launcher");
         if (_appLauncherViewModel is null)
         {
             _appLauncherViewModel = _services.GetRequiredService<AppLauncherViewModel>();
@@ -1676,7 +1747,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToTaskManager()
     {
-        NotifyIfDisconnected("Task Manager");
+        NotifyIfDisconnected("Nav_Processes");
         _taskManagerViewModel ??= new TaskManagerViewModel(Connection, this);
         SetTransitionAndNavigate(4, _taskManagerViewModel);
     }
@@ -1705,7 +1776,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToFileTransfer()
     {
-        NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
+        NotifyIfDisconnected("Nav_Files");
         // Hand-constructed rather than DI-resolved, so the logger has to be passed explicitly —
         // same reasoning as NavigateToRemoteDesktop above: the constructor default would
         // degrade to no logger and discard every file-transfer failure diagnostic. transferQueue is
@@ -1752,7 +1823,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         IsSettingsPanelOpen = false;
         IsDrawerOpen = false;
-        ShowTutorialOverlay = false;
+        // ESCAPE ON THE TUTORIAL IS SKIP (3.0 comb, tutorial-esc-not-persisted, Connor's call). It
+        // used to only hide the overlay, so the first-run tour came back on every launch for a
+        // user who had plainly dismissed it.
+        if (ShowTutorialOverlay)
+            CompleteTutorial();
         ShowConnectionBanner = false;
     }
 
@@ -1806,6 +1881,24 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         IsSettingsPanelOpen = false;
         EnsureSettingsVm();
         SetTransitionAndNavigate(9, _settingsViewModel!);
+    }
+
+    /// <summary>
+    /// "Pair a phone" from anywhere but Settings itself: opens Settings AND starts pairing, so the QR
+    /// code and PIN are already on screen when the page arrives (3.0 comb, pair-two-clicks).
+    /// </summary>
+    /// <remarks>
+    /// The sidebar flyout, the tray menu, the tray flyout and the command palette all used to only
+    /// open Settings, where the user then had to find and press the same button a second time.
+    /// Runs <see cref="ConnectionViewModel.GenerateQrCodeCommand"/>, the exact command the Settings
+    /// button runs, so there is one pairing path and its failures report the same way.
+    /// </remarks>
+    [RelayCommand]
+    public void StartPairing()
+    {
+        NavigateToSettings();
+        if (Connection.GenerateQrCodeCommand.CanExecute(null))
+            Connection.GenerateQrCodeCommand.Execute(null);
     }
 
     /// <summary>

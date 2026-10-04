@@ -116,8 +116,12 @@ public partial class CommandPaletteViewModel : ObservableObject
         new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand),
         new(LocalizationService.Instance["Palette_RemoteDesktop"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteDesktopCommand),
         new(LocalizationService.Instance["Palette_FileTransfer"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToFileTransferCommand),
-        new(LocalizationService.Instance["Palette_Settings"],                LocalizationService.Instance["PaletteCategory_Navigate"], shell.ToggleSettingsPanelCommand),
-        new(LocalizationService.Instance["Palette_ToggleSettingsPanel"],   LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleSettingsPanelCommand),
+        // "Settings" goes to the Settings PAGE (3.0 comb, palette-settings). It used to toggle the
+        // Personalize sheet, so the palette could not reach Settings at all and two entries did the
+        // same thing; the sheet's own entry is now labelled with the sheet's name.
+        new(LocalizationService.Instance["Palette_Settings"],                LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToSettingsCommand),
+        new(LocalizationService.Instance["Shell_LogsDiagnostics"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToDiagnosticLogsCommand),
+        new(LocalizationService.Instance["Personalize_Title"],              LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleSettingsPanelCommand),
         new(LocalizationService.Instance["Palette_CloseSettingsPanel"],    LocalizationService.Instance["PaletteCategory_Interface"], shell.CloseSettingsPanelCommand),
         new(LocalizationService.Instance["Palette_ToggleNavigationDrawer"],LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleDrawerCommand),
         new(LocalizationService.Instance["Palette_UndoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasUndoCommand),
@@ -138,7 +142,9 @@ public partial class CommandPaletteViewModel : ObservableObject
         // address, which the host rejects with "Missing MacAddress parameter." - so it had never
         // worked, and silently. Waking needs the Remote screen's configured MAC and its
         // not-connected local-send path; a working palette entry is RemEx-efse. (RemEx-paa7.)
-        new(LocalizationService.Instance["Palette_Disconnect"],              LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.DisconnectCommand),
-        new(LocalizationService.Instance["Palette_Connect"],                 LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.ConnectCommand),
+        // No Connect / Disconnect (3.0 comb, home-disconnect; hard rule 1): they drove the window's
+        // link to its own in-process host, and Disconnect switched off auto-reconnect. Pairing a
+        // phone is the one connection act a user has on this PC.
+        new(LocalizationService.Instance["Home_PairPhoneButton"],           LocalizationService.Instance["PaletteCategory_Connection"], shell.StartPairingCommand),
     ];
 }

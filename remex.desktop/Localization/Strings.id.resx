@@ -234,7 +234,7 @@
     <value>+ Tambah Program</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
-    <value>Tidak ada aplikasi yang dikonfigurasi.</value>
+    <value>Anda belum menambahkan program apa pun.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
     <value>Pindah Kiri</value>
@@ -4195,5 +4195,41 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
     <value>Nama file itu tidak dapat ditransfer. Ganti nama file, lalu coba lagi.</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Tata letak disimpan</value>
+  </data>
+  <data name="Canvas_SnapshotSaved" xml:space="preserve">
+    <value>Disimpan di folder Gambar Anda sebagai {0}</value>
+  </data>
+  <data name="Canvas_SnapshotSaveFailed" xml:space="preserve">
+    <value>Tidak dapat menyimpan cuplikan. Pastikan Anda bisa menyimpan berkas di folder Gambar, lalu coba lagi.</value>
+  </data>
+  <data name="Canvas_ClipboardUnavailable" xml:space="preserve">
+    <value>Tidak dapat mengakses papan klip. Coba lagi.</value>
+  </data>
+  <data name="Canvas_SnapshotCopied" xml:space="preserve">
+    <value>Disalin ke papan klip</value>
+  </data>
+  <data name="Canvas_SnapshotCopyFailed" xml:space="preserve">
+    <value>Tidak dapat menyalin cuplikan. Coba lagi.</value>
+  </data>
+  <data name="Status_FeatureNeedsHost" xml:space="preserve">
+    <value>RemEx tidak berjalan di PC ini, jadi {0} tidak dapat dimuat. Klik Hubungkan untuk mencoba lagi.</value>
+  </data>
+  <data name="AppLauncher_SaveFailed" xml:space="preserve">
+    <value>Tidak dapat menyimpan perubahan Anda di Aplikasi. Perubahan akan hilang saat RemEx ditutup. Detailnya ada di Log &amp; Diagnostik.</value>
+  </data>
+  <data name="AppLauncher_EmptyBody" xml:space="preserve">
+    <value>Tambahkan program dan berkas yang paling sering Anda buka, lalu jalankan dari sini atau dari ponsel Anda.</value>
+  </data>
+  <data name="AppLauncher_EmptyAddButton" xml:space="preserve">
+    <value>Tambahkan program</value>
+  </data>
+  <data name="Settings_AutoSaveNote" xml:space="preserve">
+    <value>Perubahan disimpan otomatis</value>
+  </data>
+  <data name="TaskMgr_RefreshFailed" xml:space="preserve">
+    <value>Tidak dapat memuat ulang daftar proses. Daftar di bawah adalah yang terakhir diterima RemEx, dan RemEx akan terus mencoba.</value>
   </data>
 </root>

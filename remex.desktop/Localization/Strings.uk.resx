@@ -234,7 +234,7 @@
     <value>+ Додати програму</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
-    <value>Програм не налаштовано.</value>
+    <value>Ви ще не додали жодної програми.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
     <value>Перемістити ліворуч</value>
@@ -4193,5 +4193,41 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
     <value>Файл із такою назвою не можна передати. Перейменуйте файл і спробуйте ще раз.</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Розкладку збережено</value>
+  </data>
+  <data name="Canvas_SnapshotSaved" xml:space="preserve">
+    <value>Збережено в папці «Зображення» як {0}</value>
+  </data>
+  <data name="Canvas_SnapshotSaveFailed" xml:space="preserve">
+    <value>Не вдалося зберегти знімок. Переконайтеся, що можете зберігати файли в папці «Зображення», і спробуйте ще раз.</value>
+  </data>
+  <data name="Canvas_ClipboardUnavailable" xml:space="preserve">
+    <value>Не вдалося отримати доступ до буфера обміну. Спробуйте ще раз.</value>
+  </data>
+  <data name="Canvas_SnapshotCopied" xml:space="preserve">
+    <value>Скопійовано в буфер обміну</value>
+  </data>
+  <data name="Canvas_SnapshotCopyFailed" xml:space="preserve">
+    <value>Не вдалося скопіювати знімок. Спробуйте ще раз.</value>
+  </data>
+  <data name="Status_FeatureNeedsHost" xml:space="preserve">
+    <value>RemEx не запущено на цьому ПК, тому «{0}» не може завантажитися. Натисніть «Підключити», щоб спробувати ще раз.</value>
+  </data>
+  <data name="AppLauncher_SaveFailed" xml:space="preserve">
+    <value>Не вдалося зберегти зміни в розділі «Застосунки». Вони зникнуть після закриття RemEx. Подробиці є в розділі «Журнали та діагностика».</value>
+  </data>
+  <data name="AppLauncher_EmptyBody" xml:space="preserve">
+    <value>Додайте програми та файли, які відкриваєте найчастіше, і запускайте їх звідси або з телефона.</value>
+  </data>
+  <data name="AppLauncher_EmptyAddButton" xml:space="preserve">
+    <value>Додати програму</value>
+  </data>
+  <data name="Settings_AutoSaveNote" xml:space="preserve">
+    <value>Зміни зберігаються автоматично</value>
+  </data>
+  <data name="TaskMgr_RefreshFailed" xml:space="preserve">
+    <value>Не вдалося оновити список процесів. Список нижче — останній, який отримав RemEx, і він продовжить спроби.</value>
   </data>
 </root>

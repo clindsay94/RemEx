@@ -252,7 +252,7 @@
     <value>+ Add Program</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
-    <value>No applications configured.</value>
+    <value>You haven't added any programs yet.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
     <value>Move Left</value>
@@ -4198,5 +4198,41 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
     <value>That file name can't be transferred. Rename the file, then try again.</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Layout saved</value>
+  </data>
+  <data name="Canvas_SnapshotSaved" xml:space="preserve">
+    <value>Saved to your Pictures folder as {0}</value>
+  </data>
+  <data name="Canvas_SnapshotSaveFailed" xml:space="preserve">
+    <value>Couldn't save the snapshot. Make sure you can save files to your Pictures folder, then try again.</value>
+  </data>
+  <data name="Canvas_ClipboardUnavailable" xml:space="preserve">
+    <value>Couldn't reach the clipboard. Try again.</value>
+  </data>
+  <data name="Canvas_SnapshotCopied" xml:space="preserve">
+    <value>Copied to the clipboard</value>
+  </data>
+  <data name="Canvas_SnapshotCopyFailed" xml:space="preserve">
+    <value>Couldn't copy the snapshot. Try again.</value>
+  </data>
+  <data name="Status_FeatureNeedsHost" xml:space="preserve">
+    <value>RemEx isn't running on this PC, so {0} can't load. Click Connect to try again.</value>
+  </data>
+  <data name="AppLauncher_SaveFailed" xml:space="preserve">
+    <value>Couldn't save your changes to Apps. They'll be lost when RemEx closes. Details are in Logs &amp; Diagnostics.</value>
+  </data>
+  <data name="AppLauncher_EmptyBody" xml:space="preserve">
+    <value>Add the programs and files you open most, then start them from here or from your phone.</value>
+  </data>
+  <data name="AppLauncher_EmptyAddButton" xml:space="preserve">
+    <value>Add a program</value>
+  </data>
+  <data name="Settings_AutoSaveNote" xml:space="preserve">
+    <value>Changes save automatically</value>
+  </data>
+  <data name="TaskMgr_RefreshFailed" xml:space="preserve">
+    <value>Couldn't refresh the process list. The list below is the last one RemEx received, and it will keep trying.</value>
   </data>
 </root>

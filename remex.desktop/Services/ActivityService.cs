@@ -71,12 +71,39 @@ public sealed class ActivityEntry
         {
             var key = $"Activity_{Kind}";
             var format = LocalizationService.Instance[key];
+            var detail = Kind == ActivityKind.CommandRun ? CommandLabel(Detail) : Detail;
             // The indexer returns the key itself when a resource is missing — fall back readably.
             return string.Equals(format, key, StringComparison.Ordinal)
-                ? $"{Kind}: {Detail}"
-                : string.Format(format, Detail);
+                ? $"{Kind}: {detail}"
+                : string.Format(format, detail);
         }
     }
+
+    /// <summary>
+    /// The wire verb a command was sent as, mapped to the label the Commands page shows for it
+    /// (3.0 comb, activity-wire-tokens).
+    /// </summary>
+    /// <remarks>
+    /// Mapped HERE, at display time, rather than where the entry is recorded: the verb is what is
+    /// persisted, so existing history relabels too, and a language switch relabels everything
+    /// (the same lazy read as <see cref="Description"/>). Case-insensitive because the phone sends
+    /// some verbs upper-case. A verb with no label falls back to itself rather than to nothing.
+    /// </remarks>
+    internal static string CommandLabel(string verb) =>
+        CommandLabelKeys.TryGetValue(verb, out var key) ? LocalizationService.Instance[key] : verb;
+
+    private static readonly Dictionary<string, string> CommandLabelKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Lock"] = "Remote_Lock",
+        ["Sleep"] = "Remote_Sleep",
+        ["Hibernate"] = "Remote_Hibernate",
+        ["SignOut"] = "Remote_SignOut",
+        ["Shutdown"] = "Remote_Shutdown",
+        ["ForceShutdown"] = "Remote_ForceShutdown",
+        ["Restart"] = "Remote_Restart",
+        ["ForceRestart"] = "Remote_ForceRestart",
+        ["RestartToUefi"] = "Remote_RebootUefi",
+    };
 
     /// <summary>Short, culture-aware time label — clock time for today, else short date + time.</summary>
     [JsonIgnore]

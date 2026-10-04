@@ -44,7 +44,7 @@ public class HomeViewCharacterisationTests
     /// </summary>
     /// <remarks>
     /// AN EXPLICIT LIST RATHER THAN A COUNT, because a count tells the next person that something
-    /// went missing and this tells them what. Eighteen distinct commands behind twenty buttons:
+    /// went missing and this tells them what. Eighteen distinct commands behind nineteen buttons:
     /// <c>NavigateToCanvasCommand</c> is bound three times (the workspace link, the no-sensors
     /// empty state, and the Sensors quick-launch tile).
     /// <para>
@@ -56,8 +56,6 @@ public class HomeViewCharacterisationTests
     private static readonly string[] ExpectedCommands =
     [
         "ClearActivityCommand",
-        "Connection.ConnectCommand",
-        "Connection.DisconnectCommand",
         "NavigateToAboutCommand",
         "NavigateToAppLauncherCommand",
         "NavigateToCanvasCommand",
@@ -70,6 +68,7 @@ public class HomeViewCharacterisationTests
         "OpenHwInfoCommand",
         "OpenPlayStoreCommand",
         "Shell.OpenCommandPaletteCommand",
+        "Shell.StartPairingCommand",
         "SystemStatusViewModel.ExplainCommand",
         "SystemStatusViewModel.FixCommand",
         "SystemStatus.RefreshCommand",
@@ -122,8 +121,10 @@ public class HomeViewCharacterisationTests
     {
         // A number in a diff, the same device TheAllowListHasNotGrown uses. Twenty is the figure
         // RemEx-1qpjh recorded and it is the one RemEx-oszfm is verified against.
-        Count(Home(), @"<Button[\s>]").Should().Be(20,
-            "the dashboard had 20 buttons when it was characterised; a rewrite that ends with fewer "
+        Count(Home(), @"<Button[\s>]").Should().Be(19,
+            "the dashboard had 20 buttons when it was characterised, then lost the footer Connect and "
+            + "Disconnect (3.0 comb, home-disconnect: they drove the window's link to its own host) and gained "
+            + "the Pair a phone button (home-pair-cta-missing); a rewrite that ends with fewer "
             + "has dropped an action, and one that ends with more has grown scope");
     }
 
@@ -312,8 +313,8 @@ public class HomeViewCharacterisationTests
         // The earlier version of this comment enumerated seven controls, called it eighteen, and
         // claimed all eighteen were icon-or-glyph. Review caught it against §7 of the document, which
         // had the split right.
-        Count(Home(), @"AutomationProperties\.Name").Should().Be(18,
-            "18 controls on this view carry an automation name and 13 of them have no other "
+        Count(Home(), @"AutomationProperties\.Name").Should().Be(19,
+            "19 controls (18 plus the Pair a phone button, which also has a visible caption) on this view carry an automation name and 13 of them have no other "
             + "accessible label; a restyle that drops one makes that control unreachable to a screen "
             + "reader with no visible sign");
     }
@@ -362,8 +363,8 @@ public class HomeViewCharacterisationTests
         // ANTI-VACUITY, and it is the specific bug this repo has already been bitten by: a matcher
         // that finds nothing makes every "no offenders" assertion pass. StatusDotPresenceBindingTests
         // was inert for months on exactly that shape.
-        found.Should().HaveCount(20,
-            "HomeView has 20 Command-bound buttons; finding a different number means this matcher has "
+        found.Should().HaveCount(19,
+            "HomeView has 19 Command-bound buttons; finding a different number means this matcher has "
             + "stopped seeing the view, and the assertions built on it are no longer testing anything");
 
         return found;

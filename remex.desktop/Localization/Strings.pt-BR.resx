@@ -234,7 +234,7 @@
     <value>+ Adicionar Programa</value>
   </data>
   <data name="AppLauncher_NoApps" xml:space="preserve">
-    <value>Nenhum aplicativo configurado.</value>
+    <value>Você ainda não adicionou nenhum programa.</value>
   </data>
   <data name="AppLauncher_MoveLeft" xml:space="preserve">
     <value>Mover para Esquerda</value>
@@ -4192,5 +4192,41 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   </data>
   <data name="FileTransfer_ErrNameNotAllowed" xml:space="preserve">
     <value>Esse nome de arquivo não pode ser transferido. Renomeie o arquivo e tente outra vez.</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Layout salvo</value>
+  </data>
+  <data name="Canvas_SnapshotSaved" xml:space="preserve">
+    <value>Salvo na sua pasta Imagens como {0}</value>
+  </data>
+  <data name="Canvas_SnapshotSaveFailed" xml:space="preserve">
+    <value>Não foi possível salvar a captura. Verifique se você pode salvar arquivos na pasta Imagens e tente novamente.</value>
+  </data>
+  <data name="Canvas_ClipboardUnavailable" xml:space="preserve">
+    <value>Não foi possível acessar a área de transferência. Tente novamente.</value>
+  </data>
+  <data name="Canvas_SnapshotCopied" xml:space="preserve">
+    <value>Copiado para a área de transferência</value>
+  </data>
+  <data name="Canvas_SnapshotCopyFailed" xml:space="preserve">
+    <value>Não foi possível copiar a captura. Tente novamente.</value>
+  </data>
+  <data name="Status_FeatureNeedsHost" xml:space="preserve">
+    <value>O RemEx não está em execução neste PC, então {0} não pode ser carregado. Clique em Conectar para tentar de novo.</value>
+  </data>
+  <data name="AppLauncher_SaveFailed" xml:space="preserve">
+    <value>Não foi possível salvar suas alterações em Aplicativos. Elas serão perdidas quando o RemEx fechar. Os detalhes estão em Logs e Diagnósticos.</value>
+  </data>
+  <data name="AppLauncher_EmptyBody" xml:space="preserve">
+    <value>Adicione os programas e arquivos que você mais abre e inicie-os daqui ou do seu celular.</value>
+  </data>
+  <data name="AppLauncher_EmptyAddButton" xml:space="preserve">
+    <value>Adicionar um programa</value>
+  </data>
+  <data name="Settings_AutoSaveNote" xml:space="preserve">
+    <value>As alterações são salvas automaticamente</value>
+  </data>
+  <data name="TaskMgr_RefreshFailed" xml:space="preserve">
+    <value>Não foi possível atualizar a lista de processos. A lista abaixo é a última que o RemEx recebeu, e ele continuará tentando.</value>
   </data>
 </root>
