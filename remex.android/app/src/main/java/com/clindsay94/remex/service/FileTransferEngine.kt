@@ -287,7 +287,7 @@ object FileTransferEngine {
             // The controller already moved the row to Negotiating when it claimed the drain slot.
             if (!ensureChannel()) {
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = "Not connected.") }
-                if (t.mode == FileTransferModes.DOWNLOAD) discardEmptyDownloadTarget(t)
+                if (t.mode == FileTransferModes.DOWNLOAD) abandonDownload(t)
                 return
             }
             when (t.mode) {
@@ -309,7 +309,7 @@ object FileTransferEngine {
             FileTransferChannelClient.invalidate()
             // A push/upload that dies mid-stream (thrown here, not via runUpload's own terminal
             // branches) still owes the user a Share-to-PC result, same as runDownload's notify.
-            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t) else discardEmptyDownloadTarget(t)
+            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t) else abandonDownload(t)
         }
     }
 
@@ -419,6 +419,21 @@ object FileTransferEngine {
         }
     }
 
+    /**
+     * Cleans up after a download that ended without a file, and says so (RemEx-pp4cm.8).
+     *
+     * **A FAILED DOWNLOAD USED TO BE SILENT.** A success posts "Downloaded x" and an upload failure
+     * posts "Could not send x", but nothing ever reported a download that failed, so a download that
+     * never worked looked exactly like one that never showed a notification. Only a row that really is
+     * Failed is announced: a user's cancel or pause already says what happened and is not an error.
+     */
+    private fun abandonDownload(t: QueuedTransfer) {
+        discardEmptyDownloadTarget(t)
+        if (_queue.value.firstOrNull { it.id == t.id }?.state != TransferState.Failed) return
+        val message = appContext.getString(R.string.file_transfer_notification_download_failed, t.fileName)
+        FileTransferNotificationManager.showTransferFailed(appContext, message)
+    }
+
     /** Posts a Share-to-PC failure notification for [t]; the body names the file via localized text. */
     private fun notifyUploadFailed(t: QueuedTransfer) {
         val message = appContext.getString(R.string.file_transfer_notification_upload_failed, t.fileName)
@@ -462,12 +477,12 @@ object FileTransferEngine {
         val ready = negotiate(t, resumeRequested = resume)
         if (ready == null) {
             // negotiate() already marked the transfer Failed ("Peer did not respond.").
-            discardEmptyDownloadTarget(t)
+            abandonDownload(t)
             return
         }
         if (!ready.accepted) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = ready.declineReason ?: "Declined.") }
-            discardEmptyDownloadTarget(t)
+            abandonDownload(t)
             return
         }
         val startOffset = TransferResumeLogic.receiverResumeOffset(ready.startOffset, t.size)
@@ -590,7 +605,7 @@ object FileTransferEngine {
                     else "SHA-256 mismatch."
                 sendResult(t.id, false, actualSha, err)
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = err) }
-                discardEmptyDownloadTarget(t)
+                abandonDownload(t)
             }
         } finally {
             FileTransferChannelClient.unregisterSink(t.id)

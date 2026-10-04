@@ -86,6 +86,8 @@ fun FileTransferScreen(
     onNavigateToConnection: () -> Unit = {},
     vm: FileTransferViewModel = viewModel(),
 ) {
+    // A transfer started here is invisible without this permission (RemEx-pp4cm.8).
+    com.clindsay94.remex.ui.components.AskForTransferNotifications()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
     val remotePath by vm.remotePath.collectAsStateWithLifecycle()

@@ -403,6 +403,7 @@
     <string name="file_transfer_notification_complete_title">Transferência concluída</string>
     <string name="file_transfer_notification_upload_complete">%1$s enviado com sucesso</string>
     <string name="file_transfer_notification_upload_failed">Falha ao enviar %1$s</string>
+    <string name="file_transfer_notification_download_failed">Não foi possível baixar %1$s</string>
     <string name="file_transfer_notification_download_complete">%1$s baixado com sucesso</string>
     <string name="file_transfer_notification_failed_title">Falha na transferência</string>
     <string name="file_transfer_rename">Renomear</string>

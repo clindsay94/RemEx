@@ -401,6 +401,7 @@
     <string name="file_transfer_notification_complete_title">Transfer zakończony</string>
     <string name="file_transfer_notification_upload_complete">Wysłano %1$s</string>
     <string name="file_transfer_notification_upload_failed">Nie udało się wysłać %1$s</string>
+    <string name="file_transfer_notification_download_failed">Nie udało się pobrać %1$s</string>
     <string name="file_transfer_notification_download_complete">Pobrano %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer nie powiódł się</string>
     <string name="file_transfer_rename">Zmień nazwę</string>

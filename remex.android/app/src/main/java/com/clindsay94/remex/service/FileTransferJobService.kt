@@ -13,6 +13,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
@@ -251,6 +252,7 @@ class FileTransferJobService : JobService() {
     private fun ensureChannel() = FileTransferNotificationManager.ensureTransferChannel(this)
 
     companion object {
+        private const val TAG = "FileTransferJob"
         private const val CHANNEL_ID = "remex_file_transfer"
         private const val NOTIFICATION_ID = 1003
         private const val JOB_ID = 1003
@@ -283,7 +285,13 @@ class FileTransferJobService : JobService() {
                     .setRequiredNetwork(network)
                     .setEstimatedNetworkBytes(downloadBytes, uploadBytes)
                     .build()
-            scheduler.schedule(info)
+            // The result used to be dropped. A refused job means no transfer notification at all and
+            // nothing keeping the process alive, with no trace of why - so a refusal is logged, at a
+            // level a release build keeps (RemEx-pp4cm.8).
+            val result = scheduler.schedule(info)
+            if (result != JobScheduler.RESULT_SUCCESS) {
+                Log.w(TAG, "The system refused the file-transfer job (result=$result); transfers will show no progress notification.")
+            }
         }
 
         /** Sums queued transfer sizes per direction; UNKNOWN when a direction has nothing queued. */

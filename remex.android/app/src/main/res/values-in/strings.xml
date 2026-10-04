@@ -396,6 +396,7 @@
     <string name="file_transfer_notification_complete_title">Transfer selesai</string>
     <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
     <string name="file_transfer_notification_upload_failed">Gagal mengirim %1$s</string>
+    <string name="file_transfer_notification_download_failed">Tidak dapat mengunduh %1$s</string>
     <string name="file_transfer_notification_download_complete">Berhasil mengunduh %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer gagal</string>
     <string name="file_transfer_rename">Ubah Nama</string>

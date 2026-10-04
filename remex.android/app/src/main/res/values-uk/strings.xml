@@ -417,6 +417,7 @@
     <string name="file_transfer_notification_complete_title">Передавання завершено</string>
     <string name="file_transfer_notification_upload_complete">%1$s вивантажено</string>
     <string name="file_transfer_notification_upload_failed">Не вдалося надіслати %1$s</string>
+    <string name="file_transfer_notification_download_failed">Не вдалося завантажити %1$s</string>
     <string name="file_transfer_notification_download_complete">Завантажено %1$s</string>
     <string name="file_transfer_notification_failed_title">Помилка передавання</string>
     <string name="file_transfer_rename">Перейменувати</string>

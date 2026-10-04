@@ -490,6 +490,13 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **A download that fails now tells you, and the Files screen asks for notification permission.**
+  A finished download posted "Downloaded" and a failed upload posted "Could not send", but a failed
+  download posted nothing, and a phone that had never allowed notifications showed no transfer
+  notification of any kind. A failed download now says "Could not download" in your language, the
+  Files screen asks once per run for the notification permission when it is missing, and the app
+  logs it when the system refuses to start the transfer job. (`FileTransferEngine.kt`,
+  `TransferNotificationPermission.kt`, `FileTransferJobService.kt`; RemEx-pp4cm.8)
 - **A folder download no longer stops after a file or two, and Resume works again.** The PC starts
   sending a file the moment it agrees to it, and the phone only got ready to receive a moment later,
   so the first part of a file could be thrown away. A file missing its last part was never

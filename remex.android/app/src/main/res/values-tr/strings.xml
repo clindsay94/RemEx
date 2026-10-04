@@ -403,6 +403,7 @@
     <string name="file_transfer_notification_complete_title">Aktarım tamamlandı</string>
     <string name="file_transfer_notification_upload_complete">%1$s yüklendi</string>
     <string name="file_transfer_notification_upload_failed">%1$s gönderilemedi</string>
+    <string name="file_transfer_notification_download_failed">%1$s indirilemedi</string>
     <string name="file_transfer_notification_download_complete">%1$s indirildi</string>
     <string name="file_transfer_notification_failed_title">Aktarım başarısız</string>
     <string name="file_transfer_rename">Yeniden adlandır</string>
