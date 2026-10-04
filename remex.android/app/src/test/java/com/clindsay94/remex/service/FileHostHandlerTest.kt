@@ -7,6 +7,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -116,6 +117,9 @@ class FileHostHandlerTest {
         val roots: List<RootDescriptor>,
         val volumes: List<VolumeDescriptor> = emptyList(),
     ) : FileSystemFacade {
+        /** Replaces what a node streams on read, so a copy can be made to fail or stall part-way. */
+        var inputOverride: ((FileNode) -> InputStream)? = null
+
         override fun listRoots() = roots
         override fun listVolumes() = volumes
         override fun resolve(rootId: String, relativePath: String): FileNode? {
@@ -137,7 +141,7 @@ class FileHostHandlerTest {
         }
 
         override fun openInput(node: FileNode): InputStream =
-            ByteArrayInputStream((node as FakeNode).content)
+            inputOverride?.invoke(node) ?: ByteArrayInputStream((node as FakeNode).content)
 
         override fun openOutput(node: FileNode): OutputStream =
             object : ByteArrayOutputStream() {
@@ -153,17 +157,21 @@ class FileHostHandlerTest {
     private class FakeRoots(
         val granted: Boolean,
         val roots: List<RootDescriptor>,
+        val volumes: List<VolumeDescriptor> = emptyList(),
         /** "Let your PC change files" (RemEx-fgmne). A test flips it to prove it is read per request. */
         @Volatile var pcChangeAllowed: Boolean = true,
     ) : SharedRootsProvider {
         override fun sharedRoots() = roots
-        override fun fullBrowseVolumes(): List<VolumeDescriptor> = emptyList()
+        override fun fullBrowseVolumes(): List<VolumeDescriptor> = volumes
         override fun isFullBrowseGranted() = granted
         override fun isPcChangeAllowed() = pcChangeAllowed
     }
 
     /** The provider behind the handler most recently built, so a test can flip the switch afterwards. */
     private var lastRoots: FakeRoots? = null
+
+    /** The facade behind the handler most recently built, so a test can make reads fail or stall. */
+    private var lastFacade: FakeFacade? = null
 
     private class CapturingSender : ControlMessageSender {
         val sent = mutableListOf<String>()
@@ -289,9 +297,17 @@ class FileHostHandlerTest {
         maxUnackedBytes: Long = FileTransferLimits.MAX_UNACKED_BYTES.toLong(),
         /** The person's "Let your PC change files" switch. On by default so the older manage tests still run. */
         pcChangesAllowed: Boolean = true,
+        /** The scope the handler launches background work on; Unconfined runs it inline, like the old code. */
+        scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
+        /** A whole-device (full-browse) volume the facade can resolve but that is NOT a shared folder. */
+        volumeRootId: String? = null,
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
-        val provider = FakeRoots(granted, roots, pcChangesAllowed).also { lastRoots = it }
-        val facade = FakeFacade(root, roots)
+        val volumes = listOfNotNull(
+            volumeRootId?.let { VolumeDescriptor(id = it, label = "Device", path = it, totalBytes = 0L, freeBytes = 0L, kind = "root") },
+        )
+        val provider = FakeRoots(granted, roots, volumes, pcChangesAllowed).also { lastRoots = it }
+        val facadeRoots = roots + listOfNotNull(volumeRootId?.let { RootDescriptor(it, "Device", true, true, true, true, false) })
+        val facade = FakeFacade(root, facadeRoots, volumes).also { lastFacade = it }
         val sender = CapturingSender()
         val mutator = FakeMutator()
         val handler =
@@ -304,7 +320,7 @@ class FileHostHandlerTest {
                 // Numbered, because a test may build more than one handler - a refusal followed by the
                 // retry that succeeds, for instance - and newFolder("staging") throws on the second.
                 stagingDir = tmp.newFolder("staging-${stagingSeq++}"),
-                scope = CoroutineScope(Dispatchers.Unconfined),
+                scope = scope,
                 pushConsent = pushConsent,
                 onPushRefused = { pushRefusals.add(it) },
                 onPushReceived = { name, uri -> pushArrivals.add(name to uri) },
@@ -710,6 +726,261 @@ class FileHostHandlerTest {
 
         assertTrue(succeeded(sender))
         assertNotNull(tree.children["Top"])
+    }
+
+    // ── Replace, failure, cancellation and scope (RemEx-fgmne security review) ─────────
+
+    private fun docsOf(tree: FakeNode) = tree.children["Docs"] as FakeNode
+
+    private fun names(node: FakeNode) = node.children.keys.toList().sorted()
+
+    private fun manageResponses(sender: CapturingSender) =
+        sender.sent.toList().map { JSONObject(it) }.filter { it.optString("type") == "file_manage_response" }
+
+    /** Streams [content] one small piece at a time, and runs [onRead] before each piece after the first. */
+    private fun slowInput(content: ByteArray, onRead: (Int) -> Unit): InputStream {
+        val real = ByteArrayInputStream(content)
+        return object : InputStream() {
+            var reads = 0
+            override fun read(): Int = real.read()
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (reads++ >= 1) onRead(reads)
+                return real.read(b, off, minOf(len, 1024))
+            }
+        }
+    }
+
+    private fun bigTree(): FakeNode {
+        val tree = sampleTree()
+        val docs = docsOf(tree)
+        docs.children["report.txt"]!!.content = ByteArray(200 * 1024) { 'r'.code.toByte() }
+        return tree
+    }
+
+    @Test
+    fun copyOrMoveOntoItself_withReplace_isRefusedAndTheFileSurvives() = runBlocking {
+        for (operation in listOf("copy", "move")) {
+            for (destination in listOf("Docs/report.txt", "/Docs/report.txt")) {
+                val tree = sampleTree()
+                val docs = docsOf(tree)
+                val (h, sender, _) = build(tree)
+
+                h.handleControlMessage(
+                    manage(
+                        "self",
+                        """"relativePath":"Docs/report.txt","operation":"$operation","destinationPath":${JSONObject.quote(destination)},"overwrite":true""",
+                    ),
+                )
+
+                assertFalse("$operation onto itself ($destination) must be refused", succeeded(sender))
+                assertEquals("hello", String(docs.children["report.txt"]!!.content))
+                assertEquals(listOf("report.txt"), names(docs))
+            }
+        }
+    }
+
+    @Test
+    fun aReplaceNeverDeletesAFolder_WhateverTheOverwriteFlagSays() = runBlocking {
+        for (overwrite in listOf(true, false)) {
+            val tree = sampleTree()
+            val docs = docsOf(tree)
+            val folder = FakeNode("Folder", true, parent = docs)
+            folder.children["keep.txt"] = FakeNode("keep.txt", false, content = "keep".toByteArray(), parent = folder)
+            docs.children["Folder"] = folder
+            val (h, sender, _) = build(tree)
+
+            h.handleControlMessage(
+                manage(
+                    "dir",
+                    """"relativePath":"Docs/report.txt","operation":"move","destinationPath":"Docs/Folder","overwrite":$overwrite""",
+                ),
+            )
+
+            assertFalse("a folder is never replaced by a file (overwrite=$overwrite)", succeeded(sender))
+            assertNotNull("the folder's contents must survive", folder.children["keep.txt"])
+            assertNotNull("a refused move must leave the source", docs.children["report.txt"])
+        }
+    }
+
+    @Test
+    fun replacingAFile_putsTheNewBytesInPlace_andLeavesNoTemporaryFile() = runBlocking {
+        for (operation in listOf("copy", "move")) {
+            val tree = sampleTree()
+            val docs = docsOf(tree)
+            docs.children["copy.txt"] = FakeNode("copy.txt", false, content = "old".toByteArray(), parent = docs)
+            val (h, sender, _) = build(tree)
+
+            h.handleControlMessage(
+                manage(
+                    "rep",
+                    """"relativePath":"Docs/report.txt","operation":"$operation","destinationPath":"Docs/copy.txt","overwrite":true""",
+                ),
+            )
+
+            assertTrue("$operation with replace must succeed", succeeded(sender))
+            assertEquals("hello", String(docs.children["copy.txt"]!!.content))
+            val expected = if (operation == "copy") listOf("copy.txt", "report.txt") else listOf("copy.txt")
+            assertEquals("no temporary or backup file may be left", expected, names(docs))
+        }
+    }
+
+    @Test
+    fun aReplaceThatFailsMidCopy_leavesTheOldFileUntouched_andNoPartialBehind() = runBlocking {
+        val tree = bigTree()
+        val docs = docsOf(tree)
+        docs.children["copy.txt"] = FakeNode("copy.txt", false, content = "old".toByteArray(), parent = docs)
+        val (h, sender, _) = build(tree)
+        lastFacade!!.inputOverride = { node ->
+            slowInput((node as FakeNode).content) { throw java.io.IOException("/storage/emulated/0/Secret/report.txt") }
+        }
+
+        h.handleControlMessage(
+            manage(
+                "fail",
+                """"relativePath":"Docs/report.txt","operation":"move","destinationPath":"Docs/copy.txt","overwrite":true""",
+            ),
+        )
+
+        assertFalse(succeeded(sender))
+        assertEquals("the file being replaced must be untouched", "old", String(docs.children["copy.txt"]!!.content))
+        assertNotNull("a failed move must keep the source", docs.children["report.txt"])
+        assertEquals(listOf("copy.txt", "report.txt"), names(docs))
+    }
+
+    @Test
+    fun aPlainCopyThatFailsMidCopy_leavesNoPartialFile_andNeverSendsTheProvidersText() = runBlocking {
+        val tree = bigTree()
+        val docs = docsOf(tree)
+        val (h, sender, _) = build(tree)
+        lastFacade!!.inputOverride = { node ->
+            slowInput((node as FakeNode).content) { throw java.io.IOException("/storage/emulated/0/Secret/report.txt") }
+        }
+
+        h.handleControlMessage(
+            manage("part", """"relativePath":"Docs/report.txt","operation":"copy","destinationPath":"Docs/copy.txt""""),
+        )
+
+        assertFalse(succeeded(sender))
+        assertEquals(listOf("report.txt"), names(docs))
+        val text = refusalText(sender)
+        assertEquals(MANAGE_FAILED_MESSAGE, text)
+        assertFalse("an absolute path must never reach the PC", text.contains("/storage"))
+    }
+
+    @Test
+    fun aCopyThatIsCancelled_leavesNoPartialFile_andSendsNothing() = runBlocking {
+        val scope = CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Unconfined)
+        val tree = bigTree()
+        val docs = docsOf(tree)
+        docs.children["copy.txt"] = FakeNode("copy.txt", false, content = "old".toByteArray(), parent = docs)
+        val (h, sender, _) = build(tree, scope = scope)
+        lastFacade!!.inputOverride = { node ->
+            slowInput((node as FakeNode).content) { n -> if (n == 3) scope.cancel() }
+        }
+
+        h.handleControlMessage(
+            manage(
+                "cancel",
+                """"relativePath":"Docs/report.txt","operation":"copy","destinationPath":"Docs/copy.txt","overwrite":true""",
+            ),
+        )
+
+        assertTrue("a cancelled copy answers nothing", manageResponses(sender).isEmpty())
+        assertEquals("old", String(docs.children["copy.txt"]!!.content))
+        assertEquals("the partial target must be deleted on cancellation", listOf("copy.txt", "report.txt"), names(docs))
+    }
+
+    @Test
+    fun aLongCopy_doesNotHoldUpTheRequestsBehindIt() {
+        val scope = CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val tree = bigTree()
+        val (h, sender, _) = build(tree, scope = scope)
+        lastFacade!!.inputOverride = { node ->
+            slowInput((node as FakeNode).content) { release.await(10, java.util.concurrent.TimeUnit.SECONDS) }
+        }
+
+        try {
+            runBlocking {
+                h.handleControlMessage(
+                    manage("long", """"relativePath":"Docs/report.txt","operation":"copy","destinationPath":"Docs/copy.txt""""),
+                )
+                // The copy is parked on its second read. The collector must be free to answer a browse.
+                h.handleControlMessage(
+                    """{"type":"file_browse_request","fileBrowseRequest":{"requestId":"b1","rootId":"root1","relativePath":"Docs"}}""",
+                )
+            }
+            assertTrue(
+                "the browse must be answered while the copy is still running",
+                sender.sent.toList().any { JSONObject(it).optString("type") == "file_browse_response" },
+            )
+            assertTrue("the copy must not have answered yet", manageResponses(sender).isEmpty())
+        } finally {
+            release.countDown()
+        }
+
+        var answered = false
+        for (attempt in 0 until 200) {
+            answered = runCatching { manageResponses(sender).isNotEmpty() }.getOrDefault(false)
+            if (answered) break
+            Thread.sleep(25)
+        }
+        assertTrue("the copy must finish in the background", answered)
+        assertTrue(succeeded(sender))
+        scope.cancel()
+    }
+
+    @Test
+    fun theWholeDeviceView_isReadOnlyFromThePc_forEveryOperation() = runBlocking {
+        for ((operation, body) in manageBodies) {
+            val tree = sampleTree()
+            val before = snapshot(tree)
+            val (h, sender, _) = build(tree, volumeRootId = "vol1")
+
+            h.handleControlMessage(
+                """{"type":"file_manage_request","fileManageRequest":{"requestId":"v","rootId":"vol1",$body}}""",
+            )
+
+            assertFalse("$operation through the whole-device view must be refused", succeeded(sender))
+            assertEquals(FULL_BROWSE_READ_ONLY_MESSAGE, refusalText(sender))
+            assertEquals("$operation must leave every file alone", before, snapshot(tree))
+        }
+    }
+
+    @Test
+    fun aNewNameWithAnInvisibleOrDirectionChangingCharacter_isRefused() = runBlocking {
+        val spoofed = listOf("evil‮fdp.exe", "a​b", "a\u0007b", "x⁦y")
+        for (name in spoofed) {
+            val quoted = JSONObject.quote(name)
+            for (body in listOf(
+                """"relativePath":"Docs/report.txt","operation":"rename","newName":$quoted""",
+                """"relativePath":"Docs","operation":"mkdir","newName":$quoted""",
+                """"relativePath":"Docs/report.txt","operation":"copy","destinationPath":${JSONObject.quote("Docs/$name")}""",
+            )) {
+                val tree = sampleTree()
+                val before = snapshot(tree)
+                val (h, sender, _) = build(tree)
+
+                h.handleControlMessage(manage("sp", body))
+
+                assertFalse("'$name' must be refused", succeeded(sender))
+                assertEquals(before, snapshot(tree))
+            }
+        }
+    }
+
+    @Test
+    fun aFileThatAlreadyHasAJoinerInItsName_canStillBeDeleted() = runBlocking {
+        val tree = sampleTree()
+        val docs = docsOf(tree)
+        val family = "family‍.txt" // an emoji-style joiner: legitimate in an existing name
+        docs.children[family] = FakeNode(family, false, content = "x".toByteArray(), parent = docs)
+        val (h, sender, _) = build(tree)
+
+        h.handleControlMessage(manage("zwj", """"relativePath":${JSONObject.quote("Docs/$family")},"operation":"delete""""))
+
+        assertTrue(succeeded(sender))
+        assertNull(docs.children[family])
     }
 
     @Test

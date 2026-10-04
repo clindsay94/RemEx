@@ -1677,5 +1677,5 @@
     <string name="cd_background_intensity">Arka plan yoğunluğu</string>
     <string name="personalization_background_note">Animasyonlu arka planlar uygulama arka plandayken, Pil Tasarrufu açıkken veya animasyonlar kapalıyken durur.</string>
     <string name="settings_ft_pc_changes_title">PC\'nizin dosyaları değiştirmesine izin ver</string>
-    <string name="settings_ft_pc_changes_desc">PC\'niz paylaştığınız klasörlerdeki dosyaları yeniden adlandırabilir, taşıyabilir, kopyalayabilir ve silebilir; yeni klasörler oluşturabilir. Silinen dosyalar kalıcı olarak gider. Salt okunur paylaşılan klasörler asla değişmez.</string>
+    <string name="settings_ft_pc_changes_desc">PC\'niz paylaştığınız klasörlerin içinde dosya ve klasör oluşturabilir, yeniden adlandırabilir, taşıyabilir, kopyalayabilir ve silebilir. Silme kalıcıdır ve bir klasörü silmek içindeki her şeyi siler. Tüm cihazı gezme özelliği salt okunur kalır.</string>
 </resources>

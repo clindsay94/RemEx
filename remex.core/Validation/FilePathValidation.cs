@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Remex.Core.Validation;
 
 /// <summary>
@@ -170,8 +172,9 @@ public static class FilePathValidation
     }
 
     /// <summary>
-    /// The longest single name a phone's storage accepts (NAME_MAX on ext4/f2fs). Mirrors
-    /// <c>SharedPathPolicy.MAX_SEGMENT_LENGTH</c> on the phone, so both sides refuse the same names.
+    /// The longest single name a phone's storage accepts, in UTF-8 BYTES (NAME_MAX on ext4/f2fs counts
+    /// bytes, so 128 two-byte characters are already too long). Mirrors <c>SharedPathPolicy.MAX_SEGMENT_LENGTH</c>
+    /// on the phone, which counts the same way.
     /// </summary>
     public const int MaxRemoteNameLength = 255;
 
@@ -179,65 +182,41 @@ public static class FilePathValidation
     public const int MaxRemotePathSegments = 64;
 
     /// <summary>
-    /// Validates a single NAME for a file or folder on ANOTHER device — the phone — before the PC asks
-    /// for it to be created or renamed there (RemEx-fgmne). Mirrors the phone's own
-    /// <c>SharedPathPolicy.isSafeName</c>, and both sides run it: the phone is the one that cannot be
+    /// Validates a NEW name for a file or folder on ANOTHER device — the phone — before the PC asks for it
+    /// to be created or renamed there (RemEx-fgmne). Mirrors the phone's own
+    /// <c>SharedPathPolicy.isSafeNewName</c>, and both sides run it: the phone is the one that cannot be
     /// talked around, and this one stops the PC sending what it already knows will be refused.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Deliberately NOT <see cref="IsValidFileName"/>. That one applies THIS machine's invalid-character
     /// list, which on Windows would refuse <c>:</c>, <c>?</c> and <c>"</c> — all ordinary in an Android
     /// file name — while checking nothing about length. What matters for a name headed to a phone is
-    /// that it is a NAME and not a path: no separator, no <c>.</c>/<c>..</c>, no NUL or control
-    /// character, and no longer than the phone's filesystem takes.
+    /// that it is a NAME and not a path: no separator, no <c>.</c>/<c>..</c>, no control character, and
+    /// no longer than the phone's filesystem takes.
+    /// </para>
+    /// <para>
+    /// ALSO NO UNICODE FORMAT CHARACTER (<see cref="UnicodeCategory.Format"/>: U+202E right-to-left
+    /// override, U+200B zero-width space, ...). They make a name read as something it is not, in a
+    /// listing and in the delete confirmation. This rule is for names the PC INVENTS; the names of files
+    /// that already exist go through <see cref="IsValidRemoteRelativePath"/>, which does not apply it, so a
+    /// file whose name holds an emoji joined with U+200D can still be browsed and deleted.
+    /// </para>
     /// </remarks>
-    public static bool IsValidRemoteName(string? name, out string? error)
-    {
-        error = null;
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            error = "Name cannot be empty.";
-            return false;
-        }
-
-        if (name is "." or "..")
-        {
-            error = "Name cannot be '.' or '..'.";
-            return false;
-        }
-
-        if (name.Length > MaxRemoteNameLength)
-        {
-            error = "Name is too long.";
-            return false;
-        }
-
-        if (name.IndexOf('/') >= 0 || name.IndexOf('\\') >= 0)
-        {
-            error = "Name cannot contain a path separator.";
-            return false;
-        }
-
-        foreach (var c in name)
-        {
-            if (char.IsControl(c))
-            {
-                error = "Name contains invalid characters.";
-                return false;
-            }
-        }
-
-        return true;
-    }
+    public static bool IsValidRemoteName(string? name, out string? error) =>
+        CheckRemoteSegment(name, forNewName: true, out error);
 
     /// <summary>
     /// Validates a '/'-separated path under a phone's shared folder: empty (the folder itself) is fine;
-    /// every segment must be a real name (<see cref="IsValidRemoteName"/>), so <c>..</c>, a backslash,
-    /// a NUL, an empty middle segment (<c>a//b</c>) or a segment over the cap refuses the whole path.
-    /// One leading and one trailing '/' run is trimmed first, because a root-relative path may be
-    /// written either way.
+    /// every segment must be a real name, so <c>..</c>, a backslash, a control character, an empty middle
+    /// segment (<c>a//b</c>) or a segment over the byte cap refuses the whole path. One leading and one
+    /// trailing '/' run is trimmed first, because a root-relative path may be written either way.
     /// </summary>
+    /// <remarks>
+    /// Names of things that ALREADY EXIST are accepted with a format character in them (see
+    /// <see cref="IsValidRemoteName"/>); pass the FINAL segment of a path that names something new through
+    /// <see cref="IsValidRemoteName"/> as well.
+    /// </remarks>
     public static bool IsValidRemoteRelativePath(string? relativePath, out string? error)
     {
         error = null;
@@ -254,9 +233,50 @@ public static class FilePathValidation
 
         foreach (var segment in segments)
         {
-            if (!IsValidRemoteName(segment, out var segmentError))
+            if (!CheckRemoteSegment(segment, forNewName: false, out var segmentError))
             {
                 error = segmentError;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool CheckRemoteSegment(string? name, bool forNewName, out string? error)
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            error = "Name cannot be empty.";
+            return false;
+        }
+
+        if (name is "." or "..")
+        {
+            error = "Name cannot be '.' or '..'.";
+            return false;
+        }
+
+        if (System.Text.Encoding.UTF8.GetByteCount(name) > MaxRemoteNameLength)
+        {
+            error = "Name is too long.";
+            return false;
+        }
+
+        if (name.IndexOf('/') >= 0 || name.IndexOf('\\') >= 0)
+        {
+            error = "Name cannot contain a path separator.";
+            return false;
+        }
+
+        foreach (var c in name)
+        {
+            if (char.IsControl(c)
+                || (forNewName && char.GetUnicodeCategory(c) == UnicodeCategory.Format))
+            {
+                error = "Name contains invalid characters.";
                 return false;
             }
         }

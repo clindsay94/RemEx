@@ -196,6 +196,46 @@ public class FilePathValidationTests
     }
 
     [Fact]
+    public void IsValidRemoteName_CountsUtf8Bytes_NotCharacters()
+    {
+        // NAME_MAX limits bytes: 127 two-byte characters are 254 bytes, 128 are 256.
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('é', 127), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('é', 128), out var error));
+        Assert.Equal("Name is too long.", error);
+        // Three-byte characters: 85 is 255 bytes, 86 is 258.
+        Assert.True(FilePathValidation.IsValidRemoteName(new string('日', 85), out _));
+        Assert.False(FilePathValidation.IsValidRemoteName(new string('日', 86), out _));
+    }
+
+    [Theory]
+    [InlineData("evil‮fdp.exe")] // right-to-left override: reads as ".../exe.pdf" style spoofs
+    [InlineData("a​b")]          // zero-width space
+    [InlineData("a⁦b")]          // left-to-right isolate
+    [InlineData("﻿name")]        // byte order mark
+    [InlineData("a\u0007b")]          // bell
+    [InlineData("a\u0085b")]          // next line (C1 control)
+    public void IsValidRemoteName_RefusesInvisibleAndDirectionChangingCharacters(string name)
+    {
+        Assert.False(FilePathValidation.IsValidRemoteName(name, out var error));
+        Assert.Equal("Name contains invalid characters.", error);
+    }
+
+    [Fact]
+    public void IsValidRemoteName_StillAcceptsOrdinaryUnicodeNames()
+    {
+        Assert.True(FilePathValidation.IsValidRemoteName("été 日本 مرحبا.txt", out _));
+    }
+
+    [Fact]
+    public void IsValidRemoteRelativePath_AcceptsAnExistingNameWithAJoiner_ButRefusesControlCharacters()
+    {
+        // The path names something that ALREADY exists: an emoji joined with U+200D must stay deletable.
+        Assert.True(FilePathValidation.IsValidRemoteRelativePath("DCIM/family‍.txt", out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("DCIM/a\u0007b", out _));
+        Assert.False(FilePathValidation.IsValidRemoteRelativePath("DCIM/" + new string('é', 128), out _));
+    }
+
+    [Fact]
     public void IsValidRemoteRelativePath_RefusesAnOverlongSegmentAndAnAbsurdDepth()
     {
         Assert.False(FilePathValidation.IsValidRemoteRelativePath("a/" + new string('x', FilePathValidation.MaxRemoteNameLength + 1), out _));

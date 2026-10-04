@@ -1675,5 +1675,5 @@
     <string name="cd_background_intensity">Intensidad del fondo</string>
     <string name="personalization_background_note">Los fondos animados se detienen cuando la app está en segundo plano, cuando el Ahorro de batería está activado o cuando las animaciones están desactivadas.</string>
     <string name="settings_ft_pc_changes_title">Permitir que tu PC cambie archivos</string>
-    <string name="settings_ft_pc_changes_desc">Tu PC podrá renombrar, mover, copiar y eliminar archivos de las carpetas que compartes, y crear carpetas nuevas. Los archivos eliminados se pierden para siempre. Las carpetas compartidas como solo lectura nunca cambian.</string>
+    <string name="settings_ft_pc_changes_desc">Tu PC podrá crear, renombrar, mover, copiar y eliminar archivos y carpetas dentro de las carpetas que compartes. Eliminar es permanente, y al eliminar una carpeta se elimina todo lo que contiene. La exploración de todo el dispositivo sigue siendo de solo lectura.</string>
 </resources>

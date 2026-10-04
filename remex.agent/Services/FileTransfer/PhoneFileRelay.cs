@@ -480,8 +480,14 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
                 {
                     return "a destination is required";
                 }
-                return FilePathValidation.IsValidRemoteRelativePath(request.DestinationPath, out var destError)
-                    ? null : $"destinationPath: {destError}";
+                if (!FilePathValidation.IsValidRemoteRelativePath(request.DestinationPath, out var destError))
+                    return $"destinationPath: {destError}";
+                // The last segment is a NEW name, so it gets the stricter rule (no invisible or
+                // direction-changing characters); the folders above it already exist.
+                var destination = request.DestinationPath.Trim('/');
+                var finalName = destination[(destination.LastIndexOf('/') + 1)..];
+                return FilePathValidation.IsValidRemoteName(finalName, out var finalError)
+                    ? null : $"destinationPath: {finalError}";
 
             default:
                 return "that operation is not one the phone is sent";

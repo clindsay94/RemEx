@@ -333,6 +333,12 @@ public sealed class PhoneFileRelayTests
         ManageRequest("m", FileManageOperations.Copy, destinationPath: "DCIM\\escape.jpg"),
         ManageRequest("m", FileManageOperations.Copy, destinationPath: null),
         ManageRequest("m", FileManageOperations.Move, relativePath: "", destinationPath: "DCIM/x"),
+        // A name the PC invents may not be invisible, direction-changing or over the byte cap.
+        ManageRequest("m", FileManageOperations.Rename, newName: "evil‮fdp.exe"),
+        ManageRequest("m", FileManageOperations.Mkdir, relativePath: "DCIM", newName: "a​b"),
+        ManageRequest("m", FileManageOperations.Rename, newName: new string('é', 128)),
+        ManageRequest("m", FileManageOperations.Move, destinationPath: "DCIM/x‮.jpg"),
+        ManageRequest("m", FileManageOperations.Copy, destinationPath: "DCIM/" + new string('é', 128)),
         ManageRequest("m", "chmod"),
         ManageRequest("m", FileManageOperations.Delete, rootId: ""),
         ManageRequest("", FileManageOperations.Delete),
@@ -350,6 +356,20 @@ public sealed class PhoneFileRelayTests
         await Assert.ThrowsAsync<PhoneFileRequestRefusedException>(() => connection.SendAsync(request));
 
         Assert.Empty(socket.MessagesOfType(MessageTypes.FileManageRequest));
+    }
+
+    [Fact]
+    public async Task Delete_OfAFileWhoseExistingNameHoldsAJoiner_IsStillRelayed()
+    {
+        // The stricter new-name rule must not strand a file that already has U+200D in its name.
+        using var kit = new PhoneRelayTestKit();
+        var (socket, _) = kit.ConnectProvenPhone(PhoneA);
+        using var connection = kit.Relay.Open(PhoneA);
+        await PhoneSaysAsync(kit, connection, allowsChanges: true);
+
+        await connection.SendAsync(ManageRequest("m", FileManageOperations.Delete, relativePath: "DCIM/family‍.jpg"));
+
+        Assert.Single(socket.MessagesOfType(MessageTypes.FileManageRequest));
     }
 
     [Fact]

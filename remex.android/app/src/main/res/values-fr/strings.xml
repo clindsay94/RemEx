@@ -1675,5 +1675,5 @@
     <string name="cd_background_intensity">Intensité de l’arrière-plan</string>
     <string name="personalization_background_note">Les arrière-plans animés se mettent en pause quand l’app est en arrière-plan, quand l’économiseur de batterie est activé ou quand les animations sont désactivées.</string>
     <string name="settings_ft_pc_changes_title">Autoriser votre PC à modifier les fichiers</string>
-    <string name="settings_ft_pc_changes_desc">Votre PC pourra renommer, déplacer, copier et supprimer des fichiers dans les dossiers que vous partagez, et créer de nouveaux dossiers. Les fichiers supprimés sont perdus définitivement. Les dossiers partagés en lecture seule ne changent jamais.</string>
+    <string name="settings_ft_pc_changes_desc">Votre PC pourra créer, renommer, déplacer, copier et supprimer des fichiers et des dossiers dans les dossiers que vous partagez. La suppression est définitive, et supprimer un dossier supprime tout son contenu. La navigation sur tout l\'appareil reste en lecture seule.</string>
 </resources>

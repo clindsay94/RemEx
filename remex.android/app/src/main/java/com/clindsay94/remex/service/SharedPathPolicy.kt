@@ -69,13 +69,27 @@ object SharedPathPolicy {
         return if (names.all { isSafeName(it) }) names else null
     }
 
-    /** True when [name] can be one name in a path under a shared root. */
+    /**
+     * True when [name] can be one name in a path under a shared root. The cap counts UTF-8 BYTES, because
+     * that is what NAME_MAX limits on ext4/f2fs: 128 two-byte characters are already too long.
+     */
     fun isSafeName(name: String): Boolean =
         name.isNotBlank() &&
             name != "." &&
             name != ".." &&
-            name.length <= MAX_SEGMENT_LENGTH &&
+            name.toByteArray(Charsets.UTF_8).size <= MAX_SEGMENT_LENGTH &&
             !name.contains('\\') &&
             !name.contains('/') &&
             name.indexOf('\u0000') < 0
+
+    /**
+     * True when [name] may be given to something NEW or RENAMED by the PC (RemEx-fgmne): everything
+     * [isSafeName] requires, and no control character and no Unicode FORMAT character (U+202E right-to-left
+     * override, U+200B zero-width space, ...). Those make a name read as something it is not in a listing
+     * or a delete confirmation. Deliberately NOT part of [isSafeName]: a file that already exists with
+     * such a character in its name (an emoji joined with U+200D) must still be found, browsed and deleted.
+     */
+    fun isSafeNewName(name: String): Boolean =
+        isSafeName(name) &&
+            name.none { Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() }
 }

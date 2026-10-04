@@ -124,6 +124,31 @@ class SharedPathPolicyTest {
     }
 
     @Test
+    fun theNameCap_countsUtf8Bytes_notCharacters() {
+        // NAME_MAX limits BYTES: 127 two-byte characters are 254 bytes, 128 are 256.
+        assertTrue(SharedPathPolicy.isSafeName("é".repeat(127)))
+        assertFalse(SharedPathPolicy.isSafeName("é".repeat(128)))
+        assertTrue(SharedPathPolicy.isSafeName("x".repeat(SharedPathPolicy.MAX_SEGMENT_LENGTH)))
+        assertFalse(SharedPathPolicy.isSafeName("x".repeat(SharedPathPolicy.MAX_SEGMENT_LENGTH + 1)))
+    }
+
+    @Test
+    fun aNewName_refusesInvisibleDirectionChangingAndControlCharacters() {
+        for (name in listOf("evil‮fdp.exe", "a​b", "x⁦y", "a\u0007b", "a\u0085b")) {
+            assertFalse("'$name' must not be accepted as a NEW name", SharedPathPolicy.isSafeNewName(name))
+        }
+        assertTrue(SharedPathPolicy.isSafeNewName("Holiday photos (2026).jpg"))
+        assertTrue(SharedPathPolicy.isSafeNewName("été 日本.txt"))
+    }
+
+    @Test
+    fun anExistingName_withAJoiner_isStillResolvable() {
+        // isSafeName is what browsing and deleting use; it must not strand a file whose name holds U+200D.
+        assertTrue(SharedPathPolicy.isSafeName("family‍.txt"))
+        assertFalse(SharedPathPolicy.isSafeNewName("family‍.txt"))
+    }
+
+    @Test
     fun resolveSegments_refusesEveryUnsafeName() {
         for (path in listOf(
             ".", "..", "Camera/..", "Camera/../Download", "./Camera", "Camera/./IMG_1.jpg",

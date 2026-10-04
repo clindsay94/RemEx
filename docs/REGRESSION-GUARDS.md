@@ -1536,7 +1536,7 @@ owner never agreed:
   the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected
   in RemEx-xt0af).
 - **Only the allowlisted request types are relayed** (`RelayedRequests`, derived from `RequestForReply`,
-  `PhoneFileRelay.cs:71-79`): the seven read-only ones plus `file_manage_request`. `file_root_manage_request`
+  `PhoneFileRelay.cs:58-79`): the seven read-only ones plus `file_manage_request`. `file_root_manage_request`
   (which folders a phone shares) and hashing stay out; `TheAllowlist_HoldsTheSevenReadOnlyTypesAndManage_AndNotRootManagement`
   and `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
   decision, not a fix.

@@ -2232,10 +2232,6 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _client.SupportsV3 && SelectedRemoteEntry is { Name: not ".." } && SelectedRemoteRoot is not null && IsSourceConnected;
 
     /// <summary>
-    /// Words a failed phone request for the person at the PC (RemEx-xt0af). The phone's own settings
-    /// decide what it shares, so every refusal points there rather than at this PC.
-    /// </summary>
-    /// <summary>
     /// A rename or delete on a phone that did not happen. When the phone itself refused, its own words
     /// are shown as it wrote them ("A file with that name already exists."): it writes its refusals for
     /// people, the same promise the other phone refusals here rely on. Everything else - unreachable,
@@ -2252,6 +2248,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         ShowPhoneFailure(ex);
     }
 
+    /// <summary>
+    /// Words a failed phone request for the person at the PC (RemEx-xt0af). The phone's own settings
+    /// decide what it shares, so every refusal points there rather than at this PC.
+    /// </summary>
     private void ShowPhoneFailure(Exception ex)
     {
         var key = ex switch
