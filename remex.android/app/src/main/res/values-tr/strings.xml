@@ -536,10 +536,13 @@
     <string name="file_transfer_upload_failed">Dosya gönderilemedi. Bilgisayarınızın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_uploading_single">%1$s yükleniyor…</string>
     <string name="font_inter">Inter</string>
-    <string name="font_jetbrains_mono">JetBrains Mono</string>
     <string name="font_caskaydia_cove_nerd">CaskaydiaCove Nerd Font</string>
     <string name="font_hack_nerd">Hack Nerd Font</string>
     <string name="font_iosevka_nerd">Iosevka Nerd Font</string>
+    <string name="font_jetbrains_mono_nerd">JetBrainsMono Nerd Font</string>
+    <string name="font_fira_code_nerd">FiraCode Nerd Font</string>
+    <string name="font_meslo_lgs_nerd">MesloLGS Nerd Font</string>
+    <string name="font_victor_mono_nerd">VictorMono Nerd Font</string>
     <string name="font_lato">Lato</string>
     <string name="font_lexend">Lexend</string>
     <string name="font_montserrat">Montserrat</string>

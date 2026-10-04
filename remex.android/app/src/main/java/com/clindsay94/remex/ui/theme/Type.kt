@@ -33,7 +33,7 @@ data class AppFontOption(val key: String, @StringRes val labelRes: Int)
 /**
  * The fonts the app can draw in (RemEx-pp4cm.15). Labels are plain family names, never translated.
  * Two sources: Google Fonts, downloaded on demand through the Play Services provider, and the Nerd
- * Fonts, which Google Fonts does not carry, so they ship in `res/font` as Latin, Latin-Extended,
+ * Fonts (the "Nerd Font Mono" builds; MesloLGS is the small-line-gap Meslo), which Google Fonts does not carry, so they ship in `res/font` as Latin, Latin-Extended,
  * Greek, Cyrillic, punctuation, arrows, box-drawing and Powerline subsets (the full files are about
  * 3 MB each; Iosevka's is 14 MB). Their licences travel in `assets/licenses`.
  */
@@ -50,7 +50,10 @@ object AppFonts {
         AppFontOption("space_grotesk", R.string.font_space_grotesk),
         AppFontOption("syne", R.string.font_syne),
         AppFontOption("lexend", R.string.font_lexend),
-        AppFontOption("jetbrains_mono", R.string.font_jetbrains_mono),
+        AppFontOption("jetbrains_mono_nerd", R.string.font_jetbrains_mono_nerd),
+        AppFontOption("fira_code_nerd", R.string.font_fira_code_nerd),
+        AppFontOption("meslo_lgs_nerd", R.string.font_meslo_lgs_nerd),
+        AppFontOption("victor_mono_nerd", R.string.font_victor_mono_nerd),
         AppFontOption("caskaydia_cove_nerd", R.string.font_caskaydia_cove_nerd),
         AppFontOption("hack_nerd", R.string.font_hack_nerd),
         AppFontOption("iosevka_nerd", R.string.font_iosevka_nerd),
@@ -61,7 +64,21 @@ object AppFonts {
         "caskaydia_cove_nerd" to (R.font.caskaydia_cove_nerd_regular to R.font.caskaydia_cove_nerd_bold),
         "hack_nerd" to (R.font.hack_nerd_regular to R.font.hack_nerd_bold),
         "iosevka_nerd" to (R.font.iosevka_nerd_regular to R.font.iosevka_nerd_bold),
+        "jetbrains_mono_nerd" to (R.font.jetbrains_mono_nerd_regular to R.font.jetbrains_mono_nerd_bold),
+        "fira_code_nerd" to (R.font.fira_code_nerd_regular to R.font.fira_code_nerd_bold),
+        "meslo_lgs_nerd" to (R.font.meslo_lgs_nerd_regular to R.font.meslo_lgs_nerd_bold),
+        "victor_mono_nerd" to (R.font.victor_mono_nerd_regular to R.font.victor_mono_nerd_bold),
     )
+
+    /**
+     * Keys an earlier version stored that now mean a bundled font: the Google Fonts "JetBrains Mono"
+     * entry became the JetBrainsMono Nerd Font, so a saved choice keeps its look and the picker still
+     * shows it selected.
+     */
+    private val renamedKeys: Map<String, String> = mapOf("jetbrains_mono" to "jetbrains_mono_nerd")
+
+    /** The key to store and show for [key]: lower-cased, with renamed keys moved to their new name. */
+    fun canonicalKey(key: String): String = key.lowercase().let { renamedKeys[it] ?: it }
 
     /**
      * The family for a stored key. Also answers keys that earlier versions offered and the picker no
@@ -69,7 +86,7 @@ object AppFonts {
      * the system default.
      */
     fun familyFor(key: String): FontFamily {
-        val k = key.lowercase()
+        val k = canonicalKey(key)
         bundled[k]?.let { (regular, bold) ->
             return FontFamily(ResourceFont(regular, FontWeight.Normal), ResourceFont(bold, FontWeight.Bold))
         }
@@ -90,7 +107,6 @@ object AppFonts {
             "space_grotesk" -> getGoogleFontFamily("Space Grotesk")
             "syne" -> getGoogleFontFamily("Syne")
             "lexend" -> getGoogleFontFamily("Lexend")
-            "jetbrains_mono" -> getGoogleFontFamily("JetBrains Mono")
             else -> FontFamily.Default
         }
     }

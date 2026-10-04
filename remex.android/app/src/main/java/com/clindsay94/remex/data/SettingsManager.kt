@@ -14,6 +14,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.clindsay94.remex.ui.screens.DashboardShapes
 import com.clindsay94.remex.ui.screens.sensors.GridWidth
+import com.clindsay94.remex.ui.theme.AppFonts
 import com.clindsay94.remex.ui.theme.CardShapes
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -263,7 +264,7 @@ class SettingsManager(val context: Context) {
                                                 ?: if (savedBefore) ThemeDefaults.Legacy.THEME_CONTRAST else ThemeDefaults.THEME_CONTRAST,
                                         dynamicColor = preferences[DYNAMIC_COLOR_KEY]
                                                 ?: if (savedBefore) ThemeDefaults.Legacy.DYNAMIC_COLOR else ThemeDefaults.DYNAMIC_COLOR,
-                                        fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
+                                        fontFamily = AppFonts.canonicalKey(preferences[FONT_FAMILY_KEY] ?: "default"),
                                         fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                                         cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: CardShapes.DEFAULT_CORNER_RADIUS_DP,
                                         cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
@@ -494,7 +495,7 @@ class SettingsManager(val context: Context) {
 
         val fontFamilyFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        preferences[FONT_FAMILY_KEY] ?: "default"
+                        AppFonts.canonicalKey(preferences[FONT_FAMILY_KEY] ?: "default")
                 }
 
         val cardCornerRadiusFlow: Flow<Int> =

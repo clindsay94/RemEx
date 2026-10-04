@@ -83,13 +83,17 @@ public class BundledFontFilesTests
     }
 
     /// <summary>
-    /// The phone also bundles three Nerd Font families (RemEx-pp4cm.15). Each carries its licence in
-    /// assets/licenses; Hack is MIT, the other two are OFL.
+    /// The phone also bundles seven Nerd Font families (RemEx-pp4cm.15). Each carries its licence in
+    /// assets/licenses; Hack is MIT, MesloLGS is Apache-2.0, the rest are OFL.
     /// </summary>
     [Theory]
     [InlineData("OFL-CaskaydiaCoveNerdFont.txt", "SIL Open Font License")]
     [InlineData("OFL-IosevkaNerdFont.txt", "SIL Open Font License")]
     [InlineData("LICENSE-HackNerdFont.txt", "MIT License")]
+    [InlineData("OFL-JetBrainsMonoNerdFont.txt", "SIL Open Font License")]
+    [InlineData("OFL-FiraCodeNerdFont.txt", "SIL Open Font License")]
+    [InlineData("OFL-VictorMonoNerdFont.txt", "SIL Open Font License")]
+    [InlineData("LICENSE-MesloLGSNerdFont.txt", "Apache License")]
     public void EveryBundledNerdFontHasItsLicence(string fileName, string expectedText)
     {
         var path = Path.Combine(RepoRoot(), "remex.android", "app", "src", "main", "assets", "licenses", fileName);
