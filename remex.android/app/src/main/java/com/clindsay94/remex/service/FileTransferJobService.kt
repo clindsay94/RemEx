@@ -253,7 +253,7 @@ class FileTransferJobService : JobService() {
 
     companion object {
         private const val TAG = "FileTransferJob"
-        private const val CHANNEL_ID = "remex_file_transfer"
+        private const val CHANNEL_ID = FileTransferNotificationManager.CHANNEL_ID
         private const val NOTIFICATION_ID = 1003
         private const val JOB_ID = 1003
 

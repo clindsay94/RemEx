@@ -17,7 +17,27 @@ import com.clindsay94.remex.share.FileOpener
 
 object FileTransferNotificationManager {
 
-    private const val CHANNEL_ID = "remex_file_transfer"
+    /**
+     * The transfer channel's id, now `_v2` (RemEx-pp4cm.8).
+     *
+     * A channel's importance cannot be raised once it exists, so the original `remex_file_transfer`
+     * (IMPORTANCE_LOW) could not be fixed in place. One UI files a LOW channel under "Silent" with no
+     * status-bar icon, so people saw "no notification" for downloads that WERE posted. A new id is the
+     * only way to change it for existing installs; [LEGACY_CHANNEL_ID] is deleted by
+     * [ensureTransferChannel] so the old, silent entry does not linger in the system settings.
+     */
+    internal const val CHANNEL_ID = "remex_file_transfer_v2"
+
+    /** The retired LOW-importance channel; only ever deleted, never posted to. */
+    internal const val LEGACY_CHANNEL_ID = "remex_file_transfer"
+
+    /**
+     * DEFAULT, not LOW, so the notification is listed with the alerting ones and shows its icon. The
+     * channel itself has no sound and no vibration, and every notification here is also
+     * setSilent/setOnlyAlertOnce, so DEFAULT never actually dings.
+     */
+    internal const val CHANNEL_IMPORTANCE = NotificationManager.IMPORTANCE_DEFAULT
+
     private const val NOTIFICATION_ID = 1002
 
     // Consent prompts use a separate high-importance channel (heads-up + sound) so a sensitive
@@ -560,7 +580,8 @@ object FileTransferNotificationManager {
      * channel that already exists, so the first declaration to run on a fresh install fixes it
      * permanently. A later edit to only one of two copies would therefore do nothing for existing
      * users and pick non-deterministically for new ones - and RemEx-ttum item 1 is exactly such an
-     * edit, since it proposes raising transfer alerts above IMPORTANCE_LOW.
+     * edit, since it proposes raising transfer alerts above IMPORTANCE_LOW. RemEx-pp4cm.8 made that
+     * edit by moving to a new channel id (see [CHANNEL_ID]) and deleting the old one here.
      */
     internal fun ensureTransferChannel(context: Context) {
 
@@ -568,7 +589,7 @@ object FileTransferNotificationManager {
                 NotificationChannel(
                                 CHANNEL_ID,
                                 context.getString(R.string.file_transfer_notification_channel_name),
-                                NotificationManager.IMPORTANCE_LOW,
+                                CHANNEL_IMPORTANCE,
                         )
                         .apply {
                             description =
@@ -576,10 +597,15 @@ object FileTransferNotificationManager {
                                             R.string.file_transfer_notification_channel_description
                                     )
                             setShowBadge(false)
+                            // Visible in the shade and status bar, but never audible.
+                            setSound(null, null)
+                            enableVibration(false)
                         }
 
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
+        // No-op when it is already gone, so this is safe on every call.
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
     }
 
     private fun canPostNotifications(context: Context): Boolean {

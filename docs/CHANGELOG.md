@@ -526,6 +526,11 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **Download notifications show up again on Samsung phones.** The file-transfer notification channel was
+  low importance, which One UI files under "Silent" with no status-bar icon, so downloads were announced but
+  looked like nothing happened. Transfers now use a new channel (`remex_file_transfer_v2`) at default
+  importance with sound and vibration off, so the icon and progress show without ever making a noise. The
+  old channel is deleted on startup. (RemEx-pp4cm.8)
 - **Phone comb review fixes.** The battery-settings button now has one tested launcher shared by the first-run
   tutorial and the routines notice (it falls back to the battery list and never crashes on a phone with no such
   screen). The address form no longer keeps one PC's Wake-on-LAN address when you connect to another, so a
