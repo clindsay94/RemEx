@@ -76,6 +76,24 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>True when there is at least one activity entry (drives the empty-state).</summary>
     public bool HasRecentActivity => ActivityService.Instance.Recent.Count > 0;
 
+    /// <summary>
+    /// The footer's "Status" line (RemEx-pp4cm.23). It used to bind <c>Connection.StatusText</c>, the
+    /// window's link to its OWN in-process host, so the footer read "No phone connected" over
+    /// "Status: Connected". With the link up and no phone attached it now says it is waiting for one.
+    /// </summary>
+    public string LinkStatusText => LinkStatusKey(Connection.IsConnected, Presence.HasNoPhone) is { } key
+        ? LocalizationService.Instance[key]
+        : Connection.StatusText;
+
+    /// <summary>The localization key the status line shows, or null to show the link's own status
+    /// text. Pure, so the rule can be tested without a live connection.</summary>
+    internal static string? LinkStatusKey(bool linkConnected, bool hostUpWithNoPhone) =>
+        linkConnected && hostUpWithNoPhone ? "Home_WaitingForPhone" : null;
+
+    /// <summary>Phone presence or the language changed: the status line is recomputed.</summary>
+    private void OnLinkInputsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        OnPropertyChanged(nameof(LinkStatusText));
+
     public HomeViewModel(ConnectionViewModel connection, ShellViewModel shell)
     {
         Connection = connection;
@@ -94,8 +112,14 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         {
             if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && !Connection.IsConnected)
                 UpdateStats(null);
+            if (e.PropertyName is nameof(ConnectionViewModel.IsConnected) or nameof(ConnectionViewModel.StatusText))
+                OnPropertyChanged(nameof(LinkStatusText));
         };
         Connection.PropertyChanged += _onConnectionChanged;
+
+        // The footer's status line reads the phone axis too (RemEx-pp4cm.23), and its text is localized.
+        Presence.PropertyChanged += OnLinkInputsChanged;
+        LocalizationService.Instance.PropertyChanged += OnLinkInputsChanged;
 
         // Drive the always-on stats strip from the existing ~1 Hz telemetry stream (already
         // marshalled to the UI thread by ConnectionViewModel — no extra timer needed).
@@ -253,6 +277,8 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     {
         SystemStatus.Dispose();
         Connection.PropertyChanged -= _onConnectionChanged;
+        Presence.PropertyChanged -= OnLinkInputsChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLinkInputsChanged;
         Connection.TelemetryReceived -= _onTelemetry;
         ActivityService.Instance.Recent.CollectionChanged -= _onActivityChanged;
     }

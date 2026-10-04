@@ -365,7 +365,10 @@
                                                     <TextBlock Foreground="{DynamicResource SystemErrorBrush}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
                                                 </StackPanel>
                                             </StackPanel>
-                                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
+                                            <!-- A chart TRACK, not a value plate (RemEx-pp4cm.23): CardPlateNeutralBrush is
+                                                 SurfaceContainerHigh at 0.85, which in Light drew an empty white slab
+                                                 over the card. SurfaceContainerHighest is the M3 track role. -->
+                                            <Border Background="{DynamicResource PaletteSurfaceContainerHighestBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
                                                 <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>

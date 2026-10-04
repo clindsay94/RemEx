@@ -38,7 +38,6 @@ public sealed class BrandMark : Control
     private static readonly IBrush Amber      = new SolidColorBrush(C(RemexBrandData.AmberArgb));
     private static readonly IBrush SlateLo    = new SolidColorBrush(C(RemexBrandData.SlateLoArgb));
     private static readonly IBrush SlateHi    = new SolidColorBrush(C(RemexBrandData.SlateHiArgb));
-    private static readonly IBrush OffWhite   = new SolidColorBrush(C(RemexBrandData.OffWhiteArgb));
     private static readonly IPen WindowStroke = new Pen(
         new SolidColorBrush(C(RemexBrandData.WindowStrokeArgb), RemexBrandData.WindowStrokeAlpha),
         RemexBrandData.WindowStrokeWidth);
@@ -101,6 +100,10 @@ public sealed class BrandMark : Control
         // trick in Remex.Branding.SplashBrand.DrawMark.
         var primary = ResolveThemeColor("AccentPrimary");
         var tertiary = ResolveThemeColor("PaletteTertiary");
+        var onPrimary = this.TryFindResource("AccentForegroundBrush", out var fg) && fg is ISolidColorBrush fgBrush
+            ? fgBrush.Color
+            : BrandMarkGlyph.OffWhiteColor;
+        var glyph = new SolidColorBrush(BrandMarkGlyph.GlyphColor(primary, tertiary, onPrimary));
         double mf0 = RemexBrandData.GradStart / RemexBrandData.Viewport;
         double mf1 = RemexBrandData.GradEnd / RemexBrandData.Viewport;
         var markFill = new LinearGradientBrush
@@ -117,11 +120,47 @@ public sealed class BrandMark : Control
             context.DrawGeometry(SlateLo, null, Dot2);
             context.DrawGeometry(SlateHi, null, Dot3);
             context.DrawGeometry(null, ChevronPen, Chevron);
-            context.DrawGeometry(OffWhite, null, RStem);
-            context.DrawGeometry(OffWhite, null, RBowl);
-            context.DrawGeometry(OffWhite, null, RLeg);
+            context.DrawGeometry(glyph, null, RStem);
+            context.DrawGeometry(glyph, null, RBowl);
+            context.DrawGeometry(glyph, null, RLeg);
             context.DrawGeometry(markFill, null, RHole);
             context.DrawGeometry(Amber, null, CursorBar);
         }
+    }
+}
+
+/// <summary>The brand mark's R colour rule, kept apart from <see cref="BrandMark"/> so it can be tested
+/// without a render platform (BrandMark's static geometry needs one to parse).</summary>
+internal static class BrandMarkGlyph
+{
+    internal static readonly Color OffWhiteColor = Color.FromUInt32(RemexBrandData.OffWhiteArgb);
+
+    /// <summary>The R needs 3:1 against both ends of the window's gradient (graphics, WCAG 1.4.11).</summary>
+    internal const double GlyphMinimumContrast = 3.0;
+
+    /// <summary>
+    /// The R's colour (RemEx-pp4cm.23). It was always the brand off-white, but the window behind it
+    /// is the live primary -> tertiary gradient, and a near-white seed in Dark at contrast 1 (Ink-Dark-C1)
+    /// makes that gradient near-white too: the R vanished. The brand off-white stays whenever it clears
+    /// <see cref="GlyphMinimumContrast"/> against both stops; otherwise the palette's OnPrimary, the role
+    /// made to sit on Primary, takes over, or whichever of the two reads better if neither clears it.
+    /// </summary>
+    internal static Color GlyphColor(Color primary, Color tertiary, Color onPrimary)
+    {
+        double Worst(Color c) => Math.Min(ContrastRatio(c, primary), ContrastRatio(c, tertiary));
+        if (Worst(OffWhiteColor) >= GlyphMinimumContrast) return OffWhiteColor;
+        return Worst(onPrimary) >= Worst(OffWhiteColor) ? onPrimary : OffWhiteColor;
+    }
+
+    internal static double ContrastRatio(Color a, Color b)
+    {
+        static double Channel(byte v)
+        {
+            var c = v / 255.0;
+            return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        }
+        static double L(Color c) => 0.2126 * Channel(c.R) + 0.7152 * Channel(c.G) + 0.0722 * Channel(c.B);
+        var (x, y) = (L(a), L(b));
+        return (Math.Max(x, y) + 0.05) / (Math.Min(x, y) + 0.05);
     }
 }

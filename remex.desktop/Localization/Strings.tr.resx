@@ -4260,4 +4260,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>{0} öğe ({1}) telefonunuzdan kalıcı olarak silinecek. Geri dönüşüm kutusuna taşınmazlar ve bu işlem geri alınamaz.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Telefon bekleniyor</value>
+  </data>
 </root>

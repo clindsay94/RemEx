@@ -72,13 +72,10 @@ public partial class BusyPlaceholder : ContentControl
         UpdateVisualState();
     }
 
-    // Plain Classes, NOT pseudo-classes: a pseudo-class selector matching this control BY ITS OWN
-    // TYPE NAME, declared inside that same type's own template file, does not reliably match here
-    // (verified live via ui-hotreload — IsBusy="True" produced no visible change at all). Named
-    // Classes toggled on the instance and matched with a plain ".busy.skeleton"-style selector is
-    // the pattern DashboardBackgroundControl.axaml already uses successfully in this codebase
-    // (Classes.aurora-animated, Classes.palette-transition-suppressed) — proven to work, so this
-    // follows it instead of re-attempting the pseudo-class route.
+    // Plain Classes toggled on the instance, matched in BusyPlaceholder.axaml as
+    // "controls|BusyPlaceholder.busy.skeleton" and so on. The selectors must name THIS type: a bare
+    // "ContentControl" matches that exact style key only, which is why the first version of this
+    // control never changed state at all (RemEx-pp4cm.21/.22, BusyPlaceholderRenderTests).
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);

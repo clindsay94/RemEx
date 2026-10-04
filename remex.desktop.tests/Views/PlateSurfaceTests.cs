@@ -95,10 +95,12 @@ public class PlateSurfaceTests
     public void CanvasViewLatencySparklinePlateUsesTheContainerTierBrush()
     {
         // The small CornerRadius=6 plate under the latency numbers, inside the card - an
-        // in-content plate, confirmed distinct from the toolbar strip below.
+        // in-content plate, confirmed distinct from the toolbar strip below. It is a chart TRACK, so
+        // since RemEx-pp4cm.23 it takes the M3 track role, SurfaceContainerHighest: the value-plate
+        // brush (SurfaceContainerHigh at 0.85) drew an empty white slab in Light.
         Markup("CanvasView.axaml").Should().MatchRegex(
-            @"<Border Background=""\{DynamicResource CardPlateNeutralBrush\}"" CornerRadius=""6"" Margin=""0,10,0,0"" Padding=""6"" Height=""60"">",
-            "the latency sparkline plate sits inside the card and must use the container-tier brush");
+            @"<Border Background=""\{DynamicResource PaletteSurfaceContainerHighestBrush\}"" CornerRadius=""6"" Margin=""0,10,0,0"" Padding=""6"" Height=""60"">",
+            "the latency sparkline track sits inside the card and must use a container-tier role");
     }
 
     [Fact]

@@ -4257,4 +4257,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>Елементи в кількості {0} ({1}) буде остаточно видалено з вашого телефона. Їх не буде переміщено до кошика, і цю дію не можна скасувати.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Очікування телефона</value>
+  </data>
 </root>

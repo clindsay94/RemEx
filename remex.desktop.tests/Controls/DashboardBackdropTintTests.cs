@@ -133,10 +133,11 @@ public class DashboardBackdropTintTests
     }
 
     [Theory]
-    [InlineData("IsAcrylic", "Customization.GlassOpacity", 0.25)]
-    [InlineData("IsWallpaper", "Customization.AppWindowOpacity", 1.0)]
+    [InlineData("IsAcrylic", "Customization.GlassOpacity", 0.25, "VeilOpacityConverter.Instance")]
+    // The wallpaper veil has its own, higher Light floor (RemEx-pp4cm.23, WallpaperLightContrastTests).
+    [InlineData("IsWallpaper", "Customization.AppWindowOpacity", 1.0, "VeilOpacityConverter.Wallpaper")]
     public void TheBackdropTint_ScalesWithTheKnobAndFloorsInLight(
-        string modeConverter, string knobPath, double expectedCeiling)
+        string modeConverter, string knobPath, double expectedCeiling, string expectedConverter)
     {
         var modePanel = FindModePanel(modeConverter);
 
@@ -163,7 +164,7 @@ public class DashboardBackdropTintTests
             .Subject;
 
         (multiBinding.Attribute("Converter")?.Value ?? string.Empty)
-            .Should().Contain("VeilOpacityConverter.Instance",
+            .Should().Contain(expectedConverter,
                 "VeilOpacityConverter is MultiplyConverter's scaling plus the Light-mode floor " +
                 "(RemEx-4kv0g.5.1) — scaling, not a raw binding, keeps Frosted (1.0) from going " +
                 "fully opaque in Dark, and the converter itself returns 'no veil' for an " +

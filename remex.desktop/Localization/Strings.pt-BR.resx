@@ -4256,4 +4256,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>Isto vai excluir {0} itens ({1}) do seu telefone permanentemente. Eles não vão para uma lixeira e não dá para desfazer.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Aguardando um celular</value>
+  </data>
 </root>
