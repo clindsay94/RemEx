@@ -4262,4 +4262,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>This will permanently delete {0} items ({1}) from your phone. They are not moved to a recycle bin, and this cannot be undone.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Waiting for a phone</value>
+  </data>
 </root>

@@ -4256,4 +4256,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>यह {0} आइटम ({1}) को आपके फ़ोन से हमेशा के लिए हटा देगा। वे रीसायकल बिन में नहीं जाएँगे और इसे वापस नहीं किया जा सकता।</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>फ़ोन का इंतज़ार है</value>
+  </data>
 </root>

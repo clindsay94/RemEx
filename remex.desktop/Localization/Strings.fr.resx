@@ -4256,4 +4256,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>{0} éléments ({1}) seront supprimés définitivement de votre téléphone. Ils ne sont pas placés dans une corbeille et cette action est irréversible.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>En attente d'un téléphone</value>
+  </data>
 </root>

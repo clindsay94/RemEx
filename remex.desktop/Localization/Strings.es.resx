@@ -4268,4 +4268,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>Esto eliminará {0} elementos ({1}) de tu teléfono de forma permanente. No se mueven a una papelera y no se puede deshacer.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Esperando un teléfono</value>
+  </data>
 </root>

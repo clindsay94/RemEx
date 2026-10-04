@@ -4259,4 +4259,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>Ini akan menghapus {0} item ({1}) dari ponsel Anda secara permanen. Item tidak dipindahkan ke tempat sampah dan tindakan ini tidak dapat dibatalkan.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Menunggu ponsel</value>
+  </data>
 </root>

@@ -205,14 +205,16 @@
                          Effect on the Image — nothing here animates, so the blur is not re-rendered per
                          frame. The surface veil sits over it at the WINDOW opacity, the same knob Glass
                          mode uses for "how much shows through", so text keeps its contrast — with a
-                         Light-mode floor (VeilOpacityConverter.LightFloor, RemEx-4kv0g.5.1) so a light
-                         palette gets a light ground rather than dark ink on a dark wallpaper. -->
+                         Light-mode floor (VeilOpacityConverter.WallpaperLightFloor, RemEx-4kv0g.5.1,
+                         raised in RemEx-pp4cm.23) so a light palette gets a light ground rather than
+                         dark ink on a dark wallpaper. The floor is measured against a BLACK wallpaper
+                         by WallpaperLightContrastTests, because the picture can be anything. -->
                     <Panel IsVisible="{Binding EffectiveBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
                         <Image Source="{Binding WallpaperBitmap}" Stretch="UniformToFill"
                                Effect="{Binding WallpaperBlurRadius, Converter={x:Static converters:BlurRadiusToEffectConverter.Instance}}" />
                         <Rectangle Classes="palette-bg" Fill="{DynamicResource GlassBaseDarkBrush}">
                             <Rectangle.Opacity>
-                                <MultiBinding Converter="{x:Static converters:VeilOpacityConverter.Instance}" ConverterParameter="1.0">
+                                <MultiBinding Converter="{x:Static converters:VeilOpacityConverter.Wallpaper}" ConverterParameter="1.0">
                                     <Binding Path="Customization.AppWindowOpacity"/>
                                     <Binding Path="$self.ActualThemeVariant"/>
                                 </MultiBinding>

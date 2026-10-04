@@ -336,10 +336,23 @@ try {
 
             Start-Sleep -Milliseconds $SettleMs
 
+            # ANOTHER REMEX ON SCREEN MAKES THE SHOT WORTHLESS (RemEx-pp4cm.23). ui-snapshot.ps1 takes
+            # the first Remex.Agent it finds and copies the screen under that window's rectangle, so a
+            # second host (another worktree's ui-verify run, a dev build) in front of or instead of
+            # ours gets captured. The 3.0 sweep's Ink-Dark-C0 Sensors and Commands shots were a
+            # Settings page someone else's host was showing; --view itself was fine. Flag it rather
+            # than file a bug against the app.
+            $hosts = @(Get-Process -Name Remex.Agent -ErrorAction SilentlyContinue)
+            $finding = 'not run'
+            if ($hosts.Count -gt 1) {
+                Write-Warning "More than one RemEx is running for cell '$($cell.Id)' view '$view'; this screenshot may show the wrong window. Close the other RemEx and rerun this cell."
+                $finding = 'suspect: another RemEx was running'
+            }
+
             $shotPath = '{0}{1}-{2}.png' -f $Out, $cell.Id, $view
             & $snapshotScript -Screenshot -Tree -Out $shotPath | Out-Null
 
-            $index.Add([pscustomobject]@{ Cell = $cell.Id; View = $view; Screenshot = $shotPath; Finding = 'not run' })
+            $index.Add([pscustomobject]@{ Cell = $cell.Id; View = $view; Screenshot = $shotPath; Finding = $finding })
 
             # -NoRelaunch here too - see the pre-write -Stop above. Every stop inside this loop
             # must leave nothing running; only the very last stop, after the loop, may relaunch.

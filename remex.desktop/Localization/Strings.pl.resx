@@ -4257,4 +4257,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="Confirm_DeleteRemote_PhoneMultipleFormat" xml:space="preserve">
     <value>Elementy w liczbie {0} ({1}) zostaną trwale usunięte z telefonu. Nie trafią do kosza i tej operacji nie można cofnąć.</value>
   </data>
+  <data name="Home_WaitingForPhone" xml:space="preserve">
+    <value>Czekam na telefon</value>
+  </data>
 </root>

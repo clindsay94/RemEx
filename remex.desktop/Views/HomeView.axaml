@@ -596,7 +596,7 @@
                      from between screens into one StackPanel, which is the more confusing of the two. -->
                 <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{local:Localize Home_LinkStatus}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
-                <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding LinkStatusText}" Theme="{StaticResource OverlineTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{Binding Connection.LatencyText}" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
             <!-- NO CONNECT / DISCONNECT HERE (3.0 comb, home-disconnect; hard rule 1). They drove this

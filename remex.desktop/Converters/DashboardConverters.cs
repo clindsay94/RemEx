@@ -206,13 +206,37 @@ public class MultiplyConverter : IValueConverter
 /// </remarks>
 public class VeilOpacityConverter : IMultiValueConverter
 {
-    public static readonly VeilOpacityConverter Instance = new();
+    /// <summary>The Acrylic veil's converter, floored at <see cref="LightFloor"/>.</summary>
+    public static readonly VeilOpacityConverter Instance = new(LightFloor);
+
+    /// <summary>The Wallpaper veil's converter, floored at <see cref="WallpaperLightFloor"/>.</summary>
+    public static readonly VeilOpacityConverter Wallpaper = new(WallpaperLightFloor);
 
     /// <summary>
     /// Minimum veil alpha once the palette resolves Light: a readable light surface behind the
     /// cards that still lets the wallpaper or backdrop show through. Re-measure before moving it.
     /// </summary>
     public const double LightFloor = 0.55;
+
+    /// <summary>
+    /// The Light floor for the WALLPAPER veil (RemEx-pp4cm.23). A picked or desktop wallpaper can be
+    /// black, and the Acrylic floor of 0.55 left the light Surface at a mid grey over one: cards read
+    /// as translucent grey and the muted text fell to about 1.4:1. Measured, not chosen:
+    /// WallpaperLightContrastTests composites the solved Surface over a black wallpaper at this alpha
+    /// for every sweep and preset seed, every scheme variant, contrast 0 and 1, and requires 4.5:1 for
+    /// body text (OnSurface, OnSurfaceVariant) and 3:1 for the muted Outline role. The worst cell
+    /// (#6C4CFF TonalSpot, contrast 0) needs 0.85; 0.9 leaves a margin and still lets a tenth of the
+    /// picture through. Acrylic keeps
+    /// <see cref="LightFloor"/>: Windows paints Acrylic light under a light theme, a wallpaper image is
+    /// whatever the user picked.
+    /// </summary>
+    public const double WallpaperLightFloor = 0.9;
+
+    private readonly double _lightFloor;
+
+    public VeilOpacityConverter() : this(LightFloor) { }
+
+    public VeilOpacityConverter(double lightFloor) => _lightFloor = lightFloor;
 
     public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -224,7 +248,7 @@ public class VeilOpacityConverter : IMultiValueConverter
         var veil = Math.Clamp(knob * factor, 0.0, 1.0);
 
         var isLight = values.Count > 1 && values[1] is ThemeVariant variant && variant == ThemeVariant.Light;
-        return isLight ? Math.Max(veil, LightFloor) : veil;
+        return isLight ? Math.Max(veil, _lightFloor) : veil;
     }
 }
 

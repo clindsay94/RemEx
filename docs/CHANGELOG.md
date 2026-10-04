@@ -576,6 +576,18 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   every spinner (Settings > trusted devices, Logs) had four outlined bars around it. The rules now name the
   control itself, and the skeleton bars are soft filled shapes in the surface-container-highest role.
   (RemEx-pp4cm.21, RemEx-pp4cm.22)
+- **Light mode over a wallpaper reads as a light surface again.** The wallpaper veil had the Acrylic floor
+  (0.55), which over a dark picture left a mid-grey ground: cards looked translucent grey and secondary and
+  muted text lost contrast on every page. The wallpaper veil now has its own Light floor of 0.9, measured
+  against a black wallpaper for every sweep and preset seed, scheme and contrast level (4.5:1 for body text,
+  3:1 for muted text). Dark mode and Acrylic are unchanged. (RemEx-pp4cm.23)
+- **Smaller fixes from the 3.0 palette sweep.** Home's footer says "Waiting for a phone" instead of
+  "No phone connected" over "Status: Connected". The Logs list no longer draws over the Follow tail row in
+  an 800 px window. The logo's R switches to the palette's on-primary colour when the brand off-white would
+  vanish on the tile (Ink in Dark at contrast 1). The Sensors latency chart sits on a soft track instead of
+  an empty white slab in Light. A label written inside a filled button (Home's "Pair a phone") uses the
+  button's own on-colour. The sweep script now flags a shot taken while a second RemEx was running, which
+  is what made `--view Sensors` and `--view Commands` look like Settings in one cell. (RemEx-pp4cm.23)
 - **A refused alert Save now says why.** Pressing Save on a sensor alert used to close the sheet whether or
   not anything was sent. The sheet now stays open with the reason when the alert could not be sent (not
   connected, PC too old, or the PC already holds as many alerts as it allows), and if the PC accepts it and

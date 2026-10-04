@@ -67,8 +67,10 @@
                             <Button Grid.Column="2" Classes="secondary" Content="{local:Localize Logs_JumpToNewest}" AutomationProperties.Name="{local:Localize Logs_JumpToNewest}" Command="{Binding JumpToNewestCommand}" IsVisible="{Binding !IsFollowingTail}" Margin="16,0,0,0"/>
                         </Grid>
 
-                        <!-- Colored, virtualized log list -->
-                        <material:Card Grid.Row="4" Classes="surface" Padding="4" InsideClipping="True" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <!-- Colored, virtualized log list. MinHeight stays small (RemEx-pp4cm.23): at
+                             360 the rows above no longer fit in an 800 px window, the grid ran out of
+                             height and the list drew over the Follow tail row. -->
+                        <material:Card Grid.Row="4" Classes="surface" Padding="4" InsideClipping="True" MinHeight="160" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <ListBox x:Name="LogListBox" Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="{StaticResource JetBrainsMono}" ScrollViewer.ScrollChanged="OnLogListScrollChanged">
                                 <!-- Ctrl+C on the list itself, so the shortcut works wherever the
                                      selection was made rather than only while the button has focus. -->
