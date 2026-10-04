@@ -37,7 +37,11 @@ class AppFontsTest {
     fun `picker keys are unique and the list has the nerd fonts`() {
         val keys = AppFonts.options.map { it.key }
         assertEquals(keys.size, keys.toSet().size)
-        assertTrue(keys.containsAll(listOf("caskaydia_cove_nerd", "hack_nerd", "iosevka_nerd")))
+        assertTrue(keys.containsAll(listOf(
+            "caskaydia_cove_nerd", "hack_nerd", "iosevka_nerd",
+            "jetbrains_mono_nerd", "fira_code_nerd", "meslo_lgs_nerd", "victor_mono_nerd",
+        )))
+        assertFalse("the Google Fonts JetBrains Mono entry was replaced by the Nerd Font", "jetbrains_mono" in keys)
     }
 
     @Test
@@ -47,6 +51,16 @@ class AppFontsTest {
             assertNotEquals("legacy key $it", FontFamily.Default, AppFonts.familyFor(it))
         }
         assertEquals(FontFamily.Default, AppFonts.familyFor("a_font_that_was_never_offered"))
+    }
+
+    @Test
+    fun `a saved JetBrains Mono choice moves to the JetBrainsMono Nerd Font`() {
+        assertEquals("jetbrains_mono_nerd", AppFonts.canonicalKey("jetbrains_mono"))
+        assertEquals("jetbrains_mono_nerd", AppFonts.canonicalKey("JetBrains_Mono"))
+        assertEquals(AppFonts.familyFor("jetbrains_mono_nerd"), AppFonts.familyFor("jetbrains_mono"))
+        // Every offered key is already canonical, so the picker can always show it selected.
+        AppFonts.options.forEach { assertEquals(it.key, AppFonts.canonicalKey(it.key)) }
+        assertEquals("roboto", AppFonts.canonicalKey("Roboto"))
         assertEquals(AppFonts.familyFor("HACK_NERD"), AppFonts.familyFor("hack_nerd")) // keys are case-insensitive
     }
 
@@ -66,13 +80,18 @@ class AppFontsTest {
         assertEquals("CaskaydiaCove Nerd Font", english["font_caskaydia_cove_nerd"])
         assertEquals("Hack Nerd Font", english["font_hack_nerd"])
         assertEquals("Iosevka Nerd Font", english["font_iosevka_nerd"])
+        assertEquals("JetBrainsMono Nerd Font", english["font_jetbrains_mono_nerd"])
+        assertEquals("FiraCode Nerd Font", english["font_fira_code_nerd"])
+        assertEquals("MesloLGS Nerd Font", english["font_meslo_lgs_nerd"])
+        assertEquals("VictorMono Nerd Font", english["font_victor_mono_nerd"])
+        assertFalse("the old Google Fonts label is gone", english.containsKey("font_jetbrains_mono"))
         assertEquals("Inter", english["font_inter"])
         assertEquals("Lexend", english["font_lexend"])
     }
 
     @Test
     fun `every bundled nerd font has regular and bold files that are real fonts`() {
-        assertEquals(3, AppFonts.bundled.size) // anti-vacuity
+        assertEquals(7, AppFonts.bundled.size) // anti-vacuity
         AppFonts.bundled.keys.forEach { key ->
             listOf("regular", "bold").forEach { weight ->
                 val file = File(res, "font/${key}_$weight.ttf")
@@ -97,13 +116,17 @@ class AppFontsTest {
             "caskaydia_cove_nerd" to "OFL-CaskaydiaCoveNerdFont.txt",
             "hack_nerd" to "LICENSE-HackNerdFont.txt",
             "iosevka_nerd" to "OFL-IosevkaNerdFont.txt",
+            "jetbrains_mono_nerd" to "OFL-JetBrainsMonoNerdFont.txt",
+            "fira_code_nerd" to "OFL-FiraCodeNerdFont.txt",
+            "meslo_lgs_nerd" to "LICENSE-MesloLGSNerdFont.txt",
+            "victor_mono_nerd" to "OFL-VictorMonoNerdFont.txt",
         )
         assertEquals("a licence is named for every bundled font", AppFonts.bundled.keys, licenceFiles.keys)
         licenceFiles.forEach { (key, name) ->
             val file = File(licenses, name)
             assertTrue("$key needs $name", file.isFile)
             val text = file.readText(Charsets.UTF_8)
-            assertTrue("$name should be a licence", text.contains("SIL Open Font License") || text.contains("MIT License"))
+            assertTrue("$name should be a licence", text.contains("SIL Open Font License") || text.contains("MIT License") || text.contains("Apache License"))
         }
     }
 }

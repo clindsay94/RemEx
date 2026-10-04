@@ -18,13 +18,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   screen); the others pin the count, so you can fit more small cards across a phone or give them more room on a
   tablet. Cards keep their order and their size setting whatever you pick: a wide card on a narrow grid just
   narrows to fit, and switching back brings its full width back. The choice is remembered. (RemEx-pp4cm.16)
-- **Plain font names, and three Nerd Fonts on the phone.** The font list in Personalize now shows plain family
+- **Plain font names, and seven Nerd Fonts on the phone.** The font list in Personalize now shows plain family
   names (Inter, Lexend, Outfit...) in every language instead of tags like "(Premium)" or "(Cyber)", and each name
-  is drawn in its own typeface. CaskaydiaCove Nerd Font, Hack Nerd Font and Iosevka Nerd Font are new: they ship
-  inside the app (trimmed to Latin, Latin Extended, Greek, Cyrillic, punctuation, arrows, box drawing and the
-  Powerline symbols, about 0.75 MB in total) and their licences are in the app's licence folder. JetBrains Mono
-  stays as it was; the JetBrainsMono, FiraCode and MesloLGS Nerd Fonts are not installed on the build PC, so
-  they are not in yet. (RemEx-pp4cm.15)
+  is drawn in its own typeface. CaskaydiaCove, Hack, Iosevka, JetBrainsMono, FiraCode, MesloLGS and VictorMono
+  Nerd Fonts are new: they ship inside the app (Regular and Bold, trimmed to Latin, Latin Extended, Greek,
+  Cyrillic, punctuation, arrows, box drawing and the Powerline symbols, about 1.7 MB in total) and their
+  licences are in the app's licence folder. The JetBrainsMono Nerd Font replaces the old downloaded "JetBrains
+  Mono" entry; if you had picked that one, you keep a JetBrains Mono look and it shows as selected under its
+  new name. (RemEx-pp4cm.15)
 - **More card shapes on the phone.** Personalize > Shapes offers six more shapes next to Rounded rectangle and
   Cut corner: Slanted, Clover, Clam shell, Arch, Sunny and Pixel circle. Each option shows a small live swatch of
   the real shape, with the area its content gets drawn inside it. Shapes that would have clipped text (hearts,
