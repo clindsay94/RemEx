@@ -570,6 +570,12 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
 
 ### Fixed
 
+- **The PC's loading placeholder clears again, and no longer draws outlined boxes.** Its styles targeted
+  `ContentControl`, which in an Avalonia selector matches that exact type only, so none of them ever applied
+  to the placeholder: Processes showed its spinner and skeleton bars forever on top of the loaded list, and
+  every spinner (Settings > trusted devices, Logs) had four outlined bars around it. The rules now name the
+  control itself, and the skeleton bars are soft filled shapes in the surface-container-highest role.
+  (RemEx-pp4cm.21, RemEx-pp4cm.22)
 - **A refused alert Save now says why.** Pressing Save on a sensor alert used to close the sheet whether or
   not anything was sent. The sheet now stays open with the reason when the alert could not be sent (not
   connected, PC too old, or the PC already holds as many alerts as it allows), and if the PC accepts it and
