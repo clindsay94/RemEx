@@ -175,7 +175,9 @@ class FileHostHandlerTest {
 
     private class CapturingSender : ControlMessageSender {
         val sent = mutableListOf<String>()
-        override fun send(json: String) { sent.add(json) }
+        // Synchronized: range reads and hashes answer from the host's IO scope, so a test on a real dispatcher
+        // sends from several threads at once.
+        override fun send(json: String) { synchronized(this) { sent.add(json) } }
         fun last() = JSONObject(sent.last())
     }
 
@@ -357,6 +359,253 @@ class FileHostHandlerTest {
         val ops = caps.getJSONArray("ops")
         val opSet = (0 until ops.length()).map { ops.getString(it) }.toSet()
         assertTrue(opSet.containsAll(listOf("copy", "move", "mkdir", "search")))
+        // Live preview and hashing (2026-10-08 redesign): a PC hides both for a phone that does not say so.
+        assertTrue(caps.getBoolean("readRange"))
+        assertTrue(caps.getBoolean("hash"))
+    }
+
+    // ── Live preview and hashing, from the PC (2026-10-08 redesign) ──────────────
+
+    private fun readRange(path: String, offset: Long = 0, length: Int = 1024, fromEnd: Boolean = false, root: String = "root1") =
+        JSONObject().apply {
+            put("type", "file_read_range_request")
+            put(
+                "fileReadRangeRequest",
+                JSONObject().apply {
+                    put("requestId", "rr")
+                    put("rootId", root)
+                    put("relativePath", path)
+                    put("offset", offset)
+                    put("length", length)
+                    put("fromEnd", fromEnd)
+                },
+            )
+        }.toString()
+
+    private fun hash(path: String, root: String = "root1") =
+        """{"type":"file_hash_request","fileHashRequest":{"requestId":"hh","rootId":"$root","relativePath":"$path"}}"""
+
+    private fun logTree(text: String): FakeNode {
+        val root = sampleTree()
+        val logs = FakeNode("Logs", true, parent = root)
+        root.children["Logs"] = logs
+        logs.children["app.log"] = FakeNode("app.log", false, content = text.toByteArray(), parent = logs)
+        return root
+    }
+
+    private fun readReply(sender: CapturingSender): JSONObject {
+        val msg = sender.last()
+        assertEquals("file_read_range_response", msg.getString("type"))
+        return msg.getJSONObject("fileReadRangeResponse")
+    }
+
+    private fun bytesOf(reply: JSONObject) = String(java.util.Base64.getDecoder().decode(reply.getString("dataBase64")))
+
+    @Test
+    fun readRange_fromAnOffset_returnsThoseBytesAndTheSize() = runBlocking {
+        val (h, sender, _) = build(logTree("0123456789"))
+        h.handleControlMessage(readRange("Logs/app.log", offset = 3, length = 4))
+        val r = readReply(sender)
+        assertEquals("rr", r.getString("requestId"))
+        assertEquals(3L, r.getLong("offset"))
+        assertEquals("3456", bytesOf(r))
+        assertEquals(10L, r.getLong("fileSize"))
+        assertFalse(r.getBoolean("eof"))
+        assertFalse(r.has("errorMessage"))
+    }
+
+    @Test
+    fun readRange_fromTheEnd_returnsTheTail() = runBlocking {
+        val (h, sender, _) = build(logTree("0123456789"))
+        h.handleControlMessage(readRange("Logs/app.log", length = 4, fromEnd = true))
+        val r = readReply(sender)
+        assertEquals(6L, r.getLong("offset"))
+        assertEquals("6789", bytesOf(r))
+        assertTrue(r.getBoolean("eof"))
+    }
+
+    @Test
+    fun readRange_pastTheEnd_isNothingNew_notAnError() = runBlocking {
+        val (h, sender, _) = build(logTree("abc"))
+        h.handleControlMessage(readRange("Logs/app.log", offset = 50))
+        val r = readReply(sender)
+        assertFalse(r.has("errorMessage"))
+        assertEquals("", bytesOf(r))
+        assertTrue(r.getBoolean("eof"))
+    }
+
+    @Test
+    fun readRange_whenTheProviderReportsNoSize_stillReportsWhatItRead() = runBlocking {
+        // DocumentFile.length() is 0 when a provider omits COLUMN_SIZE (RemEx-xrb2v). The preview must still
+        // get the bytes, and a size no smaller than what it was given.
+        val tree = logTree("hello")
+        (tree.children["Logs"]!!.children["app.log"]!!).declaredLength = 0L
+        val (h, sender, _) = build(tree)
+        h.handleControlMessage(readRange("Logs/app.log"))
+        val r = readReply(sender)
+        assertEquals("hello", bytesOf(r))
+        assertEquals(5L, r.getLong("fileSize"))
+    }
+
+    private fun unknownSizeLog(text: String): FakeNode {
+        val tree = logTree(text)
+        tree.children["Logs"]!!.children["app.log"]!!.declaredLength = 0L
+        return tree
+    }
+
+    @Test
+    fun readRange_withTheSizeUnknown_doesNotClaimTheEndBeforeItGetsThere() = runBlocking {
+        // A provider that omits COLUMN_SIZE reports 0 (RemEx-xrb2v). A full read of the asked length proves nothing
+        // about the end, so eof must be false and the size a lower bound; a preview that trusted eof would stop here.
+        val (h, sender, _) = build(unknownSizeLog("0123456789"))
+        h.handleControlMessage(readRange("Logs/app.log", offset = 0, length = 4))
+        val r = readReply(sender)
+        assertEquals("0123", bytesOf(r))
+        assertFalse(r.getBoolean("eof"))
+        assertEquals(4L, r.getLong("fileSize"))
+    }
+
+    @Test
+    fun readRange_tailWithTheSizeUnknown_returnsTheRealEnd_notTheTop() = runBlocking {
+        val (h, sender, _) = build(unknownSizeLog("0123456789"))
+        h.handleControlMessage(readRange("Logs/app.log", length = 4, fromEnd = true))
+        val r = readReply(sender)
+        assertEquals("6789", bytesOf(r))
+        assertEquals(6L, r.getLong("offset"))
+        assertEquals(10L, r.getLong("fileSize"))
+        assertTrue(r.getBoolean("eof"))
+    }
+
+    @Test
+    fun readRange_pastTheEnd_throughAStreamWhoseSkipReturnsZero_isEmpty_notAHang() = runBlocking {
+        // skip() may return 0 before the end; the facade's default tells that apart from the end with one read().
+        val (h, sender, _) = build(unknownSizeLog("abc"))
+        lastFacade!!.inputOverride = {
+            object : ByteArrayInputStream("abc".toByteArray()) {
+                override fun skip(n: Long): Long = 0
+            }
+        }
+        h.handleControlMessage(readRange("Logs/app.log", offset = 50))
+        val r = readReply(sender)
+        assertFalse(r.has("errorMessage"))
+        assertEquals("", bytesOf(r))
+        assertTrue(r.getBoolean("eof"))
+    }
+
+    @Test
+    fun readRange_thatFailsPartWay_saysSoWithoutTheProvidersWords() = runBlocking {
+        val (h, sender, _) = build(logTree("abc"))
+        lastFacade!!.inputOverride = {
+            object : InputStream() {
+                override fun read(): Int = throw java.io.IOException("/storage/emulated/0/secret/path exploded")
+            }
+        }
+        h.handleControlMessage(readRange("Logs/app.log"))
+        val r = readReply(sender)
+        assertEquals(READ_FAILED_MESSAGE, r.getString("errorMessage"))
+        assertFalse(r.has("dataBase64"))
+    }
+
+    @Test
+    fun rangeReads_runAtMostTwoAtATime_andTheRestWaitTheirTurn() {
+        // A live tail polls every two seconds; against a slow provider an uncapped host stacks reads up on the IO
+        // pool. Three reads arrive while the provider is stuck: two may open, the third must wait, and all three
+        // are answered once the provider moves.
+        val ioScope = CoroutineScope(Dispatchers.IO)
+        try {
+            val (h, sender, _) = build(logTree("0123456789"), scope = ioScope)
+            val gate = java.util.concurrent.CountDownLatch(1)
+            val opened = java.util.concurrent.atomic.AtomicInteger(0)
+            lastFacade!!.inputOverride = {
+                opened.incrementAndGet()
+                gate.await(10, java.util.concurrent.TimeUnit.SECONDS)
+                ByteArrayInputStream("0123456789".toByteArray())
+            }
+            runBlocking { repeat(3) { h.handleControlMessage(readRange("Logs/app.log")) } }
+            Thread.sleep(500)
+            assertEquals("only READ_CONCURRENCY reads may be in the provider at once", READ_CONCURRENCY, opened.get())
+            gate.countDown()
+            val deadline = System.currentTimeMillis() + 10_000
+            while (synchronized(sender) { sender.sent.size } < 3 && System.currentTimeMillis() < deadline) Thread.sleep(20)
+            assertEquals(3, synchronized(sender) { sender.sent.size })
+            assertEquals(3, opened.get())
+        } finally {
+            ioScope.cancel()
+        }
+    }
+
+    @Test
+    fun readRange_ofAFolder_aMissingFile_orAnUnsharedRoot_isRefusedWithAPlainReason() = runBlocking {
+        for (request in listOf(readRange("Logs"), readRange("Logs/nope.log"), readRange("Logs/app.log", root = "not-shared"))) {
+            val (h, sender, _) = build(logTree("secret"))
+            h.handleControlMessage(request)
+            val r = readReply(sender)
+            assertEquals(READ_NOT_A_FILE_MESSAGE, r.getString("errorMessage"))
+            assertFalse("no bytes may come back for $request", r.has("dataBase64"))
+        }
+    }
+
+    @Test
+    fun readRange_outOfBounds_isRefused_beforeAnythingIsRead() = runBlocking {
+        for (request in listOf(
+            readRange("Logs/app.log", offset = -1),
+            readRange("Logs/app.log", length = 0),
+            readRange("Logs/app.log", length = FileTransferLimits.READ_RANGE_MAX_BYTES + 1),
+        )) {
+            val (h, sender, _) = build(logTree("secret"))
+            lastFacade!!.inputOverride = { throw AssertionError("nothing may be opened for an out-of-bounds read") }
+            h.handleControlMessage(request)
+            val r = readReply(sender)
+            assertTrue(r.getString("errorMessage").isNotBlank())
+            assertFalse(r.has("dataBase64"))
+        }
+    }
+
+    @Test
+    fun readRange_andHash_doNotNeedTheChangeSwitch() = runBlocking {
+        // Reading is not changing: the person's "Let your PC change files" switch is off here.
+        val (h, sender, _) = build(logTree("abc"), pcChangesAllowed = false)
+        h.handleControlMessage(readRange("Logs/app.log"))
+        assertEquals("abc", bytesOf(readReply(sender)))
+        h.handleControlMessage(hash("Logs/app.log"))
+        assertTrue(sender.last().getJSONObject("fileHashResponse").has("sha256"))
+    }
+
+    @Test
+    fun hash_isTheSha256OfTheFile_inBase64() = runBlocking {
+        val (h, sender, _) = build(logTree("abc"))
+        h.handleControlMessage(hash("Logs/app.log"))
+        val msg = sender.last()
+        assertEquals("file_hash_response", msg.getString("type"))
+        val r = msg.getJSONObject("fileHashResponse")
+        assertEquals("hh", r.getString("requestId"))
+        // SHA-256("abc"), the FIPS 180-2 vector; HashFormatTest pins the same value.
+        assertEquals("ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=", r.getString("sha256"))
+    }
+
+    @Test
+    fun hash_ofAFolder_aMissingFile_orAnUnsharedRoot_isRefusedWithAPlainReason() = runBlocking {
+        for (request in listOf(hash("Logs"), hash("Logs/nope.log"), hash("Logs/app.log", root = "not-shared"))) {
+            val (h, sender, _) = build(logTree("abc"))
+            h.handleControlMessage(request)
+            val r = sender.last().getJSONObject("fileHashResponse")
+            assertEquals(READ_NOT_A_FILE_MESSAGE, r.getString("errorMessage"))
+            assertFalse(r.has("sha256"))
+        }
+    }
+
+    @Test
+    fun hash_thatFailsPartWay_saysSoWithoutTheProvidersWords() = runBlocking {
+        val (h, sender, _) = build(logTree("abc"))
+        lastFacade!!.inputOverride = {
+            object : java.io.InputStream() {
+                override fun read(): Int = throw java.io.IOException("/storage/emulated/0/secret/path exploded")
+            }
+        }
+        h.handleControlMessage(hash("Logs/app.log"))
+        val r = sender.last().getJSONObject("fileHashResponse")
+        assertEquals(READ_FAILED_MESSAGE, r.getString("errorMessage"))
+        assertFalse(r.getString("errorMessage").contains("/storage"))
     }
 
     @Test
@@ -506,6 +755,10 @@ class FileHostHandlerTest {
                 """{"type":"file_metadata_request","fileMetadataRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt"}}"""),
             Triple("file_thumbnail_request", "file_thumbnail_response",
                 """{"type":"file_thumbnail_request","fileThumbnailRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt","maxDim":128}}"""),
+            Triple("file_read_range_request", "file_read_range_response",
+                """{"type":"file_read_range_request","fileReadRangeRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt","offset":0,"length":10}}"""),
+            Triple("file_hash_request", "file_hash_response",
+                """{"type":"file_hash_request","fileHashRequest":{"requestId":"q","rootId":"root1","relativePath":"Docs/report.txt"}}"""),
         )
         for ((request, response, json) in requests) {
             val (h, sender, _) = build(sampleTree(), roots = emptyList())

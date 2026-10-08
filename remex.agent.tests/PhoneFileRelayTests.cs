@@ -130,11 +130,11 @@ public sealed class PhoneFileRelayTests
             Type = MessageTypes.FileRootManageRequest,
             FileRootManageRequest = new FileRootManageRequest { RequestId = "rm", Operation = "remove", RootId = "root" },
         },
-        new RemexMessage
-        {
-            Type = MessageTypes.FileHashRequest,
-            FileHashRequest = new FileHashRequest { RequestId = "h", RootId = "root", RelativePath = "a.jpg" },
-        },
+        // file_hash_request and file_read_range_request are NOT here any more (2026-10-08 redesign): they are
+        // relayed, read-only. Their own refusals are pinned by the "read" tests below; with no body they are
+        // refused like any other type.
+        new RemexMessage { Type = MessageTypes.FileHashRequest },
+        new RemexMessage { Type = MessageTypes.FileReadRangeRequest },
         new RemexMessage
         {
             Type = MessageTypes.FileTransferOffer,
@@ -391,13 +391,143 @@ public sealed class PhoneFileRelayTests
     }
 
     [Fact]
-    public void TheAllowlist_HoldsTheSevenReadOnlyTypesAndManage_AndNotRootManagement()
+    public void TheAllowlist_HoldsTheNineReadOnlyTypesAndManage_AndNotRootManagement()
     {
-        Assert.Equal(8, PhoneFileRelay.RelayedRequests.Count);
+        // Widened twice, each time by a product decision: manage (RemEx-fgmne), then range reads and hashing
+        // (2026-10-08 redesign). Root management has never been on it and must not be.
+        Assert.Equal(10, PhoneFileRelay.RelayedRequests.Count);
         IEnumerable<string> allowlist = PhoneFileRelay.RelayedRequests;
         Assert.Contains(MessageTypes.FileManageRequest, allowlist);
+        Assert.Contains(MessageTypes.FileReadRangeRequest, allowlist);
+        Assert.Contains(MessageTypes.FileHashRequest, allowlist);
         Assert.DoesNotContain(MessageTypes.FileRootManageRequest, allowlist);
-        Assert.DoesNotContain(MessageTypes.FileHashRequest, allowlist);
+    }
+
+    // ─── Reading a phone's files: live preview and hashing (2026-10-08 redesign) ───
+
+    private static RemexMessage ReadRangeRequest(
+        string requestId, string relativePath = "DCIM/a.jpg", long offset = 0, int length = 4096,
+        bool fromEnd = false, string rootId = "root") => new()
+    {
+        Type = MessageTypes.FileReadRangeRequest,
+        FileReadRangeRequest = new FileReadRangeRequest
+        {
+            RequestId = requestId, RootId = rootId, RelativePath = relativePath,
+            Offset = offset, Length = length, FromEnd = fromEnd,
+        },
+    };
+
+    private static RemexMessage HashRequest(string requestId, string relativePath = "DCIM/a.jpg", string rootId = "root") => new()
+    {
+        Type = MessageTypes.FileHashRequest,
+        FileHashRequest = new FileHashRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath },
+    };
+
+    [Fact]
+    public async Task ReadsAndHashes_ReachThePhone_WithoutTheChangeSwitch_AndWithNoClientId()
+    {
+        using var kit = new PhoneRelayTestKit();
+        var (socket, _) = kit.ConnectProvenPhone(PhoneA);
+        using var connection = kit.Relay.Open(PhoneA);
+        // Deliberately the phone that said NO to changes: reading is not changing.
+        await PhoneSaysAsync(kit, connection, allowsChanges: false);
+
+        await connection.SendAsync(ReadRangeRequest("r1", fromEnd: true) with { ClientId = "someone-else" });
+        await connection.SendAsync(HashRequest("h1") with { ClientId = "someone-else" });
+
+        var read = Assert.Single(socket.MessagesOfType(MessageTypes.FileReadRangeRequest));
+        Assert.Equal("r1", read.FileReadRangeRequest!.RequestId);
+        Assert.True(read.FileReadRangeRequest.FromEnd);
+        Assert.Null(read.ClientId);
+        var hash = Assert.Single(socket.MessagesOfType(MessageTypes.FileHashRequest));
+        Assert.Equal("h1", hash.FileHashRequest!.RequestId);
+        Assert.Null(hash.ClientId);
+    }
+
+    public static TheoryData<RemexMessage> UnsafeReads() =>
+    [
+        ReadRangeRequest("r", relativePath: "DCIM/../secret.txt"),
+        ReadRangeRequest("r", relativePath: "DCIM\\a.jpg"),
+        ReadRangeRequest("r", relativePath: ""),
+        ReadRangeRequest("r", relativePath: "/"),
+        ReadRangeRequest("r", rootId: " "),
+        ReadRangeRequest("r", offset: -1),
+        ReadRangeRequest("r", length: 0),
+        ReadRangeRequest("r", length: FileTransferLimits.ReadRangeMaxBytes + 1),
+        HashRequest("h", relativePath: "DCIM/../secret.txt"),
+        HashRequest("h", relativePath: ""),
+        HashRequest("h", rootId: ""),
+    ];
+
+    [Theory]
+    [MemberData(nameof(UnsafeReads))]
+    public async Task Reads_WithAnUnsafePathOrRange_AreRefusedAndNeverReachThePhone(RemexMessage request)
+    {
+        using var kit = new PhoneRelayTestKit();
+        var (socket, _) = kit.ConnectProvenPhone(PhoneA);
+        using var connection = kit.Relay.Open(PhoneA);
+
+        await Assert.ThrowsAsync<PhoneFileRequestRefusedException>(() => connection.SendAsync(request));
+
+        Assert.Empty(socket.Messages);
+    }
+
+    [Fact]
+    public async Task ReadReplies_FromThePhoneThatWasAsked_AreDelivered_AndFromLoopbackOrAnotherPhoneDropped()
+    {
+        using var kit = new PhoneRelayTestKit();
+        kit.ConnectProvenPhone(PhoneA);
+        kit.ConnectProvenPhone(PhoneB);
+        using var connection = kit.Relay.Open(PhoneA);
+        var received = new List<RemexMessage>();
+        connection.FileTransferMessageReceived += received.Add;
+        await connection.SendAsync(ReadRangeRequest("r1"));
+        await connection.SendAsync(HashRequest("h1"));
+
+        var readReply = new RemexMessage
+        {
+            Type = MessageTypes.FileReadRangeResponse,
+            FileReadRangeResponse = new FileReadRangeResponse { RequestId = "r1", DataBase64 = "aGk=", FileSize = 2, Eof = true },
+        };
+        var hashReply = new RemexMessage
+        {
+            Type = MessageTypes.FileHashResponse,
+            FileHashResponse = new FileHashResponse { RequestId = "h1", Sha256Base64 = "ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=" },
+        };
+
+        Assert.False(kit.Relay.TryDeliverReply(PhoneA, identityProven: true, isLoopback: true, readReply));
+        Assert.False(kit.Relay.TryDeliverReply(PhoneB, identityProven: true, isLoopback: false, hashReply));
+        Assert.Empty(received);
+
+        Assert.True(kit.Relay.TryDeliverReply(PhoneA, identityProven: true, isLoopback: false, readReply));
+        Assert.True(kit.Relay.TryDeliverReply(PhoneA, identityProven: true, isLoopback: false, hashReply));
+        Assert.Equal(["r1", "h1"], received.Select(PhoneFileRelay.ReplyRequestId));
+    }
+
+    [Fact]
+    public async Task AHashOutlivesTheShortRequestTimeout_ButARangeReadDoesNot()
+    {
+        // A phone hashes the whole file before it answers; a long video can take minutes. A range read is at
+        // most 1 MiB and keeps the short backstop, so a dead phone still fails the preview quickly.
+        using var kit = new PhoneRelayTestKit(requestTimeout: TimeSpan.FromMilliseconds(120), hashTimeout: TimeSpan.FromSeconds(30));
+        kit.ConnectProvenPhone(PhoneA);
+        using var connection = kit.Relay.Open(PhoneA);
+        var received = new List<RemexMessage>();
+        connection.FileTransferMessageReceived += received.Add;
+
+        await connection.SendAsync(ReadRangeRequest("r1"));
+        await connection.SendAsync(HashRequest("h1"));
+        // Poll to a generous deadline rather than sleep a fixed time: under a loaded test run (RemEx-w7ei) a
+        // 120 ms timer can fire late, and a fixed delay would then fail on timing, not on behaviour.
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (received.Count == 0 && DateTime.UtcNow < deadline)
+            await Task.Delay(25);
+        await Task.Delay(200); // room for a wrong second timeout (the hash's) to show up
+
+        var timedOut = Assert.Single(received);
+        Assert.Equal(MessageTypes.FileReadRangeResponse, timedOut.Type);
+        Assert.Equal("r1", timedOut.FileReadRangeResponse!.RequestId);
+        Assert.False(string.IsNullOrEmpty(timedOut.FileReadRangeResponse.ErrorMessage));
     }
 
     [Fact]

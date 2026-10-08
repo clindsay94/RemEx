@@ -18,6 +18,25 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
   there. (RemEx-2p7um)
 
+### Internal
+
+- **Groundwork for the new File Transfer screen: live preview and SHA-256 on the phone.** Two protocol
+  additions, both additive (no `protocolVersion` bump) and capability-flagged so older peers are simply not
+  asked:
+  - A new `file_read_range_request` / `file_read_range_response` pair reads up to 1 MiB of a file from an
+    offset or from the end, for previews and live log tailing. The PC and the phone both answer it, through
+    the same shared-folder checks a download or a browse uses.
+  - The phone now answers `file_hash_request`, so the PC can check a phone's copy of a file against its own.
+  - The PC's relay to a paired phone now forwards these two read-only requests too, after checking the path and
+    the range itself. The "Let your PC change files" switch is not needed for either.
+  - A hash is shown as lowercase hex everywhere (the format `sha256sum` and `Get-FileHash` print), and a pasted
+    hash is accepted in hex or Base64. The C# and Kotlin versions share one set of test vectors.
+  See `docs/specs/2026-10-08-file-browser-redesign.md` and `docs/API_CONTRACTS.md` §3.
+- **`scripts/verify.ps1` runs on Linux again.** It died at its first step on every Linux run: PowerShell 7.6
+  adds its own newline to text piped into `git check-ignore`, so the script's extra one (needed on Windows,
+  where PowerShell adds CRLF) became an empty line that git refuses. The extra newline is now added on Windows
+  only; Windows behaviour is unchanged.
+
 ## [3.0.0] — 2026-10-04
 
 **Routines, one look on the PC and the phone, and a new startup splash.** The first release on Google Play

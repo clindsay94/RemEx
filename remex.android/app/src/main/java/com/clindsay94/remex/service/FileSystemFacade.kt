@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Size
 import androidx.documentfile.provider.DocumentFile
 import java.io.ByteArrayOutputStream
+import java.io.FileInputStream
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -79,6 +80,30 @@ interface FileSystemFacade {
 
     /** Loads a JPEG thumbnail (images/videos), ≤ [maxBytes] encoded, or null when unavailable. */
     fun loadThumbnailJpeg(node: FileNode, maxDim: Int, maxBytes: Int): ByteArray?
+
+    /**
+     * Up to [length] bytes of [node] from [offset] (live preview), or null when it cannot be opened. Fewer
+     * bytes come back only at the end of the file. The default streams and skips, which every provider
+     * supports; [SafFileSystemFacade] seeks instead when the provider hands out a real file descriptor.
+     * [checkCancelled] is called between pieces of a skip, which on a pipe-only provider streams every byte
+     * before [offset]; it throws to stop a read nobody is waiting for any more.
+     */
+    fun readRange(node: FileNode, offset: Long, length: Int, checkCancelled: () -> Unit = {}): ByteArray? =
+        openInput(node)?.use { input ->
+            var toSkip = offset
+            while (toSkip > 0) {
+                checkCancelled()
+                val skipped = input.skip(toSkip)
+                if (skipped <= 0) {
+                    // skip() may legitimately return 0 before the end; one read tells the two apart.
+                    if (input.read() < 0) return@use ByteArray(0)
+                    toSkip--
+                } else {
+                    toSkip -= skipped
+                }
+            }
+            input.readNBytes(length)
+        }
 }
 
 /** Production [FileNode] backed by a SAF [DocumentFile]. */
@@ -150,6 +175,23 @@ class SafFileSystemFacade(
     override fun openOutput(node: FileNode): OutputStream? {
         val doc = (node as? DocumentFileNode)?.doc ?: return null
         return context.contentResolver.openOutputStream(doc.uri, "w")
+    }
+
+    override fun readRange(node: FileNode, offset: Long, length: Int, checkCancelled: () -> Unit): ByteArray? {
+        val doc = (node as? DocumentFileNode)?.doc ?: return null
+        // A SEEK, NOT A SKIP, WHEN THE PROVIDER ALLOWS IT. Tailing a 2 GB log would otherwise stream two
+        // gigabytes through skip() every two seconds. Providers that only offer a pipe fall back to the
+        // interface default, which still answers correctly, just slower.
+        val seeked =
+            runCatching {
+                context.contentResolver.openFileDescriptor(doc.uri, "r")?.use { pfd ->
+                    FileInputStream(pfd.fileDescriptor).use { stream ->
+                        stream.channel.position(offset)
+                        stream.readNBytes(length)
+                    }
+                }
+            }.getOrNull()
+        return seeked ?: super.readRange(node, offset, length, checkCancelled)
     }
 
     override fun loadThumbnailJpeg(node: FileNode, maxDim: Int, maxBytes: Int): ByteArray? {

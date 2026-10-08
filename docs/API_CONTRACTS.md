@@ -115,6 +115,34 @@ same way, so the meaning is fixed:
   listing from the first page (with totals) rather than failing.
 - `nextCursor` is absent on the last page and when the listing was truncated at the total-entry cap.
 
+### Live preview: range reads (`file_read_range_request` / `file_read_range_response`, 2026-10-08)
+Up to 1 MiB (`FileTransferLimits.ReadRangeMaxBytes`) of one file, answered on the control channel in base64 so
+the reply stays well under the 4 MB message limit. Capability-flagged by `fileCapabilities.readRange`.
+
+```jsonc
+// requester → host
+{ "requestId": "…", "rootId": "…", "relativePath": "Logs/app.log",
+  "offset": 0, "length": 1048576,   // 1 … 1 MiB
+  "fromEnd": false }                // true: the LAST `length` bytes (live tail)
+// host → requester
+{ "requestId": "…", "offset": 0, "dataBase64": "…", "fileSize": 52344,
+  "modifiedUtc": 1759900000000, "eof": true, "errorMessage": null }
+```
+
+- Resolved exactly as a download's source is (PC: `ResolvePath` / a consented volume; phone: `facade.resolve`).
+  A directory, a missing file, an unshared root, a negative offset or a length outside 1 … 1 MiB is answered with
+  an `errorMessage`, never silence.
+- An offset at or past the end returns empty `dataBase64` with `eof: true`, not an error: a tail that polls after a
+  truncation sees "nothing new", and `fileSize` going down tells it to start over.
+- The PC opens with `FileShare.ReadWrite | Delete`, so a log another program is still writing can be tailed.
+- The phone answers off its control-message collector and seeks with the provider's file descriptor when it can.
+  A provider that reports size 0 gets `fileSize` = at least what was read.
+- Preview limits shared by both clients: text 2 MiB from the start, or the last 256 KiB when tailing (polled every
+  2 s while visible); images up to 40 MiB, fetched in 1 MiB reads.
+
+`file_hash_request` (existing) is now also answered by the phone (`fileCapabilities.hash`). The wire stays Base64;
+screens show lowercase hex (`HashFormat`, C# and Kotlin twins sharing one set of test vectors).
+
 ### The PC browsing a paired phone (relay, RemEx-xt0af)
 The PC's own File Transfer screen can browse a paired phone. **The connection direction does not
 change**: the phone dials `/ws` and `/ws/files` as always, and the PC opens no socket to it. What is
@@ -124,15 +152,15 @@ them exactly as it would answer any peer. No message type was added.
 
 **Relayed requests (host → phone), and nothing else:** `file_roots_request`, `file_browse_request`,
 `file_volumes_request`, `file_search_request`, `file_manifest_request`, `file_metadata_request`,
-`file_thumbnail_request`, and (RemEx-fgmne) `file_manage_request`. Root management
-(`file_root_manage_request`: which folders the phone shares is only ever the phone's decision), hashing and
-the legacy v2 transfer are refused by the relay before they reach the wire.
+`file_thumbnail_request`, (2026-10-08) `file_read_range_request` and `file_hash_request`, and (RemEx-fgmne)
+`file_manage_request`. Root management (`file_root_manage_request`: which folders the phone shares is only ever
+the phone's decision) and the legacy v2 transfer are refused by the relay before they reach the wire.
 
 Rules the host enforces, each pinned by `PhoneFileRelayTests`:
 - The target must be **paired** (`PairedClientRegistry`) **and connected** on a session that proved its
   identity; otherwise the PC side gets `PhoneNotConnectedException`.
 - A relayed request carries **no `clientId`** (it is nulled on the way out).
-- A reply (`file_*_response` of the eight types above) is accepted only from a session with
+- A reply (`file_*_response` of the ten types above) is accepted only from a session with
   `identityProven && !isLoopback`, only for a request this host sent to **that same client id**, and is
   delivered only to the relay connection that asked. Unrequested replies are dropped; nothing is
   broadcast. Loopback can never answer for a phone (RemEx-4215).
@@ -176,6 +204,15 @@ browsing only while that switch is on. The phone resolves a root id only if it i
   character, no Unicode format character such as U+202E or U+200B) and every path
   (`IsValidRemoteRelativePath`): the same rules the phone applies. Copy and move are not subject to the 90-second request timeout: they stream the
   whole file on the phone before it answers, so they wait up to 30 minutes.
+
+**Reading a phone's files: live preview and hashing (2026-10-08 redesign).** `file_read_range_request` and
+`file_hash_request` are relayed READ-ONLY. They need nothing from *Let your PC change files*; the phone resolves
+them through the same `facade.resolve` (and so the same `SharedPathPolicy` check against the folders shared right
+now) as a browse, on every request. Before the wire the relay checks the root id, the path
+(`IsValidRemoteRelativePath`, and never the shared folder itself) and, for a range read, the numbers
+(`FileReadRangeValidation`). A hash waits up to 30 minutes (the phone hashes the whole file first); a range read
+keeps the 90-second backstop. The phone advertises both with `fileCapabilities.readRange` / `hash` (additive,
+default false); a PC hides preview and Compute SHA-256 for a phone that does not.
 
 **Folder upload to a phone** is not a new request either: the PC makes each folder with `mkdir`
 (`relativePath` = the parent, `newName` = the folder, shallowest first, a folder that already exists is fine),

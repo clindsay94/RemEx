@@ -1536,25 +1536,44 @@ owner never agreed:
   the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected
   in RemEx-xt0af).
 - **Only the allowlisted request types are relayed** (`RelayedRequests`, derived from `RequestForReply`,
-  `PhoneFileRelay.cs:58-79`): the seven read-only ones plus `file_manage_request`. `file_root_manage_request`
-  (which folders a phone shares) and hashing stay out; `TheAllowlist_HoldsTheSevenReadOnlyTypesAndManage_AndNotRootManagement`
-  and `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
+  `PhoneFileRelay.cs:59-87`): the nine read-only ones plus `file_manage_request`. `file_read_range_request` and
+  `file_hash_request` joined on 2026-10-08 — a product decision (Connor, file-browser redesign), read-only, no
+  change switch needed. `file_root_manage_request` (which folders a phone shares) stays out;
+  `TheAllowlist_HoldsTheNineReadOnlyTypesAndManage_AndNotRootManagement` and
+  `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
   decision, not a fix.
+- **And a range read or hash has its root, path and range checked before the wire** (`ReadRefusal`, called in
+  `Connection.SendAsync` before the reachability check): a root id, `IsValidRemoteRelativePath`, never the shared
+  folder itself, and `FileReadRangeValidation`. Delete the call and a `..` path or a 2 GB read goes to the phone,
+  whose `facade.resolve` is then the only defence. `Reads_WithAnUnsafePathOrRange_AreRefusedAndNeverReachThePhone`
+  goes red in all 11 cases (defect-injected 2026-10-08). A hash waits `HashTimeout`, not the 90 s backstop
+  (`AHashOutlivesTheShortRequestTimeout_ButARangeReadDoesNot`, defect-injected 2026-10-08).
+- **On the phone, reads and hashes resolve through `facade.resolve` like a browse** (`FileHostHandler.handleReadRange`
+  / `handleHash`) and refuse a folder, a missing file and an unshared root with `READ_NOT_A_FILE_MESSAGE`; a failure
+  part-way says `READ_FAILED_MESSAGE`, never the provider's words (which can carry `/storage/...` paths).
+  `hash_ofAFolder_aMissingFile_orAnUnsharedRoot_isRefusedWithAPlainReason` and
+  `readRange_outOfBounds_isRefused_beforeAnythingIsRead` go red (defect-injected 2026-10-08).
+  Two quieter rules ride along. A size of 0 is treated as UNKNOWN, not empty (`sizeKnown`), because
+  `DocumentFile.length()` is 0 whenever a provider omits `COLUMN_SIZE` (RemEx-xrb2v): trust it and every read says
+  `eof` and a live tail serves the top of the log
+  (`readRange_tailWithTheSizeUnknown_returnsTheRealEnd_notTheTop`, defect-injected). And reads and hashes run under
+  small permit pools (`READ_CONCURRENCY`, `HASH_CONCURRENCY`) so a two-second tail against a slow provider cannot
+  stack reads up on the IO pool (`rangeReads_runAtMostTwoAtATime_andTheRestWaitTheirTurn`, defect-injected).
 - **Outbound requests carry no `ClientId`.**
 - **A `file_manage_request` goes out only after THIS phone's own roots reply said `pcChanges: true`**
-  (`Connection.SendAsync`, the `_phoneAllowsChanges` gate at `PhoneFileRelay.cs:530-540`, set in `TryComplete`
-  at `PhoneFileRelay.cs:605`, which only a reply that already passed `TryDeliverReply`'s loopback, proven and
+  (`Connection.SendAsync`, the `_phoneAllowsChanges` gate at `PhoneFileRelay.cs:596-606`, set in `TryComplete`
+  at `PhoneFileRelay.cs:678`, which only a reply that already passed `TryDeliverReply`'s loopback, proven and
   paired checks can reach). Delete the gate and the PC offers and sends renames and deletes to a phone whose
   owner never turned them on, and to every older phone. `Manage_BeforeThePhoneHasSaidItAllowsChanges_...`,
   `Manage_WhenThePhoneSwitchIsOff_...` and `APlantedRootsReply_FromLoopbackOrAnUnprovenSession_CannotTurnManageOn`
   go red (gate defect-injected in RemEx-fgmne).
 - **And its operation, names and paths are validated before the wire** (`ManageRefusal`,
-  `PhoneFileRelay.cs:447`): one of five operations, a root id, `FilePathValidation.IsValidRemoteName` /
+  `PhoneFileRelay.cs:505`): one of five operations, a root id, `FilePathValidation.IsValidRemoteName` /
   `IsValidRemoteRelativePath`, and never the shared folder itself.
   `Manage_WithAnUnsafeNameOrPathOrOperation_IsRefusedEvenWhenThePhoneAllowsChanges` covers each case.
 
 **On the phone, the switch is the guard, and it is checked first.** `FileHostHandler.handleManage`
-(`FileHostHandler.kt:399`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
+(`FileHostHandler.kt:411`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
 included, BEFORE anything is resolved, and `AndroidFileTransferHost` reads the person's
 `pcMayChangeFilesFlow` into `pcMayChangeFiles` (`AndroidFileTransferHost.kt:68`, default `false`) and serves
 it through `isPcChangeAllowed()` (`:176`), which also gates `canRename/canMove/canDelete` on each root
@@ -1564,8 +1583,8 @@ PC's relay gate becomes the only thing standing between a PC and the phone's fil
 stale (the person turned the switch off while the screen was open) and cannot be trusted by a forged request.
 `FileHostHandlerTest.everyManageOperation_withTheSwitchOff_isRefusedWithAPlainReasonAndChangesNothing` and
 `theSwitch_isReadOnEveryRequest_notOnceAtStartup` go red (defect-injected in RemEx-fgmne). The same function
-refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:420`) and the shared folder
-itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:431`) before the resolver runs. It also refuses the whole-device
+refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:432`) and the shared folder
+itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:443`) before the resolver runs. It also refuses the whole-device
 (full-browse) volume (`FULL_BROWSE_READ_ONLY_MESSAGE`: only folders the person shared by name are writable
 from the PC; `theWholeDeviceView_isReadOnlyFromThePc_forEveryOperation`), and never sends a SAF provider's
 exception text to the PC (`reportManageFailure`; the text can hold `/storage/emulated/0/...`).

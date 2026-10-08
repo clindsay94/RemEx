@@ -1531,6 +1531,52 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
         throw new FileNotFoundException($"'{relativePath}' not found in root '{rootDisplay}'.");
     }
 
+    public Task<FileRangeRead> ReadRangeAsync(string rootId, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct)
+        => ReadRangeCore(ResolvePath(rootId, relativePath), GetConfiguredRoot(rootId).DisplayName, relativePath, offset, length, fromEnd, ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="ReadRangeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<FileRangeRead> ReadVolumeRangeAsync(string volumeAbsolutePath, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct)
+    {
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        return ReadRangeCore(resolved, volumeAbsolutePath, relativePath, offset, length, fromEnd, ct);
+    }
+
+    private static async Task<FileRangeRead> ReadRangeCore(
+        string resolved, string rootDisplay, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct)
+    {
+        if (offset < 0 || length is < 1 or > FileTransferLimits.ReadRangeMaxBytes)
+            throw new ArgumentOutOfRangeException(nameof(length), "The read range is out of bounds.");
+        if (!File.Exists(resolved))
+            throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
+
+        // ReadWrite | Delete, NOT the Read that the transfer paths use: a preview must be able to open a log
+        // another program still has open for writing, which is the whole point of live tail. Random access,
+        // not SequentialScan, because a tail reads the end of the file and nothing before it.
+        await using var stream = new FileStream(
+            resolved, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096,
+            FileOptions.Asynchronous | FileOptions.RandomAccess);
+        var size = stream.Length;
+        var start = FileReadRangeValidation.StartOffset(offset, length, fromEnd, size);
+        var toRead = (int)Math.Clamp(size - start, 0, length);
+        var data = new byte[toRead];
+        var read = 0;
+        if (toRead > 0)
+        {
+            stream.Position = start;
+            // ReadAtLeast stops early only at end of stream, which here means the file shrank since Length
+            // was read. Trim to what actually arrived rather than return zeros as if they were content.
+            read = await stream.ReadAtLeastAsync(data, toRead, throwOnEndOfStream: false, ct);
+        }
+
+        return new FileRangeRead
+        {
+            Offset = start,
+            Data = read == toRead ? data : data[..read],
+            FileSize = size,
+            ModifiedUtc = ToUnixMs(File.GetLastWriteTimeUtc(resolved)),
+        };
+    }
+
     public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct)
     {
         var root = GetConfiguredRoot(rootId);
