@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-labelledby="t d">
+  <title id="t">RemEx 3.0</title>
+  <desc id="d">RemEx 3.0: remote control for your PC, from your phone. One LAN, no relay, no account.</desc>
+  <!-- Palette and mark geometry come from remex.branding/RemexBrandData.cs (the shipped launcher icon). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#20242F"/>
+      <stop offset="1" stop-color="#39404F"/>
+    </linearGradient>
+    <linearGradient id="markbg" gradientUnits="userSpaceOnUse" x1="6" y1="6" x2="102" y2="102">
+      <stop offset="0" stop-color="#20242F"/>
+      <stop offset="1" stop-color="#39404F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFB63D" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FFB63D" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#7C88A0" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <clipPath id="card"><rect width="1280" height="360" rx="20"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <rect width="1280" height="360" fill="url(#bg)"/>
+    <rect width="1280" height="360" fill="url(#grid)"/>
+    <ellipse cx="250" cy="190" rx="430" ry="230" fill="url(#glow)"/>
+
+    <!-- title bar -->
+    <rect width="1280" height="44" fill="#0C0E13" fill-opacity="0.45"/>
+    <circle cx="28" cy="22" r="6" fill="#FFB63D"/>
+    <circle cx="48" cy="22" r="6" fill="#6E7B94"/>
+    <circle cx="68" cy="22" r="6" fill="#333B48"/>
+    <text x="96" y="27" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="14" fill="#7C88A0">&gt;R_  remex.agent</text>
+
+    <!-- the app mark, drawn from the launcher icon's own paths (108-unit viewport) -->
+    <g transform="translate(72 96) scale(1.9)">
+      <rect width="108" height="108" rx="24" fill="url(#markbg)"/>
+      <g>
+        <path d="M33,26 L75,26 A13,13 0 0 1 88,39 L88,69 A13,13 0 0 1 75,82 L33,82 A13,13 0 0 1 20,69 L20,39 A13,13 0 0 1 33,26 Z" fill="#0C0E13" stroke="#7C88A0" stroke-opacity="0.55" stroke-width="1.4"/>
+        <path d="M27.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" fill="#FFB63D"/>
+        <path d="M34.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" fill="#6E7B94"/>
+        <path d="M41.3,36 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" fill="#333B48"/>
+        <path d="M30,50 L39,61 L30,72" fill="none" stroke="#FFB63D" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M45,47 h7 v25 h-7 Z" fill="#F4F5F9"/>
+        <path d="M52,47 H60 A8,8 0 0 1 60,63 H52 Z" fill="#F4F5F9"/>
+        <path d="M53,58.5 L61,58.5 L71.5,73 L63,73 Z" fill="#F4F5F9"/>
+        <path d="M53.5,53 H58.8 A2.8,2.8 0 0 1 58.8,58.6 H53.5 Z" fill="#0C0E13"/>
+        <rect x="73" y="50" width="6" height="22" rx="1.4" fill="#FFB63D"/>
+      </g>
+    </g>
+
+    <!-- wordmark -->
+    <text x="310" y="196" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="124" font-weight="700" fill="#F4F5F9" letter-spacing="-4">RemEx</text>
+    <rect x="652" y="112" width="20" height="84" rx="3" fill="#FFB63D">
+      <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.5;0.5;0.95;1" dur="1.1s" repeatCount="indefinite"/>
+    </rect>
+
+    <!-- tagline -->
+    <text x="314" y="248" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="24" fill="#F4F5F9">remote control for your PC, from your phone</text>
+    <text x="314" y="290" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="17" fill="#7C88A0">one LAN  ·  no relay  ·  no account  ·  no subscription</text>
+
+    <!-- version plate -->
+    <g transform="translate(1000 96)">
+      <rect width="216" height="176" rx="18" fill="#0C0E13" fill-opacity="0.6" stroke="#7C88A0" stroke-opacity="0.55" stroke-width="2"/>
+      <text x="108" y="40" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="12" letter-spacing="2" fill="#7C88A0">NOW ON GOOGLE PLAY</text>
+      <text x="108" y="118" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="80" font-weight="700" fill="#FFB63D">3.0</text>
+      <text x="108" y="152" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="15" fill="#F4F5F9">routines · new look</text>
+    </g>
+  </g>
+</svg>

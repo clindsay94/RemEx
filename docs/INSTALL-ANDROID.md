@@ -7,29 +7,24 @@
 
 ## Which way to install
 
-There are two ways to get RemEx on your phone: Google Play open testing, or sideloading the APK
-from GitHub Releases. Both install the same app, built from the same source, signed under the same
-verified Play developer account. The difference is just how updates reach you: through Play
-automatically, or by downloading the next release yourself.
+There are two ways to get RemEx on your phone: Google Play, or sideloading the APK from GitHub
+Releases. Both install the same app, built from the same source, signed under the same verified
+Play developer account. The difference is just how updates reach you: through Play automatically,
+or by downloading the next release yourself.
 
 Requirement either way: **Android 14 or newer**.
 
-## Google Play (open testing)
+## Google Play
 
 1. Open the listing: https://play.google.com/store/apps/details?id=com.clindsay94.remex
-2. Join the open test from the card on the listing page.
-3. Install it like any other Play Store app.
+2. Tap **Install**.
 
-That's it. Updates arrive through Play from here on.
-
-> [!NOTE]
-> Open-testing builds on Play are the same builds published to GitHub Releases, not a separate
-> track. If you run into a problem, file it as a GitHub issue:
-> https://github.com/clindsay94/RemEx/issues/new/choose
+That's it. Updates arrive through Play from here on. If you run into a problem, file it as a
+GitHub issue: https://github.com/clindsay94/RemEx/issues/new/choose
 
 ## Sideloading the APK
 
-1. Download `RemEx-V2.5.0-release.apk` from [GitHub Releases](https://github.com/clindsay94/RemEx/releases).
+1. Download `RemEx-V3.0.0-release.apk` from [GitHub Releases](https://github.com/clindsay94/RemEx/releases).
 2. Open the downloaded file. Android will ask, once, to allow installs from whichever app opened it
    (your browser or Files). Allow it, then install.
 3. You'll get updates by coming back to Releases for the next version; sideloading doesn't wire up

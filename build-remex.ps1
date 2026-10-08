@@ -78,7 +78,7 @@
 .EXAMPLE
     ./build-remex.ps1 -c release -t all
 .EXAMPLE
-    ./build-remex.ps1 -v 2.5.0 -t all -c release
+    ./build-remex.ps1 -v 3.0.0 -t all -c release
 .EXAMPLE
     ./build-remex.ps1 -t windows -NoClean
 .EXAMPLE

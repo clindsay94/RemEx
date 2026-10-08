@@ -1,6 +1,6 @@
 # Android Development Setup
 
-This is the developer SDK setup. To install the app as a user, see [INSTALL-ANDROID.md](INSTALL-ANDROID.md) (Play open testing or APK sideload).
+This is the developer SDK setup. To install the app as a user, see [INSTALL-ANDROID.md](INSTALL-ANDROID.md) (Google Play or APK sideload).
 
 This guide helps you configure the Android SDK for building the RemEx Android app.
 

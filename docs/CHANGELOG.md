@@ -5,7 +5,7 @@ All notable changes to RemEx will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
+Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
 
 ---
 
@@ -17,6 +17,14 @@ Jump to: [Unreleased](#unreleased) · [2.5.0](#250--2026-09-10) · [2.4.0](#240-
   instead of opening Google Play in a browser on the PC. Point your phone's camera at it to go straight to RemEx
   on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
   there. (RemEx-2p7um)
+
+## [3.0.0] — 2026-10-04
+
+**Routines, one look on the PC and the phone, and a new startup splash.** The first release on Google Play
+production. The short version is in [RELEASE-NOTES-3.0.0.md](RELEASE-NOTES-3.0.0.md).
+
+### Added
+
 - **Change files on your phone from the PC.** In File Transfer, with your phone chosen as the source, you can now
   make a new folder, rename, move, copy, cut, paste and delete files on the phone, and upload a whole folder to
   it. It stays off until you allow it on the phone: **Settings > Access from your PC > Let your PC change

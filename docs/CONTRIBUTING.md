@@ -11,7 +11,7 @@ Thanks for your interest in contributing! This document covers how to set up the
 - An IDE that supports .NET — Visual Studio 2022+, Rider, or VS Code with the C# Dev Kit
 
 If you just want to try the app rather than build it, the Android client is available through
-[Google Play Open Testing](https://play.google.com/store/apps/details?id=com.clindsay94.remex).
+[Google Play](https://play.google.com/store/apps/details?id=com.clindsay94.remex).
 
 ---
 
@@ -100,8 +100,8 @@ Managed centrally in `Directory.Build.props`.
 ### Android Native App
 Managed in `remex.android/app/version.properties`:
 ```properties
-versionCode=37
-versionName=2.5.0
+versionCode=38
+versionName=3.0.0
 ```
 
 Use `.\gradlew remexPublishRelease` from the `remex.android/` directory to auto-increment these values and prepare a release build.

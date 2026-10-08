@@ -25,7 +25,7 @@ val androidLocalProperties = Properties().apply {
 // ── Version management ──────────────────────────────────────────────────────
 // Source of truth: app/version.properties (tracked in git).
 // - remexFreshAssembleRelease  → builds with current version, no changes.
-// - remexPublishRelease        → bumps versionCode+1, PATCH+1 (2.5.0 → 2.5.1),
+// - remexPublishRelease        → bumps versionCode+1, PATCH+1 (3.0.0 → 3.0.1),
 //                                writes back to version.properties, then builds.
 val versionPropsFile = file("version.properties")
 val versionProps = Properties().apply {

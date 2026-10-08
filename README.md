@@ -1,88 +1,124 @@
 <div align="center">
 
-<img src="docs/assets/remex-logo.png" alt="RemEx" width="120" />
+<img src="docs/assets/remex-banner.svg" alt="RemEx 3.0: remote control for your PC, from your phone" width="100%" />
 
-# RemEx
+<br />
 
-remote control for your PC, from your phone
+[![Get it on Google Play](https://img.shields.io/badge/Google_Play-Get_it_now-3DDC84?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.clindsay94.remex)
+[![Download for Windows and Linux](https://img.shields.io/badge/PC_agent-Windows_%C2%B7_Linux-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/clindsay94/RemEx/releases/latest)
 
-[![Release](https://img.shields.io/github/v/release/clindsay94/RemEx)](https://github.com/clindsay94/RemEx/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/clindsay94/RemEx/dotnet.yml?branch=main)](https://github.com/clindsay94/RemEx/actions/workflows/dotnet.yml)
-[![Downloads](https://img.shields.io/github/downloads/clindsay94/RemEx/total)](https://github.com/clindsay94/RemEx/releases)
-[![Last commit](https://img.shields.io/github/last-commit/clindsay94/RemEx)](https://github.com/clindsay94/RemEx/commits/main)
-[![License](https://img.shields.io/github/license/clindsay94/RemEx)](LICENSE)
-[![Google Play: Open Testing](https://img.shields.io/badge/Google_Play-Open_Testing-414141?logo=googleplay)](https://play.google.com/store/apps/details?id=com.clindsay94.remex)
+[![Release](https://img.shields.io/github/v/release/clindsay94/RemEx?style=flat-square&color=f2b24c)](https://github.com/clindsay94/RemEx/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/clindsay94/RemEx/dotnet.yml?branch=main&style=flat-square)](https://github.com/clindsay94/RemEx/actions/workflows/dotnet.yml)
+[![Downloads](https://img.shields.io/github/downloads/clindsay94/RemEx/total?style=flat-square&color=8fd694)](https://github.com/clindsay94/RemEx/releases)
+[![Android 14+](https://img.shields.io/badge/Android-14%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](docs/INSTALL-ANDROID.md)
+[![Languages](https://img.shields.io/badge/languages-9-8fd694?style=flat-square)](#everything-it-does)
+[![License](https://img.shields.io/github/license/clindsay94/RemEx?style=flat-square)](LICENSE)
+
+**[Get started](#get-started-in-five-minutes)** &nbsp;·&nbsp; **[What's new in 3.0](#whats-new-in-30)** &nbsp;·&nbsp; **[How it works](#how-it-talks-to-your-pc)** &nbsp;·&nbsp; **[Build it](#building-from-source)** &nbsp;·&nbsp; **[Docs](#docs-index)**
 
 </div>
 
-```text
-+--------------------------------------------------------------+
-| >R_  remex.agent                                      - [] x |
-+--------------------------------------------------------------+
-|                                                              |
-|  ____                _____                                   |
-| |  _ \ ___ _ __ ___ | ____|_  __                             |
-| | |_) / _ \ '_ ` _ \|  _| \ \/ /                             |
-| |  _ <  __/ | | | | | |___ >  <                              |
-| |_| \_\___|_| |_| |_|_____/_/\_\                             |
-|                                                              |
-| your PC, from your phone. one LAN, no relay, no account.     |
-|                                                              |
-| > host      Windows or Linux                                 |
-| > client    Android 14 or newer                              |
-| > channels  wss :5005   tcp+tls :8338                        |
-| > relay     none                                             |
-| >R_                                                          |
-|                                                              |
-+--------------------------------------------------------------+
-```
+<br />
 
-I built RemEx because I wanted to run my PC from my phone over plain LAN, no
-relay server, no account, no subscription. It's an Android app plus a
-Windows/Linux agent: screen streaming, remote input, file transfer, clipboard
-sync, wake-on-LAN, power control. Just the two devices, talking directly.
+RemEx runs your PC from your phone over plain LAN: no relay server, no account, no subscription. It's an Android app plus a Windows/Linux agent. Screen streaming, remote input, file transfer, clipboard sync, wake-on-LAN, power control, live sensors and routines, with just the two devices talking directly to each other.
 
-Current release: **2.5.0** (2026-09-10), 1,129 commits and 1,030 files
-changed since 2.4.0. See [What's new in 2.5.0](#whats-new-in-250) below, or
-the [full release notes](docs/RELEASE-NOTES-2.5.0.md).
+> **3.0 is the biggest release yet.** 296 commits and 1,436 files changed since 2.5.0, a new look shared across both apps, routines that act on their own, and a startup splash that actually shows RemEx finding your PC. It's also the first release in production on Google Play.
 
-## Where it's rough
+## What's new in 3.0
 
-I'd rather say this up front than have you find it:
+<table>
+<tr>
+<td width="33%" valign="top">
 
-- No audio. Screen and input only, nothing carries sound.
-- Android 14 or newer only (`minSdk` 34); there's no support path below that.
-- Windows and Linux hosts, Android is the only client. No macOS host, no iOS.
-- Same LAN, unless you run Tailscale (see below) to reach the PC remotely.
-- The Linux host backend is newer and thinner than the Windows one. 2.5.0
-  landed several input and capture fixes for it, but I'd still call Windows
-  the more exercised path.
-- The Play build is open testing, not a finished release. If something's
-  rough, that's expected, and I'd rather hear about it than have you assume
-  it's just how it is.
+### ⚡ Routines
+Your phone acts on its own. Start a routine when you **get home** (spotted from your Wi-Fi, so no location permission), **tap an NFC tag**, or when a **PC sensor passes a limit**. Put one on the home screen as a shortcut or a widget that shows its last result.
+
+</td>
+<td width="33%" valign="top">
+
+### 🖥️ Routines on the PC
+The PC can run a routine itself when it goes idle, or locks or unlocks, even with your phone away. It keeps a history, lets you pause everything or block a phone, and shut down, restart and sleep always show a countdown first.
+
+</td>
+<td width="33%" valign="top">
+
+### 🎨 One look, two apps
+A fresh install of either app starts on the same RemEx colours. Cards, page titles, fonts and page names (Sensors, Commands, Apps, Processes, Files) now match on the PC and the phone.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🚀 A new startup splash
+**Live Handshake** is the new default: it plays RemEx actually starting and finding your PC. Three more scenes are one tap away. [See them below.](#the-splash)
+
+</td>
+<td valign="top">
+
+### 📱 A new phone layout
+Five tabs: **Home, Desktop, Apps, Control, More**. Sensors is a grid you can edit by holding a card: move, resize, remove, add, or pin to Home. Pick 2, 3 or 4 columns, or let Auto decide.
+
+</td>
+<td valign="top">
+
+### 🔔 Alerts and logs
+The sensor alert rules you set on the PC arrive as notifications on your phone. Critical alerts pop up, warnings arrive quietly. The PC's logs and health checks are a page away in More, with anything private hidden before it's sent.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🗂️ Browse your phone from the PC
+The Files page has a Source picker: **This PC** or any connected phone. Browse the folders the phone shares, search them, see thumbnails, download. With one off-by-default switch on the phone, change files there too.
+
+</td>
+<td valign="top">
+
+### ✨ Make it yours
+App backgrounds (six textures and three slow animated styles), six more card shapes and seven Nerd Fonts bundled in the app. Screens slide in, readings roll when they change, and switches give a short haptic buzz. Everything respects Remove animations.
+
+</td>
+<td valign="top">
+
+### 🔒 Tighter by default
+Apps and links RemEx opens on your PC run with your normal permissions, not administrator. The phone only opens folders you share, and checks your current Access settings on every request.
+
+</td>
+</tr>
+</table>
+
+The full 3.0 write-up is in the [release notes](docs/RELEASE-NOTES-3.0.0.md), and every change is in the [changelog](docs/CHANGELOG.md).
+
+### The splash
+
+Every launch opens on one of four scenes. Pick yours in Personalize.
+
+| Scene | What you see |
+|---|---|
+| **Live Handshake** *(default)* | RemEx starting up and finding your PC, beat by beat. |
+| **Original Scan** | A command deck: perspective grid floor, falling data columns and scanlines, with shockwave sweeps on every beat. |
+| **Cosmic Zoom** | Flying through a nebula, three star layers stretching into warp streaks as the mark assembles. |
+| **Pong** | A phosphor CRT court with glowing rails, heating up through the rally until the mark lands. |
+
+All four share one shader on Android and the PC, and Original Scan, Cosmic Zoom and Pong settle on a still frame when Reduced motion is on.
 
 ## Get started in five minutes
 
-1. **Install the Android app.** RemEx is in Open Testing on Google Play:
-   https://play.google.com/store/apps/details?id=com.clindsay94.remex
-   (package `com.clindsay94.remex`). On the store page, join the "Join the
-   beta" testing program first if the app isn't installable yet; after that
-   it installs and updates like any other Play app. Sideload instead from
-   [GitHub Releases](https://github.com/clindsay94/RemEx/releases) if you'd
-   rather not join the testing track, see
-   [sideloading on Samsung](#sideloading-on-android-samsung-notes) below.
-2. **Install the PC agent.**
-   - Windows: download `RemEx-v2.5.0-Setup.exe` from
-     [Releases](https://github.com/clindsay94/RemEx/releases) and run it.
-     remex.agent runs as an always-elevated process (it needs that for input
-     injection and power control).
-   - Linux: download `remex-agent-v2.5.0-linux-x64.tar.gz`, see
-     [Linux install](docs/LINUX_INSTALL.md).
-3. **Pair.** Open the agent on the PC, open RemEx on the phone, same
-   Wi-Fi/LAN. The PC shows a 6-digit PIN (expires in 2 minutes), you type it
-   into the phone, done. No account, nothing leaves the LAN. Full walkthrough,
-   including the first-run tutorial and PC readiness check, in
-   [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md#first-pairing).
+| | Step |
+|---|---|
+| **1** | **Install the Android app** from [**Google Play**](https://play.google.com/store/apps/details?id=com.clindsay94.remex) (package `com.clindsay94.remex`). Prefer to sideload? The APK is on [GitHub Releases](https://github.com/clindsay94/RemEx/releases/latest), see [sideloading on Samsung](#sideloading-on-android-samsung-notes). |
+| **2** | **Install the PC agent** from [GitHub Releases](https://github.com/clindsay94/RemEx/releases/latest) (table below). |
+| **3** | **Pair.** Open the agent on the PC and RemEx on the phone, on the same Wi-Fi. The PC shows a 6-digit PIN (it expires in 2 minutes), you type it into the phone, done. While no phone is connected, **Pair a phone** on the PC's Home screen opens Settings with the QR code and PIN ready. Full walkthrough in [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md#first-pairing). |
+
+| Platform | Download | Size |
+|---|---|---|
+| **Windows** | `RemEx-v3.0.0-Setup.exe` (Inno Setup, installs to run elevated for input and power control) | 55.6 MB |
+| **Android** | `RemEx-V3.0.0-release.apk` (sideload) | 38.2 MB |
+| **Linux x64** | `remex-agent-v3.0.0-linux-x64.tar.gz`, see [Linux install](docs/LINUX_INSTALL.md) | 69.7 MB |
+
+**Requires:** Android 14 or newer on the phone, a Windows or Linux PC, and both on the same network. To reach your PC from elsewhere, run [Tailscale](https://tailscale.com) on both ends, because RemEx has no relay of its own.
 
 ```mermaid
 sequenceDiagram
@@ -96,63 +132,40 @@ sequenceDiagram
     Phone->>PC: WSS /ws (control), WSS /ws/desktop (video), TCP+TLS :8338 (scripts)
 ```
 
-## What's new in 2.5.0
+### Upgrading from 2.5
 
-```text
-[2.5.0] boot log
-  * theming    : palette engine replaces 4 fixed presets (seed+style+mode+contrast)
-  * theming    : Palette Studio - color wheel, "from this PC", live preview
-  * theming    : "match my phone" pushes phone theme to PC on connect
-  * security   : 6 findings closed (audit below)
-  * desktop    : cert pinning on the remote-desktop channel now actually enforced
-  * transfer   : speed+ETA, whole-folder transfer, collision prompts
-  * control    : fixed keys-stuck-down on disconnect; clipboard push; WoL without typing a MAC
-  * ci         : first CI this repo has ever had (build+test, localization check)
-  * total      : 373 fixes, 1129 commits, 1030 files
-```
+Install the new PC app over the old one. Your settings, paired phones and layout stay, and nothing about pairing or certificates changed, so you don't pair again. Update the PC and the phone together: a PC older than 3.0 still works with the 3.0 phone app, just without sensor alerts, the logs page, shared pinned sensors and PC-run routines.
 
-> [!IMPORTANT]
-> 2.5.0 closed a security audit with 6 findings, including an unauthenticated
-> `/debug/logs` endpoint that leaked the live pairing PIN and client IDs, and
-> a TLS cert-pinning path that silently accepted any certificate when no pin
-> was configured. If you're running an older build, update. Details in
-> [docs/RELEASE-NOTES-2.5.0.md](docs/RELEASE-NOTES-2.5.0.md) and
-> [docs/SECURITY_EXPLAINED.md](docs/SECURITY_EXPLAINED.md).
-
-The bullet-by-bullet record, 770 entries with bead IDs, is in [docs/CHANGELOG.md](docs/CHANGELOG.md).
+## Everything it does
 
 <details>
-<summary>Full feature list</summary>
+<summary>The full feature list</summary>
 
-- Remote desktop screen streaming (H.264, on-demand IDR keyframe requests, configurable/rate-limited fps)
-- Remote input, including stylus
-- File transfer: whole-folder, name-collision handling (Replace/Keep both/Skip, apply-to-all), speed and ETA
-- App launcher (`LaunchApp`), now allowlisted, no arbitrary or network/UNC paths
-- Power controls (shutdown, reboot, etc.) and Wake-on-LAN (no more typing the MAC address)
+- Remote desktop screen streaming (H.264, on-demand keyframes, configurable and rate-limited fps), with remote input including stylus and two-finger scroll
+- Routines: arrive or leave home, NFC tap, or PC sensor thresholds, run on the phone or on the PC itself
+- Live sensors as an editable grid, pinned sensors shared between phone and PC, and alert rules that notify your phone
+- File transfer both ways: whole folders, name-collision handling (Replace, Keep both, Skip, apply to all), speed and ETA, and browsing and optionally changing your phone's shared folders from the PC
+- App launcher (allowlisted, no arbitrary or network paths) and a Processes page
+- Power controls with a countdown, Wake-on-LAN without typing a MAC address
 - Clipboard sync, phone to PC
-- Multi-monitor support (including monitors placed above/left of the origin, fixed on Linux in 2.5.0)
-- Personalize: seed-based theming with a colour wheel and live preview (PC), Material You dynamic color as a real toggle (Android)
-- Paired-device management: rename/unpair from Settings, tap-to-connect from the phone
-- First-run tutorial (Android) and paged tutorial carousel (PC), plus the Home-screen readiness check (admin rights, certificate, firewall, start-at-sign-in)
+- Multi-monitor support, including monitors placed above or left of the origin
+- The PC's logs and diagnostics, readable from the phone
+- Personalize: seed-based colour palettes with a colour wheel and live preview, Material You dynamic colour, backgrounds, card shapes, Nerd Fonts, four splash scenes, motion and haptics
+- Paired-device management: rename or unpair from Settings, tap to connect from the phone
+- First-run tutorial on both apps and a Home-screen readiness check (admin rights, certificate, firewall, start at sign-in)
 - Localized in 9 languages: en, es, fr, hi, id, pl, pt-BR, tr, uk
 
 </details>
 
 ## Sideloading on Android (Samsung notes)
 
-If you install the APK from [GitHub Releases](https://github.com/clindsay94/RemEx/releases)
-instead of Google Play:
+If you install the APK from [GitHub Releases](https://github.com/clindsay94/RemEx/releases) instead of Google Play:
 
-- Android will prompt to allow installs from this source once ("unknown
-  sources"), normal Android behavior for any APK not installed via Play.
-- Samsung phones additionally ship **Auto Blocker**, which can block sideloaded
-  app installs by default. If the install is silently refused, check
-  Settings -> Security and privacy -> Auto Blocker and allow the install (or
-  temporarily disable Auto Blocker for the install).
-- The app is published by a verified Google Play developer account either way.
+- Android will prompt once to allow installs from the source you opened the file with ("unknown sources"), as it does for any APK not installed through Play.
+- Samsung phones also ship **Auto Blocker**, which can block sideloaded installs by default. If the install is silently refused, check Settings → Security and privacy → Auto Blocker and allow the install (or turn it off for the install).
+- Sideloaded builds don't update themselves. Come back to Releases for the next version, or switch to Play.
 
-See [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md) for the full walkthrough
-(Play open testing enrollment, sideload steps, Auto Blocker, first pairing).
+See [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md) for the full walkthrough.
 
 ## How it talks to your PC
 
@@ -169,31 +182,7 @@ flowchart LR
 | `WSS /ws/desktop` | 5005 | remote desktop video (H.264/MJPEG) |
 | `TCP+TLS` | 8338 | external script ingress, requires a paired client ID |
 
-Pairing is ECDH P-256 key exchange plus a 6-digit PIN shown on the PC and
-typed on the phone, then SPKI certificate pinning for every connection after
-that, over TLS 1.3 (1.2 accepted). There's no cloud relay, no account, and no
-telemetry leaves the local network. See
-[docs/SECURITY_EXPLAINED.md](docs/SECURITY_EXPLAINED.md) for how it works and
-[docs/SECURITY.md](docs/SECURITY.md) for the reporting policy. To reach your
-PC when you're not on the same network, run [Tailscale](https://tailscale.com)
-on both ends. RemEx itself has no relay of its own.
-
-## Windows host
-
-Download `RemEx-v2.5.0-Setup.exe` from
-[Releases](https://github.com/clindsay94/RemEx/releases) and run the
-installer (Inno Setup). The agent installs itself to always run elevated,
-it needs that for input injection, power control, and the firewall rule it
-sets up. Uninstall from Windows Settings > Apps like any other program.
-
-## Linux host
-
-Download `remex-agent-v2.5.0-linux-x64.tar.gz` from
-[Releases](https://github.com/clindsay94/RemEx/releases). Full setup,
-dependencies, and the native capture/input backend (built with CMake/C++,
-`ydotool`-based) are covered in [docs/LINUX_INSTALL.md](docs/LINUX_INSTALL.md),
-which documents Arch/CachyOS/Manjaro, Ubuntu/Debian/Pop!_OS, and Fedora
-package names.
+Pairing is ECDH P-256 key exchange plus a 6-digit PIN shown on the PC and typed on the phone, then SPKI certificate pinning for every connection after that, over TLS 1.3 (1.2 accepted). There's no cloud relay, no account, and no telemetry leaves your network. See [docs/SECURITY_EXPLAINED.md](docs/SECURITY_EXPLAINED.md) for how it works and [docs/SECURITY.md](docs/SECURITY.md) for the reporting policy.
 
 ## Building from source
 
@@ -215,56 +204,32 @@ cd RemEx
 - `remex.agent` / `remex.agent.windows` / `remex.agent.native.linux`, the PC host and its platform backends
 - `remex.desktop`, Avalonia UI (Personalize, dashboard, tray)
 - `remex.android`, the Kotlin/Compose client
-- `remex.branding`, shared branding assets
+- `remex.branding`, shared branding assets and the splash scenes
 - `installer/`, Inno Setup (`RemEx.iss`) for Windows, packaging scripts for Linux
 - `*.tests` projects per component, plus `remex.desktop.render.tests` for UI screenshot/automation checks
 
-Full build docs: [docs/BUILDING.md](docs/BUILDING.md). CI runs on GitHub
-Actions: `.github/workflows/dotnet.yml` builds and tests Windows + Linux on
-every PR to main; `.github/workflows/localization-check.yml` checks all 9
-languages for missing, stale, unused, or format-mismatched keys.
-
-</details>
-
-<details>
-<summary>What's next (no promises)</summary>
-
-The only thing I'm actually tracking toward is bead `RemEx-8wpvr`: a sensor
-alerts center (a configured-alert bell, latched trip state until you
-acknowledge it, an alerts settings card, and a tray notification). Everything
-past that is backlog, not a roadmap. If you want to see what's open, `bd
-ready` in the repo shows it.
+Full build docs: [docs/BUILDING.md](docs/BUILDING.md). CI runs on GitHub Actions: `.github/workflows/dotnet.yml` builds and tests Windows + Linux on every PR to main, and `.github/workflows/localization-check.yml` checks all 9 languages for missing, stale, unused, or format-mismatched keys.
 
 </details>
 
 ## Contributing
 
-See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and
-[docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md). This repo is developed
-with Claude Code; [.claude/CLAUDE.md](.claude/CLAUDE.md) has the project rules
-(architecture invariants, the verification gate, coding conventions) if you're
-pairing an agent with it.
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md). This repo is developed with Claude Code; [.claude/CLAUDE.md](.claude/CLAUDE.md) has the project rules (architecture invariants, the verification gate, coding conventions) if you're pairing an agent with it.
 
 > [!WARNING]
-> Read [docs/REGRESSION-GUARDS.md](docs/REGRESSION-GUARDS.md) before touching
-> capture, the remote-desktop stream/pacing, the Android H.264 decoder,
-> SurfaceView zoom/pan, pairing/trust, or the session guard. Every rule in
-> there exists because breaking it reintroduced a real failure that showed up
-> as silence, a black screen, a dead stream, a bricked pairing, with no log
-> line pointing back at the cause.
+> Read [docs/REGRESSION-GUARDS.md](docs/REGRESSION-GUARDS.md) before touching capture, the remote-desktop stream/pacing, the Android H.264 decoder, SurfaceView zoom/pan, pairing/trust, or the session guard. Every rule in there exists because breaking it reintroduced a real failure that showed up as silence, a black screen, a dead stream, a bricked pairing, with no log line pointing back at the cause.
 
 ## Reporting a security issue
 
-Please don't open a public issue for a vulnerability. See
-[docs/SECURITY.md](docs/SECURITY.md) for how to report privately.
+Please don't open a public issue for a vulnerability. See [docs/SECURITY.md](docs/SECURITY.md) for how to report privately.
 
 ## Docs index
 
 | Doc | What's in it |
 |---|---|
-| [docs/RELEASE-NOTES-2.5.0.md](docs/RELEASE-NOTES-2.5.0.md) | Readable summary of everything in 2.5.0 |
+| [docs/RELEASE-NOTES-3.0.0.md](docs/RELEASE-NOTES-3.0.0.md) | Readable summary of everything in 3.0 |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Full changelog, all versions |
-| [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md) | Play open testing, sideloading, Auto Blocker, first pairing |
+| [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md) | Google Play, sideloading, Auto Blocker, first pairing |
 | [docs/ANDROID_SETUP.md](docs/ANDROID_SETUP.md) | Android dev environment / SDK setup |
 | [docs/LINUX_INSTALL.md](docs/LINUX_INSTALL.md) | Linux agent install and dependencies |
 | [docs/BUILDING.md](docs/BUILDING.md) | Full build instructions, all platforms |
@@ -281,9 +246,6 @@ Please don't open a public issue for a vulnerability. See
 | [docs/NULL_SAFETY_GUIDELINES.md](docs/NULL_SAFETY_GUIDELINES.md) | Null-safety conventions |
 | [docs/VALIDATION_GUIDELINES.md](docs/VALIDATION_GUIDELINES.md) | Input validation conventions |
 | [.claude/CLAUDE.md](.claude/CLAUDE.md) | Project rules for coding agents |
-
-Older plans, specs, audits and measurements are kept out of the repo on purpose
-(`docs/old-docs/`, `docs/plans/` and `docs/superpowers/` are gitignored).
 
 ## License
 
