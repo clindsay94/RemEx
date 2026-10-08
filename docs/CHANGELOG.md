@@ -46,6 +46,23 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
     upload them. Dragging inside one shared folder moves (or, with Ctrl, copies).
   - Transfers sit in a strip along the bottom that counts what's running, verified and failed, and opens into
     the full list. A verified transfer's fingerprint can be copied from its row.
+- **A new Files screen on the phone.** It now shows both devices, **This phone** and **PC**, in one folder tree:
+  - On a tablet or unfolded phone the tree stays on the left, with the folder you're in and a preview side by
+    side. On a phone the tree opens from the menu button, a switch at the top flips between the two devices, and
+    tapping a file opens its preview full screen (back returns to the list).
+  - **This phone** lists the folders you share with your PC (marked as shared) and folders you add with
+    **Add folder**. An added folder stays on the phone until you turn on **Share with PC** in its menu, which adds
+    it to the same "Access from your PC" list as Settings. Removing it gives back the app's access.
+  - **Tapping a file previews it**, on either device: photos at full quality (HEIC too) with pinch-to-zoom,
+    text, code and logs with colour and line numbers, and **Live** to follow a log as it grows. Before, tapping a
+    file in list view did nothing.
+  - The preview's **Fingerprint (SHA-256)** card works out the file's fingerprint (on the phone for phone files,
+    on the PC for PC files), copies it, compares it with one you paste in, and checks it against a copy on the
+    other device.
+  - **Send to PC…** and **Save to phone…** move files between the two devices into a folder you pick, through the
+    same transfer queue as every other transfer. Select several files with a long press to send them together.
+  - The toolbar is reduced to search, the sort and view menu, and one main action (Upload on the PC, Add folder
+    on the phone); New folder and Upload folder are under **More**.
 
 ### Internal
 

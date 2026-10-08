@@ -111,6 +111,34 @@ class PcFileRequestsTest {
     }
 
     @Test
+    fun aFolderListing_UsesTheEnvelopeEveryPcKnows_AndNeverTakesTheScreensOwnReply() = runBlocking {
+        val pending = async { requests.browse("docs", "Logs") }
+        val envelope = awaitSent(1)
+        assertEquals("file_browse_request", envelope.getString("type"))
+        assertFalse("v2 envelope: older PCs answer it too", envelope.has("protocolVersion"))
+        val id = envelope.getJSONObject("fileBrowseRequest").getString("requestId")
+
+        assertFalse(
+            "the screen's own listing has another id and is left for it",
+            reply("file_browse_response", "fileBrowseResponse", JSONObject().put("requestId", "screen").put("entries", org.json.JSONArray())),
+        )
+        reply(
+            "file_browse_response", "fileBrowseResponse",
+            JSONObject().put("requestId", id).put(
+                "entries",
+                org.json.JSONArray()
+                    .put(JSONObject().put("name", "2025").put("isDirectory", true))
+                    .put(JSONObject().put("name", "agent.log").put("isDirectory", false).put("sizeBytes", 12)),
+            ),
+        )
+
+        val entries = pending.await()
+        assertEquals(listOf("2025", "agent.log"), entries.map { it.name })
+        assertTrue(entries[0].isDirectory)
+        assertEquals(12L, entries[1].sizeBytes)
+    }
+
+    @Test
     fun failAll_ReleasesEveryWaiter() = runBlocking {
         val pending = async { runCatching { requests.hash("docs", "a.bin") } }
         awaitSent(1)

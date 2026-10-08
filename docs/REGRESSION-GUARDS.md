@@ -756,7 +756,7 @@ bytes. The receiver then tears its sink down and finalizes a zero-byte transfer,
 
 - C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1729`),
   called at `TransferSessionManager.cs:1640` before the completion is sent.
-- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:320`).
+- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:317`).
 - Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
   `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
   sender had the defect for three beads after the other two were fixed. It was the only one never
@@ -849,7 +849,7 @@ the constant and not the call site, a second test,
 directly at the call site, which the first test cannot.
 
 **The upload direction remains note-guarded only, and covering it is out of scope for RemEx-3uv7s.**
-`FileTransferEngine.kt:261` builds its own `ackSignal` as `Channel<Unit>(Channel.CONFLATED)` for
+`FileTransferEngine.kt:336` builds its own `ackSignal` as `Channel<Unit>(Channel.CONFLATED)` for
 `UploadSendLoop`, and since `RemEx-yi7id`, `UploadSendLoopTest` runs under `Dispatchers.Unconfined`
 too, so the same flip on that channel also stays green today. Treat that one channel's capacity as
 guarded by this note, not by a test, until it gets the same treatment.
@@ -1605,6 +1605,22 @@ resolves only roots the person shares RIGHT NOW. `fromTreeUri` opens any tree th
 grant for, so removing the root check reopens the whole-device folder after the person turned
 whole-device browsing off. The RULES are pinned by `SharedPathPolicyTest`; the two CALL SITES are
 SAF-bound and have no unit test, so a removed call there stays green — check them by eye.
+
+### Phone-only bookmarks never reach the PC (file-browser redesign, 2026-10-08)
+
+The phone's Files screen lets the person add folders to browse ON THE PHONE ("Add folder"). They live in their
+own DataStore key, `phone_bookmark_uris` (`SettingsManager.kt:918`), and only `PhoneBookmarksRepository` reads it.
+Everything that answers the PC reads `shared_folder_uris` alone: `AndroidFileTransferHost` collects
+`sharedFolderUrisFlow` into `sharedFolderUris` (`AndroidFileTransferHost.kt:120`) and serves it as
+`allowedRootIds()`, which `SharedPathPolicy` and `facade.resolve` check every PC request against. "Share with PC"
+on a bookmark is the ONLY way in: it adds the URI to `shared_folder_uris`, the same list Settings → "Access from
+your PC" edits, so there is still one consent surface.
+
+Fails silently if broken: merge the two lists anywhere the host reads (a "convenience" union in
+`AndroidFileTransferHost`, say) and every folder the person only meant to browse on the phone is listed, read and,
+with "Let your PC change files" on, writable from the PC, with nothing on either screen saying so.
+`PhoneBookmarksRepositoryTest.nothingThatAnswersThePc_ReadsTheBookmarks` scans every file under `service/` for the
+key and goes red (defect-injected 2026-10-08 with exactly that union).
 
 ### `EvaluateDesktopAuth` — pre-auth for `/ws/desktop`
 

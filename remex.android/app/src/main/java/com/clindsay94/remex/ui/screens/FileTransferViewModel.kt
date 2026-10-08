@@ -25,6 +25,22 @@ import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import com.clindsay94.remex.ui.components.FileConflictPrompt
 import com.clindsay94.remex.ui.files.PcFileRequests
+import com.clindsay94.remex.data.PhoneBookmarksRepository
+import com.clindsay94.remex.data.PhoneFolder
+import com.clindsay94.remex.ui.files.FilePreviewModel
+import com.clindsay94.remex.ui.files.FileSide
+import com.clindsay94.remex.ui.files.FileTreeModel
+import com.clindsay94.remex.ui.files.LocalDocuments
+import com.clindsay94.remex.ui.files.LocalPhoneFileSource
+import com.clindsay94.remex.ui.files.PhoneBrowserModel
+import com.clindsay94.remex.ui.files.PhoneFileSource
+import com.clindsay94.remex.ui.files.PreviewImageDecoder
+import com.clindsay94.remex.ui.files.PreviewSources
+import com.clindsay94.remex.ui.files.PreviewTarget
+import com.clindsay94.remex.ui.files.TreeRootInfo
+import com.clindsay94.remex.ui.files.preview.RangeReader
+import androidx.compose.ui.graphics.ImageBitmap
+import kotlinx.coroutines.flow.combine
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferRateEstimator
@@ -80,6 +96,8 @@ data class RemoteFileEntry(
     val modifiedUnixMs: Long = 0L,
     /** Full path relative to the root — set for search hits, null for ordinary current-folder rows. */
     val relativePath: String? = null,
+    /** A phone file's document id (file browser redesign): its row key, since names need not be unique there. */
+    val id: String? = null,
 )
 
 data class RemoteSharedRoot(
@@ -334,21 +352,24 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun selectRoot(rootId: String) {
         if (_selectedRootId.value == rootId) return
+        switchRoot(rootId)
+        browseRemote("/")
+    }
+
+    /**
+     * Makes [rootId] the PC folder being shown, before its listing arrives. The old folder's rows are cleared
+     * here, not when the reply lands: they would otherwise stay on screen under the NEW root (for good, if the
+     * browse fails), and a tap, rename or delete on one would act on a same-named file in the new folder.
+     */
+    private fun switchRoot(rootId: String) {
         _selectedRootId.value = rootId
         // A new root has no "previous folder" to stay in; the old root's path means nothing here.
         _remotePath.value = "/"
         clearSelection()
         clearSearchInternal()
-        browseRemote("/")
-    }
-
-    /** Selects a full-browse volume as the active browsing root (its id doubles as a root id). */
-    fun selectVolume(volume: RemoteVolume) {
-        _selectedRootId.value = volume.id
-        _remotePath.value = "/"
-        clearSelection()
-        clearSearchInternal()
-        browseRemote("/")
+        _rawEntries.value = emptyList()
+        _thumbnails.value = emptyMap()
+        recomputeDisplayed()
     }
 
     fun browseRemote(path: String = _remotePath.value) {
@@ -1586,6 +1607,279 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         return requests.size
     }
 
+    // ── Explorer: tree, This phone, preview (file browser redesign, 2026-10-08) ─────
+    //
+    // The state lives in holders under ui/files (FileTreeModel, PhoneBrowserModel, FilePreviewModel,
+    // PhoneBookmarksRepository); this section only wires them to the PC side above and to the engine.
+
+    private val phoneFiles: PhoneFileSource = LocalPhoneFileSource(LocalDocuments(application.contentResolver))
+    private val bookmarks = PhoneBookmarksRepository.create(settingsManager, application.contentResolver)
+
+    /** "This phone": folders shared with the PC, then phone-only bookmarks. */
+    val phoneFolders: StateFlow<List<PhoneFolder>> =
+        bookmarks.folders.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // Folder names for the phone's tree URIs, read once per folder (a DocumentFile lookup is an IPC).
+    private val _phoneFolderNames = MutableStateFlow<Map<String, String>>(emptyMap())
+    val phoneFolderNames = _phoneFolderNames.asStateFlow()
+
+    val tree = FileTreeModel(viewModelScope) { side, rootId, path ->
+        when (side) {
+            FileSide.Phone -> phoneFiles.list(rootId, path).filter { it.isDirectory }.map { it.name }
+            FileSide.Pc -> pcFileRequests.browse(rootId, path).filter { it.isDirectory }.map { it.name }
+        }
+    }
+
+    val phoneBrowser = PhoneBrowserModel(viewModelScope, phoneFiles)
+
+    private val _side = MutableStateFlow(FileSide.Pc)
+    /** Which device the contents pane is showing. */
+    val side = _side.asStateFlow()
+
+    // The last folder looked at on each device: where "Send to PC…" and "Verify against…" start.
+    private val lastFolder = ConcurrentHashMap<FileSide, Pair<String, String>>()
+
+    val preview = FilePreviewModel(
+        viewModelScope,
+        object : PreviewSources<ImageBitmap> {
+            override fun reader(target: PreviewTarget): RangeReader = when (target.side) {
+                FileSide.Phone -> phoneFiles.reader(target.rootId, target.path)
+                FileSide.Pc -> pcFileRequests.reader(target.rootId, target.path)
+            }
+
+            override suspend fun hashBase64(target: PreviewTarget): String = when (target.side) {
+                FileSide.Phone -> java.util.Base64.getEncoder().encodeToString(phoneFiles.sha256(target.rootId, target.path))
+                FileSide.Pc -> pcFileRequests.hash(target.rootId, target.path)
+            }
+
+            // An older PC never answers these requests: asking would only spin for 30 seconds (spec §2.4).
+            override fun canRead(side: FileSide) = side == FileSide.Phone || caps()?.readRange == true
+            override fun canHash(side: FileSide) = side == FileSide.Phone || caps()?.hash == true
+
+            override suspend fun decodeImage(bytes: ByteArray): ImageBitmap? = withContext(Dispatchers.Default) {
+                PreviewImageDecoder.decode(bytes, app().resources.displayMetrics)
+            }
+        },
+    )
+
+    init {
+        viewModelScope.launch {
+            combine(_remoteRoots, _volumes) { roots, volumes ->
+                roots.map { TreeRootInfo(it.rootId, it.displayName, isWritable = it.isWritable) } +
+                    volumes.map { TreeRootInfo(it.id, it.label, isVolume = true) }
+            }.collect { tree.setRoots(FileSide.Pc, it) }
+        }
+        viewModelScope.launch {
+            combine(phoneFolders, _phoneFolderNames) { folders, names ->
+                folders.map {
+                    TreeRootInfo(it.uri, names[it.uri] ?: "", isShared = it.isShared, isBookmark = it.isBookmark)
+                }
+            }.collect { tree.setRoots(FileSide.Phone, it) }
+        }
+        viewModelScope.launch {
+            phoneFolders.collect { folders ->
+                val known = _phoneFolderNames.value
+                val missing = folders.map { it.uri }.filter { it !in known }
+                if (missing.isNotEmpty()) {
+                    val resolved = withContext(Dispatchers.IO) {
+                        missing.associateWith { uri ->
+                            runCatching { DocumentFile.fromTreeUri(app(), Uri.parse(uri))?.name }.getOrNull()
+                                ?: treeUriFallbackLabel(uri)
+                        }
+                    }
+                    _phoneFolderNames.value = _phoneFolderNames.value + resolved
+                }
+                // A folder taken off the list while open leaves nothing to show.
+                val open = phoneBrowser.state.value.rootId
+                if (open != null && folders.none { it.uri == open }) phoneBrowser.clear()
+            }
+        }
+        viewModelScope.launch {
+            RemexClientManager.isConnected.collect { connected ->
+                tree.setAvailable(FileSide.Pc, connected)
+                if (!connected) pcFileRequests.failAll("Disconnected")
+            }
+        }
+        // The tree follows browsing on either side, so the open folder is always visible in it.
+        viewModelScope.launch {
+            combine(_selectedRootId, _remotePath) { root, path -> root to path }.collect { (root, path) ->
+                if (root.isNullOrBlank()) return@collect
+                lastFolder[FileSide.Pc] = root to FileTreeModel.normalize(path)
+                tree.reveal(FileSide.Pc, root, path)
+            }
+        }
+        viewModelScope.launch {
+            phoneBrowser.state.collect { state ->
+                val root = state.rootId ?: return@collect
+                if (state.loading) return@collect
+                lastFolder[FileSide.Phone] = root to state.path
+                if (!state.failed) {
+                    tree.setChildren(FileSide.Phone, root, state.path, state.entries.filter { it.isDirectory }.map { it.name })
+                    tree.reveal(FileSide.Phone, root, state.path)
+                }
+            }
+        }
+    }
+
+    /** Shows a folder from the tree, a breadcrumb or a picker in the contents pane. */
+    fun openLocation(side: FileSide, rootId: String, path: String) {
+        _side.value = side
+        preview.show(null)
+        when (side) {
+            FileSide.Phone -> phoneBrowser.open(rootId, path)
+            FileSide.Pc -> {
+                val normalized = FileTreeModel.normalize(path)
+                val pcPath = if (normalized.isEmpty()) "/" else normalized
+                if (_selectedRootId.value != rootId) switchRoot(rootId)
+                clearSearchInternal()
+                browseRemote(pcPath)
+            }
+        }
+    }
+
+    /** Switches the contents pane to a device without changing what each side has open. */
+    fun showSide(side: FileSide) {
+        if (_side.value == side) return
+        _side.value = side
+        preview.show(null)
+        if (side == FileSide.Phone && phoneBrowser.state.value.rootId == null) {
+            phoneFolders.value.firstOrNull()?.let { phoneBrowser.open(it.uri, "") }
+        }
+    }
+
+    /** The last folder seen on [side], as (root id, path), or null before anything was opened there. */
+    fun lastFolderOn(side: FileSide): Pair<String, String>? = lastFolder[side]
+
+    /** A preview target for an entry in the folder currently shown on [side]. */
+    fun previewTargetFor(side: FileSide, entry: RemoteFileEntry): PreviewTarget? {
+        val (rootId, folder) = when (side) {
+            FileSide.Phone -> phoneBrowser.state.value.let { (it.rootId ?: return null) to it.path }
+            FileSide.Pc -> (_selectedRootId.value ?: return null) to FileTreeModel.normalize(_remotePath.value)
+        }
+        val path = entry.relativePath ?: FileManagerLogic.combinePath(folder, entry.name)
+        return PreviewTarget(side, rootId, FileTreeModel.normalize(path), entry.name, entry.isDirectory, entry.sizeBytes, entry.modifiedUnixMs)
+    }
+
+    /** The items of one folder on either device, for the cross-device pickers. */
+    suspend fun listForPicker(side: FileSide, rootId: String, path: String): List<RemoteFileEntry> = when (side) {
+        FileSide.Phone -> phoneFiles.list(rootId, path).map { RemoteFileEntry(it.name, it.isDirectory, maxOf(0L, it.sizeBytes), it.modifiedMs, id = it.documentId) }
+        FileSide.Pc -> pcFileRequests.browse(rootId, path)
+    }
+
+    // ── Phone folders ──
+
+    /** A folder the person just picked with the system folder picker (its grant already taken) becomes a bookmark. */
+    fun addPhoneBookmark(treeUri: Uri) {
+        viewModelScope.launch {
+            bookmarks.addBookmark(treeUri.toString())
+            openLocation(FileSide.Phone, treeUri.toString(), "")
+        }
+    }
+
+    /** "Share with PC" on a phone folder: adds it to, or takes it off, the "Access from your PC" list. */
+    fun setPhoneFolderShared(uri: String, shared: Boolean) {
+        viewModelScope.launch { bookmarks.setShared(uri, shared) }
+    }
+
+    fun removePhoneBookmark(uri: String) {
+        viewModelScope.launch { bookmarks.removeBookmark(uri) }
+    }
+
+    /** A content URI for a phone file, to open it in another app. */
+    suspend fun phoneDocumentUri(rootId: String, path: String): String = phoneFiles.documentUri(rootId, path)
+
+    // ── Between devices ──
+
+    /**
+     * Queues phone files to go to `pcRootId/pcFolder` on the PC, through the same engine as every upload.
+     * Folders aren't sent this way; the status line says so.
+     */
+    fun sendToPc(items: List<PreviewTarget>, pcRootId: String, pcFolder: String) {
+        if (caps()?.binary != true) {
+            _statusText.value = app().getString(R.string.files_needs_newer_pc)
+            return
+        }
+        val files = items.filter { !it.isDirectory && it.side == FileSide.Phone }
+        if (files.isEmpty()) {
+            _statusText.value = app().getString(R.string.files_folders_not_sent)
+            return
+        }
+        viewModelScope.launch {
+            var queued = 0
+            for (file in files) {
+                val uri = runCatching { phoneFiles.documentUri(file.rootId, file.path) }.getOrNull() ?: continue
+                FileTransferEngine.enqueueUpload(
+                    localUri = uri,
+                    fileName = file.name,
+                    size = file.sizeBytes,
+                    destRoot = pcRootId,
+                    destRelativePath = FileTreeModel.normalize(pcFolder),
+                )
+                queued++
+            }
+            if (queued > 0) FileTransferJobService.schedule(app())
+            _statusText.value = when {
+                queued < files.size -> app().getString(R.string.files_some_not_queued)
+                files.size < items.size -> app().getString(R.string.files_folders_not_sent)
+                else -> app().getString(R.string.files_queued_to_pc)
+            }
+        }
+    }
+
+    /**
+     * Queues PC files to be saved in `phoneRootUri/phoneFolder`. Each gets a new document there first (the folder's
+     * app picks a free name, never replacing a file), then the engine downloads into it.
+     */
+    fun saveToPhone(items: List<PreviewTarget>, phoneRootUri: String, phoneFolder: String) {
+        if (caps()?.binary != true) {
+            _statusText.value = app().getString(R.string.files_needs_newer_pc)
+            return
+        }
+        val files = items.filter { !it.isDirectory && it.side == FileSide.Pc }
+        if (files.isEmpty()) {
+            _statusText.value = app().getString(R.string.files_folders_not_sent)
+            return
+        }
+        viewModelScope.launch {
+            val parent = runCatching { Uri.parse(phoneFiles.documentUri(phoneRootUri, phoneFolder)) }.getOrNull()
+            if (parent == null) {
+                _statusText.value = app().getString(R.string.files_save_failed)
+                return@launch
+            }
+            val requests = withContext(Dispatchers.IO) {
+                files.mapNotNull { file ->
+                    val mime = android.webkit.MimeTypeMap.getSingleton()
+                        .getMimeTypeFromExtension(file.name.substringAfterLast('.', "").lowercase()) ?: "application/octet-stream"
+                    val created = runCatching {
+                        DocumentsContract.createDocument(app().contentResolver, parent, mime, file.name)
+                    }.getOrNull() ?: return@mapNotNull null
+                    FileTransferEngine.DownloadRequest(created.toString(), file.name, file.sizeBytes, file.rootId, file.path)
+                }
+            }
+            if (requests.isNotEmpty()) {
+                FileTransferEngine.enqueueDownloads(requests)
+                FileTransferJobService.schedule(app())
+            }
+            _statusText.value = when {
+                requests.isEmpty() -> app().getString(R.string.files_save_failed)
+                requests.size < files.size -> app().getString(R.string.files_some_not_queued)
+                files.size < items.size -> app().getString(R.string.files_folders_not_sent)
+                else -> app().getString(R.string.files_queued_to_phone)
+            }
+            phoneBrowser.refresh()
+        }
+    }
+
+    /** A name for a phone folder whose provider won't say: the last part of its tree URI, as Settings shows it. */
+    private fun treeUriFallbackLabel(uri: String): String =
+        Uri.parse(uri).lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':')?.takeIf { it.isNotBlank() } ?: uri
+
+    override fun onCleared() {
+        preview.close()
+        pcFileRequests.failAll("Closed")
+        super.onCleared()
+    }
+
     // ── v3 queue controls ─────────────────────────────────────────────────────
 
     fun pauseTransfer(id: String) = FileTransferEngine.pause(id)
@@ -1800,6 +2094,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             ops = ops,
             fullBrowse = obj.optBoolean("fullBrowse", false),
             push = obj.optBoolean("push", false),
+            readRange = obj.optBoolean("readRange", false),
+            hash = obj.optBoolean("hash", false),
         )
     }
 
@@ -1852,6 +2148,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         entries.addAll(parseEntries(response.optJSONArray("entries")))
         _rawEntries.value = entries
+        // The listing is the freshest word on this folder's sub-folders: the tree takes it as is, so a folder
+        // made, renamed or deleted (here or on the PC) shows there without a second request.
+        _selectedRootId.value?.let { root ->
+            tree.setChildren(FileSide.Pc, root, committed, entries.filter { it.isDirectory && it.name != FileManagerLogic.PARENT_ENTRY }.map { it.name })
+        }
         requestedThumbnails.clear()
         // Perf audit P0-21: drop thumbnails for paths not in the new listing - keeps the guard-noted
         // requestedThumbnails dedup invariant intact (cleared just above, same as before this row)

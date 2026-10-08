@@ -2,6 +2,8 @@ package com.clindsay94.remex.ui.files
 
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.ui.files.preview.RangeChunk
+import com.clindsay94.remex.ui.screens.FileManagerLogic
+import com.clindsay94.remex.ui.screens.RemoteFileEntry
 import com.clindsay94.remex.ui.files.preview.RangeReader
 import java.io.IOException
 import java.util.Base64
@@ -19,9 +21,9 @@ class PcRequestFailedException(val hostMessage: String) : IOException(hostMessag
 class PcRequestTimeoutException(what: String) : IOException("The PC did not answer the $what request in time.")
 
 /**
- * The phone's side of the two read-only requests the new File Transfer screen sends to the PC (file browser
- * redesign, 2026-10-08): `file_read_range_request` for previews and live tails, and `file_hash_request` for
- * the Integrity card. Each request carries a fresh id and is answered by the reply with the same id, so any
+ * The phone's side of the read-only requests the new File Transfer screen sends to the PC (file browser
+ * redesign, 2026-10-08): `file_read_range_request` for previews and live tails, `file_hash_request` for the
+ * Integrity card, and `file_browse_request` for the folder tree and pickers. Each request carries a fresh id and is answered by the reply with the same id, so any
  * number can be in flight and a reply meant for someone else is left alone.
  *
  * Android-free on purpose (the sender and the message feed are passed in), so the correlation, the timeouts
@@ -32,6 +34,7 @@ class PcRequestTimeoutException(what: String) : IOException("The PC did not answ
 class PcFileRequests(private val send: (JSONObject) -> Boolean) {
     private val rangeWaiters = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
     private val hashWaiters = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
+    private val browseWaiters = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
 
     /**
      * Offers one incoming file message. Returns true when it was a reply to a request made here (and so was
@@ -41,6 +44,8 @@ class PcFileRequests(private val send: (JSONObject) -> Boolean) {
         val (waiters, key) = when (obj.optString("type")) {
             "file_read_range_response" -> rangeWaiters to "fileReadRangeResponse"
             "file_hash_response" -> hashWaiters to "fileHashResponse"
+            // Only a browse this class asked for: the screen's own listing has its own id and is never taken.
+            "file_browse_response" -> browseWaiters to "fileBrowseResponse"
             else -> return false
         }
         val body = obj.optJSONObject(key) ?: return false
@@ -51,7 +56,7 @@ class PcFileRequests(private val send: (JSONObject) -> Boolean) {
 
     /** Fails every request still waiting, e.g. when the connection to the PC closes. */
     fun failAll(reason: String) {
-        for (waiters in listOf(rangeWaiters, hashWaiters)) {
+        for (waiters in listOf(rangeWaiters, hashWaiters, browseWaiters)) {
             for (id in waiters.keys.toList()) waiters.remove(id)?.completeExceptionally(IOException(reason))
         }
     }
@@ -108,6 +113,24 @@ class PcFileRequests(private val send: (JSONObject) -> Boolean) {
         return body.meaningful("sha256") ?: throw PcRequestFailedException("The PC sent no fingerprint.")
     }
 
+    /**
+     * The items in one PC folder, for the folder tree and the pickers, without moving the screen's own listing.
+     * Throws [PcRequestFailedException] when the PC refuses (a folder it no longer shares, say).
+     */
+    suspend fun browse(rootId: String, relativePath: String, timeoutMs: Long = RANGE_TIMEOUT_MS): List<RemoteFileEntry> {
+        val payload = JSONObject().apply {
+            put("rootId", rootId)
+            put("path", relativePath)
+            put("relativePath", relativePath)
+        }
+        // The same v2 envelope the screen's own browse uses, so every PC version answers it.
+        val body = request("file_browse_request", "fileBrowseRequest", payload, browseWaiters, timeoutMs, "folder", v3 = false)
+        body.meaningful("errorMessage")?.let { throw PcRequestFailedException(it) }
+        return FileManagerLogic.parseFileEntries(body.optJSONArray("entries")).map {
+            RemoteFileEntry(it.name, it.isDirectory, it.sizeBytes, it.modifiedUnixMs)
+        }
+    }
+
     private suspend fun request(
         type: String,
         payloadKey: String,
@@ -115,6 +138,7 @@ class PcFileRequests(private val send: (JSONObject) -> Boolean) {
         waiters: ConcurrentHashMap<String, CompletableDeferred<JSONObject>>,
         timeoutMs: Long,
         what: String,
+        v3: Boolean = true,
     ): JSONObject {
         val requestId = UUID.randomUUID().toString().replace("-", "")
         payload.put("requestId", requestId)
@@ -123,7 +147,7 @@ class PcFileRequests(private val send: (JSONObject) -> Boolean) {
         try {
             val envelope = JSONObject().apply {
                 put("type", type)
-                put("protocolVersion", 3)
+                if (v3) put("protocolVersion", 3)
                 put(payloadKey, payload)
             }
             if (!send(envelope)) throw IOException("The request could not be sent to the PC.")

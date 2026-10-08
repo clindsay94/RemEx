@@ -7,7 +7,9 @@ import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import com.clindsay94.remex.service.FileTransferEngine
+import com.clindsay94.remex.service.QueuedTransfer
+import com.clindsay94.remex.service.TransferState
 
 /**
  * A folder under "This phone" in the File Transfer tree.
@@ -22,7 +24,10 @@ interface PhoneFolderStore {
     val sharedUris: Flow<Set<String>>
     val bookmarkUris: Flow<Set<String>>
 
-    /** Grants something else still relies on (the whole-device browse root), which are never released here. */
+    /**
+     * Grants something else still relies on, which are never released here: the whole-device browse root, and any
+     * folder a transfer that isn't finished reads from or writes into (a paused one resumes through the same grant).
+     */
     val otherHeldUris: Flow<Set<String>>
     suspend fun setShared(uri: String, shared: Boolean)
     suspend fun setBookmarked(uri: String, bookmarked: Boolean)
@@ -71,6 +76,17 @@ class PhoneBookmarksRepository(
     }
 
     companion object {
+        /**
+         * The folder grants that unfinished transfers depend on: a document URI built under a tree
+         * (`content://…/tree/<id>/document/<id>`) belongs to the tree before `/document/`. Failed rows count, since
+         * Resume reopens the same document; done and cancelled ones don't.
+         */
+        fun treesInUse(queue: List<QueuedTransfer>): Set<String> =
+            queue.asSequence()
+                .filter { it.state != TransferState.Done && it.state != TransferState.Cancelled }
+                .mapNotNull { t -> t.localUri.takeIf { "/tree/" in it && "/document/" in it }?.substringBefore("/document/") }
+                .toSet()
+
         /** The joined list, pure so the order and flags are unit-tested. */
         fun merge(shared: Set<String>, bookmarks: Set<String>): List<PhoneFolder> =
             shared.sorted().map { PhoneFolder(it, isBookmark = it in bookmarks, isShared = true) } +
@@ -82,7 +98,10 @@ class PhoneBookmarksRepository(
                 object : PhoneFolderStore {
                     override val sharedUris = settings.sharedFolderUrisFlow
                     override val bookmarkUris = settings.phoneBookmarkUrisFlow
-                    override val otherHeldUris = settings.fullBrowseRootUriFlow.map { setOfNotNull(it) }
+                    override val otherHeldUris =
+                        combine(settings.fullBrowseRootUriFlow, FileTransferEngine.queue) { fullBrowse, queue ->
+                            setOfNotNull(fullBrowse) + treesInUse(queue)
+                        }
                     override suspend fun setShared(uri: String, shared: Boolean) =
                         if (shared) settings.addSharedFolderUri(uri) else settings.removeSharedFolderUri(uri)
                     override suspend fun setBookmarked(uri: String, bookmarked: Boolean) =

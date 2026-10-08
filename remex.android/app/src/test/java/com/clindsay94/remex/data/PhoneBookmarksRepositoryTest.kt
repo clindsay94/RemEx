@@ -1,5 +1,6 @@
 package com.clindsay94.remex.data
 
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -73,6 +74,41 @@ class PhoneBookmarksRepositoryTest {
         repo.setShared("root", false)
 
         assertTrue(released.isEmpty())
+    }
+
+    /**
+     * THE CONSENT BOUNDARY. A phone-only bookmark must never reach the PC: everything that answers the PC
+     * (the file host, its resolvers and the consent manager) reads the shared list, never the bookmark key. A
+     * future "convenience" that let the host see bookmarks would silently share every folder the person only
+     * meant to browse on the phone.
+     */
+    @Test
+    fun nothingThatAnswersThePc_ReadsTheBookmarks() {
+        val root = System.getProperty("remex.repoRoot")?.let(::File)
+            ?: generateSequence(File(".").absoluteFile) { it.parentFile }.first { File(it, "remex.android").isDirectory }
+        val service = File(root, "remex.android/app/src/main/java/com/clindsay94/remex/service")
+        val files = service.listFiles { f -> f.extension == "kt" }.orEmpty()
+        assertTrue("the scan found nothing to check", files.size > 10)
+        assertTrue(files.any { it.name == "AndroidFileTransferHost.kt" })
+        for (file in files) {
+            val text = file.readText()
+            assertTrue("${file.name} reads the phone-only bookmarks", "phoneBookmark" !in text && "phone_bookmark_uris" !in text)
+        }
+    }
+
+    @Test
+    fun aFolderAnUnfinishedTransferUses_KeepsItsGrant() {
+        fun row(uri: String, state: com.clindsay94.remex.service.TransferState) =
+            com.clindsay94.remex.service.QueuedTransfer("t$uri$state", "upload", "a", 1, uri, state = state)
+        val tree = "content://com.android.externalstorage.documents/tree/primary%3AMusic"
+        val queue = listOf(
+            row("$tree/document/primary%3AMusic%2Fa.mp3", com.clindsay94.remex.service.TransferState.Paused),
+            row("content://x/tree/done/document/d", com.clindsay94.remex.service.TransferState.Done),
+            row("content://x/tree/gone/document/d", com.clindsay94.remex.service.TransferState.Cancelled),
+            row("content://media/external/images/1", com.clindsay94.remex.service.TransferState.Active),
+        )
+
+        assertEquals(setOf(tree), PhoneBookmarksRepository.treesInUse(queue))
     }
 
     @Test

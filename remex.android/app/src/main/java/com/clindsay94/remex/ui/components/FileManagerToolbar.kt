@@ -42,6 +42,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +85,8 @@ fun FileManagerToolbar(
     modifier: Modifier = Modifier,
     showHidden: Boolean = false,
     onShowHiddenChange: (Boolean) -> Unit = {},
+    /** The one primary action when the folder can't be written (the phone side's "Add folder"). */
+    primaryAction: ToolbarAction? = null,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
     var sortMenuOpen by remember { mutableStateOf(false) }
@@ -141,10 +147,14 @@ fun FileManagerToolbar(
                 onUploadFolder = onUploadFolder,
                 showHidden = showHidden,
                 onShowHiddenChange = onShowHiddenChange,
+                primaryAction = primaryAction,
             )
         }
     }
 }
+
+/** A toolbar button: its icon, its label (tooltip and screen reader), and what it does. */
+class ToolbarAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
 
 @Composable
 private fun ToolbarIconRow(
@@ -161,7 +171,9 @@ private fun ToolbarIconRow(
     onUploadFolder: () -> Unit,
     showHidden: Boolean,
     onShowHiddenChange: (Boolean) -> Unit,
+    primaryAction: ToolbarAction?,
 ) {
+    var moreOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -217,21 +229,42 @@ private fun ToolbarIconRow(
             }
         }
 
-        Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
+        // One primary action (file browser redesign, 2026-10-08): Upload, with New folder and Upload folder
+        // one tap away under More, instead of three equal buttons.
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (canWrite) {
-                RemexTooltip(stringResource(R.string.file_manager_new_folder)) {
-                    IconButton(onClick = onNewFolder, shapes = rememberRemexIconButtonShapes()) {
-                        Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(R.string.file_manager_new_folder))
-                    }
-                }
                 RemexTooltip(stringResource(R.string.file_transfer_upload)) {
-                    IconButton(onClick = onUpload, shapes = rememberRemexIconButtonShapes()) {
+                    FilledTonalIconButton(onClick = onUpload, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.file_transfer_upload))
                     }
                 }
-                RemexTooltip(stringResource(R.string.file_manager_upload_folder)) {
-                    IconButton(onClick = onUploadFolder, shapes = rememberRemexIconButtonShapes()) {
-                        Icon(Icons.Default.DriveFolderUpload, contentDescription = stringResource(R.string.file_manager_upload_folder))
+                Box {
+                    RemexTooltip(stringResource(R.string.cd_more_options)) {
+                        IconButton(onClick = { moreOpen = true }, shapes = rememberRemexIconButtonShapes()) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more_options))
+                        }
+                    }
+                    DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.file_manager_new_folder)) },
+                            leadingIcon = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) },
+                            onClick = { moreOpen = false; onNewFolder() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.file_manager_upload_folder)) },
+                            leadingIcon = { Icon(Icons.Default.DriveFolderUpload, contentDescription = null) },
+                            onClick = { moreOpen = false; onUploadFolder() },
+                        )
+                    }
+                }
+            } else if (primaryAction != null) {
+                RemexTooltip(primaryAction.label) {
+                    FilledTonalIconButton(onClick = primaryAction.onClick, shapes = rememberRemexIconButtonShapes()) {
+                        Icon(primaryAction.icon, contentDescription = primaryAction.label)
                     }
                 }
             }
@@ -282,6 +315,8 @@ fun FileManagerSelectionBar(
     onMove: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    /** "Send to PC" or "Save to phone" for the selection (file browser redesign); null hides it. */
+    acrossAction: ToolbarAction? = null,
 ) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = modifier.fillMaxWidth()) {
         Row(
@@ -303,6 +338,13 @@ fun FileManagerSelectionBar(
             RemexTooltip(stringResource(R.string.file_transfer_select_all)) {
                 IconButton(onClick = onSelectAll, shapes = rememberRemexIconButtonShapes()) {
                     Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.file_transfer_select_all))
+                }
+            }
+            if (acrossAction != null) {
+                RemexTooltip(acrossAction.label) {
+                    IconButton(onClick = acrossAction.onClick, enabled = selectedCount > 0, shapes = rememberRemexIconButtonShapes()) {
+                        Icon(acrossAction.icon, contentDescription = acrossAction.label)
+                    }
                 }
             }
             if (canWrite) {

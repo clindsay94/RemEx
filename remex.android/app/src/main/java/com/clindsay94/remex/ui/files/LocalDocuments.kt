@@ -177,7 +177,12 @@ class LocalDocuments(private val resolver: ContentResolver) {
 
     /** The items in [relativePath] under [treeUri]. Throws [FileNotFoundException] when the folder is gone. */
     suspend fun list(treeUri: Uri, relativePath: String): List<LocalEntry> = withContext(Dispatchers.IO) {
-        listChildren(treeUri, documentIdOf(treeUri, relativePath))
+        val entries = listChildren(treeUri, documentIdOf(treeUri, relativePath))
+        // Remember every child's id, so opening, previewing or thumbnailing one costs no second listing.
+        val cache = ids.getOrPut(treeUri.toString()) { ConcurrentHashMap() }
+        val folder = relativePath.trim('/')
+        for (entry in entries) cache[if (folder.isEmpty()) entry.name else "$folder/${entry.name}"] = entry.documentId
+        entries
     }
 
     /** A content URI for the document at [relativePath], for opening, sharing or as a transfer's source. */
@@ -255,4 +260,24 @@ class LocalDocuments(private val resolver: ContentResolver) {
             Document.COLUMN_LAST_MODIFIED,
         )
     }
+}
+
+/**
+ * What the screen needs from phone folders, addressed by tree URI string and '/'-path. [LocalDocuments] is the
+ * app's; tests use a map. Keeps `android.net.Uri` (a stub on the JVM) out of the state holders.
+ */
+interface PhoneFileSource {
+    suspend fun list(rootUri: String, path: String): List<LocalEntry>
+    fun reader(rootUri: String, path: String): RangeReader
+    suspend fun sha256(rootUri: String, path: String, onProgress: ((Long) -> Unit)? = null): ByteArray
+    suspend fun documentUri(rootUri: String, path: String): String
+}
+
+/** [PhoneFileSource] over [LocalDocuments]. */
+class LocalPhoneFileSource(private val docs: LocalDocuments) : PhoneFileSource {
+    override suspend fun list(rootUri: String, path: String) = docs.list(Uri.parse(rootUri), path)
+    override fun reader(rootUri: String, path: String) = docs.reader(Uri.parse(rootUri), path)
+    override suspend fun sha256(rootUri: String, path: String, onProgress: ((Long) -> Unit)?) =
+        docs.sha256(Uri.parse(rootUri), path, onProgress)
+    override suspend fun documentUri(rootUri: String, path: String) = docs.documentUri(Uri.parse(rootUri), path).toString()
 }
