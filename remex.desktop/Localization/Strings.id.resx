@@ -4271,4 +4271,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Menunggu ponsel</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Terverifikasi</value>
+  </data>
 </root>

@@ -1020,6 +1020,7 @@ public sealed class FileTransferClient : IDisposable
             await acks.WaitForCommittedAsync(sent, _idleWatchdog, lastActivity, ct);
 
             var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+            progress.ReportVerifying();
             await _connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferComplete,
@@ -1034,6 +1035,9 @@ public sealed class FileTransferClient : IDisposable
                 throw FileTransferHostException.ForHostError(
                     result?.Error, $"Upload failed: {result?.Error}");
             }
+
+            // The host compared ITS hash of what landed with ours and said yes; ours is what the row shows.
+            progress.ReportVerified(sha256Base64);
         }
         catch (Exception ex) when (ex is not OperationCanceledException && hostHoldsPartial)
         {
@@ -1285,6 +1289,7 @@ public sealed class FileTransferClient : IDisposable
             }
 
             var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+            progress.ReportVerifying();
 
             await _connection.SendAsync(new RemexMessage
             {
@@ -1298,6 +1303,8 @@ public sealed class FileTransferClient : IDisposable
                 throw FileTransferHostException.ForHostError(
                     result.FileTransferEnd.ErrorMessage,
                     $"Upload failed: {result.FileTransferEnd.ErrorMessage}");
+
+            progress.ReportVerified(sha256Base64);
         }
         finally
         {
@@ -1560,6 +1567,10 @@ public sealed class FileTransferClient : IDisposable
             {
                 throw new FileTransferIntegrityException();
             }
+
+            // Only a COMPARED hash earns "Verified". A host that sent none proved nothing, so the row stays "Done".
+            if (!string.IsNullOrEmpty(expectedHash))
+                progress.ReportVerified(actualHash);
 
             completed = true;
         }

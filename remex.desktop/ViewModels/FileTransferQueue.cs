@@ -1,4 +1,3 @@
-using Remex.Desktop.Services.FileTransfer;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,8 +6,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Core.Helpers;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.FileTransfer;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -99,6 +100,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsTerminal))]
     [NotifyPropertyChangedFor(nameof(CanCancel))]
     [NotifyPropertyChangedFor(nameof(StateLabel))]
+    [NotifyPropertyChangedFor(nameof(IsVerified))]
     [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
     private TransferState _state = TransferState.Queued;
 
@@ -108,6 +110,23 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 
     [ObservableProperty]
     private string? _errorMessage;
+
+    /// <summary>
+    /// The SHA-256 the transfer was verified with, as the wire carries it (Base64), or null until one was
+    /// (2026-10-08 redesign). Set only by a transfer path that actually compared hashes, so a row whose host sent
+    /// none stays "Done" rather than claiming "Verified".
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VerifiedSha256Hex))]
+    [NotifyPropertyChangedFor(nameof(IsVerified))]
+    [NotifyPropertyChangedFor(nameof(StateLabel))]
+    private string? _verifiedSha256Base64;
+
+    /// <summary>The verified hash in lowercase hex, the form <c>sha256sum</c> and <c>Get-FileHash</c> print.</summary>
+    public string? VerifiedSha256Hex => HashFormat.ToHex(VerifiedSha256Base64);
+
+    /// <summary>True once the transfer finished AND its hash was compared and matched.</summary>
+    public bool IsVerified => State == TransferState.Done && VerifiedSha256Hex is not null;
 
     /// <summary>Localized throughput ("12.3 MB/s"), or null while unknown (RemEx-4lcq).</summary>
     [ObservableProperty]
@@ -316,7 +335,9 @@ public sealed partial class FileTransferQueueItem : ObservableObject
         TransferState.Active => LocalizationService.Instance["FileTransfer_QueueStateActive"],
         TransferState.Paused => LocalizationService.Instance["FileTransfer_QueueStatePaused"],
         TransferState.Verifying => LocalizationService.Instance["FileTransfer_QueueStateVerifying"],
-        TransferState.Done => LocalizationService.Instance["FileTransfer_QueueStateDone"],
+        TransferState.Done => IsVerified
+            ? LocalizationService.Instance["FileTransfer_QueueStateVerified"]
+            : LocalizationService.Instance["FileTransfer_QueueStateDone"],
         TransferState.Failed => LocalizationService.Instance["FileTransfer_QueueStateFailed"],
         TransferState.Cancelled => LocalizationService.Instance["FileTransfer_QueueStateCancelled"],
         _ => string.Empty,
@@ -678,10 +699,24 @@ public sealed class FileTransferQueue : IDisposable
         }
     }
 
-    /// <summary>The <see cref="IProgress{T}"/> a transfer reports into; see <see cref="FileTransferQueueItem.ReportProgress"/>.</summary>
-    private sealed class QueueItemProgress(FileTransferQueueItem item, Action<Action> post) : IProgress<TransferProgress>
+    /// <summary>
+    /// The <see cref="IProgress{T}"/> a transfer reports into; see <see cref="FileTransferQueueItem.ReportProgress"/>.
+    /// Also hears the hash check (<see cref="ITransferVerificationSink"/>), so the row can say Verifying and then
+    /// Verified instead of a bare Done.
+    /// </summary>
+    internal sealed class QueueItemProgress(FileTransferQueueItem item, Action<Action> post)
+        : IProgress<TransferProgress>, ITransferVerificationSink
     {
         public void Report(TransferProgress value) => item.ReportProgress(value, post);
+
+        public void ReportVerifying() => post(() =>
+        {
+            // Only from a live transfer: a late call must never pull a finished or cancelled row back.
+            if (item.State is TransferState.Active or TransferState.Negotiating)
+                item.State = TransferState.Verifying;
+        });
+
+        public void ReportVerified(string sha256Base64) => post(() => item.VerifiedSha256Base64 = sha256Base64);
     }
 
     private async Task RunItemAsync(FileTransferQueueItem item)

@@ -226,6 +226,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         var result = await _transfers.PullFileAsync(
             clientId, rootId, remoteRelativePath, localPath, controlWs, ToByteProgress(progress), ct);
         ThrowIfFailed(clientId, result);
+        // This PC hashed what landed and it matched the phone's: that is the hash the row shows.
+        progress.ReportVerified(result.Sha256Base64);
     }
 
     /// <inheritdoc />
@@ -247,6 +249,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         var result = await _transfers.UploadFileToPeerAsync(
             clientId, localPath, rootId, remoteDirectory, controlWs, ToByteProgress(progress, total), ct);
         ThrowIfFailed(clientId, result);
+        // The phone hashed what landed and said it matched; it echoes that hash with its verdict.
+        progress.ReportVerified(result.Sha256Base64);
     }
 
     private System.Net.WebSockets.WebSocket ControlSocketOrThrow(string clientId)

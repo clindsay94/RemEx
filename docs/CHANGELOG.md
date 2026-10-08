@@ -17,6 +17,11 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   instead of opening Google Play in a browser on the PC. Point your phone's camera at it to go straight to RemEx
   on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
   there. (RemEx-2p7um)
+- **Transfers on the PC now say "Verified".** RemEx has always checked every file it moves with a SHA-256
+  fingerprint, but a finished transfer only ever said **Done**. Now, when the check really ran and matched, the
+  transfer says **Verified** and keeps the fingerprint, so the new File Transfer screen can show and copy it. A
+  transfer whose other end sent no fingerprint to compare still says **Done**: nothing was checked, so nothing is
+  claimed. The row also says **Verifying…** while the two ends compare.
 
 ### Internal
 
@@ -32,6 +37,11 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   - A hash is shown as lowercase hex everywhere (the format `sha256sum` and `Get-FileHash` print), and a pasted
     hash is accepted in hex or Base64. The C# and Kotlin versions share one set of test vectors.
   See `docs/specs/2026-10-08-file-browser-redesign.md` and `docs/API_CONTRACTS.md` §3.
+- **The preview pipeline for the new File Transfer screen** (`remex.desktop/Services/FilePreview/`): which files
+  get an image, text or no preview; text decoding that honours byte-order marks and never shows half a character
+  cut by a read; light per-line colouring for logs (including the .NET logger's `fail:`/`warn:`), JSON, XML and
+  code; a full-size image fetch in 1 MiB reads that refuses a file over 40 MiB after one read; and a live tail
+  that reads only what was added, restarts when a log rotates, and keeps an endless line bounded.
 - **`scripts/verify.ps1` runs on Linux again.** It died at its first step on every Linux run: PowerShell 7.6
   adds its own newline to text piped into `git check-ignore`, so the script's extra one (needed on Windows,
   where PowerShell adds CRLF) became an empty line that git refuses. The extra newline is now added on Windows

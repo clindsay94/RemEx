@@ -4269,4 +4269,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Czekam na telefon</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Zweryfikowano</value>
+  </data>
 </root>

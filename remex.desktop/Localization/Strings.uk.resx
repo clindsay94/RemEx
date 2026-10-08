@@ -4269,4 +4269,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Очікування телефона</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Перевірено</value>
+  </data>
 </root>

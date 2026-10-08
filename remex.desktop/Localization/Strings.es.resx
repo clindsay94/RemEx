@@ -4280,4 +4280,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Esperando un teléfono</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Verificado</value>
+  </data>
 </root>

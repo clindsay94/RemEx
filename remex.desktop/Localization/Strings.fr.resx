@@ -4268,4 +4268,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>En attente d'un téléphone</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Vérifié</value>
+  </data>
 </root>

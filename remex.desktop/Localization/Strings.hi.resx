@@ -4268,4 +4268,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>फ़ोन का इंतज़ार है</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>सत्यापित</value>
+  </data>
 </root>

@@ -4274,4 +4274,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Waiting for a phone</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Verified</value>
+  </data>
 </root>

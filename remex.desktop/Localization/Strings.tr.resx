@@ -4272,4 +4272,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Telefon bekleniyor</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Doğrulandı</value>
+  </data>
 </root>

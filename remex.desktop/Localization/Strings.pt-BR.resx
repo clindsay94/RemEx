@@ -4268,4 +4268,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Aguardando um celular</value>
   </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Verificado</value>
+  </data>
 </root>
