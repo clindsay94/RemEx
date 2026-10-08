@@ -231,3 +231,29 @@ requested for this work.
   need later.
 - **Linux parity.** Everything here is cross-platform Avalonia, with no Windows-only APIs. The Windows-specific
   check is the palette sweep above.
+
+## 7. As delivered (2026-10-08)
+
+Phases 1–6 landed on `claude/clever-cerf-lkvh1u`, one commit each. Where the build differs from the plan above:
+
+- **Medium-width Android windows** use the list-detail scaffold's own default, one pane at a time (the preview opens
+  over the list), rather than contents and preview side by side. With the tree also on screen, a 600–840 dp window
+  left each pane too narrow to read. Expanded windows get all three panes as planned.
+- **"Verify against…"** on the PC takes the other device, folder and path in fields (defaulting to the same name in
+  the last folder looked at there); on Android it opens the other device's folder picker.
+- **"Send to PC…" and "Save to phone…" move files, not folders.** A folder in the selection is skipped and the status
+  line says so; whole folders still go through *Upload folder* and *Download folder*.
+- **Phone-side management** (rename, delete, new folder on the phone's own folders) was not part of this round; the
+  phone's own file manager does that. The PC still manages its own folders, and the phone's when the person allows it.
+- The toolbar's write actions became one primary button plus **More** on both platforms, as planned.
+- **Mixed versions (§2.4)** on the phone: a PC without `readRange` gets details plus "Update RemEx on your PC to preview
+  its files here" instead of the thumbnail, and nothing is sent to it; without `hash`, the fingerprint and cross-check
+  buttons give way to a line saying the same.
+- **Phone files are addressed by name.** A provider that lists two siblings with one name (some cloud providers can)
+  shows both rows, keyed by document id so the list never crashes, but opening, previewing or sending either one acts
+  on the first. Built-in storage never does this.
+
+Verification in the cloud session: `verify.ps1 -Scope all` on Linux (Android unit tests and `lintRelease` included),
+headless render tests with PNG snapshots of the PC screen, and defect injection for every new guard. Still to do on
+Connor's machines: the 13-cell `ui-palette-sweep.ps1` run on Windows, and the Android screen on the AVD across
+seed/dynamic/static colour, light/dark and contrast.
