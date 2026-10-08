@@ -22,6 +22,10 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   transfer says **Verified** and keeps the fingerprint, so the new File Transfer screen can show and copy it. A
   transfer whose other end sent no fingerprint to compare still says **Done**: nothing was checked, so nothing is
   claimed. The row also says **Verifying…** while the two ends compare.
+- **Transfers on the phone say "Verified" too.** A finished transfer in the phone's queue now says **Verified**
+  (with a check-mark icon) when its SHA-256 fingerprint was really compared and matched, and a button copies the
+  fingerprint as lowercase hex. The "Transfer complete" notification becomes **Transfer verified** in the same
+  case. A download from a PC that sent no fingerprint still says **Done**.
 
 ### Changed
 
@@ -62,6 +66,13 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   cut by a read; light per-line colouring for logs (including the .NET logger's `fail:`/`warn:`), JSON, XML and
   code; a full-size image fetch in 1 MiB reads that refuses a file over 40 MiB after one read; and a live tail
   that reads only what was added, restarts when a log rotates, and keeps an endless line bounded.
+- **The phone's plumbing for the new File Transfer screen** (`remex.android/.../ui/files/`): Kotlin twins of the
+  PC's preview classifier, text decoder, tokenizer and loaders (image, text head, live tail), held to the C#
+  rules by one shared vector file (`file-preview-vectors.json`, kept byte-identical on both sides);
+  `PcFileRequests` for range reads and SHA-256 requests to the PC, matched by request id; `LocalDocuments`, which
+  lists phone folders with one `DocumentsContract` query per folder and reads ranges and hashes on the phone; and
+  `PhoneBookmarksRepository`, phone-only folder bookmarks in their own DataStore key that the PC never sees until
+  the person turns on "Share with PC", which adds them to the existing "Access from your PC" list.
 - **`scripts/verify.ps1` runs on Linux again.** It died at its first step on every Linux run: PowerShell 7.6
   adds its own newline to text piped into `git check-ignore`, so the script's extra one (needed on Windows,
   where PowerShell adds CRLF) became an empty line that git refuses. The extra newline is now added on Windows

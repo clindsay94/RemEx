@@ -397,6 +397,7 @@
         <item quantity="other">quedan %1$d horas</item>
     </plurals>
     <string name="file_transfer_notification_complete_title">Transferencia completada</string>
+    <string name="file_transfer_notification_verified_title">Transferencia verificada</string>
     <string name="file_transfer_notification_upload_complete">%1$s subido</string>
     <string name="file_transfer_notification_upload_failed">No se pudo enviar %1$s</string>
     <string name="file_transfer_notification_download_failed">No se pudo descargar %1$s</string>
@@ -707,6 +708,9 @@
     <string name="file_manager_transfer_paused">En pausa • %1$s</string>
     <string name="file_manager_transfer_verifying">Verificando…</string>
     <string name="file_manager_transfer_done">Completada</string>
+    <string name="file_manager_transfer_verified">Verificado</string>
+    <string name="file_manager_copy_sha256">Copiar huella SHA-256</string>
+    <string name="file_manager_sha256_copied">Huella SHA-256 copiada</string>
     <string name="file_manager_transfer_failed">Error</string>
     <string name="file_manager_transfer_cancelled">Cancelada</string>
     <string name="file_manager_browse_device">Explorar este PC</string>

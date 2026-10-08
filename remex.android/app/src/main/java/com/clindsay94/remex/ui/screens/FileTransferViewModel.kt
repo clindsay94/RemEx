@@ -24,6 +24,7 @@ import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import com.clindsay94.remex.ui.components.FileConflictPrompt
+import com.clindsay94.remex.ui.files.PcFileRequests
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferRateEstimator
@@ -268,6 +269,20 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
      * [handleProgress] which is the single place progress arrives for either direction.
      */
     private val transferRate = TransferRateEstimator()
+
+    /**
+     * Range reads (previews, live tails) and SHA-256 requests to the PC (file browser redesign, 2026-10-08).
+     * Replies come in on the same file-message feed as everything else and are handed over in
+     * [handleFileTransferMessage], matched by request id.
+     */
+    internal val pcFileRequests = PcFileRequests { msg ->
+        try {
+            RemexCoreClient.SendMessage(msg.toString()).isSuccess
+        } catch (e: Exception) {
+            Log.e(TAG, "SendMessage failed", e)
+            false
+        }
+    }
 
     init {
         // Start the (idempotent) engine so its queue is readable and its control-message collector is
@@ -1727,6 +1742,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private fun handleFileTransferMessage(json: String) {
         try {
             val obj = JSONObject(json)
+            if (pcFileRequests.onMessage(obj)) return
             when (obj.optString("type")) {
                 "file_roots_response" -> handleRootsResponse(obj)
                 "file_browse_response" -> handleBrowseResponse(obj)

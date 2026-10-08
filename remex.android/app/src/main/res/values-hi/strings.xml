@@ -397,6 +397,7 @@
         <item quantity="other">%1$d घंटे बाकी</item>
     </plurals>
     <string name="file_transfer_notification_complete_title">ट्रांसफर पूरा हुआ</string>
+    <string name="file_transfer_notification_verified_title">ट्रांसफ़र सत्यापित</string>
     <string name="file_transfer_notification_upload_complete">%1$s अपलोड हो गया</string>
     <string name="file_transfer_notification_upload_failed">%1$s भेजने में विफल</string>
     <string name="file_transfer_notification_download_failed">%1$s डाउनलोड नहीं हो सका</string>
@@ -707,6 +708,9 @@
     <string name="file_manager_transfer_paused">रोका गया • %1$s</string>
     <string name="file_manager_transfer_verifying">सत्यापित हो रहा है…</string>
     <string name="file_manager_transfer_done">पूर्ण</string>
+    <string name="file_manager_transfer_verified">सत्यापित</string>
+    <string name="file_manager_copy_sha256">SHA-256 फ़िंगरप्रिंट कॉपी करें</string>
+    <string name="file_manager_sha256_copied">SHA-256 फ़िंगरप्रिंट कॉपी हो गया</string>
     <string name="file_manager_transfer_failed">विफल</string>
     <string name="file_manager_transfer_cancelled">रद्द</string>
     <string name="file_manager_browse_device">इस PC को ब्राउज़ करें</string>

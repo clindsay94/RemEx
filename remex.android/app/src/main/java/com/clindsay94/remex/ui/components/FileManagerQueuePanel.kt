@@ -18,10 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,11 +50,13 @@ import com.clindsay94.remex.service.QueuedTransfer
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferState
+import com.clindsay94.remex.ui.files.FileClipboard
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
 import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 import androidx.compose.material3.ButtonDefaults
+import android.widget.Toast
 
 /**
  * Persistent transfer-queue panel (plan WP7): one row per [QueuedTransfer] with live progress and
@@ -161,10 +165,15 @@ private fun TransferRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val verifiedHex = transfer.verifiedSha256Hex
         Icon(
-            imageVector = if (isDownload) Icons.Default.Download else Icons.Default.Upload,
+            imageVector = when {
+                verifiedHex != null -> Icons.Default.Verified
+                isDownload -> Icons.Default.Download
+                else -> Icons.Default.Upload
+            },
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (verifiedHex != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
@@ -213,6 +222,22 @@ private fun TransferRow(
                 state == TransferState.Cancelled ||
                 state == TransferState.Failed
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // A verified row's fingerprint, as lowercase hex, to paste next to sha256sum or Get-FileHash.
+                if (state == TransferState.Done && verifiedHex != null) {
+                    val context = LocalContext.current
+                    val label = stringResource(R.string.file_manager_copy_sha256)
+                    val copied = stringResource(R.string.file_manager_sha256_copied)
+                    IconButton(
+                        onClick = {
+                            if (FileClipboard.copy(context, label, verifiedHex)) {
+                                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        shapes = rememberRemexIconButtonShapes(),
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = label, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 if (state == TransferState.Paused || state == TransferState.Failed) {
                     IconButton(onClick = { onResume(transfer.id) }, shapes = rememberRemexIconButtonShapes()) {
                         Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
@@ -250,7 +275,10 @@ private fun transferStatusLabel(transfer: QueuedTransfer): String {
             withRateAndEta(stringResource(R.string.file_manager_transfer_active, progress), transfer)
         TransferState.Paused -> stringResource(R.string.file_manager_transfer_paused, progress)
         TransferState.Verifying -> stringResource(R.string.file_manager_transfer_verifying)
-        TransferState.Done -> stringResource(R.string.file_manager_transfer_done)
+        // "Verified" only when a SHA-256 was really compared and matched (QueuedTransfer.verified).
+        TransferState.Done ->
+            if (transfer.verifiedSha256Hex != null) stringResource(R.string.file_manager_transfer_verified)
+            else stringResource(R.string.file_manager_transfer_done)
         TransferState.Failed -> transfer.error ?: stringResource(R.string.file_manager_transfer_failed)
         TransferState.Cancelled -> stringResource(R.string.file_manager_transfer_cancelled)
     }

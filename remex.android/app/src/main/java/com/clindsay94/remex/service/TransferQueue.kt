@@ -49,7 +49,18 @@ data class QueuedTransfer(
      * Paused, so a cancel must still reach the host (live-check C4 review).
      */
     val hostKnows: Boolean = false,
+    /**
+     * True only when a SHA-256 was really compared and matched: the host confirmed an upload's hash, or a
+     * download's bytes matched the hash the host sent. A download from a host that sent no hash still
+     * finishes (and keeps the hash it computed in [sha256]), but nothing was checked, so it stays false
+     * and the row says "Done", not "Verified" (file browser redesign, 2026-10-08).
+     */
+    val verified: Boolean = false,
 ) {
+    /** The checked hash as lowercase hex, for "Verified" rows only; null for anything else. */
+    val verifiedSha256Hex: String?
+        get() = if (state == TransferState.Done && verified) HashFormat.toHex(sha256) else null
+
     fun toJson(): JSONObject =
         JSONObject().apply {
             put("id", id)
@@ -67,6 +78,7 @@ data class QueuedTransfer(
             if (error != null) put("error", error)
             put("createdAtMs", createdAtMs)
             put("hostKnows", hostKnows)
+            if (verified) put("verified", true)
         }
 
     companion object {
@@ -91,6 +103,8 @@ data class QueuedTransfer(
                 createdAtMs = obj.optLong("createdAtMs", System.currentTimeMillis()),
                 // A row persisted before the flag existed: anything past Queued was offered.
                 hostKnows = obj.optBoolean("hostKnows", state != TransferState.Queued),
+                // A row persisted before the flag existed says "Done": nothing claims a check it can't prove.
+                verified = obj.optBoolean("verified", false),
             )
         }
     }

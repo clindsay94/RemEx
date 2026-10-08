@@ -1,0 +1,724 @@
+{
+  "_comment": "Shared vectors for the PC (remex.desktop/Services/FilePreview) and phone (ui/files/preview) preview twins. Generated from the C# implementation; both suites assert against this file, and FilePreviewVectorTests keeps the Android copy byte-identical.",
+  "classify": [
+    {
+      "name": "photo.JPG",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "a.jpeg",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "x.png",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "anim.gif",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "b.bmp",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "c.webp",
+      "isDirectory": false,
+      "kind": "Image"
+    },
+    {
+      "name": "IMG_0142.HEIC",
+      "isDirectory": false,
+      "kind": "ImageThumbnailOnly"
+    },
+    {
+      "name": "d.heif",
+      "isDirectory": false,
+      "kind": "ImageThumbnailOnly"
+    },
+    {
+      "name": "agent.log",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "notes.md",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "data.json",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "Main.kt",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "build.gradle.kts",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": ".gitignore",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "run.ps1",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "setup.exe",
+      "isDirectory": false,
+      "kind": "None"
+    },
+    {
+      "name": "song.mp3",
+      "isDirectory": false,
+      "kind": "None"
+    },
+    {
+      "name": "archive.tar.gz",
+      "isDirectory": false,
+      "kind": "None"
+    },
+    {
+      "name": "README",
+      "isDirectory": false,
+      "kind": "Sniff"
+    },
+    {
+      "name": "data.blob",
+      "isDirectory": false,
+      "kind": "Sniff"
+    },
+    {
+      "name": "trailing.",
+      "isDirectory": false,
+      "kind": "Sniff"
+    },
+    {
+      "name": "Pictures",
+      "isDirectory": true,
+      "kind": "None"
+    },
+    {
+      "name": "folder.png",
+      "isDirectory": true,
+      "kind": "None"
+    },
+    {
+      "name": "",
+      "isDirectory": false,
+      "kind": "None"
+    },
+    {
+      "name": "dir/sub/file.TXT",
+      "isDirectory": false,
+      "kind": "Text"
+    },
+    {
+      "name": "weird.Json",
+      "isDirectory": false,
+      "kind": "Text"
+    }
+  ],
+  "languages": [
+    {
+      "name": "a.log",
+      "language": "Log"
+    },
+    {
+      "name": "b.TXT",
+      "language": "Log"
+    },
+    {
+      "name": "c.json",
+      "language": "Json"
+    },
+    {
+      "name": "d.jsonc",
+      "language": "Json"
+    },
+    {
+      "name": "e.xml",
+      "language": "Xml"
+    },
+    {
+      "name": "f.axaml",
+      "language": "Xml"
+    },
+    {
+      "name": "g.resx",
+      "language": "Xml"
+    },
+    {
+      "name": "h.cs",
+      "language": "CLike"
+    },
+    {
+      "name": "i.kt",
+      "language": "CLike"
+    },
+    {
+      "name": "j.kts",
+      "language": "CLike"
+    },
+    {
+      "name": "k.css",
+      "language": "CLike"
+    },
+    {
+      "name": "l.py",
+      "language": "Hash"
+    },
+    {
+      "name": "m.yml",
+      "language": "Hash"
+    },
+    {
+      "name": "n.toml",
+      "language": "Hash"
+    },
+    {
+      "name": ".gitignore",
+      "language": "Hash"
+    },
+    {
+      "name": ".editorconfig",
+      "language": "Hash"
+    },
+    {
+      "name": "o.md",
+      "language": "Plain"
+    },
+    {
+      "name": "p",
+      "language": "Plain"
+    },
+    {
+      "name": "q.csv",
+      "language": "Plain"
+    },
+    {
+      "name": "r.HTML",
+      "language": "Xml"
+    }
+  ],
+  "tokenize": [
+    {
+      "line": "2026-10-08 14:03:21.004 INFO  RemEx agent starting",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          23,
+          "Timestamp"
+        ]
+      ]
+    },
+    {
+      "line": "2026-10-08 14:03:22.517 WARN  Pairing PIN expires in 30 seconds",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          23,
+          "Timestamp"
+        ],
+        [
+          23,
+          40,
+          "LogWarning"
+        ]
+      ]
+    },
+    {
+      "line": "[2026-10-08T14:03:24.900Z] ERROR Thumbnail failed",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          26,
+          "Timestamp"
+        ],
+        [
+          26,
+          23,
+          "LogError"
+        ]
+      ]
+    },
+    {
+      "line": "fail: Remex.Agent.Handlers.FileTransferHandler[0]",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          49,
+          "LogError"
+        ]
+      ]
+    },
+    {
+      "line": "dbug: something verbose",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          23,
+          "LogDebug"
+        ]
+      ]
+    },
+    {
+      "line": "14:03:22 DEBUG tick",
+      "language": "Log",
+      "spans": [
+        [
+          0,
+          8,
+          "Timestamp"
+        ],
+        [
+          8,
+          11,
+          "LogDebug"
+        ]
+      ]
+    },
+    {
+      "line": "NoErrors here, failover ok",
+      "language": "Log",
+      "spans": []
+    },
+    {
+      "line": "12 apples",
+      "language": "Log",
+      "spans": []
+    },
+    {
+      "line": "",
+      "language": "Log",
+      "spans": []
+    },
+    {
+      "line": "  \"rootId\": \"docs\", \"bytes\": 1048576, \"ok\": false, \"x\": null",
+      "language": "Json",
+      "spans": [
+        [
+          2,
+          8,
+          "Key"
+        ],
+        [
+          12,
+          6,
+          "String"
+        ],
+        [
+          20,
+          7,
+          "Key"
+        ],
+        [
+          29,
+          7,
+          "Number"
+        ],
+        [
+          38,
+          4,
+          "Key"
+        ],
+        [
+          44,
+          5,
+          "Keyword"
+        ],
+        [
+          51,
+          3,
+          "Key"
+        ],
+        [
+          56,
+          4,
+          "Keyword"
+        ]
+      ]
+    },
+    {
+      "line": "{\"a\":true,\"esc\":\"q\\\"uote\"}",
+      "language": "Json",
+      "spans": [
+        [
+          1,
+          3,
+          "Key"
+        ],
+        [
+          5,
+          4,
+          "Keyword"
+        ],
+        [
+          10,
+          5,
+          "Key"
+        ],
+        [
+          16,
+          9,
+          "String"
+        ]
+      ]
+    },
+    {
+      "line": "[1.5e3, 0x1F, -2, abc1]",
+      "language": "Json",
+      "spans": [
+        [
+          1,
+          5,
+          "Number"
+        ],
+        [
+          8,
+          4,
+          "Number"
+        ],
+        [
+          15,
+          1,
+          "Number"
+        ]
+      ]
+    },
+    {
+      "line": "<Grid x:Name=\"Root\" Margin='4'> <!-- note --> </Grid>",
+      "language": "Xml",
+      "spans": [
+        [
+          1,
+          4,
+          "Key"
+        ],
+        [
+          13,
+          6,
+          "String"
+        ],
+        [
+          27,
+          3,
+          "String"
+        ],
+        [
+          32,
+          13,
+          "Comment"
+        ],
+        [
+          48,
+          4,
+          "Key"
+        ]
+      ]
+    },
+    {
+      "line": "<?xml version=\"1.0\"?>",
+      "language": "Xml",
+      "spans": [
+        [
+          2,
+          3,
+          "Key"
+        ],
+        [
+          14,
+          5,
+          "String"
+        ]
+      ]
+    },
+    {
+      "line": "a < b <!-- open",
+      "language": "Xml",
+      "spans": [
+        [
+          6,
+          9,
+          "Comment"
+        ]
+      ]
+    },
+    {
+      "line": "var x = 42; // the answer",
+      "language": "CLike",
+      "spans": [
+        [
+          8,
+          2,
+          "Number"
+        ],
+        [
+          12,
+          13,
+          "Comment"
+        ]
+      ]
+    },
+    {
+      "line": "val s = \"it's\" + 'c' + `t` + v2 + 0xFF_FF",
+      "language": "CLike",
+      "spans": [
+        [
+          8,
+          6,
+          "String"
+        ],
+        [
+          17,
+          3,
+          "String"
+        ],
+        [
+          23,
+          3,
+          "String"
+        ],
+        [
+          34,
+          7,
+          "Number"
+        ]
+      ]
+    },
+    {
+      "line": "url = \"http://x\" // c",
+      "language": "CLike",
+      "spans": [
+        [
+          6,
+          10,
+          "String"
+        ],
+        [
+          17,
+          4,
+          "Comment"
+        ]
+      ]
+    },
+    {
+      "line": "key = 'value' # comment",
+      "language": "Hash",
+      "spans": [
+        [
+          6,
+          7,
+          "String"
+        ],
+        [
+          14,
+          9,
+          "Comment"
+        ]
+      ]
+    },
+    {
+      "line": "# whole line",
+      "language": "Hash",
+      "spans": [
+        [
+          0,
+          12,
+          "Comment"
+        ]
+      ]
+    },
+    {
+      "line": "port: 5005",
+      "language": "Hash",
+      "spans": [
+        [
+          6,
+          4,
+          "Number"
+        ]
+      ]
+    },
+    {
+      "line": "unclosed \"string",
+      "language": "CLike",
+      "spans": [
+        [
+          9,
+          7,
+          "String"
+        ]
+      ]
+    },
+    {
+      "line": "anything 123",
+      "language": "Plain",
+      "spans": []
+    },
+    {
+      "line": "<my-tag data-x=\"1\"/>",
+      "language": "Xml",
+      "spans": [
+        [
+          1,
+          6,
+          "Key"
+        ],
+        [
+          15,
+          3,
+          "String"
+        ]
+      ]
+    }
+  ],
+  "decode": [
+    {
+      "hex": "706c61696e20746578740a6c696e652032",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "plain text\nline 2",
+      "completeUtf8Length": 17,
+      "looksBinary": false
+    },
+    {
+      "hex": "efbbbf626f6d20c3a9",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "bom é",
+      "completeUtf8Length": 9,
+      "looksBinary": false
+    },
+    {
+      "hex": "fffe750074006600310036002000fc00",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "utf16 ü",
+      "completeUtf8Length": 16,
+      "looksBinary": false
+    },
+    {
+      "hex": "feff0062006500202603",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "be ☃",
+      "completeUtf8Length": 10,
+      "looksBinary": false
+    },
+    {
+      "hex": "63757420e298",
+      "startsMidFile": false,
+      "endsMidFile": true,
+      "text": "cut ",
+      "completeUtf8Length": 4,
+      "looksBinary": false
+    },
+    {
+      "hex": "63757420e298",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "cut �",
+      "completeUtf8Length": 4,
+      "looksBinary": false
+    },
+    {
+      "hex": "98837061727469616c0a77686f6c65206c696e650a",
+      "startsMidFile": true,
+      "endsMidFile": false,
+      "text": "whole line\n",
+      "completeUtf8Length": 21,
+      "looksBinary": false
+    },
+    {
+      "hex": "6e6f206e65776c696e6520617420616c6c",
+      "startsMidFile": true,
+      "endsMidFile": false,
+      "text": "",
+      "completeUtf8Length": 17,
+      "looksBinary": false
+    },
+    {
+      "hex": "656d6f6a6920f09f98",
+      "startsMidFile": false,
+      "endsMidFile": true,
+      "text": "emoji ",
+      "completeUtf8Length": 6,
+      "looksBinary": false
+    },
+    {
+      "hex": "62616420c328ff20656e64",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "bad �(� end",
+      "completeUtf8Length": 11,
+      "looksBinary": false
+    },
+    {
+      "hex": "efbbbf626f6d206d69640a78",
+      "startsMidFile": true,
+      "endsMidFile": false,
+      "text": "x",
+      "completeUtf8Length": 12,
+      "looksBinary": false
+    },
+    {
+      "hex": "",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "",
+      "completeUtf8Length": 0,
+      "looksBinary": false
+    },
+    {
+      "hex": "410042",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "A\u0000B",
+      "completeUtf8Length": 3,
+      "looksBinary": true
+    },
+    {
+      "hex": "fffe4100",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "A",
+      "completeUtf8Length": 4,
+      "looksBinary": false
+    },
+    {
+      "hex": "00",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "\u0000",
+      "completeUtf8Length": 1,
+      "looksBinary": true
+    },
+    {
+      "hex": "7f454c4602010100",
+      "startsMidFile": false,
+      "endsMidFile": false,
+      "text": "\u007FELF\u0002\u0001\u0001\u0000",
+      "completeUtf8Length": 8,
+      "looksBinary": true
+    }
+  ]
+}

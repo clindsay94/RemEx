@@ -390,6 +390,7 @@
         <item quantity="other">%1$d jam lagi</item>
     </plurals>
     <string name="file_transfer_notification_complete_title">Transfer selesai</string>
+    <string name="file_transfer_notification_verified_title">Transfer terverifikasi</string>
     <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
     <string name="file_transfer_notification_upload_failed">Gagal mengirim %1$s</string>
     <string name="file_transfer_notification_download_failed">Tidak dapat mengunduh %1$s</string>
@@ -700,6 +701,9 @@
     <string name="file_manager_transfer_paused">Dijeda • %1$s</string>
     <string name="file_manager_transfer_verifying">Memverifikasi…</string>
     <string name="file_manager_transfer_done">Selesai</string>
+    <string name="file_manager_transfer_verified">Terverifikasi</string>
+    <string name="file_manager_copy_sha256">Salin sidik jari SHA-256</string>
+    <string name="file_manager_sha256_copied">Sidik jari SHA-256 disalin</string>
     <string name="file_manager_transfer_failed">Gagal</string>
     <string name="file_manager_transfer_cancelled">Dibatalkan</string>
     <string name="file_manager_browse_device">Jelajahi PC ini</string>

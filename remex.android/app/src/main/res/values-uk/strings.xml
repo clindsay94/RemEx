@@ -411,6 +411,7 @@
         <item quantity="other">залишилося %1$d години</item>
     </plurals>
     <string name="file_transfer_notification_complete_title">Передавання завершено</string>
+    <string name="file_transfer_notification_verified_title">Передавання перевірено</string>
     <string name="file_transfer_notification_upload_complete">%1$s вивантажено</string>
     <string name="file_transfer_notification_upload_failed">Не вдалося надіслати %1$s</string>
     <string name="file_transfer_notification_download_failed">Не вдалося завантажити %1$s</string>
@@ -721,6 +722,9 @@
     <string name="file_manager_transfer_paused">Призупинено • %1$s</string>
     <string name="file_manager_transfer_verifying">Перевірка…</string>
     <string name="file_manager_transfer_done">Готово</string>
+    <string name="file_manager_transfer_verified">Перевірено</string>
+    <string name="file_manager_copy_sha256">Копіювати відбиток SHA-256</string>
+    <string name="file_manager_sha256_copied">Відбиток SHA-256 скопійовано</string>
     <string name="file_manager_transfer_failed">Помилка</string>
     <string name="file_manager_transfer_cancelled">Скасовано</string>
     <string name="file_manager_browse_device">Огляд цього ПК</string>
