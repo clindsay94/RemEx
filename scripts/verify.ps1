@@ -205,7 +205,14 @@ function Get-SourceFingerprint {
             # a terminating LF, and on Windows that corrupts its output - the last path
             # comes back misattributed with a stray trailing CR. A trailing newline avoids
             # that entirely.
-            $stdinPayload = ($files -join "`n") + "`n"
+            #
+            # WINDOWS ONLY, THOUGH. PowerShell appends its own platform newline to a string piped
+            # into a native command: CRLF on Windows (which is where the stray CR above came from,
+            # and why the explicit LF is needed there), but a bare LF on Linux, where the explicit
+            # one then becomes an empty record. git rejects an empty record as an empty pathspec
+            # and exits 128, so every Linux run of this script died here before building anything
+            # (pwsh 7.6, 2026-10-08).
+            $stdinPayload = ($files -join "`n") + $(if ($IsWindows) { "`n" } else { '' })
             $ignoredOutput = @($stdinPayload | git check-ignore --no-index --stdin)
             $checkIgnoreExit = $LASTEXITCODE
             # Exit code 1 from check-ignore means "none of the paths are ignored" - that
