@@ -4272,4 +4272,148 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
     <value>Zweryfikowano</value>
   </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Foldery</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Więcej działań</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Pokaż lub ukryj podgląd (Spacja)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Wyślij do</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Kopiuj ścieżkę</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Oblicz SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Kopiuj SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Nie udało się otworzyć. Rozwiń ponownie, aby spróbować jeszcze raz.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Odśwież</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Pokaż lub ukryj listę przesyłania</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>w toku</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>zweryfikowane</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>nieudane</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Zamknij podgląd</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Wybierz plik, aby zobaczyć podgląd.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Wczytywanie podglądu…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Na żywo</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Śledź koniec pliku, gdy rośnie</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Pokazano pierwsze 2 MB. Pobierz plik, aby zobaczyć całość.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Ten plik jest za duży na podgląd. Pobierz go, aby go otworzyć.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Ten plik nie jest tekstem, więc nie ma tu nic do pokazania.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Zaktualizuj RemEx na tym urządzeniu, aby podglądać jego pliki.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Nie udało się wczytać podglądu.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Przewiń, aby powiększyć, przeciągnij, aby przesunąć, kliknij dwukrotnie, aby dopasować</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Szczegóły</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Odcisk SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Oblicz SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Obliczanie odcisku…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Kopiuj</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Wklej SHA-256, aby porównać</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Zgadza się</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Nie zgadza się</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>To nie jest SHA-256. Powinien mieć 64 znaki szesnastkowe.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>To urządzenie nie umie jeszcze obliczać odcisków. Zaktualizuj na nim RemEx.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Nie udało się obliczyć odcisku. Sprawdź, czy plik nie jest używany, i spróbuj ponownie.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Porównaj z kopią na innym urządzeniu</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Urządzenie</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Folder udostępniony</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>Plik na tym urządzeniu</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Porównaj</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Porównywanie obu kopii…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identyczne: obie kopie mają ten sam odcisk.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Różne: obie kopie się nie zgadzają.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Nie udało się porównać. Sprawdź nazwę pliku i czy oba urządzenia są połączone.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Folderów nie wysyła się w ten sposób. Użyj opcji Prześlij folder lub Pobierz folder.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Pliki nie mogą trafić bezpośrednio z jednego telefonu na drugi. Najpierw skopiuj je na ten komputer.</value>
+  </data>
 </root>

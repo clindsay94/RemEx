@@ -23,6 +23,26 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   transfer whose other end sent no fingerprint to compare still says **Done**: nothing was checked, so nothing is
   claimed. The row also says **Verifying…** while the two ends compare.
 
+### Changed
+
+- **A new File Transfer screen on the PC.** The old screen, with its source picker and single file list, is
+  replaced by an Explorer-style layout with three panes:
+  - **Folders** on the left: This PC and each connected phone, with their shared folders (and a phone's storage
+    volumes) as a tree you can open level by level. Clicking a folder goes straight there, and the tree follows
+    you when you browse in the list.
+  - **The folder you're in** in the middle, with a breadcrumb path, real thumbnails in both the list and the
+    icon grid, a right-click menu on every file and folder, and keyboard shortcuts (Enter, Backspace, F2,
+    Delete, F5, Ctrl+C/X/V, Ctrl+A, Ctrl+F, Space for the preview).
+  - **A live preview** on the right that follows what you select. Pictures show at full quality (scroll to zoom,
+    drag to move, double-click to fit). Text, code and logs show with colour, and a log can be followed **Live**
+    as new lines are written. Files that can't be previewed show their details instead.
+  - The preview's **Integrity** section shows a file's SHA-256 fingerprint, lets you copy it, compare it with a
+    fingerprint you paste in, and check it against a copy on another device ("identical" or "different").
+  - Drag files from one device to another in the tree to send them, or from Windows Explorer onto a folder to
+    upload them. Dragging inside one shared folder moves (or, with Ctrl, copies).
+  - Transfers sit in a strip along the bottom that counts what's running, verified and failed, and opens into
+    the full list. A verified transfer's fingerprint can be copied from its row.
+
 ### Internal
 
 - **Groundwork for the new File Transfer screen: live preview and SHA-256 on the phone.** Two protocol

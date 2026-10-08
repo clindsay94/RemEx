@@ -4271,4 +4271,148 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
     <value>सत्यापित</value>
   </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>फ़ोल्डर</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>और कार्रवाइयाँ</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>पूर्वावलोकन दिखाएँ या छिपाएँ (Space)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>पूर्वावलोकन</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>यहाँ भेजें</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>पथ कॉपी करें</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>SHA-256 निकालें</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>SHA-256 कॉपी करें</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>खुल नहीं सका। फिर से कोशिश करने के लिए दोबारा खोलें।</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>रीफ़्रेश करें</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>ट्रांसफ़र सूची दिखाएँ या छिपाएँ</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>जारी</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>सत्यापित</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>विफल</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>पूर्वावलोकन</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>पूर्वावलोकन बंद करें</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>पूर्वावलोकन के लिए कोई फ़ाइल चुनें।</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>पूर्वावलोकन लोड हो रहा है…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>लाइव</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>फ़ाइल बढ़ने पर उसके अंत को देखते रहें</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>पहले 2 MB दिखाए जा रहे हैं। पूरी फ़ाइल देखने के लिए उसे डाउनलोड करें।</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>यह फ़ाइल पूर्वावलोकन के लिए बहुत बड़ी है। खोलने के लिए इसे डाउनलोड करें।</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>यह फ़ाइल टेक्स्ट नहीं है, इसलिए यहाँ दिखाने को कुछ नहीं है।</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>इस डिवाइस की फ़ाइलों का पूर्वावलोकन करने के लिए उस पर RemEx अपडेट करें।</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>पूर्वावलोकन लोड नहीं हो सका।</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>ज़ूम के लिए स्क्रॉल करें, हिलाने के लिए खींचें, फ़िट करने के लिए डबल-क्लिक करें</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>विवरण</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>SHA-256 फ़िंगरप्रिंट</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>SHA-256 निकालें</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>फ़िंगरप्रिंट निकाला जा रहा है…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>कॉपी करें</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>तुलना के लिए SHA-256 चिपकाएँ</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>मेल खाता है</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>मेल नहीं खाता</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>यह SHA-256 नहीं है। इसमें 64 हेक्साडेसिमल वर्ण होने चाहिए।</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>यह डिवाइस अभी फ़िंगरप्रिंट नहीं निकाल सकता। उस पर RemEx अपडेट करें।</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>फ़िंगरप्रिंट नहीं निकाला जा सका। जाँचें कि फ़ाइल उपयोग में नहीं है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>किसी दूसरे डिवाइस की कॉपी से तुलना करें</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>डिवाइस</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>साझा फ़ोल्डर</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>उस डिवाइस पर फ़ाइल</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>तुलना करें</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>दोनों कॉपियों की तुलना हो रही है…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>एक जैसी: दोनों कॉपियों का फ़िंगरप्रिंट एक ही है।</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>अलग: दोनों कॉपियाँ मेल नहीं खातीं।</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>तुलना नहीं हो सकी। फ़ाइल का नाम जाँचें और देखें कि दोनों डिवाइस कनेक्ट हैं।</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>फ़ोल्डर इस तरह नहीं भेजे जाते। इसके बजाय फ़ोल्डर अपलोड करें या फ़ोल्डर डाउनलोड करें का उपयोग करें।</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>फ़ाइलें सीधे एक फ़ोन से दूसरे फ़ोन पर नहीं जा सकतीं। पहले उन्हें इस PC पर कॉपी करें।</value>
+  </data>
 </root>

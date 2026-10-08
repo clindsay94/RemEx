@@ -279,6 +279,15 @@ public sealed class FileTransferClient : IDisposable
     /// </summary>
     public bool SupportsPcChanges => SupportsV3 && Capabilities?.PcChanges == true;
 
+    /// <summary>True when the host answers <c>file_read_range_request</c>, so its files can be previewed (2026-10-08).</summary>
+    public bool SupportsReadRange => SupportsV3 && Capabilities?.ReadRange == true;
+
+    /// <summary>
+    /// True when the host answers <c>file_hash_request</c>. The PC always has; a phone does from the 2026-10-08
+    /// redesign on, and an older one would leave "Compute SHA-256" waiting out its timeout, so it is hidden there.
+    /// </summary>
+    public bool SupportsHash => SupportsV3 && Capabilities?.Hash == true;
+
     public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");

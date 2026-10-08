@@ -4271,4 +4271,148 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
     <value>Vérifié</value>
   </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Dossiers</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Plus d'actions</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Afficher ou masquer l'aperçu (Espace)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Envoyer vers</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Copier le chemin</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Calculer le SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Copier le SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Ouverture impossible. Développez à nouveau pour réessayer.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Afficher ou masquer la liste des transferts</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>en cours</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>vérifiés</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>échoués</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Fermer l'aperçu</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Sélectionnez un fichier pour l'afficher.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Chargement de l'aperçu…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>En direct</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Suivre la fin du fichier à mesure qu'il grandit</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Affichage des 2 premiers Mo. Téléchargez le fichier pour tout voir.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Ce fichier est trop volumineux pour l'aperçu. Téléchargez-le pour l'ouvrir.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Ce fichier n'est pas du texte : il n'y a rien à afficher.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Mettez RemEx à jour sur cet appareil pour afficher ses fichiers.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Impossible de charger l'aperçu.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Faites défiler pour zoomer, faites glisser pour déplacer, double-cliquez pour ajuster</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Détails</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Empreinte SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Calculer le SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Calcul de l'empreinte…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Collez un SHA-256 pour comparer</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Correspond</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Ne correspond pas</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>Ce n'est pas un SHA-256. Il doit compter 64 caractères hexadécimaux.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>Cet appareil ne sait pas encore calculer d'empreintes. Mettez RemEx à jour dessus.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Impossible de calculer l'empreinte. Vérifiez que le fichier n'est pas utilisé, puis réessayez.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Comparer avec une copie sur un autre appareil</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Appareil</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Dossier partagé</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>Fichier sur cet appareil</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Comparer</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Comparaison des deux copies…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identiques : les deux copies ont la même empreinte.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Différentes : les deux copies ne correspondent pas.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Comparaison impossible. Vérifiez le nom du fichier et que les deux appareils sont connectés.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Les dossiers ne s'envoient pas ainsi. Utilisez Envoyer un dossier ou Télécharger le dossier.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Les fichiers ne peuvent pas passer directement d'un téléphone à un autre. Copiez-les d'abord sur ce PC.</value>
+  </data>
 </root>

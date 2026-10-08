@@ -4272,4 +4272,148 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
     <value>Перевірено</value>
   </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Папки</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Інші дії</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Показати або сховати перегляд (Пробіл)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Переглянути</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Надіслати на</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Копіювати шлях</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Обчислити SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Копіювати SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Не вдалося відкрити. Розгорніть ще раз, щоб повторити.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Показати або сховати список передавань</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>триває</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>перевірено</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>не вдалося</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Перегляд</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Закрити перегляд</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Виберіть файл, щоб переглянути його.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Завантаження перегляду…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Наживо</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Стежити за кінцем файлу, поки він росте</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Показано перші 2 МБ. Завантажте файл, щоб побачити його повністю.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Цей файл завеликий для перегляду. Завантажте його, щоб відкрити.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Цей файл не є текстом, тож тут нічого показати.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Оновіть RemEx на цьому пристрої, щоб переглядати його файли.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Не вдалося завантажити перегляд.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Прокрутіть, щоб масштабувати, перетягніть, щоб посунути, двічі клацніть, щоб вмістити</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Відомості</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Відбиток SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Обчислити SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Обчислення відбитка…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Копіювати</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Вставте SHA-256 для порівняння</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Збігається</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Не збігається</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>Це не SHA-256. Він має містити 64 шістнадцяткові символи.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>Цей пристрій ще не вміє обчислювати відбитки. Оновіть на ньому RemEx.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Не вдалося обчислити відбиток. Переконайтеся, що файл не використовується, і спробуйте ще раз.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Порівняти з копією на іншому пристрої</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Пристрій</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Спільна папка</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>Файл на тому пристрої</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Порівняти</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Порівняння двох копій…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Однакові: обидві копії мають той самий відбиток.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Різні: дві копії не збігаються.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Не вдалося порівняти. Перевірте назву файлу і що обидва пристрої підключені.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Папки так не надсилаються. Скористайтеся «Вивантажити папку» або «Завантажити папку».</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Файли не можна передати напряму з одного телефона на інший. Спершу скопіюйте їх на цей ПК.</value>
+  </data>
 </root>

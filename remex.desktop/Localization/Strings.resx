@@ -4277,4 +4277,148 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
     <value>Verified</value>
   </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Show or hide the preview (Space)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Send to</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Copy path</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Compute SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Copy SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Couldn't open. Expand again to retry.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Show or hide the transfer list</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>in progress</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>verified</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>failed</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Close the preview</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Select a file to preview it.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Loading the preview…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Live</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Follow the end of the file as it grows</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Showing the first 2 MB. Download the file to see all of it.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>This file is too big to preview. Download it to open it.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>This file isn't text, so there's nothing to show here.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Update RemEx on this device to preview its files.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>The preview couldn't be loaded.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Scroll to zoom, drag to move, double-click to fit</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>SHA-256 fingerprint</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Compute SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Computing the fingerprint…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Paste a SHA-256 to compare</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Matches</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Doesn't match</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>That isn't a SHA-256. It should be 64 hexadecimal characters.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>This device can't compute fingerprints yet. Update RemEx on it.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Couldn't compute the fingerprint. Check the file isn't in use, then try again.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Compare with a copy on another device</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Shared folder</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>File on that device</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Comparing the two copies…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identical: both copies have the same fingerprint.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Different: the two copies don't match.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Couldn't compare. Check the file name and that both devices are connected.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Folders aren't sent this way. Use Upload folder or Download folder instead.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Files can't go straight from one phone to another. Copy them to this PC first.</value>
+  </data>
 </root>
