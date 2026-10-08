@@ -91,6 +91,7 @@ public static class MessageAudience
         [MessageTypes.FileSearchResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileManifestResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileThumbnailResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
+        [MessageTypes.FileReadRangeResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferChunk] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferComplete] = ClientSurface.AndroidControl,
         // Host -> client only since RemEx-cc30z, which made the host able to say "let go of this"
@@ -103,7 +104,7 @@ public static class MessageAudience
         [MessageTypes.FileTransferReady] = ClientSurface.AndroidControl,
         [MessageTypes.FileTransferResult] = ClientSurface.AndroidControl,
         [MessageTypes.FileVolumesResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
-        // The PC browsing a paired phone (RemEx-xt0af). PhoneFileRelay forwards these REQUESTS (the seven
+        // The PC browsing a paired phone (RemEx-xt0af). PhoneFileRelay forwards these REQUESTS (the nine
         // read-only ones, plus file_manage_request since RemEx-fgmne),
         // built by the PC's own File Transfer screen, down a paired phone's existing session; the
         // phone's file host answers them as it always has. The phone only — the PC's UI is the asker
@@ -116,6 +117,10 @@ public static class MessageAudience
         [MessageTypes.FileManifestRequest] = ClientSurface.AndroidControl,
         [MessageTypes.FileMetadataRequest] = ClientSurface.AndroidControl,
         [MessageTypes.FileThumbnailRequest] = ClientSurface.AndroidControl,
+        // Live preview and "Verify against…" on a phone's files, from the PC (2026-10-08 redesign). Both are
+        // read-only and pass the same shared-folder gate on the phone as a browse does, re-checked per request.
+        [MessageTypes.FileReadRangeRequest] = ClientSurface.AndroidControl,
+        [MessageTypes.FileHashRequest] = ClientSurface.AndroidControl,
         // Rename / delete / move / copy / new folder on the phone, from the PC (RemEx-fgmne). Relayed only to a
         // phone whose own roots reply said the person allows it, and the phone checks that switch again.
         [MessageTypes.FileManageRequest] = ClientSurface.AndroidControl,

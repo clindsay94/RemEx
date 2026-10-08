@@ -356,8 +356,6 @@ private val whatsNewEntries: List<Pair<Int, Int>> = listOf(
     R.string.about_whats_new_5_label to R.string.about_whats_new_5_body,
     R.string.about_whats_new_6_label to R.string.about_whats_new_6_body,
     R.string.about_whats_new_7_label to R.string.about_whats_new_7_body,
-    R.string.about_whats_new_8_label to R.string.about_whats_new_8_body,
-    R.string.about_whats_new_9_label to R.string.about_whats_new_9_body,
 )
 
 @Composable

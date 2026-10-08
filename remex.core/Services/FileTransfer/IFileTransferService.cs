@@ -126,4 +126,16 @@ public interface IFileTransferService
     /// (SkiaSharp) — this interface stays NativeAOT-safe by returning only a string.
     /// </summary>
     Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct);
+
+    /// <summary>
+    /// Reads up to <paramref name="length"/> bytes of one file for live preview: from
+    /// <paramref name="offset"/>, or the last <paramref name="length"/> bytes when <paramref name="fromEnd"/>
+    /// is true. Resolved exactly as a download's source is. Opens the file sharing read, write and delete,
+    /// so a log another program is still writing can be tailed. A directory throws; an offset at or past
+    /// the end returns no bytes rather than an error.
+    /// </summary>
+    Task<FileRangeRead> ReadRangeAsync(string rootId, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="ReadRangeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<FileRangeRead> ReadVolumeRangeAsync(string volumeAbsolutePath, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct);
 }

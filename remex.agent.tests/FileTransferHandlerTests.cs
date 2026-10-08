@@ -1031,6 +1031,183 @@ public sealed class FileTransferHandlerTests : IDisposable
     private static FileThumbnailResponse LastThumbnail(FakeWebSocket ws)
         => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileThumbnailResponse).FileThumbnailResponse!;
 
+    // ── Live preview: file_read_range_request (2026-10-08 redesign) ──────────────
+
+    private static FileReadRangeResponse LastRead(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileReadRangeResponse).FileReadRangeResponse!;
+
+    private static RemexMessage ReadRange(string path, long offset = 0, int length = 1024, bool fromEnd = false, string rootId = "root-1")
+        => new()
+        {
+            Type = MessageTypes.FileReadRangeRequest,
+            FileReadRangeRequest = new FileReadRangeRequest
+            {
+                RequestId = "rr-1", RootId = rootId, RelativePath = path, Offset = offset, Length = length, FromEnd = fromEnd,
+            },
+        };
+
+    private static string Text(FileReadRangeResponse r) =>
+        System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(r.DataBase64!));
+
+    [Fact]
+    public async Task ReadRange_FromAnOffset_ReturnsThoseBytes_AndTheFileSize()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.log"), "0123456789");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("a.log", offset: 3, length: 4), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Null(r.ErrorMessage);
+        Assert.Equal("rr-1", r.RequestId);
+        Assert.Equal(3, r.Offset);
+        Assert.Equal("3456", Text(r));
+        Assert.Equal(10, r.FileSize);
+        Assert.False(r.Eof);
+        Assert.True(r.ModifiedUtc > 0);
+    }
+
+    [Fact]
+    public async Task ReadRange_FromTheEnd_ReturnsTheTail_AndSaysEof()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.log"), "0123456789");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("a.log", length: 4, fromEnd: true), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Equal(6, r.Offset);
+        Assert.Equal("6789", Text(r));
+        Assert.True(r.Eof);
+    }
+
+    [Fact]
+    public async Task ReadRange_PastTheEnd_ReturnsNoBytes_NotAnError()
+    {
+        // A tail that polls after the file was truncated asks past the end. That is "nothing new", not a failure.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.log"), "abc");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("a.log", offset: 50), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Null(r.ErrorMessage);
+        Assert.Equal(string.Empty, r.DataBase64);
+        Assert.Equal(3, r.FileSize);
+        Assert.True(r.Eof);
+    }
+
+    [WindowsOnlyFact("FileShare is advisory on Unix, so only Windows refuses a FileShare.Read open against a writer; "
+        + "on Linux this passes with either share mode and proves nothing (defect-injected 2026-10-08)")]
+    public async Task ReadRange_OfALogAnotherProgramHasOpenForWriting_Works()
+    {
+        // The point of live tail. The transfer paths open with FileShare.Read, which fails against a writer
+        // on Windows; a preview that used that share mode could never tail a live log.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var path = Path.Combine(rootDir, "live.log");
+        await using var writer = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+        await writer.WriteAsync("first line\n"u8.ToArray());
+        await writer.FlushAsync();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("live.log", length: 100, fromEnd: true), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Null(r.ErrorMessage);
+        Assert.Equal("first line\n", Text(r));
+    }
+
+    [Fact]
+    public async Task ReadRange_ThatEscapesTheRoot_IsRefused_AndReadsNothing()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var outside = Path.Combine(Path.GetDirectoryName(rootDir)!, "secret.txt");
+        await File.WriteAllTextAsync(outside, "do not read");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("../secret.txt"), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.False(string.IsNullOrEmpty(r.ErrorMessage));
+        Assert.Null(r.DataBase64);
+    }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(0, 0)]
+    [InlineData(0, FileTransferLimits.ReadRangeMaxBytes + 1)]
+    public async Task ReadRange_OutOfBounds_IsRefused_BeforeAnythingIsOpened(long offset, int length)
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.log"), "abc");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("a.log", offset, length), ws, null, CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Equal("rr-1", r.RequestId);
+        Assert.False(string.IsNullOrEmpty(r.ErrorMessage));
+        Assert.Null(r.DataBase64);
+    }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(0, 0)]
+    [InlineData(0, FileTransferLimits.ReadRangeMaxBytes + 1)]
+    public async Task TheService_RefusesAnOutOfBoundsRead_Itself(long offset, int length)
+    {
+        // Defence in depth: the handler validates first, and the service refuses again, so a future caller
+        // that skips the handler (a test seam, a new endpoint) still cannot ask for an unbounded read.
+        var (_, service, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.log"), "abc");
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => service.ReadRangeAsync("root-1", "a.log", offset, length, fromEnd: false, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ReadRange_OfAFolder_OrAMissingFile_IsAnsweredWithAReason()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "Sub"));
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("Sub"), ws, null, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(LastRead(ws).ErrorMessage));
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange("nope.txt"), ws, null, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(LastRead(ws).ErrorMessage));
+        Assert.Equal(2, ws.ReceivedMessages.Count(m => m.Type == MessageTypes.FileReadRangeResponse));
+    }
+
+    [Fact]
+    public async Task ReadRange_WithNoBody_IsStillAnswered()
+    {
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(
+            new RemexMessage { Type = MessageTypes.FileReadRangeRequest }, ws, null, CancellationToken.None);
+
+        Assert.False(string.IsNullOrEmpty(LastRead(ws).ErrorMessage));
+    }
+
+    [Fact]
+    public async Task TheRootsReply_AdvertisesRangeReadsAndHashing()
+    {
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileRootsRequestAsync(ws, CancellationToken.None);
+
+        var caps = ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileRootsResponse).FileRootsResponse!.FileCapabilities!;
+        Assert.True(caps.ReadRange);
+        Assert.True(caps.Hash);
+    }
+
     [Fact]
     public async Task Thumbnail_ForImage_ReturnsScaledJpegUnderBudget()
     {
@@ -1176,6 +1353,57 @@ public sealed class FileTransferHandlerTests : IDisposable
         var resp = LastMetadata(ws);
         Assert.NotNull(resp.ErrorMessage);
         Assert.Contains("full-device browsing", resp.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── Range reads on the full-device view: the consent gate (2026-10-08 redesign review) ──
+
+    [Fact]
+    public async Task ReadRange_FromFullDeviceVolume_WithGrantedConsent_Succeeds()
+    {
+        var (handler, volumes, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive
+        var filePath = Path.Combine(baseTemp, "drive.log");
+        await File.WriteAllTextAsync(filePath, "volume bytes");
+        var relativePath = Path.GetRelativePath(volumeRoot, filePath).Replace('\\', '/');
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange(relativePath, rootId: volumeRoot), ws, "client-a", CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Null(r.ErrorMessage);
+        Assert.Equal("volume bytes", Text(r));
+    }
+
+    [Fact]
+    public async Task ReadRange_FromFullDeviceVolume_WithoutConsent_ReturnsError_AndNoBytes()
+    {
+        var (handler, _, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: false);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        var filePath = Path.Combine(baseTemp, "drive.log");
+        await File.WriteAllTextAsync(filePath, "not for you");
+        var relativePath = Path.GetRelativePath(volumeRoot, filePath).Replace('\\', '/');
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(ReadRange(relativePath, rootId: volumeRoot), ws, "client-a", CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.Contains("full-device browsing", r.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(r.DataBase64);
+    }
+
+    [Fact]
+    public async Task ReadRange_FromUnknownVolumeId_ReturnsError_AndNoBytes()
+    {
+        var (handler, _, _) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileReadRangeRequestAsync(
+            ReadRange("anything.txt", rootId: "not-a-volume-or-root"), ws, "client-a", CancellationToken.None);
+
+        var r = LastRead(ws);
+        Assert.False(string.IsNullOrEmpty(r.ErrorMessage));
+        Assert.Null(r.DataBase64);
     }
 
     [Fact]

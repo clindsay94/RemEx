@@ -147,6 +147,10 @@ object FileTransferNotificationManager {
         )
     }
 
+    private fun completeTitle(verified: Boolean): Int =
+            if (verified) R.string.file_transfer_notification_verified_title
+            else R.string.file_transfer_notification_complete_title
+
     private fun formatBytes(bytes: Long): String =
             when {
                 bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
@@ -155,10 +159,14 @@ object FileTransferNotificationManager {
                 else -> "$bytes B"
             }
 
-    fun showTransferComplete(context: Context, fileName: String, isDownload: Boolean) {
+    /**
+     * [verified] is true only when a SHA-256 was compared and matched (QueuedTransfer.verified); the title then
+     * says so. The legacy v2 path, which compares nothing, leaves it false.
+     */
+    fun showTransferComplete(context: Context, fileName: String, isDownload: Boolean, verified: Boolean = false) {
         notify(
                 context = context,
-                title = context.getString(R.string.file_transfer_notification_complete_title),
+                title = context.getString(completeTitle(verified)),
                 text =
                         context.getString(
                                 if (isDownload)
@@ -178,7 +186,7 @@ object FileTransferNotificationManager {
      * (a SAF `content://` document or a `file://` path); MIME is inferred from [fileName]. Falls back
      * to a plain completion notification when no viewer can be resolved.
      */
-    fun showDownloadComplete(context: Context, fileName: String, localUri: String) {
+    fun showDownloadComplete(context: Context, fileName: String, localUri: String, verified: Boolean = false) {
         if (!canPostNotifications(context)) return
         ensureTransferChannel(context)
 
@@ -188,11 +196,7 @@ object FileTransferNotificationManager {
         val builder =
                 NotificationCompat.Builder(context, CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle(
-                                context.getString(
-                                        R.string.file_transfer_notification_complete_title
-                                )
-                        )
+                        .setContentTitle(context.getString(completeTitle(verified)))
                         .setContentText(
                                 context.getString(
                                         R.string.file_transfer_notification_download_complete,

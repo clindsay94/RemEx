@@ -91,6 +91,7 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manifestWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _metadataWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _thumbnailWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _readRangeWaiters = new();
 
     // ── Uploads over the binary /ws/files channel (perf audit P1-5) ──
     private readonly IFileChannelConnector? _fileChannelConnector;
@@ -278,6 +279,15 @@ public sealed class FileTransferClient : IDisposable
     /// </summary>
     public bool SupportsPcChanges => SupportsV3 && Capabilities?.PcChanges == true;
 
+    /// <summary>True when the host answers <c>file_read_range_request</c>, so its files can be previewed (2026-10-08).</summary>
+    public bool SupportsReadRange => SupportsV3 && Capabilities?.ReadRange == true;
+
+    /// <summary>
+    /// True when the host answers <c>file_hash_request</c>. The PC always has; a phone does from the 2026-10-08
+    /// redesign on, and an older one would leave "Compute SHA-256" waiting out its timeout, so it is hidden there.
+    /// </summary>
+    public bool SupportsHash => SupportsV3 && Capabilities?.Hash == true;
+
     public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
@@ -374,6 +384,14 @@ public sealed class FileTransferClient : IDisposable
     private const int HashRequestTimeoutSeconds = 30;
 
     /// <summary>
+    /// How long to wait for a PHONE to hash a file (2026-10-08 redesign): the same allowance the PC's relay gives
+    /// it (<c>PhoneFileRelay.HashTimeout</c>). A phone hashes the whole file before it answers, which for a long
+    /// video outlasts <see cref="HashRequestTimeoutSeconds"/>; waiting less than the relay does would fail a
+    /// healthy hash on screen and then throw away the phone's real answer when it arrived.
+    /// </summary>
+    public static readonly TimeSpan PhoneHashTimeout = TimeSpan.FromMinutes(30);
+
+    /// <summary>
     /// Bounds for awaiting a peer reply, in seconds, split by operation class rather than
     /// shared. A single value would be wrong at both ends: too short turns a legitimate
     /// recursive search or large delete into a false failure, too long leaves the UI
@@ -394,7 +412,11 @@ public sealed class FileTransferClient : IDisposable
     /// </summary>
     private const int ManifestRequestTimeoutSeconds = 180;
 
-    public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
+    /// <param name="timeout">
+    /// How long to wait for the answer. Defaults to <see cref="HashRequestTimeoutSeconds"/>; pass
+    /// <see cref="PhoneHashTimeout"/> when the host is a phone.
+    /// </param>
+    public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct, TimeSpan? timeout = null)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -414,7 +436,7 @@ public sealed class FileTransferClient : IDisposable
             },
             tcs,
             () => _hashWaiters.TryRemove(requestId, out _),
-            TimeSpan.FromSeconds(HashRequestTimeoutSeconds),
+            timeout ?? TimeSpan.FromSeconds(HashRequestTimeoutSeconds),
             ct);
 
         if (response.FileHashResponse?.ErrorMessage is string err)
@@ -725,6 +747,43 @@ public sealed class FileTransferClient : IDisposable
         return response.FileThumbnailResponse?.JpegBase64;
     }
 
+    /// <summary>
+    /// Reads up to <see cref="FileTransferLimits.ReadRangeMaxBytes"/> of one file for live preview (2026-10-08
+    /// redesign): from <paramref name="offset"/>, or the last <paramref name="length"/> bytes when
+    /// <paramref name="fromEnd"/> is true. Callers gate on <see cref="FileCapabilities.ReadRange"/>; a host that
+    /// predates it never answers and this times out like any control request.
+    /// </summary>
+    /// <exception cref="FileTransferHostException">The host refused or could not read the file; its reason is shown as-is.</exception>
+    public async Task<FileReadRangeResponse> ReadRangeRemoteAsync(
+        string rootId, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _readRangeWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileReadRangeRequest,
+                FileReadRangeRequest = new FileReadRangeRequest
+                {
+                    RequestId = requestId, RootId = rootId, RelativePath = relativePath,
+                    Offset = offset, Length = length, FromEnd = fromEnd,
+                }
+            },
+            tcs,
+            () => _readRangeWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
+
+        var read = response.FileReadRangeResponse
+            ?? throw new IOException("No read response received.");
+        if (read.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw FileTransferHostException.ForHostError(err, $"Read error: {err}");
+        return read;
+    }
+
     /// <summary>Enumerates the host's mounted volumes/drives once full-browse consent is granted (plan §1.2).</summary>
     public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted, string? DenyReason)>
         ListVolumesAsync(CancellationToken ct)
@@ -970,6 +1029,7 @@ public sealed class FileTransferClient : IDisposable
             await acks.WaitForCommittedAsync(sent, _idleWatchdog, lastActivity, ct);
 
             var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+            progress.ReportVerifying();
             await _connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferComplete,
@@ -984,6 +1044,9 @@ public sealed class FileTransferClient : IDisposable
                 throw FileTransferHostException.ForHostError(
                     result?.Error, $"Upload failed: {result?.Error}");
             }
+
+            // The host compared ITS hash of what landed with ours and said yes; ours is what the row shows.
+            progress.ReportVerified(sha256Base64);
         }
         catch (Exception ex) when (ex is not OperationCanceledException && hostHoldsPartial)
         {
@@ -1235,6 +1298,7 @@ public sealed class FileTransferClient : IDisposable
             }
 
             var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+            progress.ReportVerifying();
 
             await _connection.SendAsync(new RemexMessage
             {
@@ -1248,6 +1312,8 @@ public sealed class FileTransferClient : IDisposable
                 throw FileTransferHostException.ForHostError(
                     result.FileTransferEnd.ErrorMessage,
                     $"Upload failed: {result.FileTransferEnd.ErrorMessage}");
+
+            progress.ReportVerified(sha256Base64);
         }
         finally
         {
@@ -1511,6 +1577,10 @@ public sealed class FileTransferClient : IDisposable
                 throw new FileTransferIntegrityException();
             }
 
+            // Only a COMPARED hash earns "Verified". A host that sent none proved nothing, so the row stays "Done".
+            if (!string.IsNullOrEmpty(expectedHash))
+                progress.ReportVerified(actualHash);
+
             completed = true;
         }
         finally
@@ -1707,6 +1777,11 @@ public sealed class FileTransferClient : IDisposable
             case MessageTypes.FileThumbnailResponse when message.FileThumbnailResponse is { } thumbnail:
                 if (_thumbnailWaiters.TryGetValue(thumbnail.RequestId, out var thumbnailTcs))
                     thumbnailTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileReadRangeResponse when message.FileReadRangeResponse is { } readRange:
+                if (_readRangeWaiters.TryGetValue(readRange.RequestId, out var readRangeTcs))
+                    readRangeTcs.TrySetResult(message);
                 break;
         }
     }

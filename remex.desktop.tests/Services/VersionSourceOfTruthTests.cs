@@ -106,6 +106,32 @@ public sealed class VersionSourceOfTruthTests
             "and $Version itself has to be READ from Android's file for it to be the source of truth");
     }
 
+    /// <summary>
+    /// The two files that hold the PC version as text: the Windows manifest's <c>assemblyIdentity</c> and the Inno
+    /// Setup script's fallback for a bare <c>iscc</c> run. At 3.0.0 they still said 1.13.0.0 and 2.2.0, because
+    /// nothing rewrote them; <c>Sync-PinnedVersionStrings</c> in build-remex.ps1 now does, and this pins that.
+    /// </summary>
+    [Fact]
+    public void TheManifestAndTheInstallerFallbackCarryTheSameVersion()
+    {
+        var desktop = DesktopVersion();
+        desktop.Should().MatchRegex(@"^\d+\.\d+\.\d+$");
+
+        var manifest = Regex.Match(
+            File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "app.manifest")),
+            @"<assemblyIdentity\s+version=""([^""]*)""");
+        manifest.Success.Should().BeTrue("the manifest's assemblyIdentity must still be where this test looks");
+        manifest.Groups[1].Value.Should().Be(desktop + ".0", "the manifest's four-part version is <Version> plus .0");
+
+        var iss = File.ReadAllText(Path.Combine(RepoRoot(), "installer", "RemEx.iss"));
+        var fallback = Regex.Match(iss, @"#define AppVersion ""([^""]*)""");
+        fallback.Success.Should().BeTrue("RemEx.iss must still define a fallback AppVersion");
+        fallback.Groups[1].Value.Should().Be(desktop, "a bare `iscc RemEx.iss` names the installer with this");
+
+        File.ReadAllText(Path.Combine(RepoRoot(), "build-remex.ps1")).Should().Contain("Sync-PinnedVersionStrings",
+            "the build script is what keeps these two in step on every version change");
+    }
+
     /// <summary>Reads <c>&lt;Version&gt;</c> from <c>Directory.Build.props</c>, or null.</summary>
     private static string? DesktopVersion()
     {

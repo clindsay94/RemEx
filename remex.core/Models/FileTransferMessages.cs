@@ -277,6 +277,18 @@ public sealed record FileCapabilities
     /// </para>
     /// </remarks>
     [JsonPropertyName("pcChanges")] public bool PcChanges { get; init; }
+
+    /// <summary>
+    /// True when the host answers <c>file_read_range_request</c> (live preview, 2026-10-08 redesign).
+    /// Additive and default-false: a peer that never sends it gets the thumbnail-only fallback.
+    /// </summary>
+    [JsonPropertyName("readRange")] public bool ReadRange { get; init; }
+
+    /// <summary>
+    /// True when the host answers <c>file_hash_request</c>. The PC always has; a phone does from the
+    /// 2026-10-08 redesign on. Default-false, so an older phone simply hides "Compute SHA-256".
+    /// </summary>
+    [JsonPropertyName("hash")] public bool Hash { get; init; }
 }
 
 // ── v3 transfer negotiation (replaces base64 start/chunk/end for v3 peers) ──
@@ -601,6 +613,61 @@ public sealed record FileThumbnailResponse
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
 
+/// <summary>
+/// Requester → host: read up to <see cref="FileTransferLimits.ReadRangeMaxBytes"/> bytes of one file, for
+/// live preview (2026-10-08 redesign). Capability-flagged by <see cref="FileCapabilities.ReadRange"/>.
+/// </summary>
+/// <remarks>
+/// The PATH resolves exactly as a download's source does (same root, consent and restricted-path checks), so it
+/// can name nothing a download could not. The SHARE MODE is deliberately wider: the PC opens the file sharing
+/// read, write and delete so a log another program still has open can be tailed, which means a preview can read
+/// a file that a download of it would fail on with a sharing violation. Answered on the control channel (base64),
+/// which is why one read is capped at 1 MiB: the encoded reply stays well under <c>MessageSerializer</c>'s 4 MB
+/// message limit.
+/// </remarks>
+public sealed record FileReadRangeRequest
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("rootId")] public required string RootId { get; init; }
+    [JsonPropertyName("relativePath")] public required string RelativePath { get; init; }
+    /// <summary>Bytes from the start of the file. Ignored when <see cref="FromEnd"/> is true.</summary>
+    [JsonPropertyName("offset")] public long Offset { get; init; }
+    /// <summary>How many bytes to read: 1 to <see cref="FileTransferLimits.ReadRangeMaxBytes"/>.</summary>
+    [JsonPropertyName("length")] public int Length { get; init; }
+    /// <summary>True to read the LAST <see cref="Length"/> bytes (tailing a growing log).</summary>
+    [JsonPropertyName("fromEnd")] public bool FromEnd { get; init; }
+}
+
+/// <summary>Host → requester: the bytes read, or null data with an <c>errorMessage</c>.</summary>
+public sealed record FileReadRangeResponse
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    /// <summary>Where the returned bytes actually start in the file.</summary>
+    [JsonPropertyName("offset")] public long Offset { get; init; }
+    /// <summary>The bytes, base64. Empty (not null) when the read started at or past the end.</summary>
+    [JsonPropertyName("dataBase64")] public string? DataBase64 { get; init; }
+    /// <summary>The file's size when it was read, so a tailing reader sees growth or truncation.</summary>
+    [JsonPropertyName("fileSize")] public long FileSize { get; init; }
+    /// <summary>Last-modified time as Unix milliseconds UTC.</summary>
+    [JsonPropertyName("modifiedUtc")] public long ModifiedUtc { get; init; }
+    /// <summary>True when the returned bytes reach the end of the file.</summary>
+    [JsonPropertyName("eof")] public bool Eof { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+}
+
+/// <summary>
+/// One range read, as the host's file service returns it. The handler wraps it into a
+/// <see cref="FileReadRangeResponse"/>. Server-side only and intentionally NOT wire-serialized.
+/// </summary>
+public sealed record FileRangeRead
+{
+    public required long Offset { get; init; }
+    public required byte[] Data { get; init; }
+    public required long FileSize { get; init; }
+    public required long ModifiedUtc { get; init; }
+    public bool Eof => Offset + Data.Length >= FileSize;
+}
+
 // ── Consent / push ──
 
 /// <summary>Serving device → requester: a consent prompt for sensitive access.</summary>
@@ -815,6 +882,19 @@ public static class FileTransferLimits
     public const int ThumbnailDefaultMaxDim = 128;
     /// <summary>Maximum encoded thumbnail size in bytes (≈96 KB).</summary>
     public const int ThumbnailMaxBytes = 96 * 1024;
+    /// <summary>
+    /// Most bytes one <c>file_read_range_request</c> may ask for (1 MiB). Base64 makes the reply ≈1.37 MB,
+    /// comfortably inside the 4 MB control-message limit on both ends.
+    /// </summary>
+    public const int ReadRangeMaxBytes = 1024 * 1024;
+    /// <summary>Text preview reads at most this much from the start of a file (2 MiB).</summary>
+    public const int PreviewTextMaxBytes = 2 * 1024 * 1024;
+    /// <summary>Live tail keeps the last this-many bytes of a growing text file (256 KiB).</summary>
+    public const int PreviewTextTailBytes = 256 * 1024;
+    /// <summary>Images larger than this are not previewed at full size (40 MiB).</summary>
+    public const long PreviewImageMaxBytes = 40L * 1024 * 1024;
+    /// <summary>How often live tail asks for new bytes while the preview is visible.</summary>
+    public const int PreviewTailPollMilliseconds = 2000;
     /// <summary>Raw payload bytes per binary data frame (plan §1.1).</summary>
     public const int DataPayloadBytes = 256 * 1024;
     /// <summary>The receiver acks committedOffset at least every this many bytes and on final.</summary>

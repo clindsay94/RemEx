@@ -403,12 +403,12 @@ object FileTransferEngine {
             sendComplete(t.id, sha)
             val result = awaitResult(t.id)
             if (result != null && result.verified) {
-                updateState(t.id) { it.copy(state = TransferState.Done) }
+                updateState(t.id) { it.copy(state = TransferState.Done, verified = true) }
                 // A Share-to-PC push reads from a private staged copy; it has landed, so drop it
                 // (live-check C6). A content:// source the user picked is left alone.
                 discardLocalFiles(t)
                 // Confirm the send (parity with runDownload's completion notification).
-                FileTransferNotificationManager.showTransferComplete(appContext, t.fileName, isDownload = false)
+                FileTransferNotificationManager.showTransferComplete(appContext, t.fileName, isDownload = false, verified = true)
             } else {
                 updateState(t.id) {
                     it.copy(state = TransferState.Failed, error = result?.error ?: "Verification failed.")
@@ -595,9 +595,9 @@ object FileTransferEngine {
             if (verified && commitDownload(partial, t.localUri)) {
                 partial.delete()
                 sendResult(t.id, true, actualSha, null)
-                updateState(t.id) { it.copy(state = TransferState.Done, sha256 = actualSha) }
+                updateState(t.id) { it.copy(state = TransferState.Done, sha256 = actualSha, verified = expectedSha != null) }
                 // Open-after-download (WP8): surface an "Open" completion notification for the file.
-                FileTransferNotificationManager.showDownloadComplete(appContext, t.fileName, t.localUri)
+                FileTransferNotificationManager.showDownloadComplete(appContext, t.fileName, t.localUri, verified = expectedSha != null)
             } else {
                 partial.delete()
                 // A skipped wait with no complete from the host is unconfirmed, not a hash mismatch.

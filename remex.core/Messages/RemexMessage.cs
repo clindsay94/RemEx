@@ -302,6 +302,12 @@ public sealed record RemexMessage
     [JsonPropertyName("fileThumbnailResponse")]
     public FileThumbnailResponse? FileThumbnailResponse { get; init; }
 
+    [JsonPropertyName("fileReadRangeRequest")]
+    public FileReadRangeRequest? FileReadRangeRequest { get; init; }
+
+    [JsonPropertyName("fileReadRangeResponse")]
+    public FileReadRangeResponse? FileReadRangeResponse { get; init; }
+
     [JsonPropertyName("fileConsentRequest")]
     public FileConsentRequest? FileConsentRequest { get; init; }
 
@@ -660,6 +666,9 @@ public static class MessageTypes
     public const string FileMetadataResponse = "file_metadata_response";
     public const string FileThumbnailRequest = "file_thumbnail_request";
     public const string FileThumbnailResponse = "file_thumbnail_response";
+    // Live preview (2026-10-08 redesign): a bounded byte range of one file.
+    public const string FileReadRangeRequest = "file_read_range_request";
+    public const string FileReadRangeResponse = "file_read_range_response";
     // Consent / push.
     public const string FileConsentRequest = "file_consent_request";
     public const string FileConsentResponse = "file_consent_response";

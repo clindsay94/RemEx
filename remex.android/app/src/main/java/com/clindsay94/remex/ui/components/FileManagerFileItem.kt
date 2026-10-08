@@ -145,11 +145,13 @@ fun FileManagerListItem(
     onDownload: () -> Unit,
     onOverflow: () -> Unit,
     modifier: Modifier = Modifier,
+    /** A thumbnail already decoded (a phone file's, from loadThumbnail); wins over [thumbnailBase64]. */
+    thumbnail: ImageBitmap? = null,
 ) {
     if (!entry.isDirectory && FileManagerLogic.isThumbnailCandidate(entry.name)) {
         LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
     }
-    val thumb = rememberThumbnail(thumbnailBase64)
+    val thumb = thumbnail ?: rememberThumbnail(thumbnailBase64)
     val subtitle = subtitleFor(entry)
 
     // Selected rows get an animated container highlight; selection-mode entry swaps the
@@ -249,11 +251,13 @@ fun FileManagerGridItem(
     onLongPress: () -> Unit,
     onOverflow: () -> Unit,
     modifier: Modifier = Modifier,
+    /** A thumbnail already decoded (a phone file's, from loadThumbnail); wins over [thumbnailBase64]. */
+    thumbnail: ImageBitmap? = null,
 ) {
     if (!entry.isDirectory && FileManagerLogic.isThumbnailCandidate(entry.name)) {
         LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
     }
-    val thumb = rememberThumbnail(thumbnailBase64)
+    val thumb = thumbnail ?: rememberThumbnail(thumbnailBase64)
 
     Column(
         modifier = modifier

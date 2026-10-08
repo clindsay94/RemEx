@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/remex-banner.svg" alt="RemEx 3.0: remote control for your PC, from your phone" width="100%" />
+<img src="docs/assets/remex-banner.svg" alt="RemEx 3.1: remote control for your PC, from your phone" width="100%" />
 
 <br />
 
@@ -14,7 +14,7 @@
 [![Languages](https://img.shields.io/badge/languages-9-8fd694?style=flat-square)](#everything-it-does)
 [![License](https://img.shields.io/github/license/clindsay94/RemEx?style=flat-square)](LICENSE)
 
-**[Get started](#get-started-in-five-minutes)** &nbsp;·&nbsp; **[What's new in 3.0](#whats-new-in-30)** &nbsp;·&nbsp; **[How it works](#how-it-talks-to-your-pc)** &nbsp;·&nbsp; **[Build it](#building-from-source)** &nbsp;·&nbsp; **[Docs](#docs-index)**
+**[Get started](#get-started-in-five-minutes)** &nbsp;·&nbsp; **[What's new in 3.1](#whats-new-in-31)** &nbsp;·&nbsp; **[How it works](#how-it-talks-to-your-pc)** &nbsp;·&nbsp; **[Build it](#building-from-source)** &nbsp;·&nbsp; **[Docs](#docs-index)**
 
 </div>
 
@@ -23,6 +23,55 @@
 RemEx runs your PC from your phone over plain LAN: no relay server, no account, no subscription. It's an Android app plus a Windows/Linux agent. Screen streaming, remote input, file transfer, clipboard sync, wake-on-LAN, power control, live sensors and routines, with just the two devices talking directly to each other.
 
 > **3.0 is the biggest release yet.** 296 commits and 1,436 files changed since 2.5.0, a new look shared across both apps, routines that act on their own, and a startup splash that actually shows RemEx finding your PC. It's also the first release in production on Google Play.
+
+## What's new in 3.1
+
+**3.1 redesigns file sharing on both apps.** The PC and the phone now show both devices in one folder tree, preview the file you pick, and show the SHA-256 fingerprint that proves a file arrived exactly as it was sent.
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🗂️ One tree, both devices
+The PC's File Transfer page and the phone's Files screen list **This PC** (or **This phone**) and the other device side by side. Open folders level by level; the tree follows you as you browse.
+
+</td>
+<td width="33%" valign="top">
+
+### 👁️ Live preview
+Pick a file to see it: photos at full quality with zoom, and text, code and logs in colour with line numbers. Turn on **Live** to follow a log as it grows.
+
+</td>
+<td width="33%" valign="top">
+
+### 🔐 SHA-256 you can see
+Transfers say **Verified** when the fingerprint really matched. Copy a file's fingerprint, compare it with one you paste, or check it against the copy on the other device.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### ↔️ Send between devices
+**Send to PC** and **Save to phone** into any folder you pick, and on the PC drag files from one device to the other. Everything goes through the same verified transfer queue.
+
+</td>
+<td valign="top">
+
+### 📁 Phone folders you choose
+Add folders from your phone to browse them in RemEx. Your PC only sees one when you turn on **Share with PC**.
+
+</td>
+<td valign="top">
+
+### 📷 Scan to get the phone app
+The PC's Home page shows a QR code that opens RemEx on Google Play.
+
+</td>
+</tr>
+</table>
+
+The full 3.1 write-up is in the [release notes](docs/RELEASE-NOTES-3.1.0.md).
 
 ## What's new in 3.0
 
@@ -114,9 +163,9 @@ All four share one shader on Android and the PC, and Original Scan, Cosmic Zoom 
 
 | Platform | Download | Size |
 |---|---|---|
-| **Windows** | `RemEx-v3.0.0-Setup.exe` (Inno Setup, installs to run elevated for input and power control) | 55.6 MB |
-| **Android** | `RemEx-V3.0.0-release.apk` (sideload) | 38.2 MB |
-| **Linux x64** | `remex-agent-v3.0.0-linux-x64.tar.gz`, see [Linux install](docs/LINUX_INSTALL.md) | 69.7 MB |
+| **Windows** | `RemEx-v3.1.0-Setup.exe` (Inno Setup, installs to run elevated for input and power control) | — |
+| **Android** | `RemEx-V3.1.0-release.apk` (sideload) | 38.6 MB |
+| **Linux x64** | `remex-agent-v3.1.0-linux-x64.tar.gz`, see [Linux install](docs/LINUX_INSTALL.md) | 70.1 MB |
 
 **Requires:** Android 14 or newer on the phone, a Windows or Linux PC, and both on the same network. To reach your PC from elsewhere, run [Tailscale](https://tailscale.com) on both ends, because RemEx has no relay of its own.
 
@@ -227,6 +276,7 @@ Please don't open a public issue for a vulnerability. See [docs/SECURITY.md](doc
 
 | Doc | What's in it |
 |---|---|
+| [docs/RELEASE-NOTES-3.1.0.md](docs/RELEASE-NOTES-3.1.0.md) | Readable summary of everything in 3.1 |
 | [docs/RELEASE-NOTES-3.0.0.md](docs/RELEASE-NOTES-3.0.0.md) | Readable summary of everything in 3.0 |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Full changelog, all versions |
 | [docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md) | Google Play, sideloading, Auto Blocker, first pairing |

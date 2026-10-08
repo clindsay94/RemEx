@@ -24,7 +24,7 @@ GitHub issue: https://github.com/clindsay94/RemEx/issues/new/choose
 
 ## Sideloading the APK
 
-1. Download `RemEx-V3.0.0-release.apk` from [GitHub Releases](https://github.com/clindsay94/RemEx/releases).
+1. Download `RemEx-V3.1.0-release.apk` from [GitHub Releases](https://github.com/clindsay94/RemEx/releases).
 2. Open the downloaded file. Android will ask, once, to allow installs from whichever app opened it
    (your browser or Files). Allow it, then install.
 3. You'll get updates by coming back to Releases for the next version; sideloading doesn't wire up

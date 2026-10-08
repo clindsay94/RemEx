@@ -1429,58 +1429,46 @@ You can see them, switch them off and check their history on the Routines page.<
     <value>What's new?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Routines</value>
+    <value>Files, redesigned</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Your phone can now act on its own when you get home or leave, tap an NFC tag, or a PC sensor passes a limit.</value>
+    <value>Your phone and your PC now sit in one folder tree on both apps. Open folders level by level, and the tree follows you as you browse.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Routines on your PC</value>
+    <value>Live preview</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Routines can also run on the PC itself, like sleeping it when it's idle. A countdown gives you time to stop a shut down or restart.</value>
+    <value>Pick a file to see it straight away: photos at full quality with zoom, and text, code and logs in color. Turn on Live to follow a log as it grows.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>A new phone layout</value>
+    <value>SHA-256 fingerprints</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>The phone app now has five tabs. Its Home shows this PC and the same pinned sensors as here, and a long press edits its Sensors grid.</value>
+    <value>A transfer now says Verified when its fingerprint was checked. Copy a file's fingerprint, compare it with one you paste, or check it against a copy on the other device.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>One look on both apps</value>
+    <value>Send files between devices</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>The PC and the phone now use the same words, fonts, cards and colours. A fresh install starts on the RemEx colours.</value>
+    <value>Send phone files to a folder on your PC, or save PC files into a folder on your phone. On the PC you can also drag files from one device to the other.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>File transfer fixes</value>
+    <value>Phone folders you choose</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Folder downloads, either way, no longer skip or repeat files. The phone's Files hides hidden and system items until you ask. The PC can now browse your phone's shared folders too.</value>
+    <value>Add folders from your phone to browse and preview them in RemEx. Your PC only sees one if you turn on Share with PC.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>A new startup splash</value>
+    <value>A simpler toolbar</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>When RemEx opens, the splash now shows it really starting up and connecting, instead of playing a fixed animation.</value>
+    <value>Each file screen now has one main button, with the rest under More options, and tapping a file in the list now opens its preview.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Sensor alerts on your phone</value>
+    <value>Scan to get the phone app</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>The alerts you set on the PC now reach your phone as notifications. You can add, change or remove them from either one.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>PC logs and diagnostics on your phone</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>In More, a new page shows what your PC has logged and the same health checks the PC shows. It is read-only.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>More ways to personalize the phone</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Pick a background, more card shapes and seven Nerd Fonts, and choose how wide the Sensors grid is.</value>
+    <value>On the PC's Home page, the Get the phone app card now shows a QR code. Point your phone's camera at it to open RemEx on Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
@@ -4273,5 +4261,152 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Waiting for a phone</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Verified</value>
+  </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Show or hide the preview (Space)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Send to</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Copy path</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Compute SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Copy SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Couldn't open. Expand again to retry.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Show or hide the transfer list</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>in progress</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>verified</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>failed</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Close the preview</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Select a file to preview it.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Loading the preview…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Live</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Follow the end of the file as it grows</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Showing the first 2 MB. Download the file to see all of it.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>This file is too big to preview. Download it to open it.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>This file isn't text, so there's nothing to show here.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Update RemEx on this device to preview its files.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>The preview couldn't be loaded.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Scroll to zoom, drag to move, double-click to fit</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>SHA-256 fingerprint</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Compute SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Computing the fingerprint…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Paste a SHA-256 to compare</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Matches</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Doesn't match</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>That isn't a SHA-256. It should be 64 hexadecimal characters.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>This device can't compute fingerprints yet. Update RemEx on it.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Couldn't compute the fingerprint. Check the file isn't in use, then try again.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Compare with a copy on another device</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Shared folder</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>File on that device</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Comparing the two copies…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identical: both copies have the same fingerprint.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Different: the two copies don't match.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Couldn't compare. Check the file name and that both devices are connected.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Folders aren't sent this way. Use Upload folder or Download folder instead.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Files can't go straight from one phone to another. Copy them to this PC first.</value>
   </data>
 </root>

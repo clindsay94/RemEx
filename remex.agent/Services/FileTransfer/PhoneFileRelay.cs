@@ -32,10 +32,11 @@ namespace Remex.Agent.Services.FileTransfer;
 /// <list type="number">
 /// <item>The target must be paired AND connected right now (<see cref="IsReachable"/>), or
 /// <see cref="Open"/> and every send throw <see cref="PhoneNotConnectedException"/>.</item>
-/// <item>Only the request types in <see cref="RelayedRequests"/> are forwarded: the seven read-only
-/// ones, and <c>file_manage_request</c> (RemEx-fgmne). Root management (<c>file_root_manage_request</c>:
-/// what the phone shares stays the phone's decision), hashing and the legacy v2 transfer are refused
-/// before they reach the wire, whatever the caller asks for.</item>
+/// <item>Only the request types in <see cref="RelayedRequests"/> are forwarded: the nine read-only
+/// ones (range reads and hashing joined in the 2026-10-08 redesign, with their paths checked by
+/// <see cref="ReadRefusal"/>), and <c>file_manage_request</c> (RemEx-fgmne). Root management
+/// (<c>file_root_manage_request</c>: what the phone shares stays the phone's decision) and the legacy v2
+/// transfer are refused before they reach the wire, whatever the caller asks for.</item>
 /// <item>A <c>file_manage_request</c> is forwarded only when THIS phone's own roots reply said the
 /// person allows the PC to change files (<see cref="FileCapabilities.PcChanges"/>), and only when its
 /// operation, names and paths pass <c>FilePathValidation</c>. The phone checks its switch and its
@@ -69,10 +70,16 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             // by FileCapabilities.PcChanges and by the phone's own switch. file_root_manage_request is NOT
             // here and must not be: which folders a phone shares is only ever the phone's decision.
             [MessageTypes.FileManageResponse] = MessageTypes.FileManageRequest,
+            // 2026-10-08 redesign, a second deliberate widening (Connor's call in the planning Q&A): live
+            // preview and "Verify against…" read a phone's files. Both are READ-ONLY, pass the same
+            // shared-folder check on the phone as a browse (re-checked per request), never need the change
+            // switch, and have their paths checked by ReadRefusal before the wire.
+            [MessageTypes.FileReadRangeResponse] = MessageTypes.FileReadRangeRequest,
+            [MessageTypes.FileHashResponse] = MessageTypes.FileHashRequest,
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>
-    /// The ONLY request types the PC may send to a phone: seven read-only ones, plus
+    /// The ONLY request types the PC may send to a phone: nine read-only ones, plus
     /// <c>file_manage_request</c>, which <see cref="Connection.SendAsync"/> additionally gates on the
     /// phone's own say-so. Root management is deliberately absent.
     /// </summary>
@@ -102,6 +109,12 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
     /// running (the PC client has no deadline for them either, RemEx-l519). Test seam only.
     /// </summary>
     internal TimeSpan CopyMoveTimeout { get; init; } = TimeSpan.FromMinutes(30);
+
+    /// <summary>
+    /// How long a relayed hash may wait. A phone hashes the whole file before it answers, which for a long
+    /// video can outlast the 90-second backstop, so it gets the copy/move allowance. Test seam only.
+    /// </summary>
+    internal TimeSpan HashTimeout { get; init; } = TimeSpan.FromMinutes(30);
 
     public PhoneFileRelay(
         ILogger<PhoneFileRelay> logger,
@@ -213,6 +226,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         var result = await _transfers.PullFileAsync(
             clientId, rootId, remoteRelativePath, localPath, controlWs, ToByteProgress(progress), ct);
         ThrowIfFailed(clientId, result);
+        // This PC hashed what landed and it matched the phone's: that is the hash the row shows.
+        progress.ReportVerified(result.Sha256Base64);
     }
 
     /// <inheritdoc />
@@ -234,6 +249,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         var result = await _transfers.UploadFileToPeerAsync(
             clientId, localPath, rootId, remoteDirectory, controlWs, ToByteProgress(progress, total), ct);
         ThrowIfFailed(clientId, result);
+        // The phone hashed what landed and said it matched; it echoes that hash with its verdict.
+        progress.ReportVerified(result.Sha256Base64);
     }
 
     private System.Net.WebSockets.WebSocket ControlSocketOrThrow(string clientId)
@@ -359,6 +376,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileMetadataRequest => message.FileMetadataRequest?.RequestId,
         MessageTypes.FileThumbnailRequest => message.FileThumbnailRequest?.RequestId,
         MessageTypes.FileManageRequest => message.FileManageRequest?.RequestId,
+        MessageTypes.FileReadRangeRequest => message.FileReadRangeRequest?.RequestId,
+        MessageTypes.FileHashRequest => message.FileHashRequest?.RequestId,
         _ => null,
     };
 
@@ -372,6 +391,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileMetadataResponse => message.FileMetadataResponse?.RequestId,
         MessageTypes.FileThumbnailResponse => message.FileThumbnailResponse?.RequestId,
         MessageTypes.FileManageResponse => message.FileManageResponse?.RequestId,
+        MessageTypes.FileReadRangeResponse => message.FileReadRangeResponse?.RequestId,
+        MessageTypes.FileHashResponse => message.FileHashResponse?.RequestId,
         _ => null,
     };
 
@@ -386,6 +407,8 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
         MessageTypes.FileMetadataRequest => message.FileMetadataRequest is not null,
         MessageTypes.FileThumbnailRequest => message.FileThumbnailRequest is not null,
         MessageTypes.FileManageRequest => message.FileManageRequest is not null,
+        MessageTypes.FileReadRangeRequest => message.FileReadRangeRequest is not null,
+        MessageTypes.FileHashRequest => message.FileHashRequest is not null,
         _ => false,
     };
 
@@ -431,12 +454,51 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
             Type = MessageTypes.FileManageResponse,
             FileManageResponse = new FileManageResponse { RequestId = requestId, Success = false, ErrorMessage = reason },
         },
+        MessageTypes.FileReadRangeRequest => new RemexMessage
+        {
+            Type = MessageTypes.FileReadRangeResponse,
+            FileReadRangeResponse = new FileReadRangeResponse { RequestId = requestId, ErrorMessage = reason },
+        },
+        MessageTypes.FileHashRequest => new RemexMessage
+        {
+            Type = MessageTypes.FileHashResponse,
+            FileHashResponse = new FileHashResponse { RequestId = requestId, ErrorMessage = reason },
+        },
         _ => new RemexMessage
         {
             Type = MessageTypes.FileThumbnailResponse,
             FileThumbnailResponse = new FileThumbnailResponse { RequestId = requestId, ErrorMessage = reason },
         },
     };
+
+    /// <summary>
+    /// Why a <c>file_read_range_request</c> or <c>file_hash_request</c> may not be sent, or null when it may
+    /// (or when <paramref name="message"/> is neither). Pure, like <see cref="ManageRefusal"/>: the root must be
+    /// named, the path must pass the same remote rules the phone applies and name a file rather than the shared
+    /// folder itself, and a range read must pass <see cref="FileReadRangeValidation"/>.
+    /// </summary>
+    internal static string? ReadRefusal(RemexMessage message)
+    {
+        (string? rootId, string? path) = message.Type switch
+        {
+            MessageTypes.FileReadRangeRequest => (message.FileReadRangeRequest?.RootId, message.FileReadRangeRequest?.RelativePath),
+            MessageTypes.FileHashRequest => (message.FileHashRequest?.RootId, message.FileHashRequest?.RelativePath),
+            _ => ((string?)null, (string?)null),
+        };
+        if (message.Type is not (MessageTypes.FileReadRangeRequest or MessageTypes.FileHashRequest))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(rootId))
+            return "a root id is required";
+        if (!FilePathValidation.IsValidRemoteRelativePath(path, out var pathError))
+            return $"relativePath: {pathError}";
+        if ((path ?? string.Empty).Trim('/').Length == 0)
+            return "a file must be named, not the shared folder itself";
+        if (message.Type == MessageTypes.FileReadRangeRequest
+            && !FileReadRangeValidation.IsValid(message.FileReadRangeRequest, out var rangeError))
+            return rangeError;
+        return null;
+    }
 
     /// <summary>
     /// Why a <c>file_manage_request</c> may not be sent, or null when it may. Pure, so every refusal is
@@ -552,11 +614,20 @@ public sealed class PhoneFileRelay : IPhoneFileAccess, IPhoneFileTransfers, IDis
                 isCopyOrMove = message.FileManageRequest!.Operation is FileManageOperations.Copy or FileManageOperations.Move;
             }
 
+            if (ReadRefusal(message) is { } readRefusal)
+            {
+                relay._logger.LogWarning("Refused to send {Type} to a phone: {Reason}.", message.Type, readRefusal);
+                throw new PhoneFileRequestRefusedException($"{message.Type} is not sent to a phone: {readRefusal}.");
+            }
+
             if (!relay.IsReachable(ClientId))
                 throw new PhoneNotConnectedException();
 
             var key = (message.Type, requestId ?? string.Empty);
-            var pending = new PendingRequest(isCopyOrMove ? relay.CopyMoveTimeout : relay.RequestTimeout);
+            var timeout = isCopyOrMove ? relay.CopyMoveTimeout
+                : message.Type == MessageTypes.FileHashRequest ? relay.HashTimeout
+                : relay.RequestTimeout;
+            var pending = new PendingRequest(timeout);
             if (_pending.TryRemove(key, out var superseded))
                 superseded.Dispose();
             _pending[key] = pending;

@@ -1180,58 +1180,46 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutyny</value>
+    <value>Pliki w nowej odsłonie</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Telefon może teraz działać sam, gdy wracasz do domu lub wychodzisz, zbliżasz go do tagu NFC albo czujnik komputera przekracza limit.</value>
+    <value>Telefon i komputer są teraz w jednym drzewie folderów w obu aplikacjach. Otwieraj foldery poziom po poziomie, a drzewo podąża za tobą.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Rutyny na komputerze</value>
+    <value>Podgląd na żywo</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Rutyny mogą też działać na samym komputerze, na przykład usypiać go, gdy jest bezczynny. Przed wyłączeniem lub ponownym uruchomieniem odliczanie daje ci czas, żeby to przerwać.</value>
+    <value>Wybierz plik, aby od razu go zobaczyć: zdjęcia w pełnej jakości z powiększeniem oraz tekst, kod i logi w kolorze. Włącz Na żywo, aby śledzić rosnący log.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Nowy układ telefonu</value>
+    <value>Odciski SHA-256</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>Aplikacja na telefonie ma teraz pięć kart. Jej Start pokazuje ten komputer i te same przypięte czujniki co tutaj, a długie naciśnięcie pozwala edytować jej siatkę Czujniki.</value>
+    <value>Przesyłanie pokazuje teraz Zweryfikowano, gdy sprawdzono jego odcisk. Skopiuj odcisk pliku, porównaj go z wklejonym albo sprawdź z kopią na drugim urządzeniu.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>Jeden wygląd w obu aplikacjach</value>
+    <value>Przesyłaj pliki między urządzeniami</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>Komputer i telefon używają teraz tych samych słów, czcionek, kart i kolorów. Nowa instalacja startuje w kolorach RemEx.</value>
+    <value>Wysyłaj pliki z telefonu do folderu na komputerze albo zapisuj pliki z komputera w folderze na telefonie. Na komputerze możesz też przeciągać pliki między urządzeniami.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Poprawki przesyłania plików</value>
+    <value>Wybrane przez ciebie foldery telefonu</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Pobieranie folderu, w obie strony, nie pomija już ani nie powtarza plików. Pliki na telefonie nie pokazują ukrytych i systemowych elementów, dopóki o to nie poprosisz. Komputer może teraz przeglądać też udostępnione foldery telefonu.</value>
+    <value>Dodaj foldery z telefonu, aby przeglądać je w RemEx. Komputer widzi folder tylko wtedy, gdy włączysz Udostępnij komputerowi.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Nowy ekran powitalny</value>
+    <value>Prostszy pasek narzędzi</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>Po otwarciu RemEx ekran powitalny pokazuje, jak aplikacja naprawdę się uruchamia i łączy, zamiast odtwarzać stałą animację.</value>
+    <value>Każdy ekran plików ma teraz jeden główny przycisk, a resztę w menu Więcej opcji. Dotknięcie pliku na liście otwiera jego podgląd.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Alerty czujników w telefonie</value>
+    <value>Zeskanuj, aby pobrać aplikację na telefon</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Alerty ustawione na komputerze trafiają teraz do telefonu jako powiadomienia. Możesz je dodawać, zmieniać i usuwać na każdym z nich.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Logi i diagnostyka komputera w telefonie</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>W Więcej nowa strona pokazuje, co zapisał twój komputer, oraz te same kontrole stanu co na komputerze. Jest tylko do odczytu.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Więcej sposobów personalizacji telefonu</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Wybierz tło, więcej kształtów kart i siedem czcionek Nerd Fonts oraz ustaw szerokość siatki Czujników.</value>
+    <value>Na stronie głównej komputera karta Pobierz aplikację na telefon pokazuje teraz kod QR. Skieruj na niego aparat telefonu, aby otworzyć RemEx w Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Answer" xml:space="preserve">
@@ -4268,5 +4256,152 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Czekam na telefon</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Zweryfikowano</value>
+  </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Foldery</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Więcej działań</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Pokaż lub ukryj podgląd (Spacja)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Wyślij do</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Kopiuj ścieżkę</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Oblicz SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Kopiuj SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Nie udało się otworzyć. Rozwiń ponownie, aby spróbować jeszcze raz.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Odśwież</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Pokaż lub ukryj listę przesyłania</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>w toku</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>zweryfikowane</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>nieudane</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Podgląd</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Zamknij podgląd</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Wybierz plik, aby zobaczyć podgląd.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Wczytywanie podglądu…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Na żywo</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Śledź koniec pliku, gdy rośnie</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Pokazano pierwsze 2 MB. Pobierz plik, aby zobaczyć całość.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Ten plik jest za duży na podgląd. Pobierz go, aby go otworzyć.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Ten plik nie jest tekstem, więc nie ma tu nic do pokazania.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Zaktualizuj RemEx na tym urządzeniu, aby podglądać jego pliki.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Nie udało się wczytać podglądu.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Przewiń, aby powiększyć, przeciągnij, aby przesunąć, kliknij dwukrotnie, aby dopasować</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Szczegóły</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Odcisk SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Oblicz SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Obliczanie odcisku…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Kopiuj</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Wklej SHA-256, aby porównać</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Zgadza się</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Nie zgadza się</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>To nie jest SHA-256. Powinien mieć 64 znaki szesnastkowe.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>To urządzenie nie umie jeszcze obliczać odcisków. Zaktualizuj na nim RemEx.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Nie udało się obliczyć odcisku. Sprawdź, czy plik nie jest używany, i spróbuj ponownie.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Porównaj z kopią na innym urządzeniu</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Urządzenie</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Folder udostępniony</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>Plik na tym urządzeniu</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Porównaj</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Porównywanie obu kopii…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identyczne: obie kopie mają ten sam odcisk.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Różne: obie kopie się nie zgadzają.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Nie udało się porównać. Sprawdź nazwę pliku i czy oba urządzenia są połączone.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Folderów nie wysyła się w ten sposób. Użyj opcji Prześlij folder lub Pobierz folder.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Pliki nie mogą trafić bezpośrednio z jednego telefonu na drugi. Najpierw skopiuj je na ten komputer.</value>
   </data>
 </root>

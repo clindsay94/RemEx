@@ -911,6 +911,22 @@ class SettingsManager(val context: Context) {
                 }
         }
 
+        // Phone-only bookmarks for the File Transfer screen (file browser redesign, 2026-10-08). Folders the
+        // person added to browse ON THE PHONE. Deliberately its own key: AndroidFileTransferHost and
+        // SharedPathPolicy read only SHARED_FOLDER_URIS_KEY, so a bookmark is never visible to the PC until the
+        // person turns on "Share with PC", which adds it to that list. Not exported (SettingsExport allowlists).
+        private val phoneBookmarkUrisKey = stringSetPreferencesKey("phone_bookmark_uris")
+
+        val phoneBookmarkUrisFlow: Flow<Set<String>> =
+                context.dataStore.data.map { prefs -> prefs[phoneBookmarkUrisKey] ?: emptySet() }
+
+        suspend fun setPhoneBookmark(uri: String, bookmarked: Boolean) {
+                context.dataStore.edit { prefs ->
+                        val current = prefs[phoneBookmarkUrisKey] ?: emptySet()
+                        prefs[phoneBookmarkUrisKey] = if (bookmarked) current + uri else current - uri
+                }
+        }
+
         // "Let your PC change files" (RemEx-fgmne). OFF BY DEFAULT, and it is the person's call alone: with
         // it off the phone refuses every rename, move, copy, delete and new-folder request from the PC,
         // however writable the shared folder is, and tells the PC it is off. It does not widen WHAT is

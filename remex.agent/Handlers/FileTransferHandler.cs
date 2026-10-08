@@ -86,6 +86,11 @@ public sealed class FileTransferHandler(
         // nothing while reading as though it were. An inbound file_push_offer is therefore not answered
         // at all. Do not "fix" that silence by reviving the handler without re-reading RemEx-e11w.
         Push = true,
+
+        // Live preview and on-demand hashing (2026-10-08 redesign). This host has always answered
+        // file_hash_request; saying so lets a requester tell it apart from an older phone that never did.
+        ReadRange = true,
+        Hash = true,
     };
 
     public async Task HandleFileRootsRequestAsync(WebSocket ws, CancellationToken ct)
@@ -1087,6 +1092,68 @@ public sealed class FileTransferHandler(
             {
                 Type = MessageTypes.FileThumbnailResponse,
                 FileThumbnailResponse = new FileThumbnailResponse
+                {
+                    RequestId = req.RequestId,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Handles a <c>file_read_range_request</c> (live preview, 2026-10-08 redesign): up to 1 MiB of one file,
+    /// from an offset or from the end. Resolved like a thumbnail or a download source: a configured root, or
+    /// a volume this client was granted. Always answered, so a preview never waits on silence.
+    /// </summary>
+    public async Task HandleFileReadRangeRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
+    {
+        var req = message.FileReadRangeRequest;
+        if (!FileReadRangeValidation.IsValid(req, out var invalid))
+        {
+            logger.LogWarning("Refused a file_read_range_request: {Reason}", invalid);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileReadRangeResponse,
+                FileReadRangeResponse = new FileReadRangeResponse
+                {
+                    RequestId = req?.RequestId ?? string.Empty,
+                    ErrorMessage = invalid,
+                }
+            }, ct);
+            return;
+        }
+
+        RemexMessage response;
+        try
+        {
+            var read = await IsConfiguredRootAsync(req!.RootId, ct)
+                ? await fileTransferService.ReadRangeAsync(req.RootId, req.RelativePath, req.Offset, req.Length, req.FromEnd, ct)
+                : await fileTransferService.ReadVolumeRangeAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path,
+                    req.RelativePath, req.Offset, req.Length, req.FromEnd, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileReadRangeResponse,
+                FileReadRangeResponse = new FileReadRangeResponse
+                {
+                    RequestId = req.RequestId,
+                    Offset = read.Offset,
+                    DataBase64 = Convert.ToBase64String(read.Data),
+                    FileSize = read.FileSize,
+                    ModifiedUtc = read.ModifiedUtc,
+                    Eof = read.Eof,
+                }
+            };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "File range read failed for root {RootId}, path {Path}", req!.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileReadRangeResponse,
+                FileReadRangeResponse = new FileReadRangeResponse
                 {
                     RequestId = req.RequestId,
                     ErrorMessage = ex.Message,

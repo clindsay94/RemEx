@@ -148,6 +148,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // the old instance and the empty state would silently stop updating.
         RemoteEntries.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowEmptyFolder));
         SearchResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowNoSearchResults));
+
+        // The explorer half (2026-10-08 redesign): FileTransferViewModel.Explorer.cs.
+        Tree = new FileTreeViewModel(ClientForAsync, _logger);
+        Preview = new FilePreviewViewModel(ClientForAsync, _logger);
+        InitializeExplorer();
         _ = InitializeAsync();
     }
 
@@ -164,6 +169,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         OnPropertyChanged(nameof(HasQueueItems));
         OnPropertyChanged(nameof(HasActiveTransfer));
         CancelAllTransfersCommand.NotifyCanExecuteChanged();
+        TrackQueueItems();
     }
 
     /// <summary>Records a successful user-driven transfer in the Home "Recent activity" feed.</summary>
@@ -480,6 +486,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
 
         OnPropertyChanged(nameof(HasPhoneSources));
+        SyncTreeWithSources();
 
         // The phone being browsed is no longer in the list: its Disconnected handler normally gets
         // here first, but a phone that was UNPAIRED while connected is gone from the list too.
@@ -544,7 +551,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             return;
         }
 
-        RemotePath = "/";
+        // A tree row (or a breadcrumb on another shared folder) asks for a folder inside it, not its top.
+        RemotePath = TakePendingPath(value.RootId);
         _ = BrowseRemoteAsync();
     }
 
@@ -586,7 +594,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             foreach (var root in roots.OrderBy(root => root.DisplayName))
                 RemoteRoots.Add(root);
 
-            SelectedRemoteRoot = RemoteRoots.FirstOrDefault(root => root.RootId == previousRootId)
+            SelectedRemoteRoot = TakePendingRoot(RemoteRoots)
+                ?? RemoteRoots.FirstOrDefault(root => root.RootId == previousRootId)
                 ?? RemoteRoots.FirstOrDefault(root => root.IsWritable)
                 ?? RemoteRoots.FirstOrDefault();
 
@@ -698,6 +707,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             _rawEntries.AddRange(entries);
             RebuildEntryDisplay();
             RebuildBreadcrumbs();
+            AfterBrowse();
         }
         catch (Exception ex)
         {
@@ -2522,6 +2532,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
 
         ClosePhoneConnection();
+        DisposeExplorer();
         _pcClient.Dispose();
     }
 

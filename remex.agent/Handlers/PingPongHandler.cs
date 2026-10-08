@@ -1175,6 +1175,10 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
+                    case MessageTypes.FileReadRangeRequest:
+                        await fileTransferHandler.HandleFileReadRangeRequestAsync(message, webSocket, connectionClientId, ct);
+                        break;
+
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response ──
                     // file_consent_response resolves a consent prompt this host raised. Only full-browse
                     // raises one now: the incoming-push prompt went with the file_push_offer arm
@@ -1235,6 +1239,8 @@ public sealed class PingPongHandler(
                     case MessageTypes.FileMetadataResponse:
                     case MessageTypes.FileThumbnailResponse:
                     case MessageTypes.FileManageResponse:
+                    case MessageTypes.FileReadRangeResponse:
+                    case MessageTypes.FileHashResponse:
                         if (phoneFileRelay?.TryDeliverReply(connectionClientId, identityProven, isLoopback, message) != true
                             && logger.IsEnabled(LogLevel.Debug))
                         {

@@ -1,12 +1,14 @@
 # File Sharing
 
 RemEx lets you move files between your phone and your PC, both ways. This page
-explains, in plain English, the three things people ask about most:
+explains, in plain English, the things people ask about most:
 
 1. **Consent** — when RemEx asks before one device touches the other's files.
 2. **Full‑device browse** — the opt‑in setting that lets your phone see the PC's
    whole file system instead of just a few shared folders.
 3. **Share to PC** — how to send a file to your PC straight from any app on your phone.
+4. **The Files screen** — both devices in one folder tree, with a live preview and
+   SHA‑256 fingerprints.
 
 You do **not** need to read this to use file sharing. The app guides you through
 everything. This is here if you want to understand exactly what's happening and
@@ -128,6 +130,47 @@ kind of file — a photo in your gallery, a PDF in your reader, and so on.
 
 ---
 
+## 4. The Files screen: both devices in one place
+
+On the PC (**File Transfer**) and on the phone (**Files**), one screen shows both devices:
+
+- **A folder tree** on the left: **This PC** (or **This phone**) and each connected
+  device, with their shared folders. Tap a folder to open it; use the arrow next to it to
+  see the folders inside without leaving the one you're in. On a phone, the tree opens
+  from the menu button at the top.
+- **The folder you're in**, with thumbnails, a right‑click (PC) or long‑press (phone)
+  menu, and drag and drop on the PC.
+- **A live preview** of the file you pick: photos at full quality with zoom, and text,
+  code and logs with colour. Turn on **Live** to follow a log as it's written, like
+  `tail -f`.
+
+### Phone folders you add on the Files screen stay on the phone
+
+On the phone, **Add folder** puts a folder in the tree so you can browse and preview it.
+**Your PC can't see it.** It only becomes visible to the PC when you open its menu and
+turn on **Share with PC**, which adds it to the same **"Access from your PC"** list as
+Settings — that list is still the one place that decides what the PC sees. Turning
+**Share with PC** off takes it away from the PC again but keeps it on the phone's list.
+
+### Fingerprints (SHA‑256)
+
+Every transfer is checked with a SHA‑256 fingerprint. When the check really ran and
+matched, the transfer says **Verified** (on both devices), and you can copy its
+fingerprint. If the other side sent nothing to compare against, it says **Done**
+instead — RemEx doesn't claim a check it didn't do.
+
+In a file's preview, the **Fingerprint (SHA‑256)** section can:
+
+- work out the file's fingerprint (shown as 64 letters and numbers, the same format
+  `sha256sum` on Linux and `Get-FileHash` on Windows print) and copy it;
+- compare it with a fingerprint you paste in, for example one published next to a download;
+- check it against a copy on the other device and tell you **Identical** or **Different**.
+
+A phone's file is fingerprinted on the phone and a PC's file on the PC; only the
+64‑character result crosses the connection.
+
+---
+
 ## Taking access back
 
 You stay in control. You can change your mind at any time:
@@ -137,7 +180,8 @@ You stay in control. You can change your mind at any time:
   make the folder read‑only in **Settings → Shared folders**.
 - **On the phone**, open **Settings → "Access from your PC"** to remove a shared
   folder, turn off full‑device browsing, or turn off auto‑accept for files the PC
-  sends. The PC stops seeing anything you take away there straight away.
+  sends. On the **Files** screen, a folder's **Share with PC** switch does the same
+  for that folder. The PC stops seeing anything you take away straight away.
 - **Unpairing a device removes all of its file‑sharing permissions automatically.**
 
 ---

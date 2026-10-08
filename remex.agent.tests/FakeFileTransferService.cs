@@ -69,5 +69,7 @@ internal sealed class FakeFileTransferService(string destDir) : IFileTransferSer
     public Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
     public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
     public Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
+    public Task<FileRangeRead> ReadRangeAsync(string rootId, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct) => throw new NotSupportedException();
+    public Task<FileRangeRead> ReadVolumeRangeAsync(string volumeAbsolutePath, string relativePath, long offset, int length, bool fromEnd, CancellationToken ct) => throw new NotSupportedException();
     public Task<(string RootId, string RelativePath)?> TryMapVolumePathToConfiguredRootAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => Task.FromResult<(string, string)?>(null);
 }

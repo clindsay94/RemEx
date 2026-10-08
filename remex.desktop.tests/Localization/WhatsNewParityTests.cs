@@ -187,9 +187,6 @@ public sealed class WhatsNewParityTests : IDisposable
             }
         }
 
-        // Sensor alerts used to be PC-only, so the phone's list could not mention them. Since 3.0 the
-        // PC's alert rules reach the phone (RemEx-pp4cm.12) and item 7 says so.
-
         offenders.Should().BeEmpty();
     }
 }

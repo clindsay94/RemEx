@@ -5,11 +5,16 @@ All notable changes to RemEx will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
+Jump to: [Unreleased](#unreleased) · [3.1.0](#310--2026-10-08) · [3.0.0](#300--2026-10-04) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
 
 ---
 
 ## [Unreleased]
+
+## [3.1.0] — 2026-10-08
+
+Android versionCode 39. The headline is the redesigned file screens on both the PC and the phone: one folder tree
+for both devices, a live preview, and SHA-256 fingerprints you can see, compare and cross-check.
 
 ### Added
 
@@ -17,6 +22,95 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   instead of opening Google Play in a browser on the PC. Point your phone's camera at it to go straight to RemEx
   on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
   there. (RemEx-2p7um)
+- **Transfers on the PC now say "Verified".** RemEx has always checked every file it moves with a SHA-256
+  fingerprint, but a finished transfer only ever said **Done**. Now, when the check really ran and matched, the
+  transfer says **Verified** and keeps the fingerprint, so the new File Transfer screen can show and copy it. A
+  transfer whose other end sent no fingerprint to compare still says **Done**: nothing was checked, so nothing is
+  claimed. The row also says **Verifying…** while the two ends compare.
+- **Transfers on the phone say "Verified" too.** A finished transfer in the phone's queue now says **Verified**
+  (with a check-mark icon) when its SHA-256 fingerprint was really compared and matched, and a button copies the
+  fingerprint as lowercase hex. The "Transfer complete" notification becomes **Transfer verified** in the same
+  case. A download from a PC that sent no fingerprint still says **Done**.
+
+### Changed
+
+- **A new File Transfer screen on the PC.** The old screen, with its source picker and single file list, is
+  replaced by an Explorer-style layout with three panes:
+  - **Folders** on the left: This PC and each connected phone, with their shared folders (and a phone's storage
+    volumes) as a tree you can open level by level. Clicking a folder goes straight there, and the tree follows
+    you when you browse in the list.
+  - **The folder you're in** in the middle, with a breadcrumb path, real thumbnails in both the list and the
+    icon grid, a right-click menu on every file and folder, and keyboard shortcuts (Enter, Backspace, F2,
+    Delete, F5, Ctrl+C/X/V, Ctrl+A, Ctrl+F, Space for the preview).
+  - **A live preview** on the right that follows what you select. Pictures show at full quality (scroll to zoom,
+    drag to move, double-click to fit). Text, code and logs show with colour, and a log can be followed **Live**
+    as new lines are written. Files that can't be previewed show their details instead.
+  - The preview's **Integrity** section shows a file's SHA-256 fingerprint, lets you copy it, compare it with a
+    fingerprint you paste in, and check it against a copy on another device ("identical" or "different").
+  - Drag files from one device to another in the tree to send them, or from Windows Explorer onto a folder to
+    upload them. Dragging inside one shared folder moves (or, with Ctrl, copies).
+  - Transfers sit in a strip along the bottom that counts what's running, verified and failed, and opens into
+    the full list. A verified transfer's fingerprint can be copied from its row.
+- **A new Files screen on the phone.** It now shows both devices, **This phone** and **PC**, in one folder tree:
+  - On a tablet or unfolded phone the tree stays on the left, with the folder you're in and a preview side by
+    side. On a phone the tree opens from the menu button, a switch at the top flips between the two devices, and
+    tapping a file opens its preview full screen (back returns to the list).
+  - **This phone** lists the folders you share with your PC (marked as shared) and folders you add with
+    **Add folder**. An added folder stays on the phone until you turn on **Share with PC** in its menu, which adds
+    it to the same "Access from your PC" list as Settings. Removing it gives back the app's access.
+  - **Tapping a file previews it**, on either device: photos at full quality (HEIC too) with pinch-to-zoom,
+    text, code and logs with colour and line numbers, and **Live** to follow a log as it grows. Before, tapping a
+    file in list view did nothing.
+  - The preview's **Fingerprint (SHA-256)** card works out the file's fingerprint (on the phone for phone files,
+    on the PC for PC files), copies it, compares it with one you paste in, and checks it against a copy on the
+    other device.
+  - **Send to PC…** and **Save to phone…** move files between the two devices into a folder you pick, through the
+    same transfer queue as every other transfer. Select several files with a long press to send them together.
+  - The toolbar is reduced to search, the sort and view menu, and one main action (Upload on the PC, Add folder
+    on the phone); New folder and Upload folder are under **More**.
+
+### Fixed
+
+- **Building the PC app on Linux works again.** `build-remex.ps1` asked for `RemEx.sln`, but the file is
+  `Remex.sln`. Windows didn't mind; on Linux every Windows, Linux and installer build stopped at
+  `dotnet restore` with "Project file does not exist". `BuildScriptPathCaseTests` now checks every repo path the
+  script names, case included.
+- **The Windows app and installer report the real version.** The app's manifest still said 1.13.0.0 and a bare
+  `iscc RemEx.iss` built a "2.2.0" installer. Both say 3.1.0 now, `build-remex.ps1` rewrites them on every version
+  change, and `VersionSourceOfTruthTests` fails the build if they drift again.
+- **What's New on both apps lists 3.1.** The About pages showed the 3.0 highlights; they now show the seven 3.1
+  ones, in all nine languages.
+
+### Internal
+
+- **Groundwork for the new File Transfer screen: live preview and SHA-256 on the phone.** Two protocol
+  additions, both additive (no `protocolVersion` bump) and capability-flagged so older peers are simply not
+  asked:
+  - A new `file_read_range_request` / `file_read_range_response` pair reads up to 1 MiB of a file from an
+    offset or from the end, for previews and live log tailing. The PC and the phone both answer it, through
+    the same shared-folder checks a download or a browse uses.
+  - The phone now answers `file_hash_request`, so the PC can check a phone's copy of a file against its own.
+  - The PC's relay to a paired phone now forwards these two read-only requests too, after checking the path and
+    the range itself. The "Let your PC change files" switch is not needed for either.
+  - A hash is shown as lowercase hex everywhere (the format `sha256sum` and `Get-FileHash` print), and a pasted
+    hash is accepted in hex or Base64. The C# and Kotlin versions share one set of test vectors.
+  See `docs/specs/2026-10-08-file-browser-redesign.md` and `docs/API_CONTRACTS.md` §3.
+- **The preview pipeline for the new File Transfer screen** (`remex.desktop/Services/FilePreview/`): which files
+  get an image, text or no preview; text decoding that honours byte-order marks and never shows half a character
+  cut by a read; light per-line colouring for logs (including the .NET logger's `fail:`/`warn:`), JSON, XML and
+  code; a full-size image fetch in 1 MiB reads that refuses a file over 40 MiB after one read; and a live tail
+  that reads only what was added, restarts when a log rotates, and keeps an endless line bounded.
+- **The phone's plumbing for the new File Transfer screen** (`remex.android/.../ui/files/`): Kotlin twins of the
+  PC's preview classifier, text decoder, tokenizer and loaders (image, text head, live tail), held to the C#
+  rules by one shared vector file (`file-preview-vectors.json`, kept byte-identical on both sides);
+  `PcFileRequests` for range reads and SHA-256 requests to the PC, matched by request id; `LocalDocuments`, which
+  lists phone folders with one `DocumentsContract` query per folder and reads ranges and hashes on the phone; and
+  `PhoneBookmarksRepository`, phone-only folder bookmarks in their own DataStore key that the PC never sees until
+  the person turns on "Share with PC", which adds them to the existing "Access from your PC" list.
+- **`scripts/verify.ps1` runs on Linux again.** It died at its first step on every Linux run: PowerShell 7.6
+  adds its own newline to text piped into `git check-ignore`, so the script's extra one (needed on Windows,
+  where PowerShell adds CRLF) became an empty line that git refuses. The extra newline is now added on Windows
+  only; Windows behaviour is unchanged.
 
 ## [3.0.0] — 2026-10-04
 

@@ -1391,58 +1391,46 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>¿Qué hay de nuevo?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinas</value>
+    <value>Archivos, rediseñado</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Tu teléfono ya puede actuar solo cuando llegas a casa o te vas, tocas una etiqueta NFC o un sensor del PC pasa un límite.</value>
+    <value>Tu teléfono y tu PC aparecen ahora en un mismo árbol de carpetas en las dos apps. Abre las carpetas nivel a nivel; el árbol te sigue mientras navegas.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Rutinas en tu PC</value>
+    <value>Vista previa en vivo</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Las rutinas también pueden ejecutarse en el propio PC, por ejemplo para suspenderlo si está inactivo. Una cuenta atrás te deja cancelar un apagado o un reinicio.</value>
+    <value>Elige un archivo para verlo al instante: fotos a calidad completa con zoom, y texto, código y registros en color. Activa En vivo para seguir un registro mientras crece.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Un nuevo diseño en el teléfono</value>
+    <value>Huellas SHA-256</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>La aplicación del teléfono ahora tiene cinco pestañas. Su Inicio muestra este PC y los mismos sensores fijados que aquí, y una pulsación larga edita su cuadrícula de Sensores.</value>
+    <value>Una transferencia ahora indica Verificado cuando se comprobó su huella. Copia la huella de un archivo, compárala con una que pegues o compruébala con una copia en el otro dispositivo.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>El mismo aspecto en las dos aplicaciones</value>
+    <value>Envía archivos entre dispositivos</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>El PC y el teléfono ahora usan las mismas palabras, fuentes, tarjetas y colores. Una instalación nueva empieza con los colores de RemEx.</value>
+    <value>Envía archivos del teléfono a una carpeta de tu PC o guarda archivos del PC en una carpeta del teléfono. En el PC también puedes arrastrar archivos de un dispositivo a otro.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Arreglos en la transferencia de archivos</value>
+    <value>Carpetas del teléfono que tú eliges</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos, en el teléfono, no muestra los elementos ocultos ni los del sistema salvo que lo pidas. El PC ahora también puede explorar las carpetas compartidas de tu teléfono.</value>
+    <value>Añade carpetas de tu teléfono para verlas y previsualizarlas en RemEx. Tu PC solo ve una si activas Compartir con el PC.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Una nueva pantalla de inicio</value>
+    <value>Una barra de herramientas más sencilla</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>Al abrir RemEx, la pantalla de inicio muestra cómo arranca y se conecta de verdad, en lugar de una animación fija.</value>
+    <value>Cada pantalla de archivos tiene ahora un botón principal y el resto en Más opciones; además, tocar un archivo de la lista abre su vista previa.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Alertas de sensores en el teléfono</value>
+    <value>Escanea para obtener la app del teléfono</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Las alertas que creas en el PC ahora llegan al teléfono como notificaciones. Puedes añadirlas, cambiarlas o quitarlas desde cualquiera de los dos.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Registros y diagnósticos del PC en el teléfono</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>En Más hay una página nueva con lo que ha registrado tu PC y las mismas comprobaciones de estado que muestra el PC. Es de solo lectura.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Más formas de personalizar el teléfono</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Elige un fondo, más formas de tarjeta y siete Nerd Fonts, y decide el ancho de la cuadrícula de Sensores.</value>
+    <value>En la página de inicio del PC, la tarjeta Obtener la aplicación de teléfono muestra ahora un código QR. Apunta la cámara del teléfono para abrir RemEx en Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
@@ -4279,5 +4267,152 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   </data>
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Esperando un teléfono</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Verificado</value>
+  </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Carpetas</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Más acciones</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Mostrar u ocultar la vista previa (Espacio)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Enviar a</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Copiar ruta</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Calcular SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Copiar SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>No se pudo abrir. Vuelve a expandir para reintentar.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Mostrar u ocultar la lista de transferencias</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>en curso</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>verificados</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>fallidos</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Cerrar la vista previa</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Selecciona un archivo para verlo.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Cargando la vista previa…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>En vivo</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Seguir el final del archivo mientras crece</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Se muestran los primeros 2 MB. Descarga el archivo para verlo entero.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Este archivo es demasiado grande para la vista previa. Descárgalo para abrirlo.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Este archivo no es texto, así que no hay nada que mostrar.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Actualiza RemEx en este dispositivo para ver sus archivos.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>No se pudo cargar la vista previa.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Desplaza para hacer zoom, arrastra para mover y haz doble clic para ajustar</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Detalles</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Huella SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Calcular SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Calculando la huella…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Pega un SHA-256 para comparar</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Coincide</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>No coincide</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>Eso no es un SHA-256. Debe tener 64 caracteres hexadecimales.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>Este dispositivo aún no puede calcular huellas. Actualiza RemEx en él.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>No se pudo calcular la huella. Comprueba que el archivo no esté en uso y vuelve a intentarlo.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Comparar con una copia en otro dispositivo</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Dispositivo</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Carpeta compartida</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>Archivo en ese dispositivo</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Comparar</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Comparando las dos copias…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Idénticos: las dos copias tienen la misma huella.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Diferentes: las dos copias no coinciden.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>No se pudo comparar. Comprueba el nombre del archivo y que ambos dispositivos estén conectados.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Las carpetas no se envían así. Usa Subir carpeta o Descargar carpeta.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Los archivos no pueden pasar directamente de un teléfono a otro. Cópialos primero a este PC.</value>
   </data>
 </root>

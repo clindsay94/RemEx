@@ -195,6 +195,16 @@ object FileTransferLimits {
     const val SEARCH_MAX_RESULTS = 200
     const val THUMBNAIL_DEFAULT_MAX_DIM = 128
     const val THUMBNAIL_MAX_BYTES = 96 * 1024
+    /** Most bytes one file_read_range_request may ask for (1 MiB). Mirrors C# ReadRangeMaxBytes. */
+    const val READ_RANGE_MAX_BYTES = 1024 * 1024
+    /** Text preview reads at most this much from the start of a file (2 MiB). */
+    const val PREVIEW_TEXT_MAX_BYTES = 2 * 1024 * 1024
+    /** Live tail keeps the last this-many bytes of a growing text file (256 KiB). */
+    const val PREVIEW_TEXT_TAIL_BYTES = 256 * 1024
+    /** Images larger than this are not previewed at full size (40 MiB). */
+    const val PREVIEW_IMAGE_MAX_BYTES = 40L * 1024 * 1024
+    /** How often live tail asks for new bytes while the preview is visible. */
+    const val PREVIEW_TAIL_POLL_MS = 2000L
     const val DATA_PAYLOAD_BYTES = 256 * 1024
     const val ACK_INTERVAL_BYTES = 4 * 1024 * 1024
     const val MAX_UNACKED_BYTES = 8 * 1024 * 1024

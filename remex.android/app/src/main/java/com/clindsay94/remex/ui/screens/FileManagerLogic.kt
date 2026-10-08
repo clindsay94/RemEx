@@ -53,6 +53,10 @@ data class FileManagerCapabilities(
     val ops: Set<String>,
     val fullBrowse: Boolean,
     val push: Boolean,
+    /** Answers `file_read_range_request` (previews, live tail). False on a PC from before the 2026-10-08 redesign. */
+    val readRange: Boolean = false,
+    /** Answers `file_hash_request` (the preview's fingerprint card). */
+    val hash: Boolean = false,
 ) {
     val isV3: Boolean get() = protocol >= 3
 }
@@ -448,8 +452,8 @@ object FileManagerLogic {
     /**
      * Whether the "Browse this PC" control should accept a tap right now (RemEx-c7v4n round 3): only
      * when full-device browsing is actually on offer AND no answer to a previous request is still in
-     * flight. [canBrowseDevice] is the same host-capability fact [FileManagerQuickAccess] already gates
-     * the chip's visibility on — folded in here rather than inlining `!pending` at the call site, so
+     * flight. [canBrowseDevice] is the same host-capability fact the folder tree's "Browse this PC" row
+     * is shown on (FileTreePane) — folded in here rather than inlining `!pending` at the call site, so
      * this pins the real precondition ("possible AND not already waiting") instead of restating the
      * `!` operator a bare `pending` flip would (review, round 3).
      */

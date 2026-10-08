@@ -78,7 +78,7 @@
 .EXAMPLE
     ./build-remex.ps1 -c release -t all
 .EXAMPLE
-    ./build-remex.ps1 -v 3.0.0 -t all -c release
+    ./build-remex.ps1 -v 3.1.0 -t all -c release
 .EXAMPLE
     ./build-remex.ps1 -t windows -NoClean
 .EXAMPLE
@@ -264,6 +264,43 @@ function Sync-DirectoryBuildPropsVersion {
         Write-Host "Synchronized Directory.Build.props to version $DesiredVersion" -ForegroundColor Green
     } else {
         Write-Host "Directory.Build.props is already synced at version $DesiredVersion" -ForegroundColor DarkGray
+    }
+
+    Sync-PinnedVersionStrings -RepoRoot (Split-Path -Parent $BuildPropsPath) -DesiredVersion $DesiredVersion
+}
+
+function Sync-PinnedVersionStrings {
+    # The two places that hold the PC version as text rather than reading Directory.Build.props: the Windows
+    # manifest's assemblyIdentity (four parts) and the Inno Setup script's fallback for a bare `iscc` run. Both had
+    # drifted for releases (1.13.0.0 and 2.2.0 at 3.0.0), so every version change now rewrites them too, and
+    # VersionSourceOfTruthTests fails the build if they disagree with Directory.Build.props.
+    param(
+        [Parameter(Mandatory=$true)][string]$RepoRoot,
+        [Parameter(Mandatory=$true)][string]$DesiredVersion
+    )
+
+    $edits = @(
+        @{ Path = Join-Path $RepoRoot "remex.agent/app.manifest"
+           Pattern = '(<assemblyIdentity\s+version=")[^"]*(")'
+           Value = "`${1}$DesiredVersion.0`${2}" },
+        @{ Path = Join-Path $RepoRoot "installer/RemEx.iss"
+           Pattern = '(#define AppVersion ")[^"]*(")'
+           Value = "`${1}$DesiredVersion`${2}" },
+        @{ Path = Join-Path $RepoRoot "installer/RemEx.iss"
+           Pattern = '(iscc /DAppVersion=)[0-9.]+'
+           Value = "`${1}$DesiredVersion" }
+    )
+    foreach ($edit in $edits) {
+        if (-not (Test-Path $edit.Path)) {
+            Write-Warning "$($edit.Path) not found; its version was left as it was."
+            continue
+        }
+        $text = Get-Content $edit.Path -Raw
+        $updated = [regex]::Replace($text, $edit.Pattern, $edit.Value)
+        if ($text -ne $updated) {
+            Set-Content $edit.Path $updated -NoNewline
+            Write-Host "  Updated the version in $(Split-Path -Leaf $edit.Path) to $DesiredVersion" -ForegroundColor Green
+        }
     }
 }
 
@@ -646,7 +683,7 @@ Sync-DirectoryBuildPropsVersion -BuildPropsPath $BuildPropsPath -DesiredVersion 
 # 5. Restore .NET Solutions
 if ($Target -eq "windows" -or $Target -eq "linux" -or $Target -eq "all") {
     Write-Host "=== Restoring .NET Packages ===" -ForegroundColor Yellow
-    $solutionFile = Join-Paths $RepoRoot "RemEx.sln"
+    $solutionFile = Join-Paths $RepoRoot "Remex.sln"
     dotnet restore $solutionFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "dotnet restore failed (exit $LASTEXITCODE)"

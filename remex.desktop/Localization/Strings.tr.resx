@@ -1387,58 +1387,46 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Neler yeni?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinler</value>
+    <value>Dosyalar yeniden tasarlandı</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Telefonunuz artık eve gelip gittiğinizde, bir NFC etiketine dokunduğunuzda veya bilgisayarın bir sensörü sınırı aştığında kendi başına harekete geçebilir.</value>
+    <value>Telefonunuz ve bilgisayarınız artık iki uygulamada da tek bir klasör ağacında. Klasörleri düzey düzey açın; ağaç siz gezindikçe sizi izler.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Bilgisayarınızda rutinler</value>
+    <value>Canlı önizleme</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Rutinler bilgisayarın kendisinde de çalışabilir, örneğin boşta kalınca onu uyku moduna alabilir. Kapatma veya yeniden başlatmadan önce bir geri sayım, durdurmanız için size zaman tanır.</value>
+    <value>Bir dosyayı hemen görmek için seçin: yakınlaştırılabilir tam kaliteli fotoğraflar, renkli metin, kod ve günlükler. Büyüyen bir günlüğü izlemek için Canlı'yı açın.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Telefonda yeni düzen</value>
+    <value>SHA-256 parmak izleri</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>Telefon uygulamasında artık beş sekme var. Ana Sayfası bu bilgisayarı ve buradakiyle aynı sabitlenmiş sensörleri gösterir; Sensörler ızgarasını uzun basarak düzenlersiniz.</value>
+    <value>Bir aktarım, parmak izi denetlendiğinde artık Doğrulandı yazar. Bir dosyanın parmak izini kopyalayın, yapıştırdığınızla karşılaştırın ya da diğer cihazdaki kopyayla denetleyin.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>İki uygulamada tek görünüm</value>
+    <value>Cihazlar arasında dosya gönderin</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>Bilgisayar ve telefon artık aynı sözcükleri, yazı tiplerini, kartları ve renkleri kullanıyor. Yeni bir kurulum RemEx renkleriyle başlar.</value>
+    <value>Telefon dosyalarını bilgisayarınızdaki bir klasöre gönderin ya da bilgisayar dosyalarını telefonunuzdaki bir klasöre kaydedin. Bilgisayarda dosyaları bir cihazdan diğerine sürükleyebilirsiniz de.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Dosya aktarımı düzeltmeleri</value>
+    <value>Seçtiğiniz telefon klasörleri</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Telefondaki Dosyalar, siz isteyene kadar gizli ve sistem öğelerini göstermez. Bilgisayar artık telefonunuzun paylaşılan klasörlerine de göz atabilir.</value>
+    <value>RemEx'te göz atmak ve önizlemek için telefonunuzdan klasörler ekleyin. Bilgisayarınız bir klasörü yalnızca Bilgisayarla paylaş'ı açarsanız görür.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Yeni başlangıç ekranı</value>
+    <value>Daha sade bir araç çubuğu</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>RemEx açılırken başlangıç ekranı artık sabit bir animasyon oynatmak yerine uygulamanın gerçekten başlayıp bağlandığını gösteriyor.</value>
+    <value>Her dosya ekranında artık tek bir ana düğme var, gerisi Diğer seçenekler altında. Listedeki bir dosyaya dokunmak artık önizlemesini açar.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Telefonda sensör uyarıları</value>
+    <value>Telefon uygulamasını almak için tarayın</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Bilgisayarda oluşturduğunuz uyarılar artık telefonunuza bildirim olarak geliyor. Bunları ikisinden de ekleyebilir, değiştirebilir veya kaldırabilirsiniz.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Telefonda bilgisayar günlükleri ve tanılama</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>Diğer'de yeni bir sayfa, bilgisayarınızın neleri kaydettiğini ve bilgisayarda görünen aynı durum denetimlerini gösterir. Yalnızca okunabilir.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Telefonu kişiselleştirmenin daha fazla yolu</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Bir arka plan, daha fazla kart şekli ve yedi Nerd Font seçin; Sensörler ızgarasının genişliğini belirleyin.</value>
+    <value>Bilgisayarın Ana sayfasındaki Telefon uygulamasını al kartı artık bir QR kodu gösterir. RemEx'i Google Play'de açmak için telefonunuzun kamerasını ona tutun.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
@@ -4271,5 +4259,152 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Telefon bekleniyor</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Doğrulandı</value>
+  </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Klasörler</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Diğer işlemler</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Önizlemeyi göster veya gizle (Boşluk)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Önizle</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Şuraya gönder</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Yolu kopyala</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>SHA-256 hesapla</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>SHA-256'yı kopyala</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Açılamadı. Yeniden denemek için tekrar genişletin.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Aktarım listesini göster veya gizle</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>sürüyor</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>doğrulandı</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>başarısız</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Önizleme</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Önizlemeyi kapat</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Önizlemek için bir dosya seçin.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Önizleme yükleniyor…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Canlı</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Dosya büyüdükçe sonunu takip et</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>İlk 2 MB gösteriliyor. Tamamını görmek için dosyayı indirin.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>Bu dosya önizleme için çok büyük. Açmak için indirin.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>Bu dosya metin değil, burada gösterilecek bir şey yok.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Dosyalarını önizlemek için bu cihazda RemEx'i güncelleyin.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Önizleme yüklenemedi.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Yakınlaştırmak için kaydırın, taşımak için sürükleyin, sığdırmak için çift tıklayın</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Ayrıntılar</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>SHA-256 parmak izi</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>SHA-256 hesapla</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Parmak izi hesaplanıyor…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Kopyala</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Karşılaştırmak için bir SHA-256 yapıştırın</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Eşleşiyor</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Eşleşmiyor</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>Bu bir SHA-256 değil. 64 onaltılık karakter olmalı.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>Bu cihaz henüz parmak izi hesaplayamıyor. Üzerindeki RemEx'i güncelleyin.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Parmak izi hesaplanamadı. Dosyanın kullanımda olmadığını kontrol edip tekrar deneyin.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Başka bir cihazdaki kopyayla karşılaştır</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Cihaz</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Paylaşılan klasör</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>O cihazdaki dosya</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Karşılaştır</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>İki kopya karşılaştırılıyor…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Aynı: iki kopyanın parmak izi aynı.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Farklı: iki kopya eşleşmiyor.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Karşılaştırılamadı. Dosya adını ve iki cihazın da bağlı olduğunu kontrol edin.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Klasörler bu şekilde gönderilmez. Bunun yerine Klasör yükle veya Klasörü indir'i kullanın.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>Dosyalar bir telefondan diğerine doğrudan gidemez. Önce bu bilgisayara kopyalayın.</value>
   </data>
 </root>

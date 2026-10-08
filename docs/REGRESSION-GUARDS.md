@@ -756,7 +756,7 @@ bytes. The receiver then tears its sink down and finalizes a zero-byte transfer,
 
 - C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1729`),
   called at `TransferSessionManager.cs:1640` before the completion is sent.
-- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:320`).
+- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:317`).
 - Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
   `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
   sender had the defect for three beads after the other two were fixed. It was the only one never
@@ -849,7 +849,7 @@ the constant and not the call site, a second test,
 directly at the call site, which the first test cannot.
 
 **The upload direction remains note-guarded only, and covering it is out of scope for RemEx-3uv7s.**
-`FileTransferEngine.kt:261` builds its own `ackSignal` as `Channel<Unit>(Channel.CONFLATED)` for
+`FileTransferEngine.kt:336` builds its own `ackSignal` as `Channel<Unit>(Channel.CONFLATED)` for
 `UploadSendLoop`, and since `RemEx-yi7id`, `UploadSendLoopTest` runs under `Dispatchers.Unconfined`
 too, so the same flip on that channel also stays green today. Treat that one channel's capacity as
 guarded by this note, not by a test, until it gets the same treatment.
@@ -1536,25 +1536,44 @@ owner never agreed:
   the first. `PhoneFileRelayTests.Reply_FromADifferentPairedPhone_IsDropped` goes red (defect-injected
   in RemEx-xt0af).
 - **Only the allowlisted request types are relayed** (`RelayedRequests`, derived from `RequestForReply`,
-  `PhoneFileRelay.cs:58-79`): the seven read-only ones plus `file_manage_request`. `file_root_manage_request`
-  (which folders a phone shares) and hashing stay out; `TheAllowlist_HoldsTheSevenReadOnlyTypesAndManage_AndNotRootManagement`
-  and `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
+  `PhoneFileRelay.cs:59-87`): the nine read-only ones plus `file_manage_request`. `file_read_range_request` and
+  `file_hash_request` joined on 2026-10-08 — a product decision (Connor, file-browser redesign), read-only, no
+  change switch needed. `file_root_manage_request` (which folders a phone shares) stays out;
+  `TheAllowlist_HoldsTheNineReadOnlyTypesAndManage_AndNotRootManagement` and
+  `RootManagement_StaysRefused_EvenWhenThePhoneAllowsChanges` pin that. Widening it again is a product
   decision, not a fix.
+- **And a range read or hash has its root, path and range checked before the wire** (`ReadRefusal`, called in
+  `Connection.SendAsync` before the reachability check): a root id, `IsValidRemoteRelativePath`, never the shared
+  folder itself, and `FileReadRangeValidation`. Delete the call and a `..` path or a 2 GB read goes to the phone,
+  whose `facade.resolve` is then the only defence. `Reads_WithAnUnsafePathOrRange_AreRefusedAndNeverReachThePhone`
+  goes red in all 11 cases (defect-injected 2026-10-08). A hash waits `HashTimeout`, not the 90 s backstop
+  (`AHashOutlivesTheShortRequestTimeout_ButARangeReadDoesNot`, defect-injected 2026-10-08).
+- **On the phone, reads and hashes resolve through `facade.resolve` like a browse** (`FileHostHandler.handleReadRange`
+  / `handleHash`) and refuse a folder, a missing file and an unshared root with `READ_NOT_A_FILE_MESSAGE`; a failure
+  part-way says `READ_FAILED_MESSAGE`, never the provider's words (which can carry `/storage/...` paths).
+  `hash_ofAFolder_aMissingFile_orAnUnsharedRoot_isRefusedWithAPlainReason` and
+  `readRange_outOfBounds_isRefused_beforeAnythingIsRead` go red (defect-injected 2026-10-08).
+  Two quieter rules ride along. A size of 0 is treated as UNKNOWN, not empty (`sizeKnown`), because
+  `DocumentFile.length()` is 0 whenever a provider omits `COLUMN_SIZE` (RemEx-xrb2v): trust it and every read says
+  `eof` and a live tail serves the top of the log
+  (`readRange_tailWithTheSizeUnknown_returnsTheRealEnd_notTheTop`, defect-injected). And reads and hashes run under
+  small permit pools (`READ_CONCURRENCY`, `HASH_CONCURRENCY`) so a two-second tail against a slow provider cannot
+  stack reads up on the IO pool (`rangeReads_runAtMostTwoAtATime_andTheRestWaitTheirTurn`, defect-injected).
 - **Outbound requests carry no `ClientId`.**
 - **A `file_manage_request` goes out only after THIS phone's own roots reply said `pcChanges: true`**
-  (`Connection.SendAsync`, the `_phoneAllowsChanges` gate at `PhoneFileRelay.cs:530-540`, set in `TryComplete`
-  at `PhoneFileRelay.cs:605`, which only a reply that already passed `TryDeliverReply`'s loopback, proven and
+  (`Connection.SendAsync`, the `_phoneAllowsChanges` gate at `PhoneFileRelay.cs:596-606`, set in `TryComplete`
+  at `PhoneFileRelay.cs:678`, which only a reply that already passed `TryDeliverReply`'s loopback, proven and
   paired checks can reach). Delete the gate and the PC offers and sends renames and deletes to a phone whose
   owner never turned them on, and to every older phone. `Manage_BeforeThePhoneHasSaidItAllowsChanges_...`,
   `Manage_WhenThePhoneSwitchIsOff_...` and `APlantedRootsReply_FromLoopbackOrAnUnprovenSession_CannotTurnManageOn`
   go red (gate defect-injected in RemEx-fgmne).
 - **And its operation, names and paths are validated before the wire** (`ManageRefusal`,
-  `PhoneFileRelay.cs:447`): one of five operations, a root id, `FilePathValidation.IsValidRemoteName` /
+  `PhoneFileRelay.cs:505`): one of five operations, a root id, `FilePathValidation.IsValidRemoteName` /
   `IsValidRemoteRelativePath`, and never the shared folder itself.
   `Manage_WithAnUnsafeNameOrPathOrOperation_IsRefusedEvenWhenThePhoneAllowsChanges` covers each case.
 
 **On the phone, the switch is the guard, and it is checked first.** `FileHostHandler.handleManage`
-(`FileHostHandler.kt:399`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
+(`FileHostHandler.kt:411`, `if (!rootsProvider.isPcChangeAllowed())`) refuses every operation, mkdir
 included, BEFORE anything is resolved, and `AndroidFileTransferHost` reads the person's
 `pcMayChangeFilesFlow` into `pcMayChangeFiles` (`AndroidFileTransferHost.kt:68`, default `false`) and serves
 it through `isPcChangeAllowed()` (`:176`), which also gates `canRename/canMove/canDelete` on each root
@@ -1564,8 +1583,8 @@ PC's relay gate becomes the only thing standing between a PC and the phone's fil
 stale (the person turned the switch off while the screen was open) and cannot be trusted by a forged request.
 `FileHostHandlerTest.everyManageOperation_withTheSwitchOff_isRefusedWithAPlainReasonAndChangesNothing` and
 `theSwitch_isReadOnEveryRequest_notOnceAtStartup` go red (defect-injected in RemEx-fgmne). The same function
-refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:420`) and the shared folder
-itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:431`) before the resolver runs. It also refuses the whole-device
+refuses `..`/backslash/NUL/empty-segment paths (`SharedPathPolicy.segments`, `:432`) and the shared folder
+itself (`SHARED_FOLDER_ITSELF_MESSAGE`, `:443`) before the resolver runs. It also refuses the whole-device
 (full-browse) volume (`FULL_BROWSE_READ_ONLY_MESSAGE`: only folders the person shared by name are writable
 from the PC; `theWholeDeviceView_isReadOnlyFromThePc_forEveryOperation`), and never sends a SAF provider's
 exception text to the PC (`reportManageFailure`; the text can hold `/storage/emulated/0/...`).
@@ -1586,6 +1605,22 @@ resolves only roots the person shares RIGHT NOW. `fromTreeUri` opens any tree th
 grant for, so removing the root check reopens the whole-device folder after the person turned
 whole-device browsing off. The RULES are pinned by `SharedPathPolicyTest`; the two CALL SITES are
 SAF-bound and have no unit test, so a removed call there stays green — check them by eye.
+
+### Phone-only bookmarks never reach the PC (file-browser redesign, 2026-10-08)
+
+The phone's Files screen lets the person add folders to browse ON THE PHONE ("Add folder"). They live in their
+own DataStore key, `phone_bookmark_uris` (`SettingsManager.kt:918`), and only `PhoneBookmarksRepository` reads it.
+Everything that answers the PC reads `shared_folder_uris` alone: `AndroidFileTransferHost` collects
+`sharedFolderUrisFlow` into `sharedFolderUris` (`AndroidFileTransferHost.kt:120`) and serves it as
+`allowedRootIds()`, which `SharedPathPolicy` and `facade.resolve` check every PC request against. "Share with PC"
+on a bookmark is the ONLY way in: it adds the URI to `shared_folder_uris`, the same list Settings → "Access from
+your PC" edits, so there is still one consent surface.
+
+Fails silently if broken: merge the two lists anywhere the host reads (a "convenience" union in
+`AndroidFileTransferHost`, say) and every folder the person only meant to browse on the phone is listed, read and,
+with "Let your PC change files" on, writable from the PC, with nothing on either screen saying so.
+`PhoneBookmarksRepositoryTest.nothingThatAnswersThePc_ReadsTheBookmarks` scans every file under `service/` for the
+key and goes red (defect-injected 2026-10-08 with exactly that union).
 
 ### `EvaluateDesktopAuth` — pre-auth for `/ws/desktop`
 

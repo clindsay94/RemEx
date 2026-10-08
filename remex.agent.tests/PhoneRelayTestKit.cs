@@ -32,7 +32,8 @@ internal sealed class PhoneRelayTestKit : IDisposable
         TimeSpan? requestTimeout = null,
         Action<TransferSessionManagerOptions>? configure = null,
         IStagedFilePromoter? promoter = null,
-        TimeSpan? copyMoveTimeout = null)
+        TimeSpan? copyMoveTimeout = null,
+        TimeSpan? hashTimeout = null)
     {
         Paired = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, Path.Combine(_root.FullName, "paired.json"));
         Sessions = new ClientSessionRegistry();
@@ -63,6 +64,7 @@ internal sealed class PhoneRelayTestKit : IDisposable
         {
             RequestTimeout = requestTimeout ?? TimeSpan.FromSeconds(30),
             CopyMoveTimeout = copyMoveTimeout ?? TimeSpan.FromMinutes(30),
+            HashTimeout = hashTimeout ?? TimeSpan.FromMinutes(30),
         };
     }
 

@@ -1387,58 +1387,46 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Apa yang baru?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinitas</value>
+    <value>File, didesain ulang</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Ponsel Anda kini bisa bertindak sendiri saat Anda tiba di rumah atau pergi, mengetuk tag NFC, atau saat sensor PC melewati batas.</value>
+    <value>Ponsel dan PC Anda kini ada dalam satu pohon folder di kedua aplikasi. Buka folder tingkat demi tingkat, dan pohonnya mengikuti saat Anda menjelajah.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Rutinitas di PC Anda</value>
+    <value>Pratinjau langsung</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Rutinitas juga bisa berjalan di PC itu sendiri, misalnya menidurkan PC saat sedang tidak dipakai. Sebelum PC dimatikan atau dimulai ulang, ada hitung mundur agar Anda bisa membatalkannya.</value>
+    <value>Pilih file untuk langsung melihatnya: foto berkualitas penuh dengan zoom, serta teks, kode, dan log berwarna. Nyalakan Langsung untuk mengikuti log saat bertambah.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Tata letak baru di ponsel</value>
+    <value>Sidik jari SHA-256</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>Aplikasi ponsel kini punya lima tab. Berandanya menampilkan PC ini dan sensor yang disematkan sama seperti di sini, dan tekan lama untuk mengedit kisi Sensor-nya.</value>
+    <value>Transfer kini menampilkan Terverifikasi saat sidik jarinya sudah diperiksa. Salin sidik jari file, bandingkan dengan yang Anda tempel, atau periksa dengan salinan di perangkat lain.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>Satu tampilan di kedua aplikasi</value>
+    <value>Kirim file antarperangkat</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>PC dan ponsel kini memakai kata, font, kartu, dan warna yang sama. Instalasi baru dimulai dengan warna RemEx.</value>
+    <value>Kirim file ponsel ke folder di PC, atau simpan file PC ke folder di ponsel. Di PC, Anda juga bisa menyeret file dari satu perangkat ke perangkat lain.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Perbaikan transfer file</value>
+    <value>Folder ponsel pilihan Anda</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File di ponsel menyembunyikan item tersembunyi dan item sistem sampai Anda memintanya. PC kini juga bisa menjelajahi folder bersama di ponsel Anda.</value>
+    <value>Tambahkan folder dari ponsel untuk menjelajahi dan melihat pratinjaunya di RemEx. PC hanya melihatnya jika Anda menyalakan Bagikan ke PC.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Layar pembuka baru</value>
+    <value>Toolbar yang lebih sederhana</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>Saat RemEx dibuka, layar pembuka kini menunjukkan aplikasi benar-benar memulai dan terhubung, bukan memutar animasi tetap.</value>
+    <value>Setiap layar file kini punya satu tombol utama, sisanya ada di Opsi lainnya, dan mengetuk file di daftar kini membuka pratinjaunya.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Peringatan sensor di ponsel</value>
+    <value>Pindai untuk mendapatkan aplikasi ponsel</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Peringatan yang Anda atur di PC kini sampai ke ponsel sebagai notifikasi. Anda bisa menambah, mengubah, atau menghapusnya dari salah satunya.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Log dan diagnostik PC di ponsel</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>Di Lainnya, ada halaman baru yang menampilkan apa yang dicatat PC Anda beserta pemeriksaan kondisi yang sama seperti di PC. Halaman ini hanya untuk dibaca.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Lebih banyak cara mempersonalisasi ponsel</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Pilih latar belakang, lebih banyak bentuk kartu, dan tujuh Nerd Font, lalu atur lebar kisi Sensor.</value>
+    <value>Di halaman Beranda PC, kartu Dapatkan aplikasi ponsel kini menampilkan kode QR. Arahkan kamera ponsel ke kode itu untuk membuka RemEx di Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
@@ -4270,5 +4258,152 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="Home_WaitingForPhone" xml:space="preserve">
     <value>Menunggu ponsel</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerified" xml:space="preserve">
+    <value>Terverifikasi</value>
+  </data>
+  <data name="FileTransfer_FoldersHeader" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="FileTransfer_MoreActions" xml:space="preserve">
+    <value>Tindakan lainnya</value>
+  </data>
+  <data name="FileTransfer_PreviewToggleTooltip" xml:space="preserve">
+    <value>Tampilkan atau sembunyikan pratinjau (Spasi)</value>
+  </data>
+  <data name="FileTransfer_PreviewMenu" xml:space="preserve">
+    <value>Pratinjau</value>
+  </data>
+  <data name="FileTransfer_SendTo" xml:space="preserve">
+    <value>Kirim ke</value>
+  </data>
+  <data name="FileTransfer_CopyPath" xml:space="preserve">
+    <value>Salin jalur</value>
+  </data>
+  <data name="FileTransfer_ComputeHashMenu" xml:space="preserve">
+    <value>Hitung SHA-256</value>
+  </data>
+  <data name="FileTransfer_CopyHashMenu" xml:space="preserve">
+    <value>Salin SHA-256</value>
+  </data>
+  <data name="FileTransfer_TreeLoadFailed" xml:space="preserve">
+    <value>Tidak dapat dibuka. Bentangkan lagi untuk mencoba ulang.</value>
+  </data>
+  <data name="FileTransfer_TreeRefresh" xml:space="preserve">
+    <value>Muat ulang</value>
+  </data>
+  <data name="FileTransfer_StripToggle" xml:space="preserve">
+    <value>Tampilkan atau sembunyikan daftar transfer</value>
+  </data>
+  <data name="FileTransfer_StripActive" xml:space="preserve">
+    <value>berlangsung</value>
+  </data>
+  <data name="FileTransfer_StripVerified" xml:space="preserve">
+    <value>terverifikasi</value>
+  </data>
+  <data name="FileTransfer_StripFailed" xml:space="preserve">
+    <value>gagal</value>
+  </data>
+  <data name="FilePreview_Title" xml:space="preserve">
+    <value>Pratinjau</value>
+  </data>
+  <data name="FilePreview_Close" xml:space="preserve">
+    <value>Tutup pratinjau</value>
+  </data>
+  <data name="FilePreview_Empty" xml:space="preserve">
+    <value>Pilih file untuk melihat pratinjaunya.</value>
+  </data>
+  <data name="FilePreview_Loading" xml:space="preserve">
+    <value>Memuat pratinjau…</value>
+  </data>
+  <data name="FilePreview_Live" xml:space="preserve">
+    <value>Langsung</value>
+  </data>
+  <data name="FilePreview_LiveTooltip" xml:space="preserve">
+    <value>Ikuti akhir file saat file bertambah</value>
+  </data>
+  <data name="FilePreview_Truncated" xml:space="preserve">
+    <value>Menampilkan 2 MB pertama. Unduh file untuk melihat semuanya.</value>
+  </data>
+  <data name="FilePreview_TooLarge" xml:space="preserve">
+    <value>File ini terlalu besar untuk pratinjau. Unduh untuk membukanya.</value>
+  </data>
+  <data name="FilePreview_Binary" xml:space="preserve">
+    <value>File ini bukan teks, jadi tidak ada yang bisa ditampilkan.</value>
+  </data>
+  <data name="FilePreview_NeedsUpdate" xml:space="preserve">
+    <value>Perbarui RemEx di perangkat ini untuk melihat pratinjau filenya.</value>
+  </data>
+  <data name="FilePreview_Failed" xml:space="preserve">
+    <value>Pratinjau tidak dapat dimuat.</value>
+  </data>
+  <data name="FilePreview_ZoomHint" xml:space="preserve">
+    <value>Gulir untuk zoom, seret untuk menggeser, klik dua kali untuk menyesuaikan</value>
+  </data>
+  <data name="FilePreview_DetailsTitle" xml:space="preserve">
+    <value>Detail</value>
+  </data>
+  <data name="FilePreview_IntegrityTitle" xml:space="preserve">
+    <value>Sidik SHA-256</value>
+  </data>
+  <data name="FilePreview_ComputeHash" xml:space="preserve">
+    <value>Hitung SHA-256</value>
+  </data>
+  <data name="FilePreview_Hashing" xml:space="preserve">
+    <value>Menghitung sidik…</value>
+  </data>
+  <data name="FilePreview_CopyHash" xml:space="preserve">
+    <value>Salin</value>
+  </data>
+  <data name="FilePreview_CompareWatermark" xml:space="preserve">
+    <value>Tempel SHA-256 untuk membandingkan</value>
+  </data>
+  <data name="FilePreview_CompareMatch" xml:space="preserve">
+    <value>Cocok</value>
+  </data>
+  <data name="FilePreview_CompareMismatch" xml:space="preserve">
+    <value>Tidak cocok</value>
+  </data>
+  <data name="FilePreview_CompareNotAHash" xml:space="preserve">
+    <value>Itu bukan SHA-256. Seharusnya 64 karakter heksadesimal.</value>
+  </data>
+  <data name="FilePreview_HashUnavailable" xml:space="preserve">
+    <value>Perangkat ini belum bisa menghitung sidik. Perbarui RemEx di perangkat itu.</value>
+  </data>
+  <data name="FilePreview_HashFailed" xml:space="preserve">
+    <value>Tidak dapat menghitung sidik. Pastikan file tidak sedang digunakan, lalu coba lagi.</value>
+  </data>
+  <data name="FilePreview_VerifyAgainstTitle" xml:space="preserve">
+    <value>Bandingkan dengan salinan di perangkat lain</value>
+  </data>
+  <data name="FilePreview_VerifyDevice" xml:space="preserve">
+    <value>Perangkat</value>
+  </data>
+  <data name="FilePreview_VerifyFolder" xml:space="preserve">
+    <value>Folder bersama</value>
+  </data>
+  <data name="FilePreview_VerifyPath" xml:space="preserve">
+    <value>File di perangkat itu</value>
+  </data>
+  <data name="FilePreview_VerifyButton" xml:space="preserve">
+    <value>Bandingkan</value>
+  </data>
+  <data name="FilePreview_Verifying" xml:space="preserve">
+    <value>Membandingkan kedua salinan…</value>
+  </data>
+  <data name="FilePreview_Identical" xml:space="preserve">
+    <value>Identik: kedua salinan memiliki sidik yang sama.</value>
+  </data>
+  <data name="FilePreview_Different" xml:space="preserve">
+    <value>Berbeda: kedua salinan tidak cocok.</value>
+  </data>
+  <data name="FilePreview_VerifyFailed" xml:space="preserve">
+    <value>Tidak dapat membandingkan. Periksa nama file dan pastikan kedua perangkat terhubung.</value>
+  </data>
+  <data name="FilePreview_FoldersNotSent" xml:space="preserve">
+    <value>Folder tidak dikirim dengan cara ini. Gunakan Unggah folder atau Unduh folder.</value>
+  </data>
+  <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
+    <value>File tidak bisa langsung dari satu ponsel ke ponsel lain. Salin dulu ke PC ini.</value>
   </data>
 </root>

@@ -14,6 +14,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -108,6 +110,22 @@ internal const val PC_CHANGES_OFF_MESSAGE =
  */
 internal const val SHARED_FOLDER_ITSELF_MESSAGE =
     "That is the shared folder itself, so it can't be changed from your PC. Remove it from Access from your PC on the phone instead."
+
+/** What the PC is told when it asks to read or hash something that is not a readable file in a shared folder. */
+internal const val READ_NOT_A_FILE_MESSAGE = "That file isn't in a folder this phone shares, or it can't be read."
+
+/** What the PC is told when a read or hash fails part-way. Detail goes to the phone's own log only. */
+internal const val READ_FAILED_MESSAGE = "The phone couldn't read that file. Check it is not in use, then try again."
+
+/**
+ * At most this many range reads run at once on the phone, and at most [HASH_CONCURRENCY] hashes. A live tail
+ * polls every two seconds; against a slow, pipe-only provider an unbounded host would stack reads up on the IO
+ * pool faster than they finish. Requests past the cap wait their turn rather than being refused.
+ */
+internal const val READ_CONCURRENCY = 2
+
+/** See [READ_CONCURRENCY]. One, because a second hash of a large file only slows the first. */
+internal const val HASH_CONCURRENCY = 1
 
 /**
  * What the PC is told when a change failed for a reason the phone keeps to itself. A SAF provider's
@@ -286,6 +304,8 @@ class FileHostHandler(
             "file_manifest_request" -> { handleManifest(obj.optJSONObject("fileManifestRequest")); true }
             "file_metadata_request" -> { handleMetadata(obj.optJSONObject("fileMetadataRequest")); true }
             "file_thumbnail_request" -> { handleThumbnail(obj.optJSONObject("fileThumbnailRequest")); true }
+            "file_read_range_request" -> { handleReadRange(obj.optJSONObject("fileReadRangeRequest")); true }
+            "file_hash_request" -> { handleHash(obj.optJSONObject("fileHashRequest")); true }
             "file_transfer_offer" -> { handleOffer(obj.optJSONObject("fileTransferOffer")); true }
             "file_transfer_complete" -> { handleComplete(obj.optJSONObject("fileTransferComplete")); true }
             "file_transfer_control" -> { handleControl(obj.optJSONObject("fileTransferControl")); true }
@@ -335,6 +355,10 @@ class FileHostHandler(
             // every roots request so a PC that reloads sees a change made a moment ago. Absent on a phone
             // that predates it, which the PC reads as "no".
             put("pcChanges", rootsProvider.isPcChangeAllowed())
+            // Live preview and "Verify against…" (2026-10-08 redesign). Both read-only, both resolved through
+            // facade.resolve, so they reach exactly what a browse reaches and nothing else.
+            put("readRange", true)
+            put("hash", true)
         }
 
     private fun handleBrowse(req: JSONObject?) {
@@ -1057,6 +1081,161 @@ class FileHostHandler(
             }
         }
         sender.send(envelope("file_thumbnail_response", "fileThumbnailResponse", payload, v3 = true))
+    }
+
+    /**
+     * Up to 1 MiB of one file, for the PC's live preview (2026-10-08 redesign). Read-only: it resolves through
+     * [FileSystemFacade.resolve], so the shared-folder check runs on every request exactly as a browse's does,
+     * and the "Let your PC change files" switch is not needed. Off the control-message collector, like a copy,
+     * so a slow provider never holds up the browse behind it.
+     */
+    private val readPermits = Semaphore(READ_CONCURRENCY)
+    private val hashPermits = Semaphore(HASH_CONCURRENCY)
+
+    private fun handleReadRange(req: JSONObject?) {
+        req ?: return
+        val requestId = req.optString("requestId")
+        val rootId = req.optString("rootId")
+        val relativePath = req.optString("relativePath")
+        val offset = req.optLong("offset", 0L)
+        val length = req.optInt("length", 0)
+        val fromEnd = req.optBoolean("fromEnd", false)
+        scope.launch {
+            val payload = JSONObject().apply { put("requestId", requestId) }
+            try {
+                readPermits.withPermit { readRangeInto(payload, rootId, relativePath, offset, length, fromEnd) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("FileHostHandler", "A range read requested by the PC failed.", e)
+                payload.remove("dataBase64")
+                payload.put("errorMessage", READ_FAILED_MESSAGE)
+            }
+            sender.send(envelope("file_read_range_response", "fileReadRangeResponse", payload, v3 = true))
+        }
+    }
+
+    private suspend fun readRangeInto(
+        payload: JSONObject, rootId: String, relativePath: String, offset: Long, length: Int, fromEnd: Boolean,
+    ) {
+        if (offset < 0 || length < 1 || length > FileTransferLimits.READ_RANGE_MAX_BYTES) {
+            payload.put("errorMessage", "A read must be between 1 and ${FileTransferLimits.READ_RANGE_MAX_BYTES} bytes.")
+            return
+        }
+        val node = facade.resolve(rootId, relativePath)
+        if (node == null || !node.canRead || node.isDirectory) {
+            payload.put("errorMessage", READ_NOT_A_FILE_MESSAGE)
+            return
+        }
+        val job = currentCoroutineContext()[Job]
+        val checkCancelled = { job?.ensureActive() ?: Unit }
+        val size = node.length
+        // A SIZE OF 0 MEANS "UNKNOWN" AS OFTEN AS "EMPTY": DocumentFile.length() is 0 whenever a provider omits
+        // COLUMN_SIZE (RemEx-xrb2v). Trusting it would answer eof on every read and serve the top of a log as its tail.
+        val sizeKnown = size > 0
+        if (fromEnd && !sizeKnown) {
+            val tail = tailOfUnknownSize(node, length, checkCancelled)
+            if (tail == null) {
+                payload.put("errorMessage", READ_FAILED_MESSAGE)
+            } else {
+                putRead(payload, tail.first, tail.second, fileSize = tail.third, eof = true, node.lastModifiedMs)
+            }
+            return
+        }
+        val start = if (fromEnd) maxOf(0L, size - length) else offset
+        val data =
+            if (sizeKnown && start >= size) ByteArray(0)
+            else facade.readRange(node, start, length, checkCancelled)
+        if (data == null) {
+            payload.put("errorMessage", READ_FAILED_MESSAGE)
+            return
+        }
+        val reachedEnd = data.size < length || (sizeKnown && start + data.size >= size)
+        // With the size unknown, what was read is a lower bound on it, and exact once the end was reached.
+        val fileSize = if (sizeKnown) maxOf(size, start + data.size) else start + data.size
+        putRead(payload, start, data, fileSize, reachedEnd, node.lastModifiedMs)
+    }
+
+    private fun putRead(payload: JSONObject, start: Long, data: ByteArray, fileSize: Long, eof: Boolean, modifiedMs: Long) {
+        payload.put("offset", start)
+        payload.put("dataBase64", JavaBase64.getEncoder().encodeToString(data))
+        payload.put("fileSize", fileSize)
+        payload.put("modifiedUtc", modifiedMs)
+        payload.put("eof", eof)
+    }
+
+    /**
+     * The last [length] bytes of a file whose provider will not say how big it is: streamed to the end through a
+     * ring buffer, checking for cancellation between pieces. Returns (start offset, bytes, total size), or null
+     * when the file cannot be opened.
+     */
+    private fun tailOfUnknownSize(node: FileNode, length: Int, checkCancelled: () -> Unit): Triple<Long, ByteArray, Long>? =
+        facade.openInput(node)?.use { input ->
+            val ring = ByteArray(length)
+            val piece = ByteArray(64 * 1024)
+            var total = 0L
+            while (true) {
+                checkCancelled()
+                val n = input.read(piece)
+                if (n < 0) break
+                for (i in 0 until n) ring[((total + i) % length).toInt()] = piece[i]
+                total += n
+            }
+            val kept = minOf(total, length.toLong()).toInt()
+            val out = ByteArray(kept)
+            val first = total - kept
+            for (i in 0 until kept) out[i] = ring[((first + i) % length).toInt()]
+            Triple(first, out, total)
+        }
+
+    /**
+     * SHA-256 of one file, for "Compute SHA-256" and "Verify against…" on the PC (2026-10-08 redesign). The same
+     * read-only gate as [handleReadRange]. Streams through [MessageDigest] in 64 KiB pieces and checks for
+     * cancellation between them, so hashing a long video never blocks the collector and stops with the host.
+     */
+    private fun handleHash(req: JSONObject?) {
+        req ?: return
+        val requestId = req.optString("requestId")
+        val rootId = req.optString("rootId")
+        val relativePath = req.optString("relativePath")
+        scope.launch {
+            val payload = JSONObject().apply { put("requestId", requestId) }
+            try {
+                hashPermits.withPermit { hashInto(payload, rootId, relativePath) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("FileHostHandler", "A hash requested by the PC failed.", e)
+                payload.remove("sha256")
+                payload.put("errorMessage", READ_FAILED_MESSAGE)
+            }
+            sender.send(envelope("file_hash_response", "fileHashResponse", payload, v3 = true))
+        }
+    }
+
+    private suspend fun hashInto(payload: JSONObject, rootId: String, relativePath: String) {
+        val node = facade.resolve(rootId, relativePath)
+        if (node == null || !node.canRead || node.isDirectory) {
+            payload.put("errorMessage", READ_NOT_A_FILE_MESSAGE)
+        } else {
+            val digest = MessageDigest.getInstance("SHA-256")
+            val opened =
+                facade.openInput(node)?.use { input ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        digest.update(buffer, 0, n)
+                    }
+                    true
+                } ?: false
+            if (opened) {
+                payload.put("sha256", JavaBase64.getEncoder().encodeToString(digest.digest()))
+            } else {
+                payload.put("errorMessage", READ_FAILED_MESSAGE)
+            }
+        }
     }
 
     // ── v3 binary transfer (Android served: PC downloads-from / uploads-to Android) ──
