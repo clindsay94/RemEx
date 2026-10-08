@@ -5,11 +5,16 @@ All notable changes to RemEx will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
+Jump to: [Unreleased](#unreleased) · [3.1.0](#310--2026-10-08) · [3.0.0](#300--2026-10-04) · [2.5.0](#250--2026-09-10) · [2.4.0](#240--2026-07-19) · [2.3.2](#232--2026-07-18) · older versions below.
 
 ---
 
 ## [Unreleased]
+
+## [3.1.0] — 2026-10-08
+
+Android versionCode 39. The headline is the redesigned file screens on both the PC and the phone: one folder tree
+for both devices, a live preview, and SHA-256 fingerprints you can see, compare and cross-check.
 
 ### Added
 
