@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Remex.Agent.Tests;
 
 /// <summary>
@@ -42,7 +44,7 @@ public sealed class HostIdentityUnificationTests
     {
         // Contract test on the source: the /pairing-qr endpoint must return HostBootstrapper.HostId,
         // not HostBootstrapper.InstanceId. A regression here re-introduces review-report.md Finding 5.
-        var bootstrapper = ReadSource("Remex.Agent/HostBootstrapper.cs");
+        var bootstrapper = ReadSource("remex.agent", "HostBootstrapper.cs");
 
         var qrBlock = ExtractMapGetBlock(bootstrapper, "/pairing-qr");
         Assert.Contains("hostId = HostId", qrBlock);
@@ -56,7 +58,7 @@ public sealed class HostIdentityUnificationTests
         // Contract test: the PairingHandler's PairingResponse payload must populate HostId
         // from HostBootstrapper.HostId (the stable identity), never from InstanceId. The
         // review report's Finding 5 specifically called out this asymmetry.
-        var pairingHandler = ReadSource("Remex.Agent/Handlers/PairingHandler.cs");
+        var pairingHandler = ReadSource("remex.agent", "Handlers", "PairingHandler.cs");
 
         // Locate the PairingResponse construction and the HostId assignment within it.
         var idx = pairingHandler.IndexOf("PairingResponse = new PairingResponse", StringComparison.Ordinal);
@@ -67,23 +69,19 @@ public sealed class HostIdentityUnificationTests
         Assert.DoesNotContain("HostId = HostBootstrapper.InstanceId", snippet);
     }
 
-    private static string ReadSource(string repoRelativePath)
+    // Segments are the on-disk case from `git ls-files`: the project folder is `remex.agent`, not
+    // `Remex.Agent`. Windows forgave the old capitalised path; Linux never found the file.
+    private static string ReadSource(params string[] repoRelativeSegments)
     {
-        // Test runner cwd is the test project's bin directory. Walk up until we find the
-        // repo root (the directory containing the file path we're asked for).
-        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-        while (dir is not null)
-        {
-            var candidate = Path.Combine(dir.FullName, repoRelativePath);
-            if (File.Exists(candidate))
-            {
-                return File.ReadAllText(candidate);
-            }
-            dir = dir.Parent;
-        }
-        Assert.Fail($"Could not locate {repoRelativePath} starting from {Directory.GetCurrentDirectory()}.");
-        return string.Empty; // unreachable
+        var path = Path.Combine([RepoRoot(), .. repoRelativeSegments]);
+        Assert.True(File.Exists(path), $"Could not locate {path}.");
+        return File.ReadAllText(path);
     }
+
+    // [CallerFilePath] rather than walking up from the assembly, matching the other source-scanning
+    // tests, so building with --artifacts-path outside the repo does not break this (RemEx-6i1l).
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, ".."));
 
     private static string ExtractMapGetBlock(string source, string route)
     {

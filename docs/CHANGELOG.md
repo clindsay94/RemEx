@@ -18,6 +18,15 @@ Jump to: [Unreleased](#unreleased) · [3.0.0](#300--2026-10-04) · [2.5.0](#250-
   on Google Play. If you'd rather use the PC, **Open in browser instead** under the code still opens the listing
   there. (RemEx-2p7um)
 
+### Internal
+
+- **`HostIdentityUnificationTests` now runs on Linux.** `PairingHandlerResponse_UsesHostIdNotInstanceId` and
+  `QrBootstrapEndpoint_UsesHostIdNotInstanceId` read their source from `Remex.Agent/...`, but the project folder is
+  `remex.agent`. Windows ignored the case, so they passed there and failed every time on Linux (CachyOS, CI, WSL)
+  with "Could not locate". They now find the repo root through `[CallerFilePath]`, like the other source-scanning
+  tests, and build each path from the on-disk case. No other test shared the capitalised path. Checked by swapping
+  `HostId` for `InstanceId` in both pinned places: both tests went red on Linux, and green again once reverted.
+
 ## [3.0.0] — 2026-10-04
 
 **Routines, one look on the PC and the phone, and a new startup splash.** The first release on Google Play
