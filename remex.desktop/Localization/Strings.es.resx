@@ -1391,58 +1391,46 @@ En la página Rutinas puedes verlas, desactivarlas y consultar su historial.</va
     <value>¿Qué hay de nuevo?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinas</value>
+    <value>Archivos, rediseñado</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Tu teléfono ya puede actuar solo cuando llegas a casa o te vas, tocas una etiqueta NFC o un sensor del PC pasa un límite.</value>
+    <value>Tu teléfono y tu PC aparecen ahora en un mismo árbol de carpetas en las dos apps. Abre las carpetas nivel a nivel; el árbol te sigue mientras navegas.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Rutinas en tu PC</value>
+    <value>Vista previa en vivo</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Las rutinas también pueden ejecutarse en el propio PC, por ejemplo para suspenderlo si está inactivo. Una cuenta atrás te deja cancelar un apagado o un reinicio.</value>
+    <value>Elige un archivo para verlo al instante: fotos a calidad completa con zoom, y texto, código y registros en color. Activa En vivo para seguir un registro mientras crece.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Un nuevo diseño en el teléfono</value>
+    <value>Huellas SHA-256</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>La aplicación del teléfono ahora tiene cinco pestañas. Su Inicio muestra este PC y los mismos sensores fijados que aquí, y una pulsación larga edita su cuadrícula de Sensores.</value>
+    <value>Una transferencia ahora indica Verificado cuando se comprobó su huella. Copia la huella de un archivo, compárala con una que pegues o compruébala con una copia en el otro dispositivo.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>El mismo aspecto en las dos aplicaciones</value>
+    <value>Envía archivos entre dispositivos</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>El PC y el teléfono ahora usan las mismas palabras, fuentes, tarjetas y colores. Una instalación nueva empieza con los colores de RemEx.</value>
+    <value>Envía archivos del teléfono a una carpeta de tu PC o guarda archivos del PC en una carpeta del teléfono. En el PC también puedes arrastrar archivos de un dispositivo a otro.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Arreglos en la transferencia de archivos</value>
+    <value>Carpetas del teléfono que tú eliges</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Descargar una carpeta, en cualquier sentido, ya no omite ni repite archivos. Archivos, en el teléfono, no muestra los elementos ocultos ni los del sistema salvo que lo pidas. El PC ahora también puede explorar las carpetas compartidas de tu teléfono.</value>
+    <value>Añade carpetas de tu teléfono para verlas y previsualizarlas en RemEx. Tu PC solo ve una si activas Compartir con el PC.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Una nueva pantalla de inicio</value>
+    <value>Una barra de herramientas más sencilla</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>Al abrir RemEx, la pantalla de inicio muestra cómo arranca y se conecta de verdad, en lugar de una animación fija.</value>
+    <value>Cada pantalla de archivos tiene ahora un botón principal y el resto en Más opciones; además, tocar un archivo de la lista abre su vista previa.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Alertas de sensores en el teléfono</value>
+    <value>Escanea para obtener la app del teléfono</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Las alertas que creas en el PC ahora llegan al teléfono como notificaciones. Puedes añadirlas, cambiarlas o quitarlas desde cualquiera de los dos.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Registros y diagnósticos del PC en el teléfono</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>En Más hay una página nueva con lo que ha registrado tu PC y las mismas comprobaciones de estado que muestra el PC. Es de solo lectura.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Más formas de personalizar el teléfono</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Elige un fondo, más formas de tarjeta y siete Nerd Fonts, y decide el ancho de la cuadrícula de Sensores.</value>
+    <value>En la página de inicio del PC, la tarjeta Obtener la aplicación de teléfono muestra ahora un código QR. Apunta la cámara del teléfono para abrir RemEx en Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

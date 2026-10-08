@@ -1,11 +1,11 @@
 ; ============================================================
 ;  RemEx Installer
-;  Build with: iscc /DAppVersion=2.2.0 installer\RemEx.iss
+;  Build with: iscc /DAppVersion=3.1.0 installer\RemEx.iss
 ;  Or use:     installer\build-installer.ps1
 ; ============================================================
 
 #ifndef AppVersion
-  #define AppVersion "2.2.0"
+  #define AppVersion "3.1.0"
 #endif
 
 #define AppName        "RemEx"

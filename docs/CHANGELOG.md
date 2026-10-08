@@ -69,6 +69,18 @@ for both devices, a live preview, and SHA-256 fingerprints you can see, compare 
   - The toolbar is reduced to search, the sort and view menu, and one main action (Upload on the PC, Add folder
     on the phone); New folder and Upload folder are under **More**.
 
+### Fixed
+
+- **Building the PC app on Linux works again.** `build-remex.ps1` asked for `RemEx.sln`, but the file is
+  `Remex.sln`. Windows didn't mind; on Linux every Windows, Linux and installer build stopped at
+  `dotnet restore` with "Project file does not exist". `BuildScriptPathCaseTests` now checks every repo path the
+  script names, case included.
+- **The Windows app and installer report the real version.** The app's manifest still said 1.13.0.0 and a bare
+  `iscc RemEx.iss` built a "2.2.0" installer. Both say 3.1.0 now, `build-remex.ps1` rewrites them on every version
+  change, and `VersionSourceOfTruthTests` fails the build if they drift again.
+- **What's New on both apps lists 3.1.** The About pages showed the 3.0 highlights; they now show the seven 3.1
+  ones, in all nine languages.
+
 ### Internal
 
 - **Groundwork for the new File Transfer screen: live preview and SHA-256 on the phone.** Two protocol

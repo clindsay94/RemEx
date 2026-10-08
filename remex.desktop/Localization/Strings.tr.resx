@@ -1387,58 +1387,46 @@ Rutinler sayfasında onları görebilir, kapatabilir ve geçmişlerini inceleyeb
     <value>Neler yeni?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinler</value>
+    <value>Dosyalar yeniden tasarlandı</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Telefonunuz artık eve gelip gittiğinizde, bir NFC etiketine dokunduğunuzda veya bilgisayarın bir sensörü sınırı aştığında kendi başına harekete geçebilir.</value>
+    <value>Telefonunuz ve bilgisayarınız artık iki uygulamada da tek bir klasör ağacında. Klasörleri düzey düzey açın; ağaç siz gezindikçe sizi izler.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Bilgisayarınızda rutinler</value>
+    <value>Canlı önizleme</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Rutinler bilgisayarın kendisinde de çalışabilir, örneğin boşta kalınca onu uyku moduna alabilir. Kapatma veya yeniden başlatmadan önce bir geri sayım, durdurmanız için size zaman tanır.</value>
+    <value>Bir dosyayı hemen görmek için seçin: yakınlaştırılabilir tam kaliteli fotoğraflar, renkli metin, kod ve günlükler. Büyüyen bir günlüğü izlemek için Canlı'yı açın.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Telefonda yeni düzen</value>
+    <value>SHA-256 parmak izleri</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>Telefon uygulamasında artık beş sekme var. Ana Sayfası bu bilgisayarı ve buradakiyle aynı sabitlenmiş sensörleri gösterir; Sensörler ızgarasını uzun basarak düzenlersiniz.</value>
+    <value>Bir aktarım, parmak izi denetlendiğinde artık Doğrulandı yazar. Bir dosyanın parmak izini kopyalayın, yapıştırdığınızla karşılaştırın ya da diğer cihazdaki kopyayla denetleyin.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>İki uygulamada tek görünüm</value>
+    <value>Cihazlar arasında dosya gönderin</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>Bilgisayar ve telefon artık aynı sözcükleri, yazı tiplerini, kartları ve renkleri kullanıyor. Yeni bir kurulum RemEx renkleriyle başlar.</value>
+    <value>Telefon dosyalarını bilgisayarınızdaki bir klasöre gönderin ya da bilgisayar dosyalarını telefonunuzdaki bir klasöre kaydedin. Bilgisayarda dosyaları bir cihazdan diğerine sürükleyebilirsiniz de.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Dosya aktarımı düzeltmeleri</value>
+    <value>Seçtiğiniz telefon klasörleri</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Bir klasörü iki yönde de indirmek artık dosya atlamıyor veya tekrarlamıyor. Telefondaki Dosyalar, siz isteyene kadar gizli ve sistem öğelerini göstermez. Bilgisayar artık telefonunuzun paylaşılan klasörlerine de göz atabilir.</value>
+    <value>RemEx'te göz atmak ve önizlemek için telefonunuzdan klasörler ekleyin. Bilgisayarınız bir klasörü yalnızca Bilgisayarla paylaş'ı açarsanız görür.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Yeni başlangıç ekranı</value>
+    <value>Daha sade bir araç çubuğu</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>RemEx açılırken başlangıç ekranı artık sabit bir animasyon oynatmak yerine uygulamanın gerçekten başlayıp bağlandığını gösteriyor.</value>
+    <value>Her dosya ekranında artık tek bir ana düğme var, gerisi Diğer seçenekler altında. Listedeki bir dosyaya dokunmak artık önizlemesini açar.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Telefonda sensör uyarıları</value>
+    <value>Telefon uygulamasını almak için tarayın</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Bilgisayarda oluşturduğunuz uyarılar artık telefonunuza bildirim olarak geliyor. Bunları ikisinden de ekleyebilir, değiştirebilir veya kaldırabilirsiniz.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Telefonda bilgisayar günlükleri ve tanılama</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>Diğer'de yeni bir sayfa, bilgisayarınızın neleri kaydettiğini ve bilgisayarda görünen aynı durum denetimlerini gösterir. Yalnızca okunabilir.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Telefonu kişiselleştirmenin daha fazla yolu</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Bir arka plan, daha fazla kart şekli ve yedi Nerd Font seçin; Sensörler ızgarasının genişliğini belirleyin.</value>
+    <value>Bilgisayarın Ana sayfasındaki Telefon uygulamasını al kartı artık bir QR kodu gösterir. RemEx'i Google Play'de açmak için telefonunuzun kamerasını ona tutun.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

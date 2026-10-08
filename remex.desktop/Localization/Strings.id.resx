@@ -1387,58 +1387,46 @@ Di halaman Rutinitas, Anda dapat melihatnya, mematikannya, dan memeriksa riwayat
     <value>Apa yang baru?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>Rutinitas</value>
+    <value>File, didesain ulang</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>Ponsel Anda kini bisa bertindak sendiri saat Anda tiba di rumah atau pergi, mengetuk tag NFC, atau saat sensor PC melewati batas.</value>
+    <value>Ponsel dan PC Anda kini ada dalam satu pohon folder di kedua aplikasi. Buka folder tingkat demi tingkat, dan pohonnya mengikuti saat Anda menjelajah.</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>Rutinitas di PC Anda</value>
+    <value>Pratinjau langsung</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>Rutinitas juga bisa berjalan di PC itu sendiri, misalnya menidurkan PC saat sedang tidak dipakai. Sebelum PC dimatikan atau dimulai ulang, ada hitung mundur agar Anda bisa membatalkannya.</value>
+    <value>Pilih file untuk langsung melihatnya: foto berkualitas penuh dengan zoom, serta teks, kode, dan log berwarna. Nyalakan Langsung untuk mengikuti log saat bertambah.</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>Tata letak baru di ponsel</value>
+    <value>Sidik jari SHA-256</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>Aplikasi ponsel kini punya lima tab. Berandanya menampilkan PC ini dan sensor yang disematkan sama seperti di sini, dan tekan lama untuk mengedit kisi Sensor-nya.</value>
+    <value>Transfer kini menampilkan Terverifikasi saat sidik jarinya sudah diperiksa. Salin sidik jari file, bandingkan dengan yang Anda tempel, atau periksa dengan salinan di perangkat lain.</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>Satu tampilan di kedua aplikasi</value>
+    <value>Kirim file antarperangkat</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>PC dan ponsel kini memakai kata, font, kartu, dan warna yang sama. Instalasi baru dimulai dengan warna RemEx.</value>
+    <value>Kirim file ponsel ke folder di PC, atau simpan file PC ke folder di ponsel. Di PC, Anda juga bisa menyeret file dari satu perangkat ke perangkat lain.</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>Perbaikan transfer file</value>
+    <value>Folder ponsel pilihan Anda</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>Mengunduh folder, ke arah mana pun, tidak lagi melewatkan atau mengulang file. File di ponsel menyembunyikan item tersembunyi dan item sistem sampai Anda memintanya. PC kini juga bisa menjelajahi folder bersama di ponsel Anda.</value>
+    <value>Tambahkan folder dari ponsel untuk menjelajahi dan melihat pratinjaunya di RemEx. PC hanya melihatnya jika Anda menyalakan Bagikan ke PC.</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>Layar pembuka baru</value>
+    <value>Toolbar yang lebih sederhana</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>Saat RemEx dibuka, layar pembuka kini menunjukkan aplikasi benar-benar memulai dan terhubung, bukan memutar animasi tetap.</value>
+    <value>Setiap layar file kini punya satu tombol utama, sisanya ada di Opsi lainnya, dan mengetuk file di daftar kini membuka pratinjaunya.</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>Peringatan sensor di ponsel</value>
+    <value>Pindai untuk mendapatkan aplikasi ponsel</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>Peringatan yang Anda atur di PC kini sampai ke ponsel sebagai notifikasi. Anda bisa menambah, mengubah, atau menghapusnya dari salah satunya.</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>Log dan diagnostik PC di ponsel</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>Di Lainnya, ada halaman baru yang menampilkan apa yang dicatat PC Anda beserta pemeriksaan kondisi yang sama seperti di PC. Halaman ini hanya untuk dibaca.</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>Lebih banyak cara mempersonalisasi ponsel</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>Pilih latar belakang, lebih banyak bentuk kartu, dan tujuh Nerd Font, lalu atur lebar kisi Sensor.</value>
+    <value>Di halaman Beranda PC, kartu Dapatkan aplikasi ponsel kini menampilkan kode QR. Arahkan kamera ponsel ke kode itu untuk membuka RemEx di Google Play.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

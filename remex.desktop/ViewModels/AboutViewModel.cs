@@ -198,7 +198,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     /// lines each, and never matched what the phone said. The highlights are now written for users,
     /// translated like every other string, and rebuilt on a language switch.
     /// </remarks>
-    internal const int WhatsNewCount = 9;
+    internal const int WhatsNewCount = 7;
 
     private void LoadWhatsNew()
     {

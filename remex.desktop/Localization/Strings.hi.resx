@@ -1387,58 +1387,46 @@ Linux: ip addr  या  hostname -I</value>
     <value>नया क्या है?</value>
   </data>
   <data name="About_WhatsNew_1_Title" xml:space="preserve">
-    <value>रूटीन</value>
+    <value>फ़ाइलें, नए रूप में</value>
   </data>
   <data name="About_WhatsNew_1_Body" xml:space="preserve">
-    <value>अब आपका फ़ोन अपने आप काम कर सकता है, जब आप घर पहुँचें या निकलें, कोई NFC टैग टैप करें, या PC का कोई सेंसर सीमा पार करे।</value>
+    <value>अब दोनों ऐप में आपका फ़ोन और पीसी एक ही फ़ोल्डर ट्री में दिखते हैं। फ़ोल्डर एक-एक स्तर खोलें, और ब्राउज़ करते समय ट्री आपके साथ चलता है।</value>
   </data>
   <data name="About_WhatsNew_2_Title" xml:space="preserve">
-    <value>आपके PC पर रूटीन</value>
+    <value>लाइव पूर्वावलोकन</value>
   </data>
   <data name="About_WhatsNew_2_Body" xml:space="preserve">
-    <value>रूटीन अब PC पर भी चल सकते हैं, जैसे PC खाली हो तो उसे स्लीप में भेजना। शट डाउन या रीस्टार्ट से पहले उलटी गिनती होती है, ताकि आप उसे रोक सकें।</value>
+    <value>कोई फ़ाइल चुनें और उसे तुरंत देखें: ज़ूम के साथ पूरी गुणवत्ता वाली फ़ोटो, और रंगों में टेक्स्ट, कोड और लॉग। बढ़ते लॉग को देखने के लिए लाइव चालू करें।</value>
   </data>
   <data name="About_WhatsNew_3_Title" xml:space="preserve">
-    <value>फ़ोन का नया लेआउट</value>
+    <value>SHA-256 फ़िंगरप्रिंट</value>
   </data>
   <data name="About_WhatsNew_3_Body" xml:space="preserve">
-    <value>फ़ोन ऐप में अब पाँच टैब हैं। उसके होम पर यह PC और वही पिन किए गए सेंसर दिखते हैं जो यहाँ हैं, और देर तक दबाकर उसकी सेंसर ग्रिड बदली जा सकती है।</value>
+    <value>अब फ़िंगरप्रिंट जाँचे जाने पर ट्रांसफ़र सत्यापित दिखाता है। किसी फ़ाइल का फ़िंगरप्रिंट कॉपी करें, चिपकाए गए फ़िंगरप्रिंट से तुलना करें, या दूसरे डिवाइस पर मौजूद कॉपी से जाँचें।</value>
   </data>
   <data name="About_WhatsNew_4_Title" xml:space="preserve">
-    <value>दोनों ऐप्स का एक जैसा रूप</value>
+    <value>डिवाइसों के बीच फ़ाइलें भेजें</value>
   </data>
   <data name="About_WhatsNew_4_Body" xml:space="preserve">
-    <value>PC और फ़ोन अब एक जैसे शब्द, फ़ॉन्ट, कार्ड और रंग इस्तेमाल करते हैं। नया इंस्टॉल RemEx के रंगों से शुरू होता है।</value>
+    <value>फ़ोन की फ़ाइलें पीसी के किसी फ़ोल्डर में भेजें, या पीसी की फ़ाइलें फ़ोन के किसी फ़ोल्डर में सहेजें। पीसी पर आप फ़ाइलें एक डिवाइस से दूसरे पर खींच भी सकते हैं।</value>
   </data>
   <data name="About_WhatsNew_5_Title" xml:space="preserve">
-    <value>फ़ाइल ट्रांसफ़र में सुधार</value>
+    <value>आपके चुने हुए फ़ोन फ़ोल्डर</value>
   </data>
   <data name="About_WhatsNew_5_Body" xml:space="preserve">
-    <value>किसी भी तरफ़ पूरा फ़ोल्डर डाउनलोड करने पर अब फ़ाइलें छूटती या दोहराई नहीं जातीं। फ़ोन की फ़ाइलें स्क्रीन छिपे हुए और सिस्टम आइटम तब तक नहीं दिखाती, जब तक आप न कहें। अब PC आपके फ़ोन के साझा फ़ोल्डर भी ब्राउज़ कर सकता है।</value>
+    <value>फ़ोन के फ़ोल्डर जोड़ें ताकि RemEx में उन्हें ब्राउज़ कर सकें और उनका पूर्वावलोकन देख सकें। आपका पीसी उसे तभी देखता है जब आप पीसी से साझा करें चालू करते हैं।</value>
   </data>
   <data name="About_WhatsNew_6_Title" xml:space="preserve">
-    <value>नई स्प्लैश स्क्रीन</value>
+    <value>सरल टूलबार</value>
   </data>
   <data name="About_WhatsNew_6_Body" xml:space="preserve">
-    <value>RemEx खुलते समय स्प्लैश अब कोई तय एनीमेशन नहीं चलाती, बल्कि दिखाती है कि ऐप सच में कैसे शुरू होकर कनेक्ट होता है।</value>
+    <value>अब हर फ़ाइल स्क्रीन पर एक मुख्य बटन है, बाकी अधिक विकल्प में हैं, और सूची में किसी फ़ाइल पर टैप करने से उसका पूर्वावलोकन खुलता है।</value>
   </data>
   <data name="About_WhatsNew_7_Title" xml:space="preserve">
-    <value>फ़ोन पर सेंसर चेतावनियाँ</value>
+    <value>फ़ोन ऐप पाने के लिए स्कैन करें</value>
   </data>
   <data name="About_WhatsNew_7_Body" xml:space="preserve">
-    <value>PC पर बनाई गई चेतावनियाँ अब आपके फ़ोन पर नोटिफ़िकेशन के रूप में आती हैं। आप उन्हें दोनों में से किसी से भी जोड़, बदल या हटा सकते हैं।</value>
-  </data>
-  <data name="About_WhatsNew_8_Title" xml:space="preserve">
-    <value>फ़ोन पर PC के लॉग और जाँच</value>
-  </data>
-  <data name="About_WhatsNew_8_Body" xml:space="preserve">
-    <value>अधिक में एक नया पेज है, जो दिखाता है कि आपके PC ने क्या दर्ज किया और PC जैसी ही स्वास्थ्य जाँचें भी। यह केवल पढ़ने के लिए है।</value>
-  </data>
-  <data name="About_WhatsNew_9_Title" xml:space="preserve">
-    <value>फ़ोन को अपने ढंग से सजाने के और तरीके</value>
-  </data>
-  <data name="About_WhatsNew_9_Body" xml:space="preserve">
-    <value>पृष्ठभूमि, कार्ड के और आकार और सात Nerd Fonts चुनें, और तय करें कि सेंसर ग्रिड कितना चौड़ा हो।</value>
+    <value>पीसी के होम पेज पर, फ़ोन ऐप प्राप्त करें कार्ड अब एक QR कोड दिखाता है। Google Play पर RemEx खोलने के लिए फ़ोन का कैमरा उस पर रखें।</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
