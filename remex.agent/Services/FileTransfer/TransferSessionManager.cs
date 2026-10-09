@@ -670,12 +670,17 @@ public sealed class TransferSessionManager : IDisposable
     /// </summary>
     public async Task<FileTransferResult> CompleteReceiveAsync(string transferId, string? expectedSha256Base64, CancellationToken ct)
     {
-        if (!_receiveSessions.TryRemove(transferId, out var session))
+        if (!_receiveSessions.TryGetValue(transferId, out var session))
             return new FileTransferResult { TransferId = transferId, Verified = false, Error = "Unknown transfer." };
 
+        // Removed only once the lock is held (RemEx-ak5fq): a cancelled wait must leave the session live,
+        // or nothing ever disposes its FileShare.None handle and a resume offer cannot reopen the partial.
         await session.WriteLock.WaitAsync(ct);
         try
         {
+            if (session.Completed || !_receiveSessions.TryRemove(KeyValuePair.Create(transferId, session)))
+                return new FileTransferResult { TransferId = transferId, Verified = false, Error = "Unknown transfer." };
+
             session.Completed = true;
 
             // Verifying, per the documented Queued → … → Active → Verifying → Done|Failed ladder. One
@@ -684,7 +689,16 @@ public sealed class TransferSessionManager : IDisposable
             // the entry reads as resumable rather than as a phantom Active.
             RecordQueueState(transferId, TransferState.Verifying, bytesTransferred: session.BytesReceived);
 
-            await session.PartialStream.FlushAsync(ct);
+            try
+            {
+                await session.PartialStream.FlushAsync(ct);
+            }
+            catch
+            {
+                // Already out of the dictionary, so nothing else would release the handle.
+                session.DisposeStreamOnly();
+                throw;
+            }
             await session.PartialStream.DisposeAsync();
 
             var actualBase64 = Convert.ToBase64String(session.Hasher.GetHashAndReset());

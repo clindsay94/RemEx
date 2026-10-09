@@ -103,6 +103,13 @@ public static class FilePathValidation
             return false;
         }
 
+        // On NTFS "name:stream" opens a hidden alternate data stream; on Linux ':' is an ordinary name character.
+        if (OperatingSystem.IsWindows() && candidate.IndexOf(':', rootPrefix.Length) >= 0)
+        {
+            error = $"Access denied: '{relativePath}' names an alternate data stream.";
+            return false;
+        }
+
         if (IsRestrictedSystemPath(candidate))
         {
             error = $"Access denied: '{relativePath}' is a restricted system path.";

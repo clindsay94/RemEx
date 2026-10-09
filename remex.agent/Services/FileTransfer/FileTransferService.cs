@@ -258,7 +258,7 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
         if (!root.IsWritable)
             throw new UnauthorizedAccessException($"Shared root '{root.DisplayName}' is read-only.");
 
-        var resolved = ResolvePath(rootId, relativePath);
+        var resolved = RefuseRootItself(ResolvePath(rootId, relativePath), root, relativePath);
         var dir = Path.GetDirectoryName(resolved);
         if (dir is not null && !Directory.Exists(dir))
             Directory.CreateDirectory(dir);
@@ -545,7 +545,7 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
         if (!root.CanDelete)
             throw new UnauthorizedAccessException($"Deletions are not permitted in '{root.DisplayName}'.");
 
-        var resolved = ResolvePath(rootId, relativePath);
+        var resolved = RefuseRootItself(ResolvePath(rootId, relativePath), root, relativePath);
 
         if (Directory.Exists(resolved))
             Directory.Delete(resolved, recursive: true);
@@ -559,14 +559,15 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
 
     public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(newName) || newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        // "." and ".." would land the rename on the parent or the root itself.
+        if (!FilePathValidation.IsValidFileName(newName, out _))
             throw new ArgumentException("New name is invalid.");
 
         var root = GetConfiguredRoot(rootId);
         if (!root.CanRename)
             throw new UnauthorizedAccessException($"Renames are not permitted in '{root.DisplayName}'.");
 
-        var resolved = ResolvePath(rootId, relativePath);
+        var resolved = RefuseRootItself(ResolvePath(rootId, relativePath), root, relativePath);
         var parentDir = Path.GetDirectoryName(resolved)
             ?? throw new InvalidOperationException("Cannot rename a root path.");
         var destination = Path.Combine(parentDir, newName);
@@ -680,7 +681,9 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
             throw new UnauthorizedAccessException($"Copies are not permitted in '{root.DisplayName}' (read-only).");
 
         var source = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
-        var destination = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, destinationRelativePath, root.DisplayName);
+        var destination = RefuseRootItself(
+            FilePathValidation.ResolveWithinRoot(root.AbsolutePath, destinationRelativePath, root.DisplayName),
+            root, destinationRelativePath);
 
         if (PathsEqual(source, destination))
             throw new IOException("Source and destination are the same.");
@@ -751,8 +754,13 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
         if (!root.CanMove)
             throw new UnauthorizedAccessException($"Moves are not permitted in '{root.DisplayName}'.");
 
-        var source = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
-        var destination = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, destinationRelativePath, root.DisplayName);
+        // An overwriting move of a folder onto the root would recursively delete the whole share first.
+        var source = RefuseRootItself(
+            FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName),
+            root, relativePath);
+        var destination = RefuseRootItself(
+            FilePathValidation.ResolveWithinRoot(root.AbsolutePath, destinationRelativePath, root.DisplayName),
+            root, destinationRelativePath);
 
         if (PathsEqual(source, destination))
             throw new IOException("Source and destination are the same.");
@@ -1943,6 +1951,23 @@ public sealed class FileTransferService : IFileTransferService, IStagedFilePromo
     {
         var root = GetConfiguredRoot(rootId);
         return FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
+    }
+
+    // "", "/", ".", "./" and "sub/.." all resolve to the root itself, which no mutation may target.
+    private static string RefuseRootItself(string resolved, ConfiguredRoot root, string? relativePath)
+    {
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        // TrimEndingDirectorySeparator keeps a drive root's "Z:\" intact, unlike TrimEnd.
+        if (string.Equals(
+                Path.TrimEndingDirectorySeparator(resolved),
+                Path.TrimEndingDirectorySeparator(Path.GetFullPath(root.AbsolutePath)),
+                comparison))
+        {
+            throw new UnauthorizedAccessException(
+                $"Access denied: '{relativePath}' is shared root '{root.DisplayName}' itself.");
+        }
+
+        return resolved;
     }
 
     private IReadOnlyList<ConfiguredRoot> LoadConfiguredRoots()

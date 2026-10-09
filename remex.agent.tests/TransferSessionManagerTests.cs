@@ -656,9 +656,9 @@ public sealed class TransferSessionManagerTests
         Assert.Equal(0, acceptance.StartOffset);
     }
 
-    // CompleteReceiveAsync removes the session before awaiting the write lock, so a cancelled token leaves
-    // an orphaned session whose FileShare.None handle is never disposed; the resume re-hash then throws.
-    [Fact(Skip = "RemEx-uk38f.2: CompleteReceiveAsync leaks the partial's file handle when cancelled before the write lock, so a resume offer throws IOException")]
+    // Regression for RemEx-ak5fq: removing the session before the lock wait orphaned its FileShare.None
+    // handle on cancellation, and the resume re-hash then threw.
+    [Fact]
     public async Task CompleteReceive_WithACancelledToken_LeavesTheTransferResumable()
     {
         using var box = new Sandbox();

@@ -262,10 +262,13 @@ public sealed class FileTransferServicePathSafetyTests : IDisposable
         await Assert.ThrowsAsync<FileNotFoundException>(() => service.DeleteAsync("r", "ghost.txt", CancellationToken.None));
     }
 
-    [Theory(Skip = "RemEx-uk38f.4: DeleteAsync resolves ''/'/'/'.' to the root and recursively deletes the whole shared root")]
+    [Theory]
     [InlineData("")]
     [InlineData("/")]
     [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("\\")]
+    [InlineData("sub/..")]
     public async Task Delete_TheRootItself_IsRefusedAndTheSharedFolderSurvives(string relative)
     {
         var service = Create();
@@ -287,6 +290,8 @@ public sealed class FileTransferServicePathSafetyTests : IDisposable
     [InlineData("..\\name.txt")]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData(".")]
+    [InlineData("..")]
     public async Task Rename_InvalidNewName_IsRejectedAndSourceIsUnchanged(string newName)
     {
         var service = Create();
@@ -321,7 +326,7 @@ public sealed class FileTransferServicePathSafetyTests : IDisposable
         Assert.Equal("B", File.ReadAllText(b));
     }
 
-    [Fact(Skip = "RemEx-uk38f.4: RenameAsync on the root path moves the shared root folder to a sibling name (parent escape)")]
+    [Fact]
     public async Task Rename_TheRootItself_IsRefusedAndTheSharedFolderStaysPut()
     {
         var service = Create();
@@ -336,6 +341,48 @@ public sealed class FileTransferServicePathSafetyTests : IDisposable
         }
 
         Assert.True(File.Exists(Path.Combine(_root, "keep.txt")), "Renaming '' moved the shared root away.");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData("/")]
+    public async Task Move_FolderOntoTheRootWithOverwrite_IsRefusedAndTheShareSurvives(string destination)
+    {
+        var service = Create();
+        var keep = Put(_root, "keep.txt");
+        var inner = Put(_root, "sub/inner.txt");
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => service.MoveAsync("r", "sub", destination, overwrite: true, CancellationToken.None));
+
+        Assert.True(File.Exists(keep));
+        Assert.True(File.Exists(inner));
+    }
+
+    [Fact]
+    public async Task Move_TheRootItself_IsRefused()
+    {
+        var service = Create();
+        var keep = Put(_root, "keep.txt");
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => service.MoveAsync("r", "", "elsewhere", overwrite: false, CancellationToken.None));
+
+        Assert.True(File.Exists(keep));
+    }
+
+    [Fact]
+    public async Task Copy_FolderOntoTheRootWithOverwrite_IsRefusedAndRootFilesAreUntouched()
+    {
+        var service = Create();
+        var keep = Put(_root, "keep.txt", "original");
+        Put(_root, "sub/keep.txt", "replacement");
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => service.CopyAsync("r", "sub", ".", overwrite: true, CancellationToken.None));
+
+        Assert.Equal("original", File.ReadAllText(keep));
     }
 
     [Fact]
@@ -611,7 +658,7 @@ public sealed class FileTransferServicePathSafetyTests : IDisposable
         Assert.DoesNotContain(roots, r => r.RootId == "r");
     }
 
-    [Fact(Skip = "RemEx-uk38f.4: service accepts 'file.txt:stream' names on NTFS (no ADS rejection in ResolveWithinRoot or OpenForWriteAsync)")]
+    [Fact]
     public async Task OpenForWrite_AlternateDataStreamName_DoesNotLeakOutsideTheNamedFile()
     {
         if (!OperatingSystem.IsWindows())

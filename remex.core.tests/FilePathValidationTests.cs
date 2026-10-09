@@ -71,6 +71,30 @@ public class FilePathValidationTests
             () => FilePathValidation.ResolveWithinRoot(@"C:\RemexRoot", @"D:\Windows\System32"));
     }
 
+    [Theory]
+    [InlineData("file.txt:hidden")]
+    [InlineData("sub:stream/file.txt")]
+    [InlineData("file.txt::$DATA")]
+    public void ResolveWithinRoot_ColonInPath_IsAnAlternateDataStreamOnWindowsAndANameOnLinux(string relative)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => FilePathValidation.ResolveWithinRoot(Root, relative));
+            return;
+        }
+
+        Assert.StartsWith(Root + Path.DirectorySeparatorChar, FilePathValidation.ResolveWithinRoot(Root, relative));
+    }
+
+    [Fact]
+    public void ResolveWithinRoot_DriveRootWithChildPath_IsNotMistakenForAStream()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        Assert.Equal(@"C:\Users", FilePathValidation.ResolveWithinRoot(@"C:\", "Users"));
+    }
+
     [Fact]
     public void IsRestrictedSystemPath_LinuxDenylist_IsBlocked()
     {
