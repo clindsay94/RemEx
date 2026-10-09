@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-labelledby="t d">
-  <title id="t">RemEx 3.0</title>
-  <desc id="d">RemEx 3.0: remote control for your PC, from your phone. One LAN, no relay, no account.</desc>
+  <title id="t">RemEx 3.1</title>
+  <desc id="d">RemEx 3.1: remote control for your PC, from your phone. One LAN, no relay, no account.</desc>
   <!-- Palette and mark geometry come from remex.branding/RemexBrandData.cs (the shipped launcher icon). -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -64,7 +64,7 @@
     <g transform="translate(1000 96)">
       <rect width="216" height="176" rx="18" fill="#0C0E13" fill-opacity="0.6" stroke="#7C88A0" stroke-opacity="0.55" stroke-width="2"/>
       <text x="108" y="40" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="12" letter-spacing="2" fill="#7C88A0">NOW ON GOOGLE PLAY</text>
-      <text x="108" y="118" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="80" font-weight="700" fill="#FFB63D">3.0</text>
+      <text x="108" y="118" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="80" font-weight="700" fill="#FFB63D">3.1</text>
       <text x="108" y="152" text-anchor="middle" font-family="Consolas, 'SF Mono', Menlo, 'DejaVu Sans Mono', monospace" font-size="15" fill="#F4F5F9">routines · new look</text>
     </g>
   </g>
