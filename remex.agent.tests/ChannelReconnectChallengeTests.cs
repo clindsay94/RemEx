@@ -274,23 +274,30 @@ public sealed class ChannelReconnectChallengeTests
     }
 
     [Fact]
-    public async Task Challenge_SocketFaultsMidHandshake_NeverAuthenticates()
+    public async Task Challenge_SocketFaultsMidHandshake_ReturnsFalseInsteadOfThrowing()
     {
         var registry = NewRegistry(ClientId, RandomNumberGenerator.GetBytes(32));
         var ws = new ScriptedSocket((_, _) =>
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely));
 
-        // The caller sits inside a try/catch for the accept, so a fault may surface as an exception;
-        // what must never happen is a true result.
-        var authenticated = false;
-        try
-        {
-            authenticated = await RunAsync(ws, registry);
-        }
-        catch (WebSocketException)
-        {
-        }
+        Assert.False(await RunAsync(ws, registry));
+    }
 
-        Assert.False(authenticated);
+    [Fact]
+    public async Task Challenge_UnderlyingStreamFaultsMidHandshake_ReturnsFalseInsteadOfThrowing()
+    {
+        var registry = NewRegistry(ClientId, RandomNumberGenerator.GetBytes(32));
+        var ws = new ScriptedSocket((_, _) => throw new IOException("connection reset"));
+
+        Assert.False(await RunAsync(ws, registry));
+    }
+
+    [Fact]
+    public async Task Challenge_SocketDisposedMidHandshake_ReturnsFalseInsteadOfThrowing()
+    {
+        var registry = NewRegistry(ClientId, RandomNumberGenerator.GetBytes(32));
+        var ws = new ScriptedSocket((_, _) => throw new ObjectDisposedException(nameof(WebSocket)));
+
+        Assert.False(await RunAsync(ws, registry));
     }
 }
