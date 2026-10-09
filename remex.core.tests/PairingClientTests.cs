@@ -73,7 +73,7 @@ public sealed class PairingClientTests
 
         public override WebSocketCloseStatus? CloseStatus => null;
         public override string? CloseStatusDescription => null;
-        public override WebSocketState State => WebSocketState.Open;
+        public override WebSocketState State => _closeDelivered ? WebSocketState.CloseReceived : WebSocketState.Open;
         public override string? SubProtocol => null;
         public override void Abort() { }
         public override Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken ct) => Task.CompletedTask;
@@ -230,22 +230,30 @@ public sealed class PairingClientTests
     }
 
     [Fact]
-    public async Task Start_HostClosesBeforeResponding_NeverYieldsAResponseAndDoesNotSpin()
+    public async Task Start_HostClosesBeforeResponding_ReturnsNullOnTheCloseFrameWithoutReadingAgain()
     {
         var socket = new HostSocket();
-        PairingResponse? response = null;
 
-        try
-        {
-            response = await Bounded(new PairingClient(socket).StartPairingAsync("Pixel", "1.0", CancellationToken.None));
-        }
-        catch (InvalidOperationException)
-        {
-            // A real closed socket rejects the follow-up read; that is how the loop ends.
-        }
+        var response = await Bounded(new PairingClient(socket).StartPairingAsync("Pixel", "1.0", CancellationToken.None));
 
         Assert.Null(response);
-        Assert.True(socket.ReceiveCalls < 5);
+        Assert.Equal(1, socket.ReceiveCalls);
+    }
+
+    [Fact]
+    public async Task Start_StrayFramesThenClose_ReturnsNullOnTheCloseFrame()
+    {
+        var socket = new HostSocket();
+        socket.OnSend = _ =>
+        {
+            socket.EnqueueRaw("{ not json");
+            return [Msg(MessageTypes.PairingError)];
+        };
+
+        var response = await Bounded(new PairingClient(socket).StartPairingAsync("Pixel", "1.0", CancellationToken.None));
+
+        Assert.Null(response);
+        Assert.Equal(3, socket.ReceiveCalls);
     }
 
     // ── CompletePairingAsync ─────────────────────────────────────────────
@@ -360,22 +368,16 @@ public sealed class PairingClientTests
     }
 
     [Fact]
-    public async Task Complete_HostGoesAwayAfterTheAck_IsNeverReportedAsPaired()
+    public async Task Complete_HostClosesAfterTheAck_ReturnsFalseOnTheCloseFrameWithoutReadingAgain()
     {
-        var (client, _, _, response) = await StartedAsync();
-        var ok = false;
+        var (client, socket, _, response) = await StartedAsync();
+        var readsBefore = socket.ReceiveCalls;
 
-        try
-        {
-            ok = await Bounded(client.CompletePairingAsync(Pin, response, CancellationToken.None));
-        }
-        catch (InvalidOperationException)
-        {
-            // Closed socket rejecting the follow-up read ends the confirmation loop.
-        }
+        var ok = await Bounded(client.CompletePairingAsync(Pin, response, CancellationToken.None));
 
         Assert.False(ok);
         Assert.Null(client.LastReconnectSecretBase64);
+        Assert.Equal(readsBefore + 1, socket.ReceiveCalls);
     }
 
     [Fact]

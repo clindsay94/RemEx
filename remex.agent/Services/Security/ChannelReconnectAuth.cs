@@ -30,7 +30,8 @@ internal static class ChannelReconnectAuth
     /// Issues a challenge on <paramref name="ws"/> and awaits the client's proof. Returns <c>true</c>
     /// only when the client returns a valid <c>HMAC-SHA256(reconnectSecret, nonce)</c> for
     /// <paramref name="clientId"/>'s stored reconnect secret within <see cref="ProofTimeout"/>. Never
-    /// throws for a missing/late/invalid proof — returns <c>false</c> so the caller closes the socket.
+    /// throws for a missing/late/invalid proof or a transport fault mid-handshake — returns <c>false</c>
+    /// so the caller closes the socket.
     /// </summary>
     public static async Task<bool> ChallengeAndVerifyAsync(
         WebSocket ws,
@@ -85,6 +86,14 @@ internal static class ChannelReconnectAuth
             }
 
             return ok;
+        }
+        catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
+        {
+            logger.LogWarning(
+                ex,
+                "Secondary-channel proof-of-possession aborted for client {ClientId}: transport fault.",
+                LogRedaction.RedactClientId(clientId));
+            return false;
         }
         finally
         {

@@ -72,6 +72,12 @@ public class PairingClient
         while (!ct.IsCancellationRequested)
         {
             response = await ReceiveMessageAsync(ct);
+            if (IsClosed(response))
+            {
+                _log?.Invoke("Pairing socket closed before a PairingResponse arrived.");
+                return null;
+            }
+
             if (response?.Type == MessageTypes.PairingResponse)
                 break;
 
@@ -146,6 +152,12 @@ public class PairingClient
             while (!ct.IsCancellationRequested)
             {
                 confirm = await ReceiveMessageAsync(ct);
+                if (IsClosed(confirm))
+                {
+                    _log?.Invoke("Pairing socket closed before the host confirmed PairingComplete.");
+                    return false;
+                }
+
                 if (confirm?.Type == MessageTypes.PairingComplete || confirm?.Type == MessageTypes.PairingError)
                     break;
 
@@ -228,4 +240,7 @@ public class PairingClient
     {
         return await MessageSerializer.ReceiveAsync(_webSocket, ct);
     }
+
+    // ReceiveAsync yields null for a Close frame and for a malformed frame alike; only the former ends a handshake.
+    private bool IsClosed(RemexMessage? message) => message is null && _webSocket.State != WebSocketState.Open;
 }
