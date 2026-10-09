@@ -295,8 +295,8 @@ screen. (RemEx-aep)
   the codec exhausts output after ~2 frames and stops offering input. Classic
   *"Works: Q:2/Done:2 then stall"* black screen.
 
-Only `KEY_PRIORITY=0` (real-time hint, safe), `KEY_MAX_INPUT_SIZE`, `csd-0` and `csd-1` are set.
-`KEY_MAX_INPUT_SIZE` is sized for the full-screen (4K-bounded, 8 MiB-capped) maximum — not the initial
+Only `KEY_MAX_INPUT_SIZE`, `KEY_MAX_WIDTH` / `KEY_MAX_HEIGHT`, `csd-0` and `csd-1` are set
+(`KEY_PRIORITY` is no longer set). `H264DecoderGuardTest` pins this list. `KEY_MAX_INPUT_SIZE` is sized for the full-screen (4K-bounded, 8 MiB-capped) maximum — not the initial
 hint — and `KEY_MAX_WIDTH` / `KEY_MAX_HEIGHT` are set for adaptive playback, with explicit
 reconfigure as the fallback.
 

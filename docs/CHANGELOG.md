@@ -11,6 +11,17 @@ Jump to: [Unreleased](#unreleased) · [3.1.0](#310--2026-10-08) · [3.0.0](#300-
 
 ## [Unreleased]
 
+### Fixed
+
+- **Developer tooling:** `scripts/check-mcp-health.ps1` no longer crashes at session start when `~/.claude.json`
+  holds an empty `mcpServers` block for the repo. (RemEx-nv57h)
+
+### Tests
+
+- **Android:** 52 new unit tests for Tailscale and loopback trust checks, connection callbacks, routine schema
+  migration, run records, transfer-queue loading, the H.264 decoder guards and routine observer fan-out.
+  `docs/REGRESSION-GUARDS.md` no longer claims the decoder sets `KEY_PRIORITY`. (RemEx-51dsq)
+
 ## [3.1.0] — 2026-10-08
 
 Android versionCode 39. The headline is the redesigned file screens on both the PC and the phone: one folder tree
