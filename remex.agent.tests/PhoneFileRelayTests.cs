@@ -519,10 +519,10 @@ public sealed class PhoneFileRelayTests
         await connection.SendAsync(HashRequest("h1"));
         // Poll to a generous deadline rather than sleep a fixed time: under a loaded test run (RemEx-w7ei) a
         // 120 ms timer can fire late, and a fixed delay would then fail on timing, not on behaviour.
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (received.Count == 0 && DateTime.UtcNow < deadline)
-            await Task.Delay(25);
-        await Task.Delay(200); // room for a wrong second timeout (the hash's) to show up
+        await PollUntil.TrueAsync(() => received.Count > 0, "the range read never timed out");
+        // Both requests went out together, so a hash wrongly sharing the short timeout would fire
+        // within a few ms of the range read's; a negative needs a short settle.
+        await Task.Delay(50);
 
         var timedOut = Assert.Single(received);
         Assert.Equal(MessageTypes.FileReadRangeResponse, timedOut.Type);
@@ -602,7 +602,9 @@ public sealed class PhoneFileRelayTests
 
         await connection.SendAsync(ManageRequest("del", FileManageOperations.Delete));
         await connection.SendAsync(ManageRequest("cp", FileManageOperations.Copy, destinationPath: "DCIM/copy.jpg"));
-        await Task.Delay(600);
+        await PollUntil.TrueAsync(() => received.Count > 0, "the delete never timed out");
+        // Same negative as the hash test: the copy sharing the short timeout would fire alongside the delete.
+        await Task.Delay(50);
 
         var timedOut = Assert.Single(received).FileManageResponse!;
         Assert.Equal("del", timedOut.RequestId);

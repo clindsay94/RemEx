@@ -26,37 +26,42 @@ internal static class StalePortReclaimer
     /// listening on it. Returns true if at least one stale host was terminated (the caller
     /// should then re-probe the port before binding).
     /// </summary>
-    public static bool TryReclaim(int port)
+    public static bool TryReclaim(int port) =>
+        TryReclaim(port, FindListenerPids, GetProcessNameOrNull, KillProcessTree);
+
+    // Test seam: the OS lookups and the kill are injected so the kill decision runs without real processes.
+    internal static bool TryReclaim(
+        int port,
+        Func<int, IReadOnlyList<int>> findListenerPids,
+        Func<int, string?> getProcessName,
+        Action<int> killProcessTree)
     {
         bool reclaimedAny = false;
         try
         {
-            foreach (var pid in FindListenerPids(port))
+            foreach (var pid in findListenerPids(port))
             {
                 if (pid == Environment.ProcessId)
                 {
                     continue;
                 }
 
-                if (!TryGetRemexHostProcess(pid, out var proc) || proc is null)
+                var name = getProcessName(pid);
+                if (name is null || !name.StartsWith("Remex.Agent", StringComparison.OrdinalIgnoreCase))
                 {
                     Log($"Port {port} is held by pid {pid}, which is not a Remex.Agent process; leaving it alone.");
                     continue;
                 }
 
-                using (proc)
+                Log($"Port {port} held by a stale Remex.Agent (pid {pid}); terminating it to reclaim the canonical port.");
+                try
                 {
-                    Log($"Port {port} held by a stale Remex.Agent (pid {pid}); terminating it to reclaim the canonical port.");
-                    try
-                    {
-                        proc.Kill(entireProcessTree: true);
-                        proc.WaitForExit((int)ReleaseTimeout.TotalMilliseconds);
-                        reclaimedAny = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Failed to terminate stale host pid {pid}: {ex.Message}");
-                    }
+                    killProcessTree(pid);
+                    reclaimedAny = true;
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to terminate stale host pid {pid}: {ex.Message}");
                 }
             }
         }
@@ -74,7 +79,7 @@ internal static class StalePortReclaimer
         var deadline = DateTime.UtcNow + ReleaseTimeout;
         while (DateTime.UtcNow < deadline)
         {
-            if (FindListenerPids(port).Count == 0)
+            if (findListenerPids(port).Count == 0)
             {
                 break;
             }
@@ -85,29 +90,27 @@ internal static class StalePortReclaimer
         return true;
     }
 
-    private static bool TryGetRemexHostProcess(int pid, out Process? proc)
+    // The published apphost (installed service or `dotnet run` launcher) is named "Remex.Agent" on
+    // every platform ("Remex.Agent.exe" → ProcessName "Remex.Agent"); the prefix check lives in TryReclaim.
+    private static string? GetProcessNameOrNull(int pid)
     {
-        proc = null;
         try
         {
-            var candidate = Process.GetProcessById(pid);
-            var name = candidate.ProcessName ?? string.Empty;
-            // The published apphost (installed service or `dotnet run` launcher) is named
-            // "Remex.Agent" on every platform ("Remex.Agent.exe" → ProcessName "Remex.Agent").
-            if (name.StartsWith("Remex.Agent", StringComparison.OrdinalIgnoreCase))
-            {
-                proc = candidate;
-                return true;
-            }
-
-            candidate.Dispose();
-            return false;
+            using var candidate = Process.GetProcessById(pid);
+            return candidate.ProcessName;
         }
         catch
         {
             // Process exited between enumeration and lookup, or access denied.
-            return false;
+            return null;
         }
+    }
+
+    private static void KillProcessTree(int pid)
+    {
+        using var proc = Process.GetProcessById(pid);
+        proc.Kill(entireProcessTree: true);
+        proc.WaitForExit((int)ReleaseTimeout.TotalMilliseconds);
     }
 
     private static IReadOnlyList<int> FindListenerPids(int port)

@@ -370,6 +370,379 @@ public sealed class TransferSessionManagerTests
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // Receiver failure paths (RemEx-uk38f.2): unknown and duplicate ids, size and offset mismatches,
+    // cancellation, a destination that refuses the file, stale staging, and concurrent sessions.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>A staging directory, a destination directory and the fake service that lands files in the latter.</summary>
+    private sealed class Sandbox : IDisposable
+    {
+        private readonly DirectoryInfo _staging = Directory.CreateTempSubdirectory();
+        private readonly DirectoryInfo _dest = Directory.CreateTempSubdirectory();
+
+        public Sandbox() => Files = new FakeFileTransferService(_dest.FullName);
+
+        public FakeFileTransferService Files { get; }
+        public string Staging => _staging.FullName;
+        public string Dest => _dest.FullName;
+        public string Partial(string tid) => Path.Combine(Staging, tid + ".remexpart");
+        public string Manifest(string tid) => Path.Combine(Staging, tid + ".manifest.json");
+
+        public void Dispose()
+        {
+            _staging.Delete(recursive: true);
+            _dest.Delete(recursive: true);
+        }
+    }
+
+    private static string NewId() => Guid.NewGuid().ToString("N");
+
+    [Fact]
+    public async Task WriteChunk_ForAnUnknownTransfer_Throws()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => mgr.WriteChunkAsync(NewId(), 0, RandomBytes(10), default));
+    }
+
+    [Fact]
+    public async Task WriteChunk_PastTheDeclaredSize_IsRefusedAndLeavesTheOffsetWhereItWas()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(1000);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgr.WriteChunkAsync(tid, 0, payload.AsMemory(0, 600), default);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => mgr.WriteChunkAsync(tid, 600, RandomBytes(500), default));
+
+        // The refused frame committed nothing: the honest remainder still lands and verifies.
+        Assert.Equal(1000, await mgr.WriteChunkAsync(tid, 600, payload.AsMemory(600), default));
+        Assert.True((await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default)).Verified);
+    }
+
+    [Fact]
+    public async Task WriteChunk_WithACancelledToken_CommitsNothingAndTheSameOffsetCanBeRetried()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(300);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgr.WriteChunkAsync(tid, 0, payload.AsMemory(0, 100), default);
+
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => mgr.WriteChunkAsync(tid, 100, payload.AsMemory(100), cancelled.Token));
+
+        Assert.Equal(300, await mgr.WriteChunkAsync(tid, 100, payload.AsMemory(100), default));
+        Assert.True((await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default)).Verified);
+    }
+
+    [Fact]
+    public async Task WriteChunk_TwoFramesRacingForTheSameOffset_LandExactlyOnce()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(5000);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+
+        async Task<Exception?> Attempt()
+        {
+            try
+            {
+                await mgr.WriteChunkAsync(tid, 0, payload, default);
+                return null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ex;
+            }
+        }
+
+        var outcomes = await Task.WhenAll(Task.Run(Attempt), Task.Run(Attempt));
+
+        Assert.Single(outcomes, ex => ex is null);
+        var result = await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default);
+        Assert.True(result.Verified, "a duplicated frame must not corrupt the stream");
+    }
+
+    [Fact]
+    public async Task AfterCancelReceive_FurtherFramesAndTheFinalCompleteAreRefused()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1000), default);
+        await mgr.WriteChunkAsync(tid, 0, RandomBytes(400), default);
+
+        mgr.CancelReceive(tid);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => mgr.WriteChunkAsync(tid, 400, RandomBytes(600), default));
+        var result = await mgr.CompleteReceiveAsync(tid, null, default);
+        Assert.False(result.Verified);
+        Assert.Null(box.Files.LastWrittenPath);
+        Assert.Empty(Directory.GetFileSystemEntries(box.Staging));
+    }
+
+    [Fact]
+    public void CancelReceive_ForAnUnknownTransfer_AndTwiceInARow_IsANoOp()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var tid = NewId();
+
+        Assert.Null(Record.Exception(() => mgr.CancelReceive(tid)));
+        Assert.Null(Record.Exception(() => mgr.CancelReceive(tid)));
+    }
+
+    [Fact]
+    public async Task CompleteReceive_ForAnUnknownTransfer_FailsWithoutThrowing()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var tid = NewId();
+
+        var result = await mgr.CompleteReceiveAsync(tid, Sha256B64(RandomBytes(8)), default);
+
+        Assert.False(result.Verified);
+        Assert.Equal(tid, result.TransferId);
+        Assert.Equal("Unknown transfer.", result.Error);
+    }
+
+    [Fact]
+    public async Task CompleteReceive_Twice_TheSecondIsRefusedAndTheLandedFileIsUntouched()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(2000);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgr.WriteChunkAsync(tid, 0, payload, default);
+        Assert.True((await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default)).Verified);
+
+        var again = await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default);
+
+        Assert.False(again.Verified);
+        Assert.Equal(payload, await File.ReadAllBytesAsync(box.Files.LastWrittenPath!));
+    }
+
+    [Fact]
+    public async Task CompleteReceive_WithFewerBytesThanDeclared_FailsAsIncompleteAndKeepsNothing()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, 10_000), default);
+        await mgr.WriteChunkAsync(tid, 0, RandomBytes(4000), default);
+
+        // No expected hash, so only the size check can fail this.
+        var result = await mgr.CompleteReceiveAsync(tid, null, default);
+
+        Assert.False(result.Verified);
+        Assert.Equal(PeerTransferFailure.Incomplete, result.Error);
+        Assert.Null(box.Files.LastWrittenPath);
+        Assert.False(File.Exists(box.Partial(tid)));
+        Assert.False(File.Exists(box.Manifest(tid)));
+    }
+
+    [Fact]
+    public async Task CompleteReceive_WhenTheDestinationRefusesTheFile_FailsAndCleansStaging()
+    {
+        using var box = new Sandbox();
+        box.Files.PromoteFailure = new IOException("There is not enough space on the disk.");
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(3000);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgr.WriteChunkAsync(tid, 0, payload, default);
+
+        var result = await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default);
+
+        Assert.False(result.Verified);
+        Assert.Equal(Sha256B64(payload), result.Sha256Base64);
+        Assert.Contains("could not be saved", result.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not enough space", result.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(box.Partial(tid)));
+        Assert.False(File.Exists(box.Manifest(tid)));
+    }
+
+    [Theory]
+    [InlineData("", "root-a", "a.bin")]
+    [InlineData("   ", "root-a", "a.bin")]
+    [InlineData("tid", "", "a.bin")]
+    [InlineData("tid", "  ", "a.bin")]
+    [InlineData("tid", "root-a", "")]
+    [InlineData("tid", "root-a", "../evil.bin")]
+    [InlineData("tid", "root-a", "dir/evil.bin")]
+    public async Task BeginReceive_RefusesAnOfferMissingOrCorruptingARequiredField(string tid, string destRoot, string fileName)
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var offer = new FileTransferOffer
+        {
+            TransferId = tid, Mode = "upload", DestRoot = destRoot, FileName = fileName, Size = 10,
+        };
+
+        var acceptance = await mgr.BeginReceiveAsync(ClientId, offer, default);
+
+        Assert.False(acceptance.Accepted);
+        Assert.False(string.IsNullOrWhiteSpace(acceptance.DeclineReason));
+        Assert.Empty(Directory.GetFileSystemEntries(box.Staging));
+    }
+
+    [Fact]
+    public async Task Resume_WithAPartialLongerThanTheOffer_RestartsFromZeroAndOverwritesIt()
+    {
+        using var box = new Sandbox();
+        var payload = RandomBytes(1000);
+        var tid = NewId();
+        var mgrA = NewManager(box.Staging, box.Files);
+        await mgrA.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgrA.WriteChunkAsync(tid, 0, payload.AsMemory(0, 600), default);
+        mgrA.Dispose();
+        await using (var tail = new FileStream(box.Partial(tid), FileMode.Append, FileAccess.Write))
+            await tail.WriteAsync(RandomBytes(800));
+
+        using var mgrB = NewManager(box.Staging, box.Files);
+        var acceptance = await mgrB.BeginReceiveAsync(ClientId, Offer(tid, payload.Length, resume: true), default);
+
+        Assert.True(acceptance.Accepted);
+        Assert.Equal(0, acceptance.StartOffset);
+        await mgrB.WriteChunkAsync(tid, 0, payload, default);
+        Assert.True((await mgrB.CompleteReceiveAsync(tid, Sha256B64(payload), default)).Verified);
+        Assert.Equal(payload, await File.ReadAllBytesAsync(box.Files.LastWrittenPath!));
+    }
+
+    [Fact]
+    public async Task Resume_OfferedByADifferentClient_RestartsFromZero()
+    {
+        using var box = new Sandbox();
+        var tid = NewId();
+        var mgrA = NewManager(box.Staging, box.Files);
+        await mgrA.BeginReceiveAsync(ClientId, Offer(tid, 1000), default);
+        await mgrA.WriteChunkAsync(tid, 0, RandomBytes(500), default);
+        mgrA.Dispose();
+
+        using var mgrB = NewManager(box.Staging, box.Files);
+        var acceptance = await mgrB.BeginReceiveAsync("some-other-device", Offer(tid, 1000, resume: true), default);
+
+        // Another device must never inherit a partial that was staged for the first one.
+        Assert.True(acceptance.Accepted);
+        Assert.Equal(0, acceptance.StartOffset);
+    }
+
+    [Fact]
+    public async Task Resume_WithADifferentDeclaredSize_RestartsFromZero()
+    {
+        using var box = new Sandbox();
+        var tid = NewId();
+        var mgrA = NewManager(box.Staging, box.Files);
+        await mgrA.BeginReceiveAsync(ClientId, Offer(tid, 1000), default);
+        await mgrA.WriteChunkAsync(tid, 0, RandomBytes(500), default);
+        mgrA.Dispose();
+
+        using var mgrB = NewManager(box.Staging, box.Files);
+        var acceptance = await mgrB.BeginReceiveAsync(ClientId, Offer(tid, 2000, resume: true), default);
+
+        Assert.True(acceptance.Accepted);
+        Assert.Equal(0, acceptance.StartOffset);
+    }
+
+    // CompleteReceiveAsync removes the session before awaiting the write lock, so a cancelled token leaves
+    // an orphaned session whose FileShare.None handle is never disposed; the resume re-hash then throws.
+    [Fact(Skip = "RemEx-uk38f.2: CompleteReceiveAsync leaks the partial's file handle when cancelled before the write lock, so a resume offer throws IOException")]
+    public async Task CompleteReceive_WithACancelledToken_LeavesTheTransferResumable()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var payload = RandomBytes(1000);
+        var tid = NewId();
+        await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+        await mgr.WriteChunkAsync(tid, 0, payload.AsMemory(0, 500), default);
+
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => mgr.CompleteReceiveAsync(tid, Sha256B64(payload), cancelled.Token));
+
+        // The socket dropped while finalizing; the phone re-offers with resume.
+        var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length, resume: true), default);
+        Assert.True(acceptance.Accepted);
+        Assert.Equal(500, acceptance.StartOffset);
+    }
+
+    [Fact]
+    public void CleanupOrphans_SweepsStagingOlderThanTheCutoffAndKeepsRecentFiles()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var stale = Path.Combine(box.Staging, "stale.remexpart");
+        var staleManifest = Path.Combine(box.Staging, "stale.manifest.json");
+        var recent = Path.Combine(box.Staging, "recent.remexpart");
+        foreach (var path in new[] { stale, staleManifest, recent })
+            File.WriteAllBytes(path, [1, 2, 3]);
+        File.SetLastWriteTimeUtc(stale, DateTime.UtcNow.AddDays(-10));
+        File.SetLastWriteTimeUtc(staleManifest, DateTime.UtcNow.AddDays(-10));
+
+        mgr.CleanupOrphans(TimeSpan.FromDays(7));
+
+        Assert.False(File.Exists(stale));
+        Assert.False(File.Exists(staleManifest));
+        Assert.True(File.Exists(recent));
+    }
+
+    [Fact]
+    public void CleanupOrphans_WhenTheStagingDirectoryIsGone_DoesNotThrow()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(Path.Combine(box.Staging, "never-created"), box.Files);
+        Directory.Delete(Path.Combine(box.Staging, "never-created"), recursive: true);
+
+        Assert.Null(Record.Exception(() => mgr.CleanupOrphans(TimeSpan.Zero)));
+    }
+
+    [Fact]
+    public async Task TwoClientsReceivingAtOnce_EachLandTheirOwnBytes()
+    {
+        using var box = new Sandbox();
+        using var mgr = NewManager(box.Staging, box.Files);
+        var a = RandomBytes(90_000);
+        var b = RandomBytes(120_000);
+
+        async Task<FileTransferResult> Receive(string client, string name, byte[] payload)
+        {
+            var tid = NewId();
+            var acceptance = await mgr.BeginReceiveAsync(client, Offer(tid, payload.Length, fileName: name), default);
+            Assert.True(acceptance.Accepted);
+            for (var offset = 0; offset < payload.Length; offset += 30_000)
+            {
+                var length = Math.Min(30_000, payload.Length - offset);
+                await mgr.WriteChunkAsync(tid, offset, payload.AsMemory(offset, length), default);
+                await Task.Yield();
+            }
+
+            return await mgr.CompleteReceiveAsync(tid, Sha256B64(payload), default);
+        }
+
+        var results = await Task.WhenAll(
+            Task.Run(() => Receive("device-a", "a.bin", a)),
+            Task.Run(() => Receive("device-b", "b.bin", b)));
+
+        Assert.All(results, r => Assert.True(r.Verified, r.Error));
+        Assert.Equal(a, await File.ReadAllBytesAsync(Path.Combine(box.Dest, "a.bin")));
+        Assert.Equal(b, await File.ReadAllBytesAsync(Path.Combine(box.Dest, "b.bin")));
+        Assert.Empty(Directory.GetFileSystemEntries(box.Staging));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // v3 DOWNLOAD source resolution (RemEx-hb1t.6).
     //
     // The host sender resolves the offer's DestRoot through SharedRootReadResolver, so a file reached by

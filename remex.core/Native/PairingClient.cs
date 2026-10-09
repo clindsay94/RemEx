@@ -10,7 +10,7 @@ namespace Remex.Core.Native;
 
 public class PairingClient
 {
-    private readonly ClientWebSocket _webSocket;
+    private readonly WebSocket _webSocket;
     private readonly Action<string>? _log;
     private ECDiffieHellman? _clientEcdh;
     private byte[]? _sessionKey;
@@ -31,6 +31,13 @@ public class PairingClient
     // (AndroidNativeExports), which load before any DI container is built and
     // before Microsoft.Extensions.Logging.Abstractions can be resolved at runtime.
     public PairingClient(ClientWebSocket webSocket, Action<string>? log = null)
+    {
+        _webSocket = webSocket;
+        _log = log;
+    }
+
+    // Test seam: lets a scripted WebSocket stand in for the ClientWebSocket without a network port.
+    internal PairingClient(WebSocket webSocket, Action<string>? log = null)
     {
         _webSocket = webSocket;
         _log = log;

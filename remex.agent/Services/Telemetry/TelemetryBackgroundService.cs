@@ -131,6 +131,9 @@ public sealed class TelemetryBackgroundService(
     /// <summary>How often a sample is taken.</summary>
     internal static readonly TimeSpan SamplePeriod = TimeSpan.FromSeconds(1);
 
+    /// <summary>Test seam: tests drive the tick with a fake clock instead of sleeping.</summary>
+    internal TimeProvider Clock { get; init; } = TimeProvider.System;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Telemetry background broadcaster started.");
@@ -162,7 +165,7 @@ public sealed class TelemetryBackgroundService(
         // pause. The amplification is bounded at 2x, worst when the duration is near the period, and
         // decays toward 1x as it grows. Whether a slow machine should instead be given a floor is a
         // policy question with a number nobody has measured, so it is filed rather than guessed.
-        using var ticker = new PeriodicTimer(SamplePeriod);
+        using var ticker = new PeriodicTimer(SamplePeriod, Clock);
 
         while (!stoppingToken.IsCancellationRequested)
         {

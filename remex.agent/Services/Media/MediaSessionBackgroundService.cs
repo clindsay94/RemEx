@@ -116,6 +116,9 @@ internal sealed class MediaSessionBackgroundService(
     /// </remarks>
     internal static readonly TimeSpan PollPeriod = TimeSpan.FromSeconds(1);
 
+    /// <summary>Test seam: tests drive the poll with a fake clock instead of sleeping.</summary>
+    internal TimeProvider Clock { get; init; } = TimeProvider.System;
+
     private readonly TelemetrySnapshotGate<MediaPlaybackState> _gate = new();
 
     private readonly object _artworkLock = new();
@@ -168,7 +171,7 @@ internal sealed class MediaSessionBackgroundService(
         // A PeriodicTimer rather than a trailing delay, the same choice and the same reasoning as the
         // telemetry sampler: a trailing delay makes the period the read duration PLUS a second, and
         // the read duration varies with whichever media player is running.
-        using var timer = new PeriodicTimer(PollPeriod);
+        using var timer = new PeriodicTimer(PollPeriod, Clock);
 
         MediaPlaybackState? lastPublished = null;
 

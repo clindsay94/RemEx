@@ -267,6 +267,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     /// <summary>Test seam (InternalsVisibleTo): how many decoded cursor shapes are cached.</summary>
     internal int CursorShapeCacheCount => _cursorShapeCache.Count;
 
+    /// <summary>Test seam (InternalsVisibleTo): how host events reach the UI thread; tests run them inline.</summary>
+    internal Action<Action> PostToUi { get; set; } = work => Dispatcher.UIThread.Post(work);
+
     public RemoteDesktopViewModel(
         ConnectionViewModel connection,
         ShellViewModel shell,
@@ -315,7 +318,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     // ═══════════════ ComboBox index helpers ═══════════════
 
     /// <summary>Snaps a scale value to the nearest valid option (0.25, 0.50, 0.75, 1.0).</summary>
-    private static double SnapScale(double value) => value switch
+    internal static double SnapScale(double value) => value switch
     {
         < 0.375 => 0.25,
         < 0.625 => 0.50,
@@ -901,7 +904,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void ApplyWindowResult(DesktopWindowResult result)
+    internal void ApplyWindowResult(DesktopWindowResult result)
     {
         SetWindowControlStatus(() => result.Success
             ? string.Format(
@@ -969,7 +972,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             if (elapsed >= 1.0)
             {
                 var fps = _frameCount / elapsed;
-                Dispatcher.UIThread.Post(() => ActualFps = Math.Round(fps, 1));
+                PostToUi(() => ActualFps = Math.Round(fps, 1));
                 _frameCount = 0;
                 _fpsWindowStart = DateTime.UtcNow;
             }
@@ -989,7 +992,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                     jpegBytes.Length,
                     _consecutiveDecodeFailures);
 
-                Dispatcher.UIThread.Post(() =>
+                PostToUi(() =>
                 {
                     SetStatus(() => LocalizationService.Instance["Status_FrameDecodeError"]);
                     HasStreamError = true;
@@ -1007,7 +1010,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
         if (Interlocked.CompareExchange(ref _frameApplyQueued, 1, 0) == 0)
         {
-            Dispatcher.UIThread.Post(ApplyPendingFrame);
+            PostToUi(ApplyPendingFrame);
         }
     }
 
@@ -1033,13 +1036,13 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void OnMetaReceived(DesktopMeta meta)
+    internal void OnMetaReceived(DesktopMeta meta)
     {
         // Detect self-connection (infinite mirror prevention)
         if (!string.IsNullOrEmpty(meta.HostInstanceId) &&
             meta.HostInstanceId == App.EmbeddedHostInstanceId)
         {
-            Dispatcher.UIThread.Post(async () =>
+            PostToUi(async () =>
             {
                 SetStatus(() => LocalizationService.Instance["Status_SelfConnection"]);
                 await StopStreamAsync();
@@ -1059,7 +1062,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         DesktopLeft = meta.DesktopLeft;
         DesktopTop = meta.DesktopTop;
 
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             Resolution = $"{meta.ScreenWidth}×{meta.ScreenHeight}";
             if (IsStreaming && !IsSwitchingDisplay)
@@ -1069,7 +1072,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnStreamDescriptorReceived(DesktopStreamDescriptor descriptor)
+    internal void OnStreamDescriptorReceived(DesktopStreamDescriptor descriptor)
     {
         if (descriptor.StreamSerial > 0 && descriptor.StreamSerial != _currentStreamSerial)
         {
@@ -1079,14 +1082,14 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void OnCursorStateReceived(DesktopCursorState state)
+    internal void OnCursorStateReceived(DesktopCursorState state)
     {
         if (state.StreamSerial > 0 && state.StreamSerial < _currentStreamSerial)
         {
             return;
         }
 
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             _currentStreamSerial = Math.Max(_currentStreamSerial, state.StreamSerial);
             _remoteCursorHostX = state.X;
@@ -1119,7 +1122,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     private void OnCursorShapeReceived(DesktopCursorShape shape)
     {
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             var bitmap = CreateCursorBitmap(shape);
             if (shape.ShapeSerial == _activeCursorShapeSerial)
@@ -1138,9 +1141,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnDisconnected()
+    internal void OnDisconnected()
     {
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             IsStreaming = false;
             IsSwitchingDisplay = false;
@@ -1155,9 +1158,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         });
     }
 
-    private void OnErrorReceived(string errorText)
+    internal void OnErrorReceived(string errorText)
     {
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             SetStatusLiteral(errorText);
             HasStreamError = true;
@@ -1170,7 +1173,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             or nameof(ConnectionViewModel.HostCapabilities)
             or nameof(ConnectionViewModel.SupportsRemoteDesktop))
         {
-            Dispatcher.UIThread.Post(() =>
+            PostToUi(() =>
             {
                 OnPropertyChanged(nameof(IsRemoteDesktopSupported));
                 OnPropertyChanged(nameof(RemoteDesktopCapabilityText));
@@ -1264,7 +1267,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     public int CursorShapeHeight => _cursorShapeHeight;
 
-    private void ApplyDisplayCatalog(DesktopDisplayCatalog catalog, DesktopTargetOption? previousSelection)
+    internal void ApplyDisplayCatalog(DesktopDisplayCatalog catalog, DesktopTargetOption? previousSelection)
     {
         AvailableDisplayTargets.Clear();
 
@@ -1332,7 +1335,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     private void ResetRemoteCursorOverlay()
     {
-        Dispatcher.UIThread.Post(() =>
+        PostToUi(() =>
         {
             _remoteCursorHostVisible = false;
             _activeCursorShapeSerial = 0;
@@ -1356,7 +1359,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     /// switch. Posted, like <see cref="ResetRemoteCursorOverlay"/>, so it lands after that has
     /// already let go of the displayed bitmap and the whole cache can be disposed.
     /// </summary>
-    private void ClearCursorShapeCache() => Dispatcher.UIThread.Post(_cursorShapeCache.Clear);
+    private void ClearCursorShapeCache() => PostToUi(_cursorShapeCache.Clear);
 
     /// <summary>
     /// Disposes a cursor shape leaving <see cref="_cursorShapeCache"/> - evicted off the LRU tail,

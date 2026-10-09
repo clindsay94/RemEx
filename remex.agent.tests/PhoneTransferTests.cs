@@ -309,7 +309,8 @@ public sealed class PhoneTransferTests
     private static void PlayPhoneReceiving(
         PhoneRelayTestKit kit, FakePhoneSocket control, FakeChannelSocket channel, List<byte> received,
         Action<FileTransferOffer>? onOffer = null, bool impostorVerdictFirst = false,
-        TimeSpan? verdictDelay = null, Action? onComplete = null)
+        TimeSpan? verdictDelay = null, Action? onComplete = null,
+        TaskCompletionSource? impostorDelivered = null, Task? holdVerdict = null)
     {
         channel.OnFrame = (envelope, payload) =>
         {
@@ -341,6 +342,16 @@ public sealed class PhoneTransferTests
                 onComplete?.Invoke();
                 _ = Task.Run(async () =>
                 {
+                    if (impostorVerdictFirst)
+                    {
+                        kit.Transfers.HandleResult(
+                            new FileTransferResult { TransferId = complete.TransferId, Verified = false, Error = "planted" },
+                            PhoneB);
+                        impostorDelivered?.TrySetResult();
+                    }
+
+                    if (holdVerdict is not null) await holdVerdict;
+
                     // A phone busy copying to slow storage answers late; Infinite means never.
                     if (verdictDelay is { } delay)
                     {
@@ -350,12 +361,6 @@ public sealed class PhoneTransferTests
 
                     byte[] bytes;
                     lock (received) bytes = [.. received];
-                    if (impostorVerdictFirst)
-                    {
-                        kit.Transfers.HandleResult(
-                            new FileTransferResult { TransferId = complete.TransferId, Verified = false, Error = "planted" },
-                            PhoneB);
-                    }
 
                     kit.Transfers.HandleResult(
                         new FileTransferResult
@@ -402,12 +407,24 @@ public sealed class PhoneTransferTests
         var (control, channel, _) = StartPhone(kit, cts.Token);
         kit.ConnectProvenPhone(PhoneB);
         var received = new List<byte>();
-        PlayPhoneReceiving(kit, control, channel, received, impostorVerdictFirst: true);
+        var impostorDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var phoneAMayAnswer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        PlayPhoneReceiving(kit, control, channel, received, impostorVerdictFirst: true,
+            impostorDelivered: impostorDelivered, holdVerdict: phoneAMayAnswer.Task);
+        var payload = RandomNumberGenerator.GetBytes(1_000);
         var localPath = Path.Combine(kit.LocalFolder, "a.txt");
-        await File.WriteAllBytesAsync(localPath, RandomNumberGenerator.GetBytes(1_000));
+        await File.WriteAllBytesAsync(localPath, payload);
 
-        // Completes without throwing: phone B's "verified: false" did not decide phone A's upload.
-        await kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token);
+        var upload = kit.Relay.UploadAsync(PhoneA, localPath, "root", string.Empty, null, cts.Token);
+        await impostorDelivered.Task.WaitAsync(cts.Token);
+
+        // Phone B's "verified: false" has landed; it must neither finish nor fail phone A's upload.
+        // A short wait is unavoidable to show a negative.
+        Assert.NotSame(upload, await Task.WhenAny(upload, Task.Delay(200, cts.Token)));
+
+        phoneAMayAnswer.SetResult();
+        await upload;
+        lock (received) Assert.Equal(payload, received.ToArray());
     }
 
     [Fact]

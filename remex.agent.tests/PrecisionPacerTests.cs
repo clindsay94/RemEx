@@ -143,9 +143,10 @@ public sealed class PrecisionPacerTests
     {
         using var pacer = new PrecisionPacer();
 
-        // Simulate a stall: the timeline is now well behind "now".
+        // Simulate a stall: the timeline is now several intervals behind "now". The pacer reads a
+        // real Stopwatch, so the stall has to be real time; 30 ms is about four 120 FPS intervals.
         await pacer.WaitForNextTickAsync(FrameIntervalMs, CancellationToken.None);
-        await Task.Delay(120);
+        await Task.Delay(30);
 
         pacer.Reset();
 

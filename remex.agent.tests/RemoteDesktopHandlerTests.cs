@@ -79,8 +79,15 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
 
         private DesktopCaptureTarget _target = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
 
+        private int _captures;
+
+        public int Captures => Volatile.Read(ref _captures);
+
         public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-            => Task.FromResult<ReadOnlyMemory<byte>>(FakeJpeg);
+        {
+            Interlocked.Increment(ref _captures);
+            return Task.FromResult<ReadOnlyMemory<byte>>(FakeJpeg);
+        }
 
         public DesktopDisplayCatalog GetDisplayCatalog() => _catalog;
 
@@ -628,7 +635,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
     public async Task ExternalCtsCancel_ExitsStreamLoopWithin200ms()
     {
         // Arrange: wire up a factory with the mock screen capture service.
-        var factory = GetFactory();
+        var capture = new MockScreenCaptureService();
+        var factory = GetFactory(captureOverride: capture);
         var wsClient = factory.Server.CreateWebSocketClient();
         var ws = await wsClient.ConnectAsync(
             new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
@@ -648,17 +656,21 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
 
         // Act: close the underlying connection abruptly (simulates TCP FIN from Android reconnect).
         // The registry cancels the handler's CTS — we replicate that by simply closing the socket.
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         ws.Abort(); // forces WebSocketState to Aborted, unblocking the server-side loop
 
-        // Allow the server-side loop to drain.
-        await Task.Delay(200);
-        sw.Stop();
-
-        // Assert: the abort + 200ms window should be well within the 200ms budget.
-        // The real invariant tested: the handler loop does NOT hang after socket closure.
-        Assert.True(sw.ElapsedMilliseconds < 600,
-            $"Handler loop should unblock within 600ms of socket abort, but test took {sw.ElapsedMilliseconds}ms.");
+        // The invariant: the handler loop does NOT hang after socket closure. At 30 fps a live loop
+        // captures every ~33 ms, so capturing stopping shows as the count holding across a 100 ms
+        // window; polling for that replaces the old fixed sleep.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var seen = capture.Captures;
+        while (true)
+        {
+            await Task.Delay(100);
+            var now = capture.Captures;
+            if (now == seen) break;
+            seen = now;
+            Assert.True(DateTime.UtcNow < deadline, "The handler loop kept capturing for 5s after the socket was aborted.");
+        }
     }
 
     [Fact]
@@ -691,7 +703,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
             },
         }, CancellationToken.None);
 
-        await Task.Delay(100);
+        await PollUntil.TrueAsync(() => input.ReceivedEvents.Contains("click:0"), "the click never reached the input service");
 
         Assert.Contains("click:0", input.ReceivedEvents);
         Assert.DoesNotContain(input.ReceivedEvents, evt => evt.StartsWith("move:", StringComparison.Ordinal));

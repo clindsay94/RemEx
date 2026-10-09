@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Remex.Agent.Handlers;
 using Remex.Agent.Services;
@@ -156,32 +157,37 @@ public class SamplingDemandTests
     {
         var sensors = new CountingTelemetryService();
         var demand = new SamplingDemand();
+        var clock = new FakeTimeProvider();
         using var sampler = new TelemetryBackgroundService(
-            sensors, NullLogger<TelemetryBackgroundService>.Instance, demand);
+            sensors, NullLogger<TelemetryBackgroundService>.Instance, demand) { Clock = clock };
 
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            // NOBODY READING: well over a period passes and the sensors are never touched.
-            await Task.Delay(1500);
+            // NOBODY READING: several periods pass and the sensors are never touched.
+            await TickAsync(clock, TelemetryBackgroundService.SamplePeriod, 3);
             Assert.Equal(0, sensors.Calls);
             Assert.Null(sampler.CurrentSnapshot);
 
             // A consumer arrives (a phone connecting, the window showing, an alert being armed).
             var lease = sampler.AcquireDemand();
+            clock.Advance(TelemetryBackgroundService.SamplePeriod);
             await WaitUntilAsync(() => sampler.CurrentSnapshot is not null, "sampling must resume for a new consumer");
+            clock.Advance(TelemetryBackgroundService.SamplePeriod);
             await WaitUntilAsync(() => sensors.Calls >= 2, "and keep going while the consumer stays");
 
             // The last consumer leaves: the next tick goes idle and clears the published reading, so a
             // later consumer is not handed it as current.
             lease.Dispose();
+            clock.Advance(TelemetryBackgroundService.SamplePeriod);
             await WaitUntilAsync(() => sampler.CurrentSnapshot is null, "going idle must clear the stale reading");
             var callsWhenIdle = sensors.Calls;
-            await Task.Delay(1500);
+            await TickAsync(clock, TelemetryBackgroundService.SamplePeriod, 3);
             Assert.Equal(callsWhenIdle, sensors.Calls);
 
             // And it comes back again.
             using var again = sampler.AcquireDemand();
+            clock.Advance(TelemetryBackgroundService.SamplePeriod);
             await WaitUntilAsync(() => sensors.Calls > callsWhenIdle && sampler.CurrentSnapshot is not null,
                 "sampling must resume a second time");
         }
@@ -197,17 +203,19 @@ public class SamplingDemandTests
         // The phone-connects-to-an-idle-host path: its stream waits on the gate with nothing sent yet,
         // and must be woken by the sample its own lease causes rather than sleep forever.
         var demand = new SamplingDemand();
+        var clock = new FakeTimeProvider();
         using var sampler = new TelemetryBackgroundService(
-            new CountingTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance, demand);
+            new CountingTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance, demand) { Clock = clock };
 
         await sampler.StartAsync(CancellationToken.None);
         try
         {
             var wait = sampler.WaitForNextSnapshotAsync(null, CancellationToken.None);
-            await Task.Delay(300);
+            await TickAsync(clock, TelemetryBackgroundService.SamplePeriod, 2);
             Assert.False(wait.IsCompleted);
 
             using var lease = sampler.AcquireDemand();
+            clock.Advance(TelemetryBackgroundService.SamplePeriod);
             var snapshot = await wait.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.NotNull(snapshot);
         }
@@ -217,59 +225,22 @@ public class SamplingDemandTests
         }
     }
 
-    /// <summary>Half-period sample work, the same shape as <c>TelemetrySamplerCadenceTests</c>.</summary>
-    private sealed class SlowTelemetryService : ITelemetryService
-    {
-        public async Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
-        {
-            await Task.Delay(500, ct);
-            return new TelemetryPayload
-            {
-                Sensors = [new SensorReading { Name = "Total CPU Usage", Value = 1, Unit = "%", Source = "Test" }],
-            };
-        }
-    }
-
     [Fact]
     public async Task AGatedSamplerWithALeaseKeepsThePeriodicTimerSpacing()
     {
         // RemEx-6sibx UNDER THE GATE. The gate decides whether a tick does work; it must not become a
-        // second clock. Same bounds and reasoning as TelemetrySamplerCadenceTests: a trailing delay
-        // (or any per-tick wait added by the gate) puts the 500ms of work back into the interval and
-        // the mean rises to ~1.5s; a lost period makes the loop sample back to back, ~8 in 4s.
+        // second clock. Same virtual-time setup as TelemetrySamplerCadenceTests: each sample takes half
+        // a period, so a per-tick wait added by the gate would push every gap past a second.
         var demand = new SamplingDemand();
         using var lease = demand.Acquire();
+        var clock = new FakeTimeProvider();
+        var source = new GatedTelemetryService();
         using var sampler = new TelemetryBackgroundService(
-            new SlowTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance, demand);
+            source, NullLogger<TelemetryBackgroundService>.Instance, demand) { Clock = clock };
 
-        var clock = new Stopwatch();
-        var times = new List<TimeSpan>();
-        sampler.TelemetryPublished += _ =>
-        {
-            lock (times) times.Add(clock.Elapsed);
-        };
+        var times = await SamplerRun.PublishTimesAsync(sampler, source, clock, samples: 4);
 
-        clock.Start();
-        await sampler.StartAsync(CancellationToken.None);
-        try
-        {
-            await Task.Delay(TimeSpan.FromSeconds(4));
-        }
-        finally
-        {
-            await sampler.StopAsync(CancellationToken.None);
-        }
-
-        List<TimeSpan> snapshot;
-        lock (times) snapshot = [.. times];
-
-        Assert.True(snapshot.Count >= 2, $"need two publishes to have a gap; got {snapshot.Count}");
-        var meanGap = (snapshot[^1] - snapshot[0]) / (snapshot.Count - 1);
-        Assert.True(meanGap < TimeSpan.FromMilliseconds(1400),
-            $"mean gap {meanGap.TotalMilliseconds:F0}ms suggests the sample duration is back in the interval");
-        Assert.True(snapshot.Count <= 6, $"{snapshot.Count} publishes in 4s is faster than the intended 1 Hz");
-        Assert.True(snapshot[0] < TelemetryBackgroundService.SamplePeriod,
-            $"a lease held at start must not cost the first sample a tick; it landed at {snapshot[0].TotalMilliseconds:F0}ms");
+        Assert.Equal(SamplerRun.ExpectedPublishTimes(4), times);
     }
 
     // ---- The media sampler ---------------------------------------------------------------------
@@ -293,34 +264,38 @@ public class SamplingDemandTests
     public async Task TheMediaSamplerReadsOnlyWhileALeaseIsHeldAndRepublishesAfterIdle()
     {
         var reader = new CountingReader();
+        var clock = new FakeTimeProvider();
         var sampler = new MediaSessionBackgroundService(
             reader,
             NullMediaArtworkSource.Instance,
             new MediaArtworkStore(),
             NullMediaSeekTarget.Instance,
             NullLogger<MediaSessionBackgroundService>.Instance,
-            new SamplingDemand());
+            new SamplingDemand()) { Clock = clock };
 
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            await Task.Delay(1500);
+            await TickAsync(clock, MediaSessionBackgroundService.PollPeriod, 3);
             Assert.Equal(0, reader.Reads);
             Assert.Null(sampler.Current);
 
             var lease = sampler.AcquireDemand();
+            clock.Advance(MediaSessionBackgroundService.PollPeriod);
             await WaitUntilAsync(() => sampler.Current is not null, "a connected client must get a reading");
 
             lease.Dispose();
+            clock.Advance(MediaSessionBackgroundService.PollPeriod);
             await WaitUntilAsync(() => sampler.Current is null, "going idle must forget the reading");
             var readsWhenIdle = reader.Reads;
-            await Task.Delay(1500);
+            await TickAsync(clock, MediaSessionBackgroundService.PollPeriod, 3);
             Assert.Equal(readsWhenIdle, reader.Reads);
 
             // THE SAME READING AS BEFORE MUST STILL BE PUBLISHED. The value-equality dedupe would
             // otherwise swallow it and leave the cleared gate empty - a phone connecting to a PC that
             // is still playing the same song would never be told anything.
             using var again = sampler.AcquireDemand();
+            clock.Advance(MediaSessionBackgroundService.PollPeriod);
             await WaitUntilAsync(() => sampler.Current is not null, "resuming must republish an unchanged reading");
         }
         finally
@@ -388,6 +363,19 @@ public class SamplingDemandTests
             cts.Cancel();
             handler.Dispose();
             await sampler.StopAsync(CancellationToken.None);
+        }
+    }
+
+    /// <summary>
+    /// Advances the fake clock one period at a time. The 50 ms settle after each is the cost of a
+    /// negative assertion: a tick the sampler skips raises nothing to await.
+    /// </summary>
+    private static async Task TickAsync(FakeTimeProvider clock, TimeSpan period, int ticks)
+    {
+        for (var i = 0; i < ticks; i++)
+        {
+            clock.Advance(period);
+            await Task.Delay(50);
         }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Remex.Agent.Services.Media;
 using Remex.Core.Models;
 using Xunit;
@@ -66,7 +67,10 @@ public class MediaSessionSamplerTests
     private static MediaPlaybackState Playing(string? title = null)
         => new() { Status = MediaPlaybackStatus.Playing, Title = title };
 
-    private static MediaSessionBackgroundService NewSampler(
+    // xunit builds one instance per test, so each test owns its clock.
+    private readonly FakeTimeProvider _clock = new();
+
+    private MediaSessionBackgroundService NewSampler(
         IMediaSessionReader reader,
         IMediaArtworkSource? artworkSource = null,
         IMediaArtworkStore? artworkStore = null,
@@ -79,13 +83,36 @@ public class MediaSessionSamplerTests
             // it is what a host with an unseekable reader actually gets, so the polling tests run
             // against the same object the unsupported platforms do.
             seekTarget ?? NullMediaSeekTarget.Instance,
-            NullLogger<MediaSessionBackgroundService>.Instance);
+            NullLogger<MediaSessionBackgroundService>.Instance) { Clock = _clock };
+
+    /// <summary>
+    /// Fires the sampler's poll tick on the fake clock, then waits for <paramref name="reader"/> to have
+    /// been read once more.
+    /// </summary>
+    private async Task PollOnceAsync(ScriptedReader reader)
+    {
+        var before = reader.Reads;
+        _clock.Advance(MediaSessionBackgroundService.PollPeriod);
+        Assert.True(await Within(() => reader.Reads > before), "the poll tick never reached the reader");
+    }
+
+    /// <summary>
+    /// Advances the fake clock a poll at a time until <paramref name="condition"/> holds. Only for
+    /// tests where extra polls are harmless; one that counts publishes steps with <see cref="PollOnceAsync"/>.
+    /// </summary>
+    private async Task<bool> Pump(Func<bool> condition, int seconds = 10)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition()) return true;
+            _clock.Advance(MediaSessionBackgroundService.PollPeriod);
+            await Task.Delay(5);
+        }
+        return condition();
+    }
 
     /// <summary>Waits for a condition rather than for a duration, up to a generous ceiling.</summary>
-    /// <remarks>
-    /// The sampler's period is a real one-second timer, so a fixed sleep would either be flaky or slow.
-    /// Polling a predicate is neither.
-    /// </remarks>
     private static async Task<bool> Within(Func<bool> condition, int seconds = 10)
     {
         var deadline = DateTime.UtcNow.AddSeconds(seconds);
@@ -112,7 +139,7 @@ public class MediaSessionSamplerTests
 
             // Three more polls at a one-second period. If an equal reading republished, the gate would
             // hold a DIFFERENT instance by now even though the value never moved.
-            Assert.True(await Within(() => reader.Reads >= 4), "the sampler should keep polling");
+            Assert.True(await Pump(() => reader.Reads >= 4), "the sampler should keep polling");
 
             Assert.Same(first, sampler.Current);
         }
@@ -133,7 +160,7 @@ public class MediaSessionSamplerTests
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            Assert.True(await Within(() => sampler.Current?.Status == MediaPlaybackStatus.Paused),
+            Assert.True(await Pump(() => sampler.Current?.Status == MediaPlaybackStatus.Paused),
                 "pausing at the PC must reach the gate");
         }
         finally
@@ -154,7 +181,8 @@ public class MediaSessionSamplerTests
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            await Task.Delay(200);
+            // The loop returns at once on an unsupported host, so its end is the signal to assert on.
+            await sampler.ExecuteTask!.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.Null(sampler.Current);
             Assert.Equal(0, reader.Reads);
             Assert.False(sampler.IsSupported);
@@ -226,6 +254,34 @@ public class MediaSessionSamplerTests
         Assert.NotEqual(a, a with { Title = "z" });
     }
 
+    /// <summary>
+    /// Polls through <paramref name="script"/> one tick at a time and returns each distinct publish. A
+    /// change is awaited before the next tick so a fast sampler cannot overwrite a state nobody saw.
+    /// </summary>
+    private async Task<List<MediaPlaybackState>> PollThroughAsync(
+        MediaSessionBackgroundService sampler, ScriptedReader reader, List<MediaPlaybackState> script)
+    {
+        var publishes = new List<MediaPlaybackState>();
+        MediaPlaybackState? last = null;
+
+        async Task CollectNextAsync()
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            last = await sampler.WaitForNextAsync(last, cts.Token);
+            publishes.Add(last);
+        }
+
+        await CollectNextAsync();
+        for (var i = 1; i < script.Count; i++)
+        {
+            await PollOnceAsync(reader);
+            if (script[i] != script[i - 1])
+                await CollectNextAsync();
+        }
+
+        return publishes;
+    }
+
     [Fact]
     public async Task ManyIdenticallyAnchoredPollsPublishOnceAndOnlyAGenuineChangePublishesAgain()
     {
@@ -256,21 +312,7 @@ public class MediaSessionSamplerTests
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            var publishes = new List<MediaPlaybackState>();
-            var collect = Task.Run(async () =>
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                MediaPlaybackState? last = null;
-                while (publishes.Count < 4)
-                {
-                    last = await sampler.WaitForNextAsync(last, cts.Token);
-                    publishes.Add(last);
-                }
-            });
-
-            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 60),
-                "the sampler should have polled through the whole script");
-            await collect;
+            var publishes = await PollThroughAsync(sampler, reader, script);
 
             Assert.Equal(4, publishes.Count);
             Assert.Equal(MediaPlaybackStatus.Playing, publishes[0].Status);
@@ -314,21 +356,7 @@ public class MediaSessionSamplerTests
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            var publishes = new List<MediaPlaybackState>();
-            var collect = Task.Run(async () =>
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                MediaPlaybackState? last = null;
-                while (publishes.Count < 2)
-                {
-                    last = await sampler.WaitForNextAsync(last, cts.Token);
-                    publishes.Add(last);
-                }
-            });
-
-            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 60),
-                "the sampler should have polled through the whole script");
-            await collect;
+            var publishes = await PollThroughAsync(sampler, reader, script);
 
             Assert.Equal(2, publishes.Count);
             Assert.True(publishes[0].CanSeek);
@@ -390,7 +418,16 @@ public class MediaSessionSamplerTests
 
             while (artworkId is null)
             {
-                last = await sampler.WaitForNextAsync(last, cts.Token);
+                // The id lands on the poll AFTER the one that started the resolution, so tick until a
+                // new state arrives.
+                var next = sampler.WaitForNextAsync(last, cts.Token);
+                while (!next.IsCompleted)
+                {
+                    _clock.Advance(MediaSessionBackgroundService.PollPeriod);
+                    await Task.WhenAny(next, Task.Delay(5, cts.Token));
+                }
+
+                last = await next;
                 artworkId = last.ArtworkId;
             }
 
@@ -419,9 +456,9 @@ public class MediaSessionSamplerTests
         await sampler.StartAsync(CancellationToken.None);
         try
         {
-            Assert.True(await Within(() => reader.Reads >= script.Count, seconds: 30),
+            Assert.True(await Pump(() => reader.Reads >= script.Count),
                 "the sampler should have polled through the whole script");
-            Assert.True(await Within(() => artworkSource.Calls >= 2),
+            Assert.True(await Pump(() => artworkSource.Calls >= 2),
                 "the title change should have started a second resolution");
             Assert.Equal(2, artworkSource.Calls);
         }
@@ -447,8 +484,9 @@ public class MediaSessionSamplerTests
         {
             Assert.True(await Within(() => sampler.Current is not null));
             Assert.True(await Within(() => artworkSource.Calls >= 1));
-            // Give the failing resolution a moment to actually run and be swallowed.
-            await Task.Delay(200);
+            // Two more polls: the failing resolution has run and been swallowed by then.
+            var reads = reader.Reads;
+            Assert.True(await Pump(() => reader.Reads >= reads + 2));
             Assert.Null(sampler.Current!.ArtworkId);
         }
         finally
@@ -473,7 +511,8 @@ public class MediaSessionSamplerTests
         {
             Assert.True(await Within(() => sampler.Current is not null));
             Assert.True(await Within(() => artworkSource.Calls >= 1));
-            await Task.Delay(200);
+            var reads = reader.Reads;
+            Assert.True(await Pump(() => reader.Reads >= reads + 2));
             Assert.Null(sampler.Current!.ArtworkId);
         }
         finally

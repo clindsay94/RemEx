@@ -140,8 +140,9 @@ public sealed class FilePushOriginatorTests
         });
 
         // Far short of the 30s deadline, so a still-pending offer here means the foreign answer was
-        // dropped rather than consumed.
-        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        // dropped rather than consumed. A mis-routed reply resolves it synchronously inside Complete,
+        // so a short settle for the continuation is enough to show a negative.
+        await Task.Delay(TimeSpan.FromMilliseconds(50));
         Assert.False(offering.IsCompleted);
 
         // And when its own answer does arrive, it is still able to take it — the offer was left

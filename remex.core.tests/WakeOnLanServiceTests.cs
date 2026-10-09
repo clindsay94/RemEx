@@ -112,13 +112,16 @@ public class WakeOnLanServiceTests
     }
 
     [Fact]
-    public async Task WakeAsync_Accepts_The_Real_Default_BroadcastIp_Without_Throwing()
+    public void WakeAsync_Defaults_To_The_Limited_Broadcast_Address_On_Port_9()
     {
-        // Distinct from the loopback-capturing tests above: this pins that the real default
-        // broadcast address ("255.255.255.255", used when no broadcastIp is passed) is accepted by
-        // IPAddress.TryParse and does not throw during send, even though a sandboxed test host has no
-        // guaranteed route to actually deliver it and so the datagram itself cannot be captured here.
-        await _service.WakeAsync("AA:BB:CC:DD:EE:FF", "255.255.255.255");
+        // Read off the signature so the default is pinned without sending to a real broadcast address.
+        var parameters = typeof(WakeOnLanService).GetMethod(nameof(WakeOnLanService.WakeAsync))!.GetParameters();
+
+        var broadcast = parameters.Single(p => p.Name == "broadcastIp");
+        var port = parameters.Single(p => p.Name == "port");
+        Assert.Equal("255.255.255.255", broadcast.DefaultValue);
+        Assert.True(IPAddress.TryParse((string)broadcast.DefaultValue!, out _));
+        Assert.Equal(9, port.DefaultValue);
     }
 
     [Fact]

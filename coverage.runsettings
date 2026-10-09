@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used by scripts/coverage.ps1. Excludes only code unit tests can't reach: generated, XAML views, entry points, OS capture/JNI interop. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Remex.*]*,[libRemexCore]*</Include>
+          <Exclude>[*]*JsonContext,[*]*JsonSerializerContext,[*]*.Views.*,[*]*.App,[*]*.Program,[*]CompiledAvaloniaXaml.*,[*]*.Localization.Strings*,[*]*.AndroidNativeExports,[*]*.JniHelper,[*]*.DxgiDesktopCapture,[*]*.WgcDesktopCapture,[*]*.WindowsCursorShapeCapture,[*]*.WindowsScreenCaptureService,[*]*.LinuxScreenCaptureService,[*]*.LinuxCaptureSessionCoordinator,[Remex.Branding]*,[Remex.Desktop]Remex.Desktop.Controls.*,[*]*.MainWindow,[*]*.WindowsInputSimulationService,[*]*.LinuxDesktopWindowControlService,[*]*.LinuxProcessMonitorService,[*]*.StartupRegistrationService,[*]*.DesktopIconExtractionService,[*]*.WindowsDisplayPowerMonitor,[*]*.LinuxPipeWireFrameSource,[*]*.FFmpegH264Encoder,[*]*.LinuxPortalInputInjector</Exclude>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/*.g.cs,**/*.Designer.cs,**/obj/**</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Remex.Agent.Handlers;
 using Remex.Agent.Services;
@@ -145,8 +146,9 @@ public class TelemetryPauseTests
     [Fact]
     public async Task PausingOneConnectionStopsOnlyItsStreamAndResumeSendsTheCurrentSampleAtOnce()
     {
+        var clock = new FakeTimeProvider();
         var sampler = new TelemetryBackgroundService(
-            new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance);
+            new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance) { Clock = clock };
         await sampler.StartAsync(CancellationToken.None);
         var handler = NewHandler(sampler);
 
@@ -166,29 +168,22 @@ public class TelemetryPauseTests
             await WaitUntilAsync(() => phone.TelemetryCount >= 1 && other.TelemetryCount >= 1,
                 "both streams should send their first sample");
 
-            // PAUSE. Let any send already in flight land, then take the baseline.
             phoneGate.Pause();
-            await Task.Delay(300);
-            var phoneAtPause = phone.TelemetryCount;
-            var otherAtPause = other.TelemetryCount;
 
-            // Span several sampler ticks: at 1 Hz a shorter window cannot tell "paused" from "slow".
-            await Task.Delay(2500);
+            // Span several sampler ticks: one tick cannot tell "paused" from "slow". Each tick is
+            // confirmed by the OTHER connection receiving it, which also proves the pause assertion
+            // below cannot pass vacuously on a stalled sampler and that the pause silenced only one.
+            var otherAtPause = other.TelemetryCount;
+            await TickUntilSentAsync(clock, other, otherAtPause + 1);
+            var phoneAtPause = phone.TelemetryCount;
+            await TickUntilSentAsync(clock, other, otherAtPause + 2);
+            await TickUntilSentAsync(clock, other, otherAtPause + 3);
 
             Assert.Equal(phoneAtPause, phone.TelemetryCount);
-            // ISOLATION, and positive so the pause assertion above cannot pass vacuously on a
-            // stalled sampler: the other connection kept streaming the whole time. >= +1, not +2:
-            // under a loaded parallel test run the sampler's 1000ms-plus-sample-time cycle can push
-            // past 1.25s, and a hard +2 in a 2.5s window flakes there (RemEx-w7ei pattern). +1 still
-            // proves the other connection was not also silenced by the pause.
-            Assert.True(other.TelemetryCount >= otherAtPause + 1,
-                $"the unpaused connection must keep streaming; went {otherAtPause} -> {other.TelemetryCount}");
 
-            // RESUME, timed just after a publish so the next one is about a second away. A resume
-            // that waited for the sampler would deliver THAT one; a prompt resume delivers the
-            // sample current right now - told apart by timestamp, not by a racy latency bound.
-            var before = sampler.CurrentSnapshot;
-            await WaitUntilAsync(() => !ReferenceEquals(sampler.CurrentSnapshot, before), "the sampler stalled");
+            // RESUME. The clock is parked, so the sampler cannot publish again: a resume that waited
+            // for the sampler would hang, and a prompt one delivers the sample current right now -
+            // checked by timestamp, not by a racy latency bound.
             var current = MessageSerializer.Deserialize(sampler.CurrentSnapshot!.Frame.Span)!.Timestamp ?? 0;
             Assert.NotEqual(0, current);
             phoneGate.Resume();
@@ -198,7 +193,7 @@ public class TelemetryPauseTests
 
             // And it is a stream again, not a single catch-up frame (the lastSentSnapshot trap).
             var afterResume = phone.TelemetryCount;
-            await WaitUntilAsync(() => phone.TelemetryCount > afterResume, "the resumed stream must keep sending");
+            await TickUntilSentAsync(clock, phone, afterResume + 1);
 
             cts.Cancel();
             await Task.WhenAll(phoneStream, otherStream).WaitAsync(TimeSpan.FromSeconds(5));
@@ -216,7 +211,7 @@ public class TelemetryPauseTests
     {
         // Parked on the resume wait rather than the sampler - teardown must still unwind it.
         var sampler = new TelemetryBackgroundService(
-            new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance);
+            new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance) { Clock = new FakeTimeProvider() };
         await sampler.StartAsync(CancellationToken.None);
         var handler = NewHandler(sampler);
         var gate = new TelemetryPauseGate();
@@ -226,7 +221,9 @@ public class TelemetryPauseTests
         try
         {
             var stream = handler.StreamTelemetryAsync(new CountingWebSocket(), gate, cts.Token);
-            await Task.Delay(200);
+            // A negative: nothing signals "still parked", so a short settle is the only way to catch a
+            // stream that ends on its own.
+            await Task.Delay(50);
             Assert.False(stream.IsCompleted);
 
             cts.Cancel();
@@ -238,6 +235,13 @@ public class TelemetryPauseTests
             handler.Dispose();
             await sampler.StopAsync(CancellationToken.None);
         }
+    }
+
+    /// <summary>Fires one sampler tick and waits for <paramref name="socket"/> to have sent at least <paramref name="count"/> frames.</summary>
+    private static async Task TickUntilSentAsync(FakeTimeProvider clock, CountingWebSocket socket, int count)
+    {
+        clock.Advance(TelemetryBackgroundService.SamplePeriod);
+        await WaitUntilAsync(() => socket.TelemetryCount >= count, "the sampler's tick never reached the stream");
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string because)

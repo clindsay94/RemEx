@@ -17,6 +17,9 @@ internal sealed class FakeFileTransferService(string destDir) : IFileTransferSer
 {
     public string? LastWrittenPath { get; private set; }
 
+    /// <summary>When set, promotion throws it instead of landing the file (a full or read-only destination).</summary>
+    public Exception? PromoteFailure { get; set; }
+
     /// <summary>
     /// Mirrors the real service: same destination resolution, and it CONSUMES the staging file the
     /// way a rename does. That second part matters — the manager deletes staging afterwards, so a
@@ -24,6 +27,9 @@ internal sealed class FakeFileTransferService(string destDir) : IFileTransferSer
     /// </summary>
     public Task PromoteStagedFileAsync(string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct)
     {
+        if (PromoteFailure is not null)
+            throw PromoteFailure;
+
         var full = ResolveDestination(relativePath);
         LastWrittenPath = full;
         File.Move(stagingPath, full, overwrite: true);

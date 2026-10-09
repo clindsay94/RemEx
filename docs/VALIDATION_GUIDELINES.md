@@ -118,37 +118,6 @@ private string _hostname = "example.com";
 
 ---
 
-## Static Validation Helpers
-
-For scenarios where attributes aren't suitable, use static helper methods from `NetworkValidation`:
-
-```csharp
-using Remex.Core.Validation;
-
-if (!NetworkValidation.IsValidWebSocketUri(userInput, out string? errorMessage))
-{
-    StatusText = errorMessage;
-    return;
-}
-
-if (!NetworkValidation.IsValidMacAddress(macAddress, out errorMessage))
-{
-    ShowError(errorMessage);
-    return;
-}
-```
-
-### Available Helper Methods:
-
-- `NetworkValidation.IsValidWebSocketUri(string?, out string?)`
-- `NetworkValidation.IsValidMacAddress(string?, out string?)`
-- `NetworkValidation.IsValidIpAddress(string?, out string?)`
-- `NetworkValidation.IsValidPort(int, out string?)`
-- `NetworkValidation.IsValidHostname(string?, out string?)`
-- `NetworkValidation.NormalizeMacAddress(string)` - Converts to standard format
-
----
-
 ## Validation Workflow
 
 ### 1. In ViewModel Constructor/Initialization
@@ -306,11 +275,7 @@ public partial class RemoteViewModel : ObservableValidator
             return;
         }
         
-        // Normalize MAC address format
-        var normalizedMac = NetworkValidation.NormalizeMacAddress(WolMacAddress);
-        
-        // Send WOL packet
-        await _wolService.SendAsync(normalizedMac, WolBroadcastIp, WolPort);
+        await _wolService.SendAsync(WolMacAddress, WolBroadcastIp, WolPort);
     }
 }
 ```

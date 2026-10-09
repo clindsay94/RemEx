@@ -30,9 +30,8 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// temperature, clock, load and power on a 16-core part is already 100+ readings before the GPU,
 /// several NVMe drives and the super-I/O chip — but the tick is linear in sensor count (pinned by
 /// <see cref="SensorIndexTests"/>) and measured to be so, the conclusion does not turn on any single
-/// figure. <c>BenchmarkTick</c> below is the harness, kept as a skipped manual benchmark so
-/// the number stays reproducible; it is not asserted on, because a timing threshold would be flaky on
-/// shared CI hardware.
+/// figure. The harness (a skipped manual benchmark) was removed in RemEx-uk38f.2; the figures
+/// are not asserted on, because a timing threshold would be flaky on shared CI hardware.
 /// </para>
 /// <para>
 /// THE BINDING SIDE IS NEARLY FREE TOO, BUT NOT FOR THE REASON THAT FIRST LOOKS OBVIOUS. The staging
@@ -69,10 +68,6 @@ namespace Remex.Desktop.Tests.ViewModels;
 /// </remarks>
 public class DashboardTickCostTests
 {
-    private readonly Xunit.Abstractions.ITestOutputHelper _output;
-
-    public DashboardTickCostTests(Xunit.Abstractions.ITestOutputHelper output) => _output = output;
-
     private static CanvasDashboardViewModel NewDashboard() =>
         new(new ConnectionViewModel(), null!, null!, new SensorAlertStore(), new SensorAlertTracker());
 
@@ -80,44 +75,6 @@ public class DashboardTickCostTests
     {
         Sensors = new List<SensorReading> { new() { Id = id, Name = id, Value = value, Unit = "C" } },
     };
-
-    /// <summary>
-    /// The harness the figures in the class remarks came from. Skipped by default: it asserts nothing,
-    /// and a timing threshold would be flaky on shared hardware. Un-skip and read the test output to
-    /// re-take the measurement before proposing any of RemEx-4q6l's three narrowings again. Run it
-    /// with <c>-l "console;verbosity=detailed"</c> or the numbers go nowhere.
-    /// </summary>
-    [Theory(Skip = "manual benchmark - un-skip to re-measure, see class remarks")]
-    [InlineData(40)]
-    [InlineData(120)]
-    [InlineData(250)]
-    [InlineData(500)]
-    public void BenchmarkTick(int sensorCount)
-    {
-        var vm = NewDashboard();
-        var payloads = new List<TelemetryPayload>();
-        for (int round = 0; round <= 60; round++)
-        {
-            var list = new List<SensorReading>(sensorCount);
-            for (int i = 0; i < sensorCount; i++)
-                list.Add(new SensorReading { Id = $"s-{i}", Name = $"Sensor {i}", Value = round + i, Unit = "C" });
-            payloads.Add(new TelemetryPayload { Sensors = list });
-        }
-
-        vm.ApplyTelemetry(payloads[0]); // first sight: creates the view models and staged cards
-
-        var notificationsBefore = vm.SensorCustomizationNotifications;
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        for (int round = 1; round <= 60; round++) vm.ApplyTelemetry(payloads[round]);
-        clock.Stop();
-
-        // Reported through the output helper rather than an assertion, so un-skipping produces a
-        // measurement instead of a failure. Run with `-l "console;verbosity=detailed"` to see it.
-        _output.WriteLine(
-            $"N={sensorCount} staged={vm.StagedCards.Count} placed={vm.Cards.Count} | "
-            + $"{clock.Elapsed.TotalMilliseconds / 60:F3} ms/tick | "
-            + $"{(vm.SensorCustomizationNotifications - notificationsBefore) / 60.0:F0} PropertyChanged/tick");
-    }
 
     [Fact]
     public void AlertsAreEvaluatedForASensorWithNoPlacedCard()
