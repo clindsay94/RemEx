@@ -58,6 +58,12 @@ $script:Warnings = @()
 function Add-Problem([string]$Message) { $script:Problems += $Message }
 function Add-Warning([string]$Message) { $script:Warnings += $Message }
 
+# StrictMode makes `$obj.PSObject.Properties.Name` throw on an empty object (e.g. "mcpServers": {}).
+function Get-PropertyNames($Object) {
+    if ($null -eq $Object) { return @() }
+    return @($Object.PSObject.Properties | ForEach-Object { $_.Name })
+}
+
 function Write-Section([string]$Title) {
     if (-not $Hook) { Write-Host "`n== $Title" -ForegroundColor Cyan }
 }
@@ -78,7 +84,7 @@ if (-not (Test-Path $McpJsonPath)) {
     if (-not $Hook) { Write-Host "  mandated (from CLAUDE.md, no .mcp.json): $($Mandated -join ', ')" }
 } else {
     $McpJson = Get-Content $McpJsonPath -Raw | ConvertFrom-Json
-    $Mandated = @($McpJson.mcpServers.PSObject.Properties.Name)
+    $Mandated = Get-PropertyNames $McpJson.mcpServers
     if (-not $Hook) { Write-Host "  mandated (from .mcp.json): $($Mandated -join ', ')" }
 }
 
@@ -123,9 +129,9 @@ Write-Section 'Config decoy'
 $UserSettings = Join-Path $HOME '.claude/settings.json'
 if (Test-Path $UserSettings) {
     $settings = Get-Content $UserSettings -Raw | ConvertFrom-Json
-    $decoy = $settings.PSObject.Properties.Name -contains 'mcpServers'
+    $decoy = (Get-PropertyNames $settings) -contains 'mcpServers'
     if ($decoy) {
-        $names = @($settings.mcpServers.PSObject.Properties.Name)
+        $names = Get-PropertyNames $settings.mcpServers
         Add-Warning "~/.claude/settings.json has an 'mcpServers' block ($($names -join ', ')) that Claude Code DOES NOT READ. It is inert and it is what made the 2026-08 outage invisible for nine days. Delete it or comment it, do not maintain it."
     } else {
         if (-not $Hook) { Write-Host '  OK    no inert mcpServers block in settings.json' -ForegroundColor Green }
@@ -145,8 +151,8 @@ if (-not (Test-Path $ClaudeJson)) {
     $live = Get-Content $ClaudeJson -Raw | ConvertFrom-Json
 
     $userScope = @()
-    if ($live.PSObject.Properties.Name -contains 'mcpServers' -and $live.mcpServers) {
-        $userScope = @($live.mcpServers.PSObject.Properties.Name)
+    if ((Get-PropertyNames $live) -contains 'mcpServers' -and $live.mcpServers) {
+        $userScope = Get-PropertyNames $live.mcpServers
     }
 
     $localScope = @()
@@ -155,10 +161,10 @@ if (-not (Test-Path $ClaudeJson)) {
         $proj = $live.projects.PSObject.Properties | Where-Object { $_.Name -eq $key }
         if ($proj) {
             $v = $proj.Value
-            if ($v.PSObject.Properties.Name -contains 'mcpServers' -and $v.mcpServers) {
-                $localScope += @($v.mcpServers.PSObject.Properties.Name)
+            if ((Get-PropertyNames $v) -contains 'mcpServers' -and $v.mcpServers) {
+                $localScope += Get-PropertyNames $v.mcpServers
             }
-            if ($v.PSObject.Properties.Name -contains 'enabledMcpjsonServers' -and $v.enabledMcpjsonServers) {
+            if ((Get-PropertyNames $v) -contains 'enabledMcpjsonServers' -and $v.enabledMcpjsonServers) {
                 $approved += @($v.enabledMcpjsonServers)
             }
         }
