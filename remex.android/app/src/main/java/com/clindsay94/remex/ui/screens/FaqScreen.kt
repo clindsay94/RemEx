@@ -6,6 +6,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -21,16 +23,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,6 +51,7 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.components.RemexHapticEvent
 import com.clindsay94.remex.ui.components.rememberRemexHaptics
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
+import com.clindsay94.remex.ui.theme.rememberRemexIconButtonShapes
 import androidx.compose.material3.ButtonDefaults
 
 private data class FaqItem(
@@ -90,9 +99,23 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q22, answerRes = R.string.faq_a22)
         )
 
+/** Whether an FAQ entry belongs in the results for [query]; a blank query keeps everything. */
+internal fun faqMatches(question: String, answer: String, query: String): Boolean {
+    val needle = query.trim()
+    return needle.isEmpty() ||
+            question.contains(needle, ignoreCase = true) ||
+            answer.contains(needle, ignoreCase = true)
+}
+
+@Composable
+private fun faqAnswer(item: FaqItem): String =
+        if (item.answerArgRes != null) stringResource(item.answerRes, stringResource(item.answerArgRes))
+        else stringResource(item.answerRes)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaqScreen() {
+    var query by rememberSaveable { mutableStateOf("") }
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -118,8 +141,63 @@ fun FaqScreen() {
                     modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            faqItems.forEach { item -> FaqCard(item) }
+            FaqSearchField(query = query, onQueryChange = { query = it })
+
+            val searching = query.isNotBlank()
+            val visible =
+                    faqItems.filter { item ->
+                        faqMatches(stringResource(item.questionRes), faqAnswer(item), query)
+                    }
+            if (visible.isEmpty()) {
+                Text(
+                        text = stringResource(R.string.faq_no_match, query.trim()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+                )
+            } else {
+                // Keyed so a card keeps its own open state as the filter reshuffles the list.
+                visible.forEach { item -> key(item.questionRes) { FaqCard(item, searching) } }
+            }
         }
+    }
+}
+
+@Composable
+private fun FaqSearchField(query: String, onQueryChange: (String) -> Unit) {
+    Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = MaterialTheme.shapes.extraLarge
+    ) {
+        TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                placeholder = { Text(stringResource(R.string.faq_search_hint)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    AnimatedVisibility(
+                            visible = query.isNotEmpty(),
+                            enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                            exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                    ) {
+                        IconButton(onClick = { onQueryChange("") }, shapes = rememberRemexIconButtonShapes()) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                        }
+                    }
+                },
+                singleLine = true,
+                colors =
+                        TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -133,8 +211,9 @@ private fun FaqScreenPreview() {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun FaqCard(item: FaqItem) {
-    var expanded by remember { mutableStateOf(false) }
+private fun FaqCard(item: FaqItem, searching: Boolean) {
+    // Results open while a search is typed; the key resets the card when searching starts or stops.
+    var expanded by rememberSaveable(searching) { mutableStateOf(searching) }
     val context = LocalContext.current
     val haptics = rememberRemexHaptics()
 
@@ -209,13 +288,7 @@ private fun FaqCard(item: FaqItem) {
                             color = MaterialTheme.colorScheme.outlineVariant
                     )
                     Text(
-                            text =
-                                    if (item.answerArgRes != null)
-                                            stringResource(
-                                                    item.answerRes,
-                                                    stringResource(item.answerArgRes)
-                                            )
-                                    else stringResource(item.answerRes),
+                            text = faqAnswer(item),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

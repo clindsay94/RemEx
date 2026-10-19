@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
@@ -70,6 +71,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.remexIconSquircle
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
@@ -200,6 +203,10 @@ fun TutorialScreenContent(
     val isLastPage = pagerState.currentPage == tutorialPages.size - 1
     val motionScheme = MaterialTheme.motionScheme
 
+    BackHandler(enabled = pagerState.currentPage > 0) {
+        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -250,10 +257,16 @@ fun TutorialScreenContent(
         }
 
         // Page indicator dots
+        val pageOfLabel = stringResource(
+            R.string.tutorial_page_of,
+            pagerState.currentPage + 1,
+            tutorialPages.size
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 16.dp)
+                .semantics(mergeDescendants = true) { contentDescription = pageOfLabel },
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -292,9 +305,25 @@ fun TutorialScreenContent(
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            if (pagerState.currentPage > 0) {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.TextButtonContentPadding
+                ) {
+                    Text(stringResource(R.string.cd_back))
+                }
+            }
             AnimatedContent(
+                modifier = Modifier.weight(1f),
                 targetState = isLastPage,
                 transitionSpec = {
                     val effectsSpec = motionScheme.defaultEffectsSpec<Float>()

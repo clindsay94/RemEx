@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.files
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -100,14 +101,17 @@ fun CrossDevicePicker(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
+        val goUp: () -> Unit = {
+            if (path.isEmpty()) rootId = null
+            else path = path.substringBeforeLast('/', "")
+        }
+        // The sheet is its own window, so Back would close it; going up a level comes first.
+        BackHandler(enabled = rootId != null, onBack = goUp)
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp)) {
                 if (rootId != null) {
                     IconButton(
-                        onClick = {
-                            if (path.isEmpty()) rootId = null
-                            else path = path.substringBeforeLast('/', "")
-                        },
+                        onClick = goUp,
                         shapes = rememberRemexIconButtonShapes(),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.files_picker_up))
@@ -136,7 +140,9 @@ fun CrossDevicePicker(
                         RemexLoadingIndicator(contained = true)
                     }
                     failed -> PickerNote(stringResource(R.string.file_transfer_browse_error))
-                    entries.orEmpty().isEmpty() -> PickerNote(stringResource(R.string.files_picker_empty))
+                    entries.orEmpty().isEmpty() -> PickerNote(
+                        stringResource(if (mode == PickMode.Folder) R.string.files_picker_no_subfolders else R.string.files_picker_empty),
+                    )
                     else -> LazyColumn {
                         items(entries.orEmpty(), key = { it.id ?: it.name }) { e ->
                             PickerRow(if (e.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile, e.name) {

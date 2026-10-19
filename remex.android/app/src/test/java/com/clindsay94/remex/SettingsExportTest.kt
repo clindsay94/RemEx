@@ -81,6 +81,14 @@ class SettingsExportTest {
     }
 
     @Test
+    fun `Random splash is carried over but the last animation it played is not`() {
+        val snapshot = mapOf("splash_style" to "Random", "splash_last_random" to "Pong")
+
+        assertEquals(mapOf("splash_style" to "Random"), SettingsExport.filterForExport(snapshot))
+        assertFalse(SettingsExport.isExportable("splash_last_random"))
+    }
+
+    @Test
     fun `the settings a user actually spent time on do survive`() {
         // The counterpart that keeps the feature worth having. An export that carries nothing is as
         // useless as one that carries too much, and remote-desktop tuning is the part people fiddle
@@ -110,6 +118,7 @@ class SettingsExportTest {
             // Routines tips and the More "New" badge (routines spec 5.3, R-UX-41, RemEx-pp0rt.6).
             "routines_coach_seen" to "true",
             "routines_opened" to "true",
+            "files_coach_seen" to "true",
             "desktop_unlimited_warning_shown" to "true",
             "shape_defaults_migrated_v3" to "true",
             "client_id" to "device-identity-guid",

@@ -183,6 +183,13 @@ fun AppNavigation() {
         // stands in for it while loading (RemEx-8g6n0).
         val personalization by
                 settingsManager.personalizationPreferencesFlow.collectAsStateWithLifecycle(initialValue = null)
+        // Picked once from the first real emission, so Random stays one animation for the whole
+        // launch even though recording it re-emits the preferences.
+        val launchSplashStyle = remember(personalization != null) {
+                personalization?.let { SplashStyles.forLaunch(it.splashStyle, it.lastRandomSplash) }
+                        ?: SplashStyles.Default
+        }
+        val scope = rememberCoroutineScope()
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
         // The More "New" badge shows until Routines is opened once (routines spec 1.2, R-UX-05).
         // Initial true so a cold start never flashes a badge the user already dismissed.
@@ -206,7 +213,12 @@ fun AppNavigation() {
                                 hasCompletedOnboarding = if (personalization == null) null else hasCompletedOnboarding,
                                 isConnected = isConnected,
                                 showRoutinesBadge = !routinesOpened,
-                                splashStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).splashStyle,
+                                splashStyle = launchSplashStyle,
+                                onSplashShown = { shown ->
+                                        if (personalization?.splashStyle == SplashStyles.Random) {
+                                                scope.launch { settingsManager.recordRandomSplash(shown) }
+                                        }
+                                },
                                 backgroundStyle = (personalization ?: SettingsManager.PersonalizationPreferences()).backgroundStyle,
                                 backgroundIntensity = (personalization ?: SettingsManager.PersonalizationPreferences()).backgroundIntensity,
                                 liveHandshake = liveHandshake,
@@ -277,6 +289,7 @@ private fun AppNavigationContent(
         hasCompletedOnboarding: Boolean?,
         isConnected: Boolean,
         splashStyle: String,
+        onSplashShown: (String) -> Unit = {},
         backgroundStyle: String = BackgroundStyles.Default,
         backgroundIntensity: Float = BackgroundIntensity.DEFAULT,
         liveHandshake: LiveHandshakeController? = null,
@@ -617,6 +630,7 @@ private fun AppNavigationContent(
                                         seeThroughBackground = backgroundVisible,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
+                                        onSplashShown = onSplashShown,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
                                         homeScreenContent = homeScreenContent,
@@ -933,6 +947,7 @@ private fun AppNavigationContent(
                                         seeThroughBackground = backgroundVisible,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
+                                        onSplashShown = onSplashShown,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
                                         homeScreenContent = homeScreenContent,
@@ -1064,6 +1079,7 @@ private fun RemexNavHost(
         seeThroughBackground: Boolean,
         hasCompletedOnboarding: Boolean,
         splashStyle: String,
+        onSplashShown: (String) -> Unit = {},
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
         homeScreenContent: HomeScreenContent,
@@ -1137,6 +1153,7 @@ private fun RemexNavHost(
                                         launchSingleTop = true
                                 }
                         }
+                        LaunchedEffect(Unit) { onSplashShown(splashStyle) }
                         OpaqueBackgroundRoute {
                         if (splashStyle == SplashStyles.LiveHandshake && onLiveHandshakeStart != null) {
                                 // Live Handshake plays as an overlay above the app (RemEx-8g6n0):
@@ -1164,9 +1181,13 @@ private fun RemexNavHost(
                         TutorialScreen(
                                 onFinished = {
                                         onSelectPrimaryPage(0)
-                                        navController.navigate(PrimaryNav) {
-                                                popUpTo(Screen.Tutorial) { inclusive = true }
-                                                launchSingleTop = true
+                                        // A replay from Settings returns to the Home already underneath;
+                                        // first run has none, so it navigates instead.
+                                        if (!navController.popBackStack(PrimaryNav, inclusive = false)) {
+                                                navController.navigate(PrimaryNav) {
+                                                        popUpTo(Screen.Tutorial) { inclusive = true }
+                                                        launchSingleTop = true
+                                                }
                                         }
                                 },
                         )
@@ -1316,6 +1337,11 @@ private fun RemexNavHost(
                                 },
                                 onNavigateToShareDiagnostics = {
                                         navController.navigate(Screen.ShareDiagnostics) {
+                                                launchSingleTop = true
+                                        }
+                                },
+                                onNavigateToFaq = {
+                                        navController.navigate(Screen.Faq) {
                                                 launchSingleTop = true
                                         }
                                 },

@@ -47,6 +47,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import com.clindsay94.remex.ui.theme.rememberRemexButtonShapes
@@ -80,6 +81,13 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
     val scope = rememberCoroutineScope()
     val scannedOnce = remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var foreignCodeSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(foreignCodeSeen) {
+        if (foreignCodeSeen) {
+            delay(3_000)
+            foreignCodeSeen = false
+        }
+    }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -141,6 +149,7 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
     QrScannerScreenContent(
         hasCameraPermission = hasCameraPermission,
         errorMessage = errorMessage,
+        foreignCodeSeen = foreignCodeSeen,
         onBack = onBack,
         onGrantPermission = {
             if (cameraPermanentlyDenied) openAppPermissionSettings(context)
@@ -310,10 +319,16 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                              }
                                                                         }
                                                                     }
+                                                                } else {
+                                                                    foreignCodeSeen = true
                                                                 }
                                                             } catch (_: Exception) {
                                                                 // Not a RemEx QR code — keep
-                                                                // scanning
+                                                                // scanning. A RemEx code with a
+                                                                // missing field isn't "foreign".
+                                                                if (!raw.contains("spkiHashBase64")) {
+                                                                    foreignCodeSeen = true
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -362,6 +377,7 @@ fun QrScannerScreenContent(
     cameraView: @Composable () -> Unit,
     /** Android has stopped asking for the camera, so the button opens the app's settings instead. */
     permissionOpensSettings: Boolean = false,
+    foreignCodeSeen: Boolean = false,
 ) {
     Scaffold(
             topBar = {
@@ -390,7 +406,7 @@ fun QrScannerScreenContent(
                 label = "qrPermissionGate"
         ) { cameraGranted ->
             if (cameraGranted) {
-                QrCameraContent(errorMessage = errorMessage, cameraView = cameraView)
+                QrCameraContent(errorMessage = errorMessage, foreignCodeSeen = foreignCodeSeen, cameraView = cameraView)
             } else {
                 QrPermissionRationale(onGrantPermission = onGrantPermission, opensSettings = permissionOpensSettings)
             }
@@ -399,7 +415,7 @@ fun QrScannerScreenContent(
 }
 
 @Composable
-private fun QrCameraContent(errorMessage: String?, cameraView: @Composable () -> Unit) {
+private fun QrCameraContent(errorMessage: String?, cameraView: @Composable () -> Unit, foreignCodeSeen: Boolean = false) {
     Box(modifier = Modifier.fillMaxSize()) {
         cameraView()
 
@@ -447,7 +463,7 @@ private fun QrCameraContent(errorMessage: String?, cameraView: @Composable () ->
                     modifier = Modifier.padding(horizontal = 32.dp)
             ) {
                 Text(
-                        text = stringResource(R.string.qr_scanner_hint),
+                        text = stringResource(if (foreignCodeSeen) R.string.qr_scanner_not_remex else R.string.qr_scanner_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                 )

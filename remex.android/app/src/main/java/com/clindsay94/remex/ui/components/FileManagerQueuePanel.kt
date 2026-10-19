@@ -50,6 +50,7 @@ import com.clindsay94.remex.service.QueuedTransfer
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferState
+import com.clindsay94.remex.share.FileOpener
 import com.clindsay94.remex.ui.files.FileClipboard
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
@@ -145,6 +146,12 @@ private fun QueuePanelContent(
     }
 }
 
+/** A finished download with somewhere on this phone to open it from. */
+internal fun canOpenTransfer(transfer: QueuedTransfer): Boolean =
+    transfer.state == TransferState.Done &&
+        transfer.mode == FileTransferModes.DOWNLOAD &&
+        transfer.localUri.isNotBlank()
+
 @Composable
 private fun TransferRow(
     transfer: QueuedTransfer,
@@ -191,7 +198,8 @@ private fun TransferRow(
                     TransferState.Done -> MaterialTheme.colorScheme.primary
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                maxLines = 1,
+                // A failed row's reason is the only place the user learns why, so it gets room to wrap.
+                maxLines = if (transfer.state == TransferState.Failed) 3 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
             // Shrink+fade instead of deleting the bar in one frame and snapping row height.
@@ -236,6 +244,22 @@ private fun TransferRow(
                         shapes = rememberRemexIconButtonShapes(),
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = label, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (state == TransferState.Done && canOpenTransfer(transfer)) {
+                    val context = LocalContext.current
+                    val openLabel = stringResource(R.string.file_transfer_notification_open)
+                    val openFailed = stringResource(R.string.files_open_failed)
+                    IconButton(
+                        onClick = {
+                            // A "Download to" grant lasts only for the process, so after a restart this can fail.
+                            if (!FileOpener.open(context, transfer.localUri, transfer.fileName)) {
+                                Toast.makeText(context, openFailed, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        shapes = rememberRemexIconButtonShapes(),
+                    ) {
+                        Icon(OpenInNewGlyph, contentDescription = openLabel, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 if (state == TransferState.Paused || state == TransferState.Failed) {

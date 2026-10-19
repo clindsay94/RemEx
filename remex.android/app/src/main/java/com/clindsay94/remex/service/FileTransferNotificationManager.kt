@@ -210,10 +210,11 @@ object FileTransferNotificationManager {
 
         val viewIntent = FileOpener.buildViewIntent(context, localUri, fileName)
         if (viewIntent != null) {
+            // Request codes *2 and *2+1 keep Open and Share disjoint (RemEx-pwkc, see showIncomingFileReceived).
             val openPending =
                     PendingIntent.getActivity(
                             context,
-                            notificationId,
+                            notificationId * 2,
                             viewIntent,
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                     )
@@ -232,10 +233,23 @@ object FileTransferNotificationManager {
             builder.setContentIntent(
                     PendingIntent.getActivity(
                             context,
-                            notificationId,
+                            notificationId * 2,
                             tapIntent,
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                     )
+            )
+        }
+
+        FileOpener.buildShareIntent(context, localUri, fileName)?.let { share ->
+            builder.addAction(
+                    0,
+                    context.getString(R.string.file_received_share),
+                    PendingIntent.getActivity(
+                            context,
+                            notificationId * 2 + 1,
+                            share,
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    ),
             )
         }
 

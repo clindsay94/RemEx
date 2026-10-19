@@ -144,6 +144,25 @@ val WarningAmberGlyph: ImageVector by lazy {
     )
 }
 
+/** Filled.Shuffle: the theme randomiser in Personalization. */
+val ShuffleGlyph: ImageVector by lazy {
+    glyph(
+        "Filled.Shuffle",
+        "M10.59,9.17L5.41,4L4,5.41l5.17,5.17l1.42,-1.41zM14.5,4l2.04,2.04L4,18.59L5.41,20L17.96,7.46L20,9.5L20,4" +
+            "h-5.5zM14.83,13.41l-1.41,1.41l3.13,3.13L14.5,20L20,20v-5.5l-2.04,2.04l-3.13,-3.13z",
+    )
+}
+
+/** AutoMirrored.Filled.OpenInNew: opening a finished transfer. */
+val OpenInNewGlyph: ImageVector by lazy {
+    glyph(
+        "AutoMirrored.Filled.OpenInNew",
+        "M19,19H5V5h7V3H5c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2v-7h-2v7z" +
+            "M14,3v2h3.59l-9.83,9.83l1.41,1.41L19,6.41V10h2V3h-7z",
+        autoMirror = true,
+    )
+}
+
 /** Filled.DeleteOutline: added for the PC logs screen and the alert sheets (RemEx-pp4cm.13). */
 val DeleteOutlineGlyph: ImageVector by lazy {
     glyph(

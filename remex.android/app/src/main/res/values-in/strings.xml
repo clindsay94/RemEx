@@ -84,7 +84,7 @@
     <string name="settings_help_title">Bantuan</string>
     <string name="settings_replay_tutorial">Putar ulang tutorial</string>
     <string name="settings_replay_tutorial_body">Tonton kembali panduan memulai untuk penyiapan, penyandingan QR, koneksi manual, dan kiat penggunaan sehari-hari.</string>
-    <string name="settings_faq_hint">Perlu bantuan soal penyandingan, izin, transfer file, atau performa desktop jarak jauh? Buka FAQ dari tab Lainnya.</string>
+    <string name="settings_faq_hint">Jawaban tentang pemasangan, izin, transfer file, dan performa desktop jarak jauh.</string>
     <string name="screen_app_launcher_title">Aplikasi</string>
     <string name="app_launcher_no_apps">Aplikasi tidak ditemukan</string>
     <string name="button_fetch_from_host">Ambil dari PC</string>
@@ -400,7 +400,9 @@
     <string name="file_transfer_delete">Hapus</string>
     <string name="file_transfer_pin_folder">Sematkan sebagai pintasan</string>
     <string name="file_transfer_select_all">Pilih semua</string>
-    <string name="file_transfer_selected">dipilih</string>
+    <plurals name="file_transfer_selected_count">
+        <item quantity="other">%d dipilih</item>
+    </plurals>
     <string name="file_transfer_delete_selected">Hapus yang dipilih</string>
     <string name="file_transfer_cancel_selection">Batal pilihan</string>
     <string name="file_transfer_rename_title">Ubah Nama</string>
@@ -1732,4 +1734,47 @@
     <string name="personalization_background_note">Latar belakang beranimasi berhenti saat aplikasi berada di latar belakang, saat Penghemat Baterai aktif, atau saat animasi dimatikan.</string>
     <string name="settings_ft_pc_changes_title">Izinkan PC Anda mengubah file</string>
     <string name="settings_ft_pc_changes_desc">PC Anda dapat membuat, mengganti nama, memindahkan, menyalin, dan menghapus file serta folder di dalam folder yang Anda bagikan. Penghapusan bersifat permanen, dan menghapus folder berarti menghapus semua isinya. Penjelajahan seluruh perangkat tetap hanya-baca.</string>
+    <string name="personalization_splash_random">Acak</string>
+    <string name="personalization_splash_random_note">Animasi yang berbeda diputar setiap kali kamu membuka RemEx.</string>
+    <string name="personalization_reset_all">Atur ulang tampilan</string>
+    <string name="personalization_reset_all_title">Atur ulang tampilan?</string>
+    <string name="personalization_reset_all_body">Warna, font, bentuk kartu, splash, dan latar belakang kembali seperti tampilan RemEx pada pemasangan baru. Bahasamu tidak berubah.</string>
+    <string name="faq_search_hint">Cari di FAQ</string>
+    <string name="faq_no_match">Tidak ada di FAQ yang cocok dengan “%1$s”. Coba kata yang lebih pendek.</string>
+    <string name="settings_open_faq">Buka FAQ</string>
+    <string name="settings_pc_alerts_blocked">Android mematikan notifikasi untuk RemEx, sehingga peringatan ini tidak bisa muncul.</string>
+    <string name="settings_battery_ok">RemEx diizinkan berjalan di latar belakang.</string>
+    <string name="files_delete_confirm_title">Hapus permanen?</string>
+    <string name="files_delete_confirm_one">Ini akan menghapus “%1$s” dari PC Anda secara permanen. Item ini tidak dipindahkan ke tempat sampah, dan tindakan ini tidak dapat dibatalkan.</string>
+    <plurals name="files_delete_confirm_many">
+        <item quantity="other">Ini akan menghapus %d item dari PC Anda secara permanen. Item ini tidak dipindahkan ke tempat sampah, dan tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <string name="files_remove_shortcut">Hapus pintasan</string>
+    <string name="files_picker_no_subfolders">Tidak ada folder di dalam folder ini. Anda tetap bisa mengirim atau menyimpan di sini.</string>
+    <string name="files_coach_tree_compact">Folder di ponsel ini dan PC Anda ada di daftar folder. Ketuk ☰ untuk membukanya.</string>
+    <string name="files_coach_tree_expanded">Folder di ponsel ini dan PC Anda ada di daftar sebelah kiri.</string>
+    <string name="files_coach_select">Tekan lama sebuah file untuk memilih beberapa, lalu kirim ke sisi lain dengan tombol panah.</string>
+    <string name="app_launcher_opening">Membuka %1$s di PC kamu…</string>
+    <string name="app_launcher_open_failed">PC kamu tidak bisa membuka %1$s. Pastikan masih ada di daftar aplikasi di PC.</string>
+    <string name="app_launcher_search_hint">Cari aplikasi…</string>
+    <string name="app_launcher_no_matches">Tidak ada aplikasi yang cocok dengan pencarian itu.</string>
+    <string name="task_manager_no_matches">Tidak ada program yang cocok dengan \"%1$s\".</string>
+    <string name="task_manager_ended">%1$s dihentikan.</string>
+    <string name="task_manager_end_action">Hentikan program ini</string>
+    <string name="dashboard_waiting_readings">Menunggu pembacaan dari PC Anda…</string>
+    <string name="dashboard_waiting_readings_hint">Jika tidak ada yang muncul, pastikan RemEx terbuka di PC. Untuk sensor terperinci, HWiNFO harus berjalan.</string>
+    <string name="dashboard_all_cards_removed">Semua kartu dihapus.</string>
+    <string name="dashboard_search_sensors">Cari sensor…</string>
+    <string name="dashboard_no_sensor_matches">Tidak ada sensor yang cocok dengan pencarian itu.</string>
+    <string name="coach_step_of">Tips %1$d dari %2$d</string>
+    <string name="tutorial_page_of">Halaman %1$d dari %2$d</string>
+    <string name="trackpad_gesture_hint">Seret untuk menggerakkan · Ketuk untuk klik · Tahan untuk klik kanan</string>
+    <string name="desktop_touch_controls_title">Kontrol sentuh</string>
+    <string name="desktop_touch_tap">Ketuk untuk klik</string>
+    <string name="desktop_touch_hold">Tekan dan tahan untuk klik kanan</string>
+    <string name="desktop_touch_two_finger">Seret dengan dua jari untuk menggulir</string>
+    <string name="desktop_touch_pinch">Cubit untuk memperbesar</string>
+    <string name="about_version_mismatch">Ponsel dan PC Anda memakai RemEx versi yang berbeda. Perbarui yang lebih lama agar semua fitur berfungsi.</string>
+    <string name="about_copy_versions">Salin detail versi</string>
+    <string name="qr_scanner_not_remex">Kode QR itu bukan dari RemEx. Pindai kode yang ditampilkan RemEx di PC Anda.</string>
 </resources>

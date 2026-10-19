@@ -54,7 +54,8 @@ object FileOpener {
      * Separate from [buildViewIntent] because sharing is a decision, not a nicety: a file that has
      * just arrived from the PC could be anything that was on that screen, so the action is offered
      * only where the user is already looking at a notification about that specific file — never
-     * automatically, and never with the content previewed. (RemEx-pwkc.)
+     * automatically, and never with the content previewed. Callers: the "received from your PC" and
+     * "Downloaded" notifications (RemEx-pwkc, RemEx-gc94).
      */
     fun buildShareIntent(context: Context, localUri: String, fileName: String): Intent? {
         val shareUri = resolveViewUri(context, localUri) ?: return null

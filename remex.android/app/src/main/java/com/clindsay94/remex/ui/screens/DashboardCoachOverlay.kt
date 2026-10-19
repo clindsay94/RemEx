@@ -91,6 +91,7 @@ fun DashboardCoachOverlay(
         }
 
         CoachPanel(
+            stepLabel = stringResource(R.string.coach_step_of, step + 1, DASHBOARD_COACH_HINT_COUNT),
             body = when (step) {
                 0 -> stringResource(R.string.coach_hold_body)
                 1 -> stringResource(R.string.coach_menu_body)
@@ -339,6 +340,7 @@ internal fun CoachPanel(
     onAdvance: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    stepLabel: String? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -350,11 +352,23 @@ internal fun CoachPanel(
             Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = stringResource(R.string.coach_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.coach_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (stepLabel != null) {
+                    Text(
+                        text = stepLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,

@@ -92,6 +92,13 @@ object RoutineSensorCatalog {
     /** A typed limit: a finite number, with either decimal separator; null otherwise. */
     fun parseLimit(text: String): Double? = text.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() }
 
+    /** The sensor's latest reading with its unit ("54 °C"), to one decimal; null until the PC reports a number. */
+    fun formatReading(option: RoutineSensorOption): String? {
+        if (!option.value.isFinite()) return null
+        val number = formatLimit(Math.round(option.value * 10) / 10.0)
+        return if (option.unit.isBlank()) number else "$number ${option.unit.trim()}"
+    }
+
     /** A limit for the text field, without a trailing ".0". */
     fun formatLimit(value: Double?): String =
         when {

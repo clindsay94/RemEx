@@ -137,6 +137,8 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("horizontal_scroll_sensitivity")
                 val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
                 val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
+                // The animation the Random splash played last launch, so it is never repeated back to back.
+                val SPLASH_LAST_RANDOM_KEY = stringPreferencesKey("splash_last_random")
                 // One-time move of every upgrading user onto Live Handshake (RemEx-8g6n0);
                 // see SplashStyles. Set by the migration AND by every personalization save, so a
                 // style chosen after the update is never migrated.
@@ -212,6 +214,7 @@ class SettingsManager(val context: Context) {
                 // shows until Routines is first opened (spec 1.2, R-UX-05). RemEx-pp0rt.6.
                 val ROUTINES_COACH_SEEN_KEY = booleanPreferencesKey("routines_coach_seen")
                 val ROUTINES_OPENED_KEY = booleanPreferencesKey("routines_opened")
+                val FILES_COACH_SEEN_KEY = booleanPreferencesKey("files_coach_seen")
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
@@ -282,6 +285,7 @@ class SettingsManager(val context: Context) {
                                                 preferences[SPLASH_STYLE_KEY],
                                                 preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
                                         ),
+                                        lastRandomSplash = preferences[SPLASH_LAST_RANDOM_KEY],
                                         backgroundStyle = BackgroundStyles.effective(preferences[BACKGROUND_STYLE_KEY]),
                                         backgroundIntensity =
                                                 preferences[BACKGROUND_INTENSITY_KEY]?.let(BackgroundIntensity::clamp)
@@ -335,6 +339,8 @@ class SettingsManager(val context: Context) {
                 val remoteControlCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteMouseCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val splashStyle: String = SplashStyles.Default,
+                /** What the Random splash played last launch; read in the same snapshot as [splashStyle]. */
+                val lastRandomSplash: String? = null,
                 /** One of [BackgroundStyles.All]; [BackgroundStyles.None] until the user picks one. */
                 val backgroundStyle: String = BackgroundStyles.Default,
                 val backgroundIntensity: Float = BackgroundIntensity.DEFAULT
@@ -411,6 +417,12 @@ class SettingsManager(val context: Context) {
         val routinesCoachSeenFlow: Flow<Boolean> =
                 context.dataStore.data.map { preferences ->
                         preferences[ROUTINES_COACH_SEEN_KEY] ?: false
+                }
+
+        /** Files screen first-visit coach marks seen; false until [setFilesCoachSeen]. */
+        val filesCoachSeenFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[FILES_COACH_SEEN_KEY] ?: false
                 }
 
         /** Routines opened at least once; the More "New" badge shows while this is false (R-UX-05). */
@@ -643,10 +655,6 @@ class SettingsManager(val context: Context) {
                 context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = true }
         }
 
-        suspend fun resetOnboarding() {
-                context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = false }
-        }
-
         suspend fun markDashboardCoachSeen() {
                 context.dataStore.edit { it[DASHBOARD_COACH_SEEN_KEY] = true }
         }
@@ -657,6 +665,10 @@ class SettingsManager(val context: Context) {
 
         suspend fun setRoutinesCoachSeen(seen: Boolean) {
                 context.dataStore.edit { it[ROUTINES_COACH_SEEN_KEY] = seen }
+        }
+
+        suspend fun setFilesCoachSeen(seen: Boolean) {
+                context.dataStore.edit { it[FILES_COACH_SEEN_KEY] = seen }
         }
 
         suspend fun markRoutinesOpened() {
@@ -865,6 +877,10 @@ class SettingsManager(val context: Context) {
                 context.dataStore.edit { preferences -> writeBackground(preferences, style, intensity) }
         }
 
+        suspend fun recordRandomSplash(style: String) {
+                context.dataStore.edit { preferences -> preferences[SPLASH_LAST_RANDOM_KEY] = style }
+        }
+
         /**
          * One-time, idempotent move of every upgrading user, whatever style they had, onto Live
          * Handshake (RemEx-8g6n0; rule in [SplashStyles]). The read path already applies the same
@@ -949,6 +965,24 @@ class SettingsManager(val context: Context) {
 
         suspend fun setFileManagerShowHidden(show: Boolean) {
                 context.dataStore.edit { prefs -> prefs[fileManagerShowHiddenKey] = show }
+        }
+
+        // Files: sort order ("FIELD:asc|desc") and list/grid view, remembered between visits.
+        private val fileManagerSortKey = stringPreferencesKey("file_manager_sort")
+        private val fileManagerViewModeKey = stringPreferencesKey("file_manager_view_mode")
+
+        val fileManagerSortFlow: Flow<String?> =
+                context.dataStore.data.map { prefs -> prefs[fileManagerSortKey] }
+
+        suspend fun setFileManagerSort(encoded: String) {
+                context.dataStore.edit { prefs -> prefs[fileManagerSortKey] = encoded }
+        }
+
+        val fileManagerViewModeFlow: Flow<String?> =
+                context.dataStore.data.map { prefs -> prefs[fileManagerViewModeKey] }
+
+        suspend fun setFileManagerViewMode(mode: String) {
+                context.dataStore.edit { prefs -> prefs[fileManagerViewModeKey] = mode }
         }
 
         // ── File-sharing 2.1: full-browse SAF root + per-device trust ─────────────

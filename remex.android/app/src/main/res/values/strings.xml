@@ -160,7 +160,7 @@
     <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">Replay tutorial</string>
     <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough for setup, QR pairing, manual connection, and daily-use tips.</string>
-    <string name="settings_faq_hint">Need help with pairing, permissions, file transfer, or remote desktop performance? Open FAQ from the More tab.</string>
+    <string name="settings_faq_hint">Answers about pairing, permissions, file transfer and remote desktop performance.</string>
 
     
     <string name="screen_app_launcher_title">Apps</string>
@@ -604,7 +604,10 @@
     <string name="file_transfer_delete">Delete</string>
     <string name="file_transfer_pin_folder">Pin as shortcut</string>
     <string name="file_transfer_select_all">Select all</string>
-    <string name="file_transfer_selected">selected</string>
+    <plurals name="file_transfer_selected_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
     <string name="file_transfer_delete_selected">Delete selected</string>
     <string name="file_transfer_cancel_selection">Cancel selection</string>
     
@@ -1837,4 +1840,48 @@
     <string name="personalization_background_note">Animated backgrounds pause when the app is in the background, when Battery Saver is on, or when animations are turned off.</string>
     <string name="settings_ft_pc_changes_title">Let your PC change files</string>
     <string name="settings_ft_pc_changes_desc">Your PC can make, rename, move, copy and delete files and folders inside the folders you share. Deleting is permanent, and deleting a folder deletes everything in it. Whole-device browsing stays read-only.</string>
+    <string name="personalization_splash_random">Random</string>
+    <string name="personalization_splash_random_note">A different animation plays each time you open RemEx.</string>
+    <string name="personalization_reset_all">Reset appearance</string>
+    <string name="personalization_reset_all_title">Reset appearance?</string>
+    <string name="personalization_reset_all_body">Colors, fonts, card shapes, splash and background go back to how RemEx looks on a fresh install. Your language stays as it is.</string>
+    <string name="faq_search_hint">Search the FAQ</string>
+    <string name="faq_no_match">Nothing in the FAQ matches “%1$s”. Try a shorter word.</string>
+    <string name="settings_open_faq">Open FAQ</string>
+    <string name="settings_pc_alerts_blocked">Android has notifications turned off for RemEx, so these alerts can\'t show.</string>
+    <string name="settings_battery_ok">RemEx is allowed to run in the background.</string>
+    <string name="files_delete_confirm_title">Delete permanently?</string>
+    <string name="files_delete_confirm_one">This will permanently delete “%1$s” from your PC. It isn\'t moved to a recycle bin, and this can\'t be undone.</string>
+    <plurals name="files_delete_confirm_many">
+        <item quantity="one">This will permanently delete %d item from your PC. It isn\'t moved to a recycle bin, and this can\'t be undone.</item>
+        <item quantity="other">This will permanently delete %d items from your PC. They aren\'t moved to a recycle bin, and this can\'t be undone.</item>
+    </plurals>
+    <string name="files_remove_shortcut">Remove shortcut</string>
+    <string name="files_picker_no_subfolders">No folders inside this one. You can still send or save here.</string>
+    <string name="files_coach_tree_compact">Folders on this phone and your PC are in the folder list. Tap ☰ to open it.</string>
+    <string name="files_coach_tree_expanded">Folders on this phone and your PC are in the list on the left.</string>
+    <string name="files_coach_select">Press and hold a file to pick several, then send them across with the arrows button.</string>
+    <string name="app_launcher_opening">Opening %1$s on your PC…</string>
+    <string name="app_launcher_open_failed">Your PC couldn\'t open %1$s. Check it\'s still in the app list on the PC.</string>
+    <string name="app_launcher_search_hint">Search apps…</string>
+    <string name="app_launcher_no_matches">No apps match that search.</string>
+    <string name="task_manager_no_matches">No programs match \"%1$s\".</string>
+    <string name="task_manager_ended">Ended %1$s.</string>
+    <string name="task_manager_end_action">End this program</string>
+    <string name="dashboard_waiting_readings">Waiting for readings from your PC…</string>
+    <string name="dashboard_waiting_readings_hint">If nothing shows up, check RemEx is open on the PC. For detailed sensors, HWiNFO must be running.</string>
+    <string name="dashboard_all_cards_removed">All cards removed.</string>
+    <string name="dashboard_search_sensors">Search sensors…</string>
+    <string name="dashboard_no_sensor_matches">No sensors match that search.</string>
+    <string name="coach_step_of">Tip %1$d of %2$d</string>
+    <string name="tutorial_page_of">Page %1$d of %2$d</string>
+    <string name="trackpad_gesture_hint">Drag to move · Tap to click · Hold to right-click</string>
+    <string name="desktop_touch_controls_title">Touch controls</string>
+    <string name="desktop_touch_tap">Tap to click</string>
+    <string name="desktop_touch_hold">Press and hold to right-click</string>
+    <string name="desktop_touch_two_finger">Drag with two fingers to scroll</string>
+    <string name="desktop_touch_pinch">Pinch to zoom in</string>
+    <string name="about_version_mismatch">Your phone and PC are on different versions of RemEx. Update the older one so every feature works.</string>
+    <string name="about_copy_versions">Copy version details</string>
+    <string name="qr_scanner_not_remex">That QR code isn\'t from RemEx. Scan the one RemEx shows on your PC.</string>
 </resources>

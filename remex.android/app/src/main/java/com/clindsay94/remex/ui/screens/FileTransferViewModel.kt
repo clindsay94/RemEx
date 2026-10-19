@@ -166,6 +166,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private val settingsManager = SettingsManager(application)
 
+    /** First-visit coach marks; null until the saved flag has loaded, so the tips never flash for a returning user. */
+    val filesCoachSeen: StateFlow<Boolean?> =
+        settingsManager.filesCoachSeenFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setFilesCoachSeen(seen: Boolean) {
+        viewModelScope.launch { settingsManager.setFilesCoachSeen(seen) }
+    }
+
     /**
      * "Show hidden items" (RemEx-wqo7a.6): off by default and remembered. Applied in
      * [recomputeDisplayed] only, so it changes what the listing shows and nothing a transfer does.
@@ -316,6 +324,19 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 recomputeDisplayed()
             }
         }
+        viewModelScope.launch {
+            settingsManager.fileManagerSortFlow.collect { raw ->
+                val saved = FileManagerLogic.decodeSort(raw)
+                if (_sortOption.value == saved) return@collect
+                _sortOption.value = saved
+                recomputeDisplayed()
+            }
+        }
+        viewModelScope.launch {
+            settingsManager.fileManagerViewModeFlow.collect { raw ->
+                _viewMode.value = FileViewMode.entries.firstOrNull { it.name == raw } ?: FileViewMode.LIST
+            }
+        }
         loadRemoteRoots()
     }
 
@@ -448,10 +469,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun setSort(field: SortField) {
         _sortOption.value = FileManagerLogic.nextSort(_sortOption.value, field)
         recomputeDisplayed()
+        val encoded = FileManagerLogic.encodeSort(_sortOption.value)
+        viewModelScope.launch { settingsManager.setFileManagerSort(encoded) }
     }
 
     fun toggleViewMode() {
-        _viewMode.value = if (_viewMode.value == FileViewMode.LIST) FileViewMode.GRID else FileViewMode.LIST
+        val next = if (_viewMode.value == FileViewMode.LIST) FileViewMode.GRID else FileViewMode.LIST
+        _viewMode.value = next
+        viewModelScope.launch { settingsManager.setFileManagerViewMode(next.name) }
     }
 
     /** Turns "Show hidden items" on or off and remembers the choice. */

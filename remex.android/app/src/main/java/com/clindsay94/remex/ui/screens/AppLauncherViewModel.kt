@@ -10,9 +10,13 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -91,7 +95,8 @@ class AppLauncherViewModel(
                         }
                     )
                 }
-                remexCoreClient.SendCommand(request.toString())
+                val responseJson = remexCoreClient.SendCommand(request.toString()).getOrNull()
+                _launchOutcomes.tryEmit(LaunchOutcome(app.name, launchSucceeded(responseJson)))
             } else {
                 Log.w(
                     "AppLauncherViewModel",
@@ -101,6 +106,13 @@ class AppLauncherViewModel(
             }
         }
     }
+
+    // An event, not state: an answer nobody is on the page to see is dropped, never replayed later (AN-4.1).
+    private val _launchOutcomes =
+        MutableSharedFlow<LaunchOutcome>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** What the PC said about each launch, for the Apps page to show once. */
+    val launchOutcomes: SharedFlow<LaunchOutcome> = _launchOutcomes.asSharedFlow()
 
     private val refreshTracker = LauncherRefreshTracker()
 
@@ -157,6 +169,19 @@ class AppLauncherViewModel(
                 AppLauncherViewModel(settingsManager, remexClientManager, remexCoreClient)
             }
         }
+    }
+}
+
+/** The PC's answer to tapping an app: [success] is false when it refused or didn't answer. */
+data class LaunchOutcome(val appName: String, val success: Boolean)
+
+/** True only when the host's CommandResponse says `"success": true`; a missing or unreadable reply is a no. */
+internal fun launchSucceeded(responseJson: String?): Boolean {
+    if (responseJson.isNullOrBlank()) return false
+    return try {
+        JSONObject(responseJson).optBoolean("success", false)
+    } catch (_: JSONException) {
+        false
     }
 }
 

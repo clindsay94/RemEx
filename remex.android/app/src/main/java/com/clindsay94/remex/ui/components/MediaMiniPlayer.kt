@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,6 +66,9 @@ internal val MiniPlayerHeight = 72.dp
  *
  * @param onOpen Tapping the bar (outside the play/pause button) opens [MediaNowPlayingSheet].
  * @param onPlayPause Sends the same play/pause key [MediaControlSection] uses, through `onSendKey`.
+ * @param onNext Sends the next-track key, the same way.
+ * @param enabled False when the PC can't take key presses (offline, or no input simulation): the
+ *   play/pause and next buttons grey out, while the bar still opens the sheet.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -73,6 +77,8 @@ fun MediaMiniPlayer(
         artwork: Bitmap?,
         onOpen: () -> Unit,
         onPlayPause: () -> Unit,
+        onNext: () -> Unit,
+        enabled: Boolean,
         modifier: Modifier = Modifier
 ) {
     // UNKNOWN has no reading to show a bar about - same reasoning as NowPlayingLine's early return
@@ -164,7 +170,7 @@ fun MediaMiniPlayer(
                         }
                     }
 
-                    IconButton(onClick = onPlayPause, shapes = rememberRemexIconButtonShapes()) {
+                    IconButton(onClick = onPlayPause, enabled = enabled, shapes = rememberRemexIconButtonShapes()) {
                         // Play and pause swap with a quick scale-and-fade rather than a cut (phase 6).
                         RemexSwap(
                                 targetState = playback.status == MediaPlaybackStatus.PLAYING,
@@ -175,6 +181,13 @@ fun MediaMiniPlayer(
                                     contentDescription = stringResource(playPauseLabelRes(playback.status))
                             )
                         }
+                    }
+
+                    IconButton(onClick = onNext, enabled = enabled, shapes = rememberRemexIconButtonShapes()) {
+                        Icon(
+                                imageVector = Icons.Default.SkipNext,
+                                contentDescription = stringResource(R.string.rc_media_next)
+                        )
                     }
                 }
 

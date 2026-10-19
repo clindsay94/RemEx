@@ -34,6 +34,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberOneShotEvent
 import com.clindsay94.remex.ui.components.rememberRemexCollapsingScrollBehavior
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.CardShapes
@@ -63,6 +67,7 @@ fun TaskManagerScreen(
         headerAccessory: @Composable () -> Unit = {},
 ) {
     val processes by viewModel.processes.collectAsStateWithLifecycle()
+    val hasAnyProcesses by viewModel.hasAnyProcesses.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     // Polling waits for the host's reconnect ack: the list request is refused before it.
     val isAuthenticated by RemexClientManager.isAuthenticated.collectAsStateWithLifecycle()
@@ -74,6 +79,7 @@ fun TaskManagerScreen(
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val killError by viewModel.killError.collectAsStateWithLifecycle()
+    var killResult by rememberOneShotEvent(viewModel.killResults)
     val loadError by viewModel.loadError.collectAsStateWithLifecycle()
 
     // isVisible is pager-only (current page, not mid-scroll) and never reflects the app going to
@@ -97,12 +103,15 @@ fun TaskManagerScreen(
             isConnected = isConnected,
             isRefreshing = isRefreshing,
             killError = killError,
+            killResult = killResult,
             loadError = loadError,
+            hasAnyProcesses = hasAnyProcesses,
             onRefreshProcesses = { viewModel.refreshProcesses() },
             onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
             onUpdateSortField = { viewModel.updateSortField(it) },
             onKillProcess = { viewModel.killProcess(it) },
             onClearKillError = { viewModel.clearKillError() },
+            onClearKillResult = { killResult = null },
             onClearLoadError = { viewModel.clearLoadError() },
             onNavigateToConnection = onNavigateToConnection,
             headerAccessory = headerAccessory,
@@ -114,22 +123,30 @@ fun TaskManagerScreen(
     )
 }
 
-internal enum class TaskManagerListState { DISCONNECTED, NEEDS_PAIRING, LOADING, LIST }
+internal enum class TaskManagerListState { DISCONNECTED, NEEDS_PAIRING, LOADING, NO_MATCHES, LIST }
 
 /**
  * What the process list area shows. A PC that no longer recognises this phone refuses the list
  * request, so "Fetching processes" would never end: it says it needs pairing instead (sweep P3).
+ *
+ * [hasProcesses] is the list as the PC sent it, before the search filter, so LOADING shows only
+ * while nothing has arrived. [hasVisibleProcesses] is what is left after filtering: a search that
+ * leaves nothing is NO_MATCHES, not an empty list.
  */
 internal fun taskManagerListState(
         isConnected: Boolean,
         needsPairing: Boolean,
         hasProcesses: Boolean,
         isRefreshing: Boolean,
+        hasVisibleProcesses: Boolean = hasProcesses,
+        searchQuery: String = "",
 ): TaskManagerListState =
         when {
             !isConnected && !hasProcesses -> TaskManagerListState.DISCONNECTED
             isConnected && needsPairing -> TaskManagerListState.NEEDS_PAIRING
             !hasProcesses && isRefreshing -> TaskManagerListState.LOADING
+            isConnected && hasProcesses && !hasVisibleProcesses && searchQuery.isNotBlank() ->
+                    TaskManagerListState.NO_MATCHES
             else -> TaskManagerListState.LIST
         }
 
@@ -153,8 +170,13 @@ fun TaskManagerScreenContent(
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
         killError: String? = null,
+        /** "Ended X." after the PC confirms an end; shown in the same snackbar as [killError]. */
+        killResult: String? = null,
         loadError: String? = null,
+        /** The list as the PC sent it, before the search filter; see [taskManagerListState]. */
+        hasAnyProcesses: Boolean = processes.isNotEmpty(),
         onClearKillError: () -> Unit = {},
+        onClearKillResult: () -> Unit = {},
         onClearLoadError: () -> Unit = {},
         /**
          * Shown directly under the header, inside the top bar slot so the content pads below it:
@@ -174,6 +196,12 @@ fun TaskManagerScreenContent(
         if (killError != null) {
             snackbarHostState.showSnackbar(killError)
             onClearKillError()
+        }
+    }
+    LaunchedEffect(killResult) {
+        if (killResult != null) {
+            snackbarHostState.showSnackbar(killResult)
+            onClearKillResult()
         }
     }
 
@@ -255,8 +283,10 @@ fun TaskManagerScreenContent(
                         taskManagerListState(
                                 isConnected = isConnected,
                                 needsPairing = needsPairing,
-                                hasProcesses = processes.isNotEmpty(),
+                                hasProcesses = hasAnyProcesses,
                                 isRefreshing = isRefreshing,
+                                hasVisibleProcesses = processes.isNotEmpty(),
+                                searchQuery = searchQuery,
                         )
                 AnimatedContent(
                         targetState = listState,
@@ -294,6 +324,25 @@ fun TaskManagerScreenContent(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+                            }
+                        }
+                        TaskManagerListState.NO_MATCHES -> {
+                            Column(
+                                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+                            ) {
+                                Text(
+                                        text = stringResource(R.string.task_manager_no_matches, searchQuery.trim()),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                )
+                                TextButton(
+                                        onClick = { onUpdateSearchQuery("") },
+                                        shapes = rememberRemexButtonShapes(),
+                                        contentPadding = ButtonDefaults.TextButtonContentPadding
+                                ) { Text(stringResource(R.string.cd_clear_search)) }
                             }
                         }
                         TaskManagerListState.LIST -> {
@@ -673,6 +722,7 @@ private fun ProcessCard(
     var showConfirm by remember { mutableStateOf(false) }
     val adaptivePadding = cardInnerPadding()
     val row = ProcessRows.rowFor(process, maxCpu = maxCpu, maxRam = maxRam)
+    val endActionLabel = stringResource(R.string.task_manager_end_action)
 
     if (showConfirm) {
         AlertDialog(
@@ -712,7 +762,10 @@ private fun ProcessCard(
     }
 
     Card(
-            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            // The label makes TalkBack say what a tap does ("End this program"); the click itself
+            // stays the Card's own.
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
+                    .semantics { onClick(label = endActionLabel, action = null) },
             // Always a rounded rectangle, never a capsule or a morph shape: a list row is a
             // container, and the shared card anatomy (RemEx-kq10x.5) is tonal fill + hairline.
             shape = RoundedCornerShape(cornerRadius.dp),

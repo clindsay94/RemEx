@@ -42,6 +42,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.MoreVert
@@ -52,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntSize
@@ -87,8 +92,12 @@ fun FileManagerToolbar(
     onShowHiddenChange: (Boolean) -> Unit = {},
     /** The one primary action when the folder can't be written (the phone side's "Add folder"). */
     primaryAction: ToolbarAction? = null,
+    /** When this changes the search field closes (a phone search shouldn't follow you to another folder). */
+    searchResetKey: Any? = null,
 ) {
-    var searchExpanded by remember { mutableStateOf(false) }
+    var searchExpanded by remember(searchResetKey) { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     var sortMenuOpen by remember { mutableStateOf(false) }
 
     // The icon row and the full-width search field swap through AnimatedContent: the field grows
@@ -110,10 +119,12 @@ fun FileManagerToolbar(
         modifier = modifier.fillMaxWidth(),
     ) { expanded ->
         if (expanded) {
+            // Without this the field opens unfocused and the first tap only focuses it.
+            LaunchedEffect(Unit) { focusRequester.requestFocus() }
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.file_manager_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -130,7 +141,7 @@ fun FileManagerToolbar(
                     }
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(),
+                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
             )
         } else {
             ToolbarIconRow(
@@ -331,7 +342,7 @@ fun FileManagerSelectionBar(
             }
             // The count rolls up or down as items are picked (phase 6), like a sensor reading.
             AnimatedValueText(
-                text = "$selectedCount ${stringResource(R.string.file_transfer_selected)}",
+                text = pluralStringResource(R.plurals.file_transfer_selected_count, selectedCount, selectedCount),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
             )

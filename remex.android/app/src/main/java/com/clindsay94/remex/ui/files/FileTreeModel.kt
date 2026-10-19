@@ -24,6 +24,8 @@ data class TreeRootInfo(
     val isBookmark: Boolean = false,
     /** PC: a whole drive, listed after "Browse device". */
     val isVolume: Boolean = false,
+    /** PC: a folder this phone pinned, so it can take the shortcut off the list again. */
+    val canRemove: Boolean = false,
 )
 
 /** One visible line of the tree, flattened for a LazyColumn. */

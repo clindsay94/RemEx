@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Terminal
@@ -43,6 +44,7 @@ import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.files.FileClipboard
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import org.json.JSONObject
 import com.clindsay94.remex.ui.components.RemexHapticEvent
@@ -73,16 +75,28 @@ fun AboutScreenContent(
     val disconnectedLabel = stringResource(R.string.status_disconnected)
     val unknownLabel = stringResource(R.string.about_status_unknown)
 
+    // The host's own version string, kept apart from pcInfo so the mismatch note and the copy
+    // button compare and report the version rather than the "Windows (Native)" fallback.
+    val hostVersion =
+            try {
+                if (isConnected && hostCapabilities.isNotEmpty()) {
+                    hostVersionLabel(JSONObject(hostCapabilities).optString("version", ""))
+                } else {
+                    ""
+                }
+            } catch (e: Exception) {
+                ""
+            }
+
     val pcInfo =
             try {
                 if (isConnected && hostCapabilities.isNotEmpty()) {
                     val json = JSONObject(hostCapabilities)
-                    val version = json.optString("version", "")
                     val platform = json.optString("platform", "")
                     val runtime = json.optString("runtimeMode", "")
 
-                    if (version.isNotEmpty()) {
-                        version
+                    if (hostVersion.isNotEmpty()) {
+                        hostVersion
                     } else if (platform.isNotEmpty() || runtime.isNotEmpty()) {
                         "$platform ($runtime)"
                     } else {
@@ -248,6 +262,40 @@ fun AboutScreenContent(
                     ) {
                         Text(stringResource(R.string.about_pc_host_label))
                     }
+                    if (versionsDiffer(BuildConfig.VERSION_NAME, hostVersion)) {
+                        Text(
+                                stringResource(R.string.about_version_mismatch),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                    TextButton(
+                            onClick = {
+                                haptics.perform(RemexHapticEvent.Confirm)
+                                FileClipboard.copy(
+                                        context,
+                                        "RemEx versions",
+                                        versionDetailsText(
+                                                BuildConfig.VERSION_NAME,
+                                                BuildConfig.BUILD_ID,
+                                                hostVersion,
+                                                hostBuildId
+                                        )
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.TextButtonContentPadding
+                    ) {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null /* decorative: the label says it */,
+                                modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.about_copy_versions))
+                    }
                 }
             }
 
@@ -402,4 +450,35 @@ internal fun remoteBuildIdLabel(raw: String): String {
     if (plus < 0) return trimmed
     val sha = trimmed.substring(0, plus).trim()
     return if (sha.isEmpty()) "" else "$sha+"
+}
+
+/** The host sends a four-part "3.1.0.0"; the phone shows three, so drop a trailing ".0" fourth part. */
+internal fun hostVersionLabel(raw: String): String {
+    val trimmed = raw.trim()
+    val parts = trimmed.split('.')
+    return if (parts.size == 4 && parts[3] == "0") parts.take(3).joinToString(".") else trimmed
+}
+
+/** True when the first three numeric parts differ; false if either side can't be read, so a fallback label never warns. */
+internal fun versionsDiffer(phone: String, pc: String): Boolean {
+    val a = versionCore(phone) ?: return false
+    val b = versionCore(pc) ?: return false
+    return a != b
+}
+
+private fun versionCore(version: String): List<Int>? {
+    val parts = version.trim().split('.')
+    if (parts.size < 3) return null
+    return parts.take(3).map { part -> part.takeWhile { it.isDigit() }.toIntOrNull() ?: return null }
+}
+
+/** Two plain lines for the clipboard; no host address, and the PC line only when a version is known. */
+internal fun versionDetailsText(phoneVersion: String, phoneBuildId: String, pcVersion: String, pcBuildId: String): String {
+    fun line(name: String, version: String, buildId: String): String {
+        val id = if (buildId.isEmpty() || buildId == "unknown") "" else " (Build $buildId)"
+        return "$name $version$id"
+    }
+    val lines = mutableListOf(line("RemEx Android", phoneVersion, phoneBuildId))
+    if (pcVersion.isNotEmpty()) lines += line("RemEx PC", pcVersion, pcBuildId)
+    return lines.joinToString("\n")
 }

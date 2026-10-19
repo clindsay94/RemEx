@@ -28,6 +28,16 @@ class RoutineSensorCatalogTest {
         ]}
         """.trimIndent()
 
+    private fun reading(value: Double, unit: String) = RoutineSensorOption("/id", "Sensor", unit, MetricKind.TEMP_C, "G", value)
+
+    @Test
+    fun `a sensor's reading is its number and unit, and nothing until the PC reports one`() {
+        assertEquals("54 °C", RoutineSensorCatalog.formatReading(reading(54.0, "°C")))
+        assertEquals("72.5 %", RoutineSensorCatalog.formatReading(reading(72.5, "%")))
+        assertEquals("54", RoutineSensorCatalog.formatReading(reading(54.0, "")))
+        assertNull(RoutineSensorCatalog.formatReading(reading(Double.NaN, "°C")))
+    }
+
     @Test
     fun `the catalog keeps the PC's own ids, drops unnamed and duplicate readings, and sorts by group`() {
         val options = checkNotNull(RoutineSensorCatalog.parse(frame))

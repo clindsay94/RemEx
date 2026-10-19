@@ -294,6 +294,52 @@ object FileManagerLogic {
         return normalized.isEmpty()
     }
 
+    /** What the Back button does inside Files before it leaves the screen. */
+    sealed interface BackStep {
+        data object ClearSelection : BackStep
+        data object CloseSearch : BackStep
+        data class Up(val parent: String) : BackStep
+        data object None : BackStep
+    }
+
+    /** One step of Back: end a selection first, then close search, then go up a folder; [BackStep.None] at a root. */
+    fun backStep(selecting: Boolean, searching: Boolean, path: String): BackStep = when {
+        selecting -> BackStep.ClearSelection
+        searching -> BackStep.CloseSearch
+        isAtRoot(path) -> BackStep.None
+        else -> BackStep.Up(parentPath(path))
+    }
+
+    /** What the permanent-delete dialog says: the one name being deleted, or how many items. */
+    sealed interface DeleteConfirmation {
+        data class One(val name: String) : DeleteConfirmation
+        data class Many(val count: Int) : DeleteConfirmation
+    }
+
+    fun deleteConfirmation(targets: List<RemoteFileEntry>): DeleteConfirmation =
+        if (targets.size == 1) DeleteConfirmation.One(targets.single().name) else DeleteConfirmation.Many(targets.size)
+
+    /** Where a rename starts its selection: before the last '.', unless that dot opens the name (".bashrc"). */
+    fun renameSelectionEnd(name: String): Int {
+        val dot = name.lastIndexOf('.')
+        return if (dot > 0) dot else name.length
+    }
+
+    /** Stored as "FIELD:asc" or "FIELD:desc". */
+    fun encodeSort(option: SortOption): String = "${option.field.name}:${if (option.ascending) "asc" else "desc"}"
+
+    /** Reads [encodeSort]'s form back; anything else (including null) is the default sort. */
+    fun decodeSort(raw: String?): SortOption {
+        val parts = raw?.split(':') ?: return SortOption()
+        if (parts.size != 2) return SortOption()
+        val field = SortField.entries.firstOrNull { it.name == parts[0] } ?: return SortOption()
+        return when (parts[1]) {
+            "asc" -> SortOption(field, ascending = true)
+            "desc" -> SortOption(field, ascending = false)
+            else -> SortOption()
+        }
+    }
+
     /** Parses a `file_roots_response` `roots` array into [ParsedSharedRoot]s. A null array yields empty. */
     fun parseSharedRoots(arr: JSONArray?): List<ParsedSharedRoot> = buildList {
         if (arr == null) return@buildList
@@ -372,6 +418,18 @@ object FileManagerLogic {
             bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
             else -> "$bytes B"
         }
+
+    /** Which pieces a list row's second line shows; the row turns them into text. */
+    data class SubtitleParts(val sizeBytes: Long?, val showDate: Boolean, val relativePath: String?) {
+        val isEmpty: Boolean get() = sizeBytes == null && !showDate && relativePath == null
+    }
+
+    fun subtitleParts(entry: RemoteFileEntry): SubtitleParts =
+        SubtitleParts(
+            sizeBytes = entry.sizeBytes.takeIf { !entry.isDirectory && it > 0 },
+            showDate = entry.modifiedUnixMs > 0,
+            relativePath = entry.relativePath.takeIf { !entry.isDirectory },
+        )
 
     /**
      * Machine-readable reasons the host sends when it refuses consent without anyone being asked.

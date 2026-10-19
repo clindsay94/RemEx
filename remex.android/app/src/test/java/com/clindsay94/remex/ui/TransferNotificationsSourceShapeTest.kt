@@ -48,4 +48,15 @@ class TransferNotificationsSourceShapeTest {
         val silent = Regex("""(?<!fun )discardEmptyDownloadTarget\(t\)""").findAll(engine).count()
         assertEquals("only abandonDownload may call the silent cleanup directly", 1, silent)
     }
+
+    @Test
+    fun downloadedNotification_offersShare_onItsOwnRequestCode() {
+        val src = source("service/FileTransferNotificationManager.kt")
+        val start = src.indexOf("fun showDownloadComplete(")
+        val body = src.substring(start, src.indexOf("fun showTransferFailed(", start))
+        assertTrue("Share must be built for the finished download", body.contains("FileOpener.buildShareIntent(context, localUri, fileName)"))
+        assertTrue("Share needs its own slot, disjoint from Open", body.contains("notificationId * 2 + 1"))
+        assertEquals("Open and the tap fallback sit on notificationId * 2", 2, Regex("""notificationId \* 2,""").findAll(body).count())
+        assertFalse("an adjacent request code would cross-wire two chooser PendingIntents", Regex("""getActivity\(\s*context,\s*notificationId,""").containsMatchIn(body))
+    }
 }

@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.routines
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -705,6 +706,12 @@ private fun RoutinesListPane(
             }
         }
 
+        val dismissCoach = {
+            coachReplay = false
+            coachStep = 0
+            viewModel.setCoachSeen(true)
+        }
+        BackHandler(enabled = showCoach, onBack = dismissCoach)
         if (showCoach) {
             RoutinesCoachOverlay(
                 step = coachStep,
@@ -719,11 +726,7 @@ private fun RoutinesListPane(
                         coachStep++
                     }
                 },
-                onDismiss = {
-                    coachReplay = false
-                    coachStep = 0
-                    viewModel.setCoachSeen(true)
-                },
+                onDismiss = dismissCoach,
             )
         }
     }
@@ -1282,6 +1285,7 @@ private fun RoutinesCoachOverlay(
             )
         }
         CoachPanel(
+            stepLabel = stringResource(R.string.coach_step_of, step + 1, 2),
             body = stringResource(if (step == 0) R.string.routines_coach_card else R.string.routines_coach_pause),
             isLast = step >= 1,
             onAdvance = onAdvance,

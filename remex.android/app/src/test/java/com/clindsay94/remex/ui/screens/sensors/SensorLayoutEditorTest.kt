@@ -164,6 +164,32 @@ class SensorLayoutEditorTest {
         assertEquals(listOf("a", "b", "c", "d"), order())
     }
 
+    @Test
+    fun `undo offered for clear all restores the cards, and a newer edit makes it a no-op`() {
+        editor.enterEditMode()
+        assertTrue(editor.clearAll())
+        assertTrue(editor.layout.value.enabled.isEmpty())
+        val offeredFor = editor.revision.value
+        assertTrue(editor.undoIfUnchanged(offeredFor))
+        assertEquals(setOf("a", "b", "c", "d"), editor.layout.value.enabled)
+
+        assertTrue(editor.clearAll())
+        val stale = editor.revision.value
+        editor.setCardShown("a", true) { null }
+        val afterNewerEdit = editor.layout.value
+        assertFalse(editor.undoIfUnchanged(stale))
+        assertEquals(afterNewerEdit, editor.layout.value)
+    }
+
+    @Test
+    fun `the waiting banner shows only when connected, paired, not editing and no readings`() {
+        assertTrue(SensorsChrome.waitingForReadings(isConnected = true, needsPairing = false, editMode = false, hasReadings = false))
+        assertFalse(SensorsChrome.waitingForReadings(isConnected = false, needsPairing = false, editMode = false, hasReadings = false))
+        assertFalse(SensorsChrome.waitingForReadings(isConnected = true, needsPairing = true, editMode = false, hasReadings = false))
+        assertFalse(SensorsChrome.waitingForReadings(isConnected = true, needsPairing = false, editMode = true, hasReadings = false))
+        assertFalse(SensorsChrome.waitingForReadings(isConnected = true, needsPairing = false, editMode = false, hasReadings = true))
+    }
+
     // ── Phase 3 review R5: the snackbar's Undo targets the removal it was offered for ──
 
     @Test

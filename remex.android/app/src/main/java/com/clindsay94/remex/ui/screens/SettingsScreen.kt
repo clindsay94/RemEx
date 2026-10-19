@@ -1,8 +1,12 @@
 package com.clindsay94.remex.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Parcelable
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -36,12 +40,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Input
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -55,6 +61,11 @@ import com.clindsay94.remex.ui.components.LocalRemexUpAction
 import androidx.compose.runtime.key
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -124,7 +135,8 @@ fun SettingsScreen(
     onReplayTutorial: (() -> Unit)? = null,
     onNavigateToAbout: (() -> Unit)? = null,
     onNavigateToQrScanner: (() -> Unit)? = null,
-    onNavigateToShareDiagnostics: (() -> Unit)? = null
+    onNavigateToShareDiagnostics: (() -> Unit)? = null,
+    onNavigateToFaq: (() -> Unit)? = null
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsCategory>()
     val scope = rememberCoroutineScope()
@@ -161,7 +173,8 @@ fun SettingsScreen(
                         onReplayTutorial = onReplayTutorial,
                         onNavigateToAbout = onNavigateToAbout,
                         onNavigateToQrScanner = onNavigateToQrScanner,
-                        onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
+                        onNavigateToShareDiagnostics = onNavigateToShareDiagnostics,
+                        onNavigateToFaq = onNavigateToFaq
                     )
                 }
             }
@@ -349,7 +362,8 @@ private fun SettingsDetailContent(
     onReplayTutorial: (() -> Unit)?,
     onNavigateToAbout: (() -> Unit)?,
     onNavigateToQrScanner: (() -> Unit)?,
-    onNavigateToShareDiagnostics: (() -> Unit)?
+    onNavigateToShareDiagnostics: (() -> Unit)?,
+    onNavigateToFaq: (() -> Unit)?
 ) {
     // Each tab provides its own layout/scrolling
     when (category) {
@@ -363,7 +377,8 @@ private fun SettingsDetailContent(
         SettingsCategory.HELP -> HelpTab(
             onReplayTutorial = onReplayTutorial,
             onNavigateToAbout = onNavigateToAbout,
-            onNavigateToShareDiagnostics = onNavigateToShareDiagnostics
+            onNavigateToShareDiagnostics = onNavigateToShareDiagnostics,
+            onNavigateToFaq = onNavigateToFaq
         )
     }
 }
@@ -844,6 +859,21 @@ private fun NotificationsTab() {
     val haptics = rememberRemexHaptics()
     val enabled by settingsManager.pcAlertsEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
 
+    // Re-checked on every resume, because both are changed in system settings. Starts optimistic so
+    // a blocked notice never flashes before the first check.
+    var canPost by remember { mutableStateOf(true) }
+    var batteryOk by remember { mutableStateOf(true) }
+    LifecycleResumeEffect(Unit) {
+        canPost =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED &&
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
+        batteryOk =
+            context.getSystemService(PowerManager::class.java)
+                ?.isIgnoringBatteryOptimizations(context.packageName) == true
+        onPauseOrDispose {}
+    }
+
     val tabScrollState = rememberScrollState()
     com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -897,6 +927,91 @@ private fun NotificationsTab() {
                     Switch(checked = enabled, onCheckedChange = null)
                 }
             }
+
+            if (enabled && !canPost) {
+                Card(
+                        colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                ) {
+                    Column(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null)
+                            Text(
+                                    text = stringResource(R.string.settings_pc_alerts_blocked),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                            )
+                        }
+                        TextButton(
+                                onClick = {
+                                    haptics.perform(RemexHapticEvent.Press)
+                                    val intent =
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    runCatching { context.startActivity(intent) }
+                                },
+                                modifier = Modifier.align(Alignment.End),
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                        ) { Text(stringResource(R.string.routines_messages_blocked_fix)) }
+                    }
+                }
+            }
+
+            Card(
+                    colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+            ) {
+                Column(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                            text = stringResource(R.string.tutorial_battery_title),
+                            style = MaterialTheme.typography.titleSmall
+                    )
+                    if (batteryOk) {
+                        Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                    text = stringResource(R.string.settings_battery_ok),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        Text(
+                                text = stringResource(R.string.tutorial_battery_body),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedButton(
+                                onClick = {
+                                    haptics.perform(RemexHapticEvent.Press)
+                                    openBatteryOptimisationSettings(context, context::startActivity)
+                                },
+                                shapes = rememberRemexButtonShapes(),
+                                contentPadding = ButtonDefaults.ContentPadding
+                        ) { Text(stringResource(R.string.tutorial_battery_action)) }
+                    }
+                }
+            }
         }
     }
 }
@@ -904,13 +1019,13 @@ private fun NotificationsTab() {
 private fun HelpTab(
     onReplayTutorial: (() -> Unit)?,
     onNavigateToAbout: (() -> Unit)?,
-    onNavigateToShareDiagnostics: (() -> Unit)? = null
+    onNavigateToShareDiagnostics: (() -> Unit)? = null,
+    onNavigateToFaq: (() -> Unit)? = null
 ) {
     val haptics = rememberRemexHaptics()
-    val context = LocalContext.current
-    val settingsManager = remember { SettingsManager(context) }
-    val scope = rememberCoroutineScope()
 
+    val tabScrollState = rememberScrollState()
+    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
     val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
@@ -925,7 +1040,8 @@ private fun HelpTab(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .verticalScroll(tabScrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -934,11 +1050,8 @@ private fun HelpTab(
                 OutlinedButton(
                         onClick = {
                             haptics.perform(RemexHapticEvent.Press)
-                            scope.launch {
-                                // Reset onboarding flag so the tutorial shows
-                                settingsManager.resetOnboarding()
-                                onReplayTutorial()
-                            }
+                            // The onboarding flag is left alone: backing out of a replay must not re-arm the first-run tour.
+                            onReplayTutorial()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shapes = rememberRemexButtonShapes(),
@@ -957,6 +1070,18 @@ private fun HelpTab(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (onNavigateToFaq != null) {
+                OutlinedButton(
+                        onClick = {
+                            haptics.perform(RemexHapticEvent.Press)
+                            onNavigateToFaq()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shapes = rememberRemexButtonShapes(),
+                        contentPadding = ButtonDefaults.ContentPadding
+                ) { Text(stringResource(R.string.settings_open_faq)) }
+            }
 
             if (onNavigateToShareDiagnostics != null) {
                 Spacer(modifier = Modifier.height(8.dp))

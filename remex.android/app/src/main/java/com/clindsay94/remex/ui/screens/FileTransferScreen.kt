@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Size
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -78,16 +79,23 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,6 +109,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.service.FileManageOperations
 import com.clindsay94.remex.share.FileOpener
 import com.clindsay94.remex.ui.components.FileConflictSheet
+import com.clindsay94.remex.ui.components.FileManagerConfirmDialog
 import com.clindsay94.remex.ui.components.FileManagerBreadcrumbs
 import com.clindsay94.remex.ui.components.FileManagerDestinationSheet
 import com.clindsay94.remex.ui.components.FileManagerGridItem
@@ -175,13 +184,20 @@ fun FileTransferScreen(
     val volumesPending by vm.volumesPending.collectAsStateWithLifecycle()
     val transferQueue by vm.transferQueue.collectAsStateWithLifecycle()
     val conflictPrompt by vm.conflictPrompt.collectAsStateWithLifecycle()
+    val filesCoachSeen by vm.filesCoachSeen.collectAsStateWithLifecycle()
 
     val adaptive = currentWindowAdaptiveInfoV2()
     val expanded = adaptive.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
+    var coachStep by rememberSaveable { mutableIntStateOf(0) }
+    var navIconAnchor by remember { mutableStateOf(Rect.Zero) }
+    var coachOrigin by remember { mutableStateOf(Offset.Zero) }
+    val coachVisible = filesCoachSeen == false
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val detailHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Hidden
     val listHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Hidden
+    // A full-screen preview or an open drawer takes Back first; the folder list only sees it once both are gone.
+    val backEnabled = !listHidden && drawerState.isClosed
 
     // A preview nobody can see stops: no live tail, no image still downloading, no fingerprint still running.
     LaunchedEffect(detailHidden) { if (detailHidden) vm.preview.show(null) }
@@ -197,7 +213,7 @@ fun FileTransferScreen(
 
     // ── Roots as the tree and pickers see them ─────────────────────────────────
     val pcRoots = remember(remoteRoots, volumes) {
-        remoteRoots.map { TreeRootInfo(it.rootId, it.displayName, isWritable = it.isWritable) } +
+        remoteRoots.map { TreeRootInfo(it.rootId, it.displayName, isWritable = it.isWritable, canRemove = it.canRemoveRoot) } +
             volumes.map { TreeRootInfo(it.id, it.label, isVolume = true) }
     }
     val phoneRoots = remember(phoneFolders, phoneNames) {
@@ -309,6 +325,7 @@ fun FileTransferScreen(
             onRemoveBookmark = vm::removePhoneBookmark,
             onBrowsePcDevice = vm::loadVolumes,
             modifier = modifier,
+            onRemovePcShortcut = vm::removeRoot,
         )
     }
 
@@ -339,7 +356,11 @@ fun FileTransferScreen(
                     subtitleInDisplayFont = locationSubtitle == null,
                     navigationIcon = if (expanded) null else {
                         {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }, shapes = rememberRemexIconButtonShapes()) {
+                            IconButton(
+                                onClick = { scope.launch { drawerState.open() } },
+                                shapes = rememberRemexIconButtonShapes(),
+                                modifier = Modifier.onGloballyPositioned { navIconAnchor = it.boundsInWindow() },
+                            ) {
                                 Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.files_show_folders))
                             }
                         }
@@ -369,6 +390,7 @@ fun FileTransferScreen(
                                             onNavigateToConnection = onNavigateToConnection,
                                             onOpenFile = ::openPreview,
                                             onSaveToPhone = { across = AcrossRequest.SaveToPhone(it) },
+                                            backEnabled = backEnabled,
                                         )
                                         FileSide.Phone -> PhoneContents(
                                             vm = vm,
@@ -377,6 +399,7 @@ fun FileTransferScreen(
                                             onAddFolder = { addFolderLauncher.launch(null) },
                                             onOpenFile = ::openPreview,
                                             onSendToPc = { across = AcrossRequest.SendToPc(it) },
+                                            backEnabled = backEnabled,
                                         )
                                     }
                                 }
@@ -405,25 +428,40 @@ fun FileTransferScreen(
         conflictPrompt?.let { prompt -> FileConflictSheet(prompt = prompt, onResolved = vm::onConflictResolved) }
     }
 
-    if (expanded) {
-        body()
-    } else {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            // Edge swipes stay with the list (and predictive back); the drawer opens from the top-bar button.
-            gesturesEnabled = drawerState.isOpen,
-            drawerContent = {
-                ModalDrawerSheet {
-                    Text(
-                        stringResource(R.string.files_folders_title),
-                        style = MaterialTheme.typography.titleMediumEmphasized,
-                        modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
-                    )
-                    tree(Modifier.fillMaxSize())
-                }
-            },
-            content = body,
-        )
+    Box(Modifier.fillMaxSize().onGloballyPositioned { coachOrigin = it.positionInWindow() }) {
+        if (expanded) {
+            body()
+        } else {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                // Edge swipes stay with the list (and predictive back); the drawer opens from the top-bar button.
+                gesturesEnabled = drawerState.isOpen,
+                drawerContent = {
+                    ModalDrawerSheet {
+                        Text(
+                            stringResource(R.string.files_folders_title),
+                            style = MaterialTheme.typography.titleMediumEmphasized,
+                            modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
+                        )
+                        tree(Modifier.fillMaxSize())
+                    }
+                },
+                content = body,
+            )
+        }
+        if (coachVisible) {
+            // Registered after the screen's own handlers, so Back closes the tips before anything else.
+            BackHandler { vm.setFilesCoachSeen(true) }
+            FilesCoachOverlay(
+                step = coachStep,
+                expanded = expanded,
+                navIcon = navIconAnchor.translate(-coachOrigin),
+                onAdvance = {
+                    if (FilesCoach.isLast(coachStep)) vm.setFilesCoachSeen(true) else coachStep++
+                },
+                onDismiss = { vm.setFilesCoachSeen(true) },
+            )
+        }
     }
 }
 
@@ -456,6 +494,7 @@ private fun PcContents(
     onNavigateToConnection: () -> Unit,
     onOpenFile: (PreviewTarget) -> Unit,
     onSaveToPhone: (List<PreviewTarget>) -> Unit,
+    backEnabled: Boolean,
 ) {
     val remotePath by vm.remotePath.collectAsStateWithLifecycle()
     val displayedEntries by vm.displayedEntries.collectAsStateWithLifecycle()
@@ -532,8 +571,29 @@ private fun PcContents(
     var renameTarget by remember { mutableStateOf<RemoteFileEntry?>(null) }
     var showNewFolder by remember { mutableStateOf(false) }
     var contextMenuEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
+    var pendingDelete by remember { mutableStateOf<List<RemoteFileEntry>?>(null) }
+    var deleteFromSelection by remember { mutableStateOf(false) }
     var destinationMode by remember { mutableStateOf<String?>(null) } // FileManageOperations.COPY / MOVE
 
+    // Bumped when Back closes the search, so the toolbar collapses its field too (AN-2.2).
+    var searchCloses by remember { mutableIntStateOf(0) }
+    val backStep = FileManagerLogic.backStep(isSelectionMode, searchActive, remotePath)
+    BackHandler(enabled = backEnabled && isConnected && !needsPairing && backStep != FileManagerLogic.BackStep.None) {
+        when (backStep) {
+            FileManagerLogic.BackStep.ClearSelection -> vm.clearSelection()
+            FileManagerLogic.BackStep.CloseSearch -> { vm.clearSearch(); searchCloses++ }
+            is FileManagerLogic.BackStep.Up -> vm.navigateToPath(backStep.parent)
+            FileManagerLogic.BackStep.None -> Unit
+        }
+    }
+
+    pendingDelete?.let { targets ->
+        FileManagerConfirmDialog(
+            targets = targets,
+            onConfirm = { if (deleteFromSelection) vm.deleteSelectedEntries() else vm.deleteEntry(targets.single()) },
+            onDismiss = { pendingDelete = null },
+        )
+    }
     renameTarget?.let { target ->
         FileManagerTextDialog(
             title = stringResource(R.string.file_transfer_rename_title),
@@ -586,7 +646,7 @@ private fun PcContents(
             onDownload = { contextMenuEntry = null; startDownload(entry) },
             onDownloadFolder = { contextMenuEntry = null; startFolderDownload(entry) },
             onRename = { contextMenuEntry = null; renameTarget = entry },
-            onDelete = { contextMenuEntry = null; vm.deleteEntry(entry) },
+            onDelete = { contextMenuEntry = null; deleteFromSelection = false; pendingDelete = listOf(entry) },
             onProperties = { contextMenuEntry = null; vm.showProperties(entry) },
             onPin = { contextMenuEntry = null; vm.navigateInto(entry); vm.pinCurrentFolder() },
         )
@@ -632,6 +692,7 @@ private fun PcContents(
                     modifier = Modifier.padding(vertical = 4.dp),
                     showHidden = showHidden,
                     onShowHiddenChange = vm::setShowHidden,
+                    searchResetKey = searchCloses,
                 )
 
                 AnimatedVisibility(
@@ -660,7 +721,11 @@ private fun PcContents(
                         onSelectAll = vm::selectAll,
                         onCopy = { vm.openDestinationPicker(); destinationMode = FileManageOperations.COPY },
                         onMove = { vm.openDestinationPicker(); destinationMode = FileManageOperations.MOVE },
-                        onDelete = vm::deleteSelectedEntries,
+                        onDelete = {
+                            deleteFromSelection = true
+                            pendingDelete = displayedEntries.filter { it.name in selectedEntryNames && it.name != FileManagerLogic.PARENT_ENTRY }
+                                .ifEmpty { null }
+                        },
                         modifier = Modifier.padding(vertical = 4.dp),
                         acrossAction = ToolbarAction(Icons.Default.PhoneAndroid, saveLabel) {
                             val items = displayedEntries.filter { it.name in selectedEntryNames }
@@ -761,6 +826,7 @@ private fun PhoneContents(
     onAddFolder: () -> Unit,
     onOpenFile: (PreviewTarget) -> Unit,
     onSendToPc: (List<PreviewTarget>) -> Unit,
+    backEnabled: Boolean,
 ) {
     val state by vm.phoneBrowser.state.collectAsStateWithLifecycle()
     val sortOption by vm.sortOption.collectAsStateWithLifecycle()
@@ -773,9 +839,21 @@ private fun PhoneContents(
     val padding = cardInnerPadding()
     val openFailed = stringResource(R.string.files_open_failed)
 
-    var query by remember { mutableStateOf("") }
+    // Both reset on a folder change, so a search doesn't follow you into another folder.
+    var query by remember(state.rootId, state.path) { mutableStateOf("") }
     var selection by remember(state.rootId, state.path) { mutableStateOf(emptySet<String>()) }
     var menuEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
+    var searchCloses by remember { mutableIntStateOf(0) }
+    val backStep = FileManagerLogic.backStep(selection.isNotEmpty(), query.isNotEmpty(), state.path)
+    BackHandler(enabled = backEnabled && hasFolders && state.rootId != null && backStep != FileManagerLogic.BackStep.None) {
+        when (backStep) {
+            FileManagerLogic.BackStep.ClearSelection -> selection = emptySet()
+            FileManagerLogic.BackStep.CloseSearch -> { query = ""; searchCloses++ }
+            is FileManagerLogic.BackStep.Up ->
+                vm.openLocation(FileSide.Phone, state.rootId!!, FileTreeModel.normalize(backStep.parent))
+            FileManagerLogic.BackStep.None -> Unit
+        }
+    }
     val visible = remember(state.entries, sortOption, showHidden, query) {
         FileManagerLogic.sortEntries(FileManagerLogic.visibleEntries(state.entries, showHidden), sortOption)
             .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
@@ -821,6 +899,7 @@ private fun PhoneContents(
             showHidden = showHidden,
             onShowHiddenChange = vm::setShowHidden,
             primaryAction = ToolbarAction(Icons.Default.CreateNewFolder, stringResource(R.string.files_add_folder), onAddFolder),
+            searchResetKey = Triple(state.rootId, state.path, searchCloses),
         )
         if (state.rootId != null) {
             FileManagerBreadcrumbs(

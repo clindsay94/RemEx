@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import com.clindsay94.remex.ui.components.DeleteOutlineGlyph
 import androidx.compose.material3.Button
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
@@ -129,7 +131,17 @@ fun SensorAlertEditorSheet(
                                 isError = draft.showsError,
                                 supportingText = { if (draft.showsError) Text(stringResource(R.string.sensor_alert_threshold_error)) },
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                keyboardActions =
+                                        KeyboardActions(
+                                                onDone = {
+                                                        val threshold = draft.threshold
+                                                        if (canSave && threshold != null) {
+                                                                haptics.perform(RemexHapticEvent.Confirm)
+                                                                onSave(threshold, draft.direction, draft.severity)
+                                                        }
+                                                }
+                                        ),
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                         )
                         RemexSegmentedSwitch(

@@ -46,6 +46,19 @@ class FileTreeModelTest {
     }
 
     @Test
+    fun aPinnedPcFolder_KeepsItsRemovableFlagOnTheRootRow() = runTest(UnconfinedTestDispatcher()) {
+        val tree = model()
+        tree.setRoots(
+            FileSide.Pc,
+            listOf(TreeRootInfo("docs", "Documents", canRemove = true), TreeRootInfo("c", "C:", isVolume = true), TreeRootInfo("pics", "Pictures")),
+        )
+
+        assertTrue(tree.row("Documents").root!!.canRemove)
+        assertFalse(tree.row("C:").root!!.canRemove)
+        assertFalse(tree.row("Pictures").root!!.canRemove)
+    }
+
+    @Test
     fun openingAFolder_ListsItsFoldersOnce_SortedByName() = runTest(UnconfinedTestDispatcher()) {
         val tree = model()
 

@@ -47,6 +47,57 @@ class NeedsPairingStateTest {
     }
 
     @Test
+    fun `a search that matches nothing says so instead of showing an empty list`() {
+        assertEquals(
+            TaskManagerListState.NO_MATCHES,
+            taskManagerListState(
+                isConnected = true, needsPairing = false, hasProcesses = true, isRefreshing = false,
+                hasVisibleProcesses = false, searchQuery = "zzz",
+            ),
+        )
+        // A refresh in flight must not turn a no-match search back into the spinner: processes have arrived.
+        assertEquals(
+            TaskManagerListState.NO_MATCHES,
+            taskManagerListState(
+                isConnected = true, needsPairing = false, hasProcesses = true, isRefreshing = true,
+                hasVisibleProcesses = false, searchQuery = "zzz",
+            ),
+        )
+        // No query, or matches left, or nothing sent yet: not a no-match state.
+        assertEquals(
+            TaskManagerListState.LIST,
+            taskManagerListState(
+                isConnected = true, needsPairing = false, hasProcesses = true, isRefreshing = false,
+                hasVisibleProcesses = false, searchQuery = "  ",
+            ),
+        )
+        assertEquals(
+            TaskManagerListState.LIST,
+            taskManagerListState(
+                isConnected = true, needsPairing = false, hasProcesses = true, isRefreshing = false,
+                hasVisibleProcesses = true, searchQuery = "chr",
+            ),
+        )
+        assertEquals(
+            TaskManagerListState.LOADING,
+            taskManagerListState(
+                isConnected = true, needsPairing = false, hasProcesses = false, isRefreshing = true,
+                hasVisibleProcesses = false, searchQuery = "chr",
+            ),
+        )
+    }
+
+    @Test
+    fun `parseKillResponse reads success, a refusal's message, and treats anything unreadable as a failure`() {
+        assertEquals(KillResponse(true, null), parseKillResponse("""{"success":true}"""))
+        assertEquals(KillResponse(false, "denied"), parseKillResponse("""{"success":false,"message":"denied"}"""))
+        assertEquals(KillResponse(false, null), parseKillResponse("""{"success":false,"message":"  "}"""))
+        assertEquals(KillResponse(false, null), parseKillResponse(""))
+        assertEquals(KillResponse(false, null), parseKillResponse(null))
+        assertEquals(KillResponse(false, null), parseKillResponse("garbage"))
+    }
+
+    @Test
     fun `Apps says the PC needs pairing instead of a list it would refuse to launch from`() {
         assertEquals(
             AppLauncherBody.NeedsPairing,

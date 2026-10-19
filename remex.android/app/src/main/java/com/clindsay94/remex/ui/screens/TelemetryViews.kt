@@ -36,9 +36,11 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -52,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -538,6 +541,7 @@ fun DisplayModePickerSheet(
     val haptics = rememberRemexHaptics()
     val sheetState = rememberBottomSheetState(SheetValue.Hidden)
     var awaitingSecondary by remember { mutableStateOf(false) }
+    var secondaryQuery by rememberSaveable { mutableStateOf("") }
     var titleDraft by remember(cardId) { mutableStateOf(currentTitle) }
     val focusManager = LocalFocusManager.current
     val motionScheme = MaterialTheme.motionScheme
@@ -618,11 +622,32 @@ fun DisplayModePickerSheet(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+                    OutlinedTextField(
+                        value = secondaryQuery,
+                        onValueChange = { secondaryQuery = it },
+                        placeholder = { Text(stringResource(R.string.dashboard_search_sensors)) },
+                        trailingIcon = {
+                            if (secondaryQuery.isNotEmpty()) {
+                                IconButton(onClick = { secondaryQuery = "" }) {
+                                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    val candidates = otherSensors.filter { matchesSensorQuery(secondaryQuery, it.name, it.group) }
+                    if (candidates.isEmpty()) {
+                        Text(
+                            stringResource(R.string.dashboard_no_sensor_matches),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    }
                     LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                        items(otherSensors, key = { it.id }) { candidate ->
-                            Text(
-                                candidate.name,
-                                style = MaterialTheme.typography.bodyLarge,
+                        items(candidates, key = { it.id }) { candidate ->
+                            Column(
                                 modifier = Modifier.fillMaxWidth()
                                     .animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                                     .clickable {
@@ -630,7 +655,17 @@ fun DisplayModePickerSheet(
                                         onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
                                     }
                                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                            )
+                            ) {
+                                Text(candidate.name, style = MaterialTheme.typography.bodyLarge)
+                                val groupLabel = candidate.group.ifBlank { candidate.category }
+                                if (groupLabel.isNotBlank()) {
+                                    Text(
+                                        groupLabel,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }

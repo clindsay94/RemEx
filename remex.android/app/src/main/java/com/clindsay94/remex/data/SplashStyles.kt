@@ -20,10 +20,23 @@ object SplashStyles {
     const val CosmicZoom = "CosmicZoom"
     const val Pong = "Pong"
 
+    /** Not an animation: each launch plays one of [Playable], never the one before. */
+    const val Random = "Random"
+
     const val Default = LiveHandshake
 
-    /** Picker order: the default first. */
-    val All: List<String> = listOf(LiveHandshake, RemexCommand, CosmicZoom, Pong)
+    /** The animations that can actually play. */
+    val Playable: List<String> = listOf(LiveHandshake, RemexCommand, CosmicZoom, Pong)
+
+    /** Picker order: the default first, Random last. */
+    val All: List<String> = Playable + Random
+
+    /** The animation to play this launch; [Random] picks from [Playable], skipping [lastPlayed]. */
+    fun forLaunch(
+        stored: String,
+        lastPlayed: String?,
+        rng: kotlin.random.Random = kotlin.random.Random.Default,
+    ): String = if (stored != Random) stored else Playable.filter { it != lastPlayed }.random(rng)
 
     /** The style that plays for a [stored] value, given whether the one-time move has run. */
     fun effective(stored: String?, migrated: Boolean): String = when {

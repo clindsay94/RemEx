@@ -1,8 +1,10 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +17,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SwipeVertical
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -203,7 +211,45 @@ private fun DesktopStreamPane(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.button_start_streaming))
             }
+            TouchControlsCard()
         }
+    }
+}
+
+@Composable
+private fun TouchControlsCard() {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                    stringResource(R.string.desktop_touch_controls_title),
+                    style = MaterialTheme.typography.titleSmall
+            )
+            TouchControlRow(Icons.Default.TouchApp, R.string.desktop_touch_tap)
+            TouchControlRow(Icons.Default.Mouse, R.string.desktop_touch_hold)
+            TouchControlRow(Icons.Default.SwipeVertical, R.string.desktop_touch_two_finger)
+            TouchControlRow(Icons.Default.ZoomIn, R.string.desktop_touch_pinch)
+        }
+    }
+}
+
+@Composable
+private fun TouchControlRow(icon: ImageVector, @StringRes textRes: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+                icon,
+                contentDescription = null /* decorative: the text beside it says it */,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+                stringResource(textRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

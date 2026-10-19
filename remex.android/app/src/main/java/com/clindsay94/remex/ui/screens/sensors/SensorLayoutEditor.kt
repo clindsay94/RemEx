@@ -34,6 +34,10 @@ data class SensorsChrome(
                         showViewPicker = !editMode,
                         showEditActions = editMode,
                 )
+
+        /** Connected and paired but no readings yet: the grid says it is waiting rather than sitting empty. */
+        fun waitingForReadings(isConnected: Boolean, needsPairing: Boolean, editMode: Boolean, hasReadings: Boolean): Boolean =
+                isConnected && !needsPairing && !editMode && !hasReadings
     }
 }
 

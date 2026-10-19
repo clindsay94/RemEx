@@ -296,4 +296,86 @@ class FileManagerLogicTest {
         val next = FileManagerLogic.combinePath(path, "Users")
         assertEquals("C:/Users", next)
     }
+
+    // ── Delete confirmation ───────────────────────────────────────────────────
+
+    @Test
+    fun deleteConfirmation_oneTargetNamesIt_severalGiveACount() {
+        assertEquals(FileManagerLogic.DeleteConfirmation.One("a.txt"), FileManagerLogic.deleteConfirmation(listOf(file("a.txt"))))
+        assertEquals(FileManagerLogic.DeleteConfirmation.Many(3), FileManagerLogic.deleteConfirmation(listOf(file("a"), dir("b"), file("c"))))
+    }
+
+    // ── Back ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun backStep_selectionBeatsSearch_searchBeatsPath() {
+        assertEquals(FileManagerLogic.BackStep.ClearSelection, FileManagerLogic.backStep(true, true, "a/b"))
+        assertEquals(FileManagerLogic.BackStep.CloseSearch, FileManagerLogic.backStep(false, true, "a/b"))
+        assertEquals(FileManagerLogic.BackStep.Up("a"), FileManagerLogic.backStep(false, false, "a/b"))
+    }
+
+    @Test
+    fun backStep_atARootLeavesFiles() {
+        assertEquals(FileManagerLogic.BackStep.None, FileManagerLogic.backStep(false, false, "/"))
+        assertEquals(FileManagerLogic.BackStep.None, FileManagerLogic.backStep(false, false, ""))
+        assertEquals(FileManagerLogic.BackStep.Up("/"), FileManagerLogic.backStep(false, false, "a"))
+    }
+
+    // ── Sort persistence ──────────────────────────────────────────────────────
+
+    @Test
+    fun sortEncoding_roundTripsEveryFieldAndDirection() {
+        for (field in SortField.entries) for (asc in listOf(true, false)) {
+            val option = SortOption(field, asc)
+            assertEquals(option, FileManagerLogic.decodeSort(FileManagerLogic.encodeSort(option)))
+        }
+        assertEquals("SIZE:desc", FileManagerLogic.encodeSort(SortOption(SortField.SIZE, false)))
+    }
+
+    @Test
+    fun sortDecoding_garbageGivesTheDefaultSort() {
+        for (raw in listOf(null, "", "NAME", "NAME:sideways", "COLOR:asc", "NAME:asc:x")) {
+            assertEquals(raw, SortOption(), FileManagerLogic.decodeSort(raw))
+        }
+    }
+
+    // ── Row subtitle ──────────────────────────────────────────────────────────
+
+    @Test
+    fun subtitleParts_fileShowsSizeAndDate_onlyWhenKnown() {
+        assertEquals(
+            FileManagerLogic.SubtitleParts(2048L, showDate = true, relativePath = null),
+            FileManagerLogic.subtitleParts(file("a.txt", size = 2048L, modified = 1_700_000_000_000L)),
+        )
+        val unknown = FileManagerLogic.subtitleParts(file("b.txt"))
+        assertFalse(unknown.showDate)
+        assertEquals(null, unknown.sizeBytes)
+        assertTrue(unknown.isEmpty)
+    }
+
+    @Test
+    fun subtitleParts_folderIsDateOnly() {
+        val parts = FileManagerLogic.subtitleParts(dir("Photos", modified = 1_700_000_000_000L))
+        assertEquals(FileManagerLogic.SubtitleParts(null, showDate = true, relativePath = null), parts)
+        assertTrue(FileManagerLogic.subtitleParts(dir("Empty")).isEmpty)
+    }
+
+    @Test
+    fun subtitleParts_searchHitKeepsItsRelativePath() {
+        val hit = file("a.txt", size = 10L, modified = 5L).copy(relativePath = "docs/a.txt")
+        assertEquals(
+            FileManagerLogic.SubtitleParts(10L, showDate = true, relativePath = "docs/a.txt"),
+            FileManagerLogic.subtitleParts(hit),
+        )
+    }
+
+    // ── Rename selection ──────────────────────────────────────────────────────
+
+    @Test
+    fun renameSelectionEnd_stopsBeforeTheLastDot_unlessItOpensTheName() {
+        assertEquals(12, FileManagerLogic.renameSelectionEnd("report.final.pdf"))
+        assertEquals(".bashrc".length, FileManagerLogic.renameSelectionEnd(".bashrc"))
+        assertEquals("README".length, FileManagerLogic.renameSelectionEnd("README"))
+        assertEquals(0, FileManagerLogic.renameSelectionEnd(""))
+    }
 }

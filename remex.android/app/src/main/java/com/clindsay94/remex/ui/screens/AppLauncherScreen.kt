@@ -4,8 +4,11 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.LruCache
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -35,7 +38,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Default
 import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.ui.layout.layout
@@ -47,8 +52,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.floatingChromeBottomPadding
 import com.clindsay94.remex.ui.components.navigationBarBottomInset
+import com.clindsay94.remex.ui.components.rememberOneShotEvent
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -59,6 +69,8 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -76,6 +88,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.theme.CardShapes
 import com.clindsay94.remex.ui.theme.cardInnerPadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.shapeSafeArea
@@ -121,6 +134,7 @@ fun AppLauncherScreen(
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val refreshState by viewModel.refreshState.collectAsStateWithLifecycle()
     val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
+    var launchOutcome by rememberOneShotEvent(viewModel.launchOutcomes)
 
     val uiState = AppLauncherUiState(
         apps = apps,
@@ -142,6 +156,8 @@ fun AppLauncherScreen(
             ConnectionOpenRequests.requestAddPc()
             onNavigateToConnection()
         },
+        launchOutcome = launchOutcome,
+        onLaunchOutcomeShown = { launchOutcome = null },
     )
 }
 
@@ -156,10 +172,26 @@ fun AppLauncherScreenContent(
     onDismissRefreshError: () -> Unit = {},
     /** Connection > Add a PC, for a PC that needs pairing again. */
     onPair: () -> Unit = onNavigateToConnection,
+    /** The PC's answer to the latest tap on an app, shown once as a snackbar. */
+    launchOutcome: LaunchOutcome? = null,
+    onLaunchOutcomeShown: () -> Unit = {},
 ) {
     val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     val refreshLabel = stringResource(R.string.cd_refresh)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val launchMessage = launchOutcome?.let {
+        stringResource(
+            if (it.success) R.string.app_launcher_opening else R.string.app_launcher_open_failed,
+            it.appName
+        )
+    }
+    LaunchedEffect(launchOutcome) {
+        if (launchMessage != null) {
+            snackbarHostState.showSnackbar(launchMessage)
+            onLaunchOutcomeShown()
+        }
+    }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -185,7 +217,8 @@ fun AppLauncherScreenContent(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
@@ -295,6 +328,12 @@ private fun AppGrid(
     val dedupedApps = remember(uiState.apps) {
         uiState.apps.distinctBy { "${it.name}|${it.path}" }
     }
+    var query by rememberSaveable { mutableStateOf("") }
+    val showSearch = dedupedApps.size > LauncherSearchMinApps
+    val searching = showSearch && query.isNotBlank()
+    val shownApps = remember(dedupedApps, query, showSearch) {
+        if (showSearch) filterLauncherApps(dedupedApps, query) else dedupedApps
+    }
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     // Tapping Apps while on Apps goes back to the top (3.0 comb, no-reselect).
     com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.AppLauncher) {
@@ -318,6 +357,15 @@ private fun AppGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (showSearch) {
+            item(key = "search", span = { GridItemSpan(maxLineSpan) }) {
+                LauncherSearchField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    shape = CardShapes.stripShapeFor(uiState.shapePreset, uiState.cornerRadius)
+                )
+            }
+        }
         // The list on screen is the last one the PC sent; say so when a refresh went unanswered
         // rather than leaving the person to wonder whether it worked.
         if (uiState.refreshState == LauncherRefreshState.NoAnswer) {
@@ -326,7 +374,7 @@ private fun AppGrid(
             }
         }
         // M3 Expressive: a "Recent" multi-browse carousel above the full grid.
-        if (uiState.recentApps.isNotEmpty()) {
+        if (uiState.recentApps.isNotEmpty() && !searching) {
             item(key = "recent_header", span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     text = stringResource(R.string.app_launcher_recent),
@@ -343,7 +391,18 @@ private fun AppGrid(
                 )
             }
         }
-        items(dedupedApps, key = { "${it.name}|${it.path}" }) { app ->
+        if (searching && shownApps.isEmpty()) {
+            item(key = "no_matches", span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = stringResource(R.string.app_launcher_no_matches),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+                )
+            }
+        }
+        items(shownApps, key = { "${it.name}|${it.path}" }) { app ->
             AppGridItem(
                 app = app,
                 shapePreset = uiState.shapePreset,
@@ -355,6 +414,53 @@ private fun AppGrid(
                     )
             )
         }
+    }
+}
+
+/** Apps whose name contains [query] (trimmed, ignoring case); a blank query keeps them all. */
+internal fun filterLauncherApps(apps: List<AppEntry>, query: String): List<AppEntry> {
+    val needle = query.trim()
+    if (needle.isEmpty()) return apps
+    return apps.filter { it.name.contains(needle, ignoreCase = true) }
+}
+
+/** Same look as the Processes search bar. */
+@Composable
+private fun LauncherSearchField(query: String, onQueryChange: (String) -> Unit, shape: Shape) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = shape
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text(stringResource(R.string.app_launcher_search_hint)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                AnimatedVisibility(
+                    visible = query.isNotEmpty(),
+                    enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                ) {
+                    IconButton(onClick = { onQueryChange("") }, shapes = rememberRemexIconButtonShapes()) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.cd_clear_search)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -531,6 +637,9 @@ fun AppGridItem(
 
 /** The narrowest a launcher tile gets; the grid fits as many columns of at least this as it can. */
 private val LauncherTileMinSize = 100.dp
+
+/** The search field only earns its row once the grid is longer than a screen or so. */
+private const val LauncherSearchMinApps = 8
 
 /**
  * Makes a tile at least as tall as it is wide, so a row of short labels still reads as a row of

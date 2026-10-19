@@ -1,7 +1,10 @@
 package com.clindsay94.remex.data
 
+import androidx.datastore.preferences.core.preferencesOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -16,9 +19,46 @@ class SplashStylesTest {
         assertEquals(SplashStyles.Default, SplashStyles.All.first())
         assertEquals(SplashStyles.Default, SettingsManager.PersonalizationPreferences().splashStyle)
         assertEquals(
-            listOf("LiveHandshake", "RemexCommand", "CosmicZoom", "Pong"),
+            listOf("LiveHandshake", "RemexCommand", "CosmicZoom", "Pong", "Random"),
             SplashStyles.All,
         )
+        assertEquals(SplashStyles.Playable + "Random", SplashStyles.All)
+    }
+
+    @Test
+    fun `a concrete style plays as stored`() {
+        for (stored in SplashStyles.Playable) {
+            assertEquals(stored, SplashStyles.forLaunch(stored, lastPlayed = "Pong"))
+            assertEquals(stored, SplashStyles.forLaunch(stored, lastPlayed = null))
+        }
+    }
+
+    @Test
+    fun `Random never repeats the last animation and is always playable`() {
+        val rng = kotlin.random.Random(42)
+        for (last in SplashStyles.Playable + listOf<String?>(null)) {
+            repeat(200) {
+                val picked = SplashStyles.forLaunch(SplashStyles.Random, last, rng)
+                assertNotEquals(last, picked)
+                assertNotEquals(SplashStyles.Random, picked)
+                assertTrue(picked, picked in SplashStyles.Playable)
+            }
+        }
+    }
+
+    @Test
+    fun `Random survives the one-time move and the last pick is read with the style`() {
+        assertEquals("Random", SplashStyles.effective("Random", migrated = true))
+        val read = SettingsManager.personalizationFrom(
+            preferencesOf(
+                SettingsManager.SPLASH_STYLE_KEY to "Random",
+                SettingsManager.SPLASH_STYLE_MIGRATED_V3_KEY to true,
+                SettingsManager.SPLASH_LAST_RANDOM_KEY to "Pong",
+            )
+        )
+        assertEquals("Random", read.splashStyle)
+        assertEquals("Pong", read.lastRandomSplash)
+        assertNull(SettingsManager.personalizationFrom(preferencesOf()).lastRandomSplash)
     }
 
     @Test

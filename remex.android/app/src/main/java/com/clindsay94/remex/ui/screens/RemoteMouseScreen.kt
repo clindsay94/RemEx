@@ -1,5 +1,8 @@
 package com.clindsay94.remex.ui.screens
 
+import android.content.Context
+import android.os.SystemClock
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,7 +45,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -96,6 +103,8 @@ fun RemoteMouseScreenContent(
 ) {
     val haptics = rememberRemexHaptics()
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
     val remoteKeyboardState = rememberTextFieldState()
     val remoteKeyboardTransformation =
             remember(onTextSent, onSendKeyPress) {
@@ -150,6 +159,8 @@ fun RemoteMouseScreenContent(
                 // Touch-down feedback: a pressed flag from onPress (which does not consume or
                 // alter tap/drag semantics) drives an animated tonal shift (RemEx-uba6).
                 var trackpadPressed by remember { mutableStateOf(false) }
+                var trackpadPressStart by remember { mutableLongStateOf(0L) }
+                var trackpadDragged by remember { mutableStateOf(false) }
                 val trackpadColor by animateColorAsState(
                         targetValue =
                                 if (trackpadPressed)
@@ -169,6 +180,7 @@ fun RemoteMouseScreenContent(
                                             // careful pointing. The view model accumulates and
                                             // throttles instead (RemEx-3uhp).
                                             detectDragGestures(
+                                                    onDragStart = { trackpadDragged = true },
                                                     onDragEnd = { onMouseMoveEnd() },
                                                     onDragCancel = { onMouseMoveEnd() }
                                             ) { change, dragAmount ->
@@ -177,9 +189,15 @@ fun RemoteMouseScreenContent(
                                             }
                                         }
                                         .pointerInput(Unit) {
+                                            // Hold-to-right-click is decided on release, like the
+                                            // stream screen: a long-press callback here consumed the
+                                            // rest of the touch and froze slow drags (AN-6.2).
+                                            val longPressMillis = viewConfiguration.longPressTimeoutMillis
                                             detectTapGestures(
                                                     onPress = {
                                                         trackpadPressed = true
+                                                        trackpadDragged = false
+                                                        trackpadPressStart = SystemClock.uptimeMillis()
                                                         try {
                                                             tryAwaitRelease()
                                                         } finally {
@@ -187,8 +205,16 @@ fun RemoteMouseScreenContent(
                                                         }
                                                     },
                                                     onTap = {
-                                                        haptics.perform(RemexHapticEvent.Press)
-                                                        onMouseClick(MouseButtons.LEFT)
+                                                        val button = trackpadReleaseButton(
+                                                                heldMillis = SystemClock.uptimeMillis() - trackpadPressStart,
+                                                                longPressMillis = longPressMillis,
+                                                                dragged = trackpadDragged
+                                                        ) ?: return@detectTapGestures
+                                                        haptics.perform(
+                                                                if (button == MouseButtons.RIGHT) RemexHapticEvent.LongPress
+                                                                else RemexHapticEvent.Press
+                                                        )
+                                                        onMouseClick(button)
                                                     }
                                             )
                                         },
@@ -210,6 +236,15 @@ fun RemoteMouseScreenContent(
                             Text(
                                     stringResource(R.string.remote_mouse_trackpad_label),
                                     style = MaterialTheme.typography.bodyLarge,
+                                    color =
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.5f
+                                            )
+                            )
+                            Text(
+                                    stringResource(R.string.trackpad_gesture_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
                                     color =
                                             MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                                     alpha = 0.5f
@@ -296,7 +331,14 @@ fun RemoteMouseScreenContent(
                     IconButton(
                             onClick = {
                                 haptics.perform(RemexHapticEvent.Press)
-                                focusRequester.requestFocus()
+                                // The hidden field keeps focus after a back-gesture IME dismiss, so
+                                // requestFocus() alone no-ops; same fix as the stream screen (RemEx-46q).
+                                try {
+                                    focusRequester.requestFocus()
+                                    keyboardController?.show()
+                                    (view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                                            ?.showSoftInput(view, 0)
+                                } catch (_: Exception) {}
                             },
                             shapes = rememberRemexIconButtonShapes()
                     ) {
@@ -310,6 +352,13 @@ fun RemoteMouseScreenContent(
         }
     }
     } // end background Surface
+}
+
+/** The button a trackpad touch clicks when it lifts: none after a drag, RIGHT once held past the long-press timeout. */
+internal fun trackpadReleaseButton(heldMillis: Long, longPressMillis: Long, dragged: Boolean): Int? = when {
+    dragged -> null
+    heldMillis >= longPressMillis -> MouseButtons.RIGHT
+    else -> MouseButtons.LEFT
 }
 
 @Preview(showBackground = true)

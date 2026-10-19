@@ -11,14 +11,20 @@ import com.clindsay94.remex.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -41,6 +47,27 @@ data class ProcessInfo(
         val ram: Double,
         val startTimeUnixMs: Long? = null
 )
+
+/** The PC's answer to ending a process; [message] is the host's reason when it refused. */
+internal data class KillResponse(val success: Boolean, val message: String?)
+
+/**
+ * Reads a CommandResponse. "success"/"message", NOT "commandSuccess"/"commandMessage" (RemEx-66rf):
+ * those are RemexMessage's wire names. A reply we cannot read is not a kill we can claim happened,
+ * so missing, blank and non-JSON all come back as a failure.
+ */
+internal fun parseKillResponse(responseJson: String?): KillResponse {
+    if (responseJson.isNullOrBlank()) return KillResponse(false, null)
+    return try {
+        val response = JSONObject(responseJson)
+        KillResponse(
+                response.optBoolean("success", false),
+                response.optString("message").takeIf { it.isNotBlank() }
+        )
+    } catch (_: Exception) {
+        KillResponse(false, null)
+    }
+}
 
 enum class ProcessSortField {
     NAME,
@@ -154,11 +181,27 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     .flowOn(Dispatchers.Default)
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /**
+     * Whether the PC has sent any processes at all, before the search filter. The list area reads
+     * this so a search that matches nothing says so instead of looking like the list never loaded.
+     */
+    val hasAnyProcesses: StateFlow<Boolean> =
+            _processes
+                    .map { it.isNotEmpty() }
+                    .distinctUntilChanged()
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private val _killError = MutableStateFlow<String?>(null)
     val killError: StateFlow<String?> = _killError.asStateFlow()
+
+    // An event, not state: a confirmation nobody is on the page to see is dropped, never replayed later (AN-4.1).
+    private val _killResults =
+            MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    /** "Ended X." each time the PC confirms an end, for the Processes page to show once. */
+    val killResults: SharedFlow<String> = _killResults.asSharedFlow()
 
     private val _loadError = MutableStateFlow<String?>(null)
     /**
@@ -448,23 +491,11 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             )
                         }
                 val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull()
-                // "success"/"message", NOT "commandSuccess"/"commandMessage" (RemEx-66rf). Those are
-                // RemexMessage's wire names; what comes back here is a CommandResponse, which has
-                // never carried them. optBoolean therefore always fell through to its default of
-                // TRUE, so a refused or failed kill reported success and the error banner below was
-                // unreachable. Defaulting to false now: a response we cannot read is not a kill we
-                // can claim happened.
-                val (success, message) = try {
-                    if (responseJson?.isNotBlank() == true) {
-                        val response = JSONObject(responseJson)
-                        Pair(response.optBoolean("success", false), response.optString("message").takeIf { it.isNotBlank() })
-                    } else {
-                        Pair(false, null)
-                    }
-                } catch (_: Exception) {
-                    Pair(false, null)
-                }
-                if (!success) {
+                val (success, message) = parseKillResponse(responseJson)
+                if (success) {
+                    _killResults.tryEmit(
+                            getApplication<Application>().getString(R.string.task_manager_ended, process.name))
+                } else {
                     _killError.value = message?.let { localizeKillFailure(it) }
                             ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, process.id)
                 }

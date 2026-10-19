@@ -1,6 +1,8 @@
 package com.clindsay94.remex.ui.components
 
+import android.content.Context
 import android.graphics.BitmapFactory
+import android.text.format.DateUtils
 import android.util.Base64
 import android.util.LruCache
 import androidx.compose.animation.AnimatedContent
@@ -42,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,8 +53,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -119,15 +124,22 @@ internal fun rememberThumbnail(base64: String?): ImageBitmap? {
     return decoded?.takeIf { it.base64 == base64 }?.bitmap
 }
 
-private fun subtitleFor(entry: RemoteFileEntry): String =
-    if (entry.isDirectory) ""
-    else buildString {
-        if (entry.sizeBytes > 0) append(FileManagerLogic.formatBytes(entry.sizeBytes))
-        entry.relativePath?.let {
-            if (isNotEmpty()) append("  •  ")
-            append(it)
-        }
-    }
+private fun subtitleFor(context: Context, entry: RemoteFileEntry): String {
+    val parts = FileManagerLogic.subtitleParts(entry)
+    if (parts.isEmpty) return ""
+    return listOfNotNull(
+        parts.sizeBytes?.let(FileManagerLogic::formatBytes),
+        if (parts.showDate) formatModified(context, entry.modifiedUnixMs) else null,
+        parts.relativePath,
+    ).joinToString("  •  ")
+}
+
+// Locale-aware, so no strings to translate; today's files also get the time.
+private fun formatModified(context: Context, unixMs: Long): String {
+    val flags = DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH or
+        if (DateUtils.isToday(unixMs)) DateUtils.FORMAT_SHOW_TIME else 0
+    return DateUtils.formatDateTime(context, unixMs, flags)
+}
 
 /** Single-column list row (plan WP7). Long-press enters multi-select; a checkbox replaces the icon there. */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -152,7 +164,9 @@ fun FileManagerListItem(
         LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
     }
     val thumb = thumbnail ?: rememberThumbnail(thumbnailBase64)
-    val subtitle = subtitleFor(entry)
+    val context = LocalContext.current
+    val subtitle = remember(entry, context) { subtitleFor(context, entry) }
+    val selectLabel = stringResource(R.string.button_select)
 
     // Selected rows get an animated container highlight; selection-mode entry swaps the
     // leading slot with a fade instead of a hard layout jump (RemEx-40y8).
@@ -166,7 +180,8 @@ fun FileManagerListItem(
         modifier = modifier
             .fillMaxWidth()
             .background(rowColor)
-            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            .semantics { if (isSelectionMode) selected = isSelected }
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress, onLongClickLabel = selectLabel)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -258,10 +273,12 @@ fun FileManagerGridItem(
         LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
     }
     val thumb = thumbnail ?: rememberThumbnail(thumbnailBase64)
+    val selectLabel = stringResource(R.string.button_select)
 
     Column(
         modifier = modifier
-            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            .semantics { if (isSelectionMode) selected = isSelected }
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress, onLongClickLabel = selectLabel)
             .padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

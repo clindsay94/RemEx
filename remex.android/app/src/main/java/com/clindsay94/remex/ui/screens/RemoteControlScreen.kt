@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -27,7 +29,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -105,9 +110,9 @@ private data class RemoteCommandCard(
         val icon: ImageVector,
         /**
          * Optional short consequence shown only while the card is awaiting confirmation, for commands
-         * whose effect is not obvious. Note the confirm face REPLACES the card title with a generic
-         * "Confirm choice", so this text is the only place the action's effect appears — state the
-         * consequence first. Keep it to a sentence or two: these cards sit in a two-column grid, so
+         * whose effect is not obvious. The confirm face keeps the card title and puts a small
+         * "Confirm choice" line under it, so the action is always named; this text adds what it will
+         * do — state the consequence first. Keep it to a sentence or two: these cards sit in a two-column grid, so
          * roughly half the screen width, and every extra line pushes the buttons further down a card
          * the grid does not scroll into view (RemEx-tgl1).
          *
@@ -601,7 +606,16 @@ fun RemoteControlScreenContent(
                 playback = uiState.playback,
                 artwork = uiState.artwork,
                 onOpen = { sheetOpen = true },
-                onPlayPause = { onSendKey(MediaVirtualKeys.MEDIA_PLAY_PAUSE) },
+                onPlayPause = {
+                    haptics.perform(RemexHapticEvent.CommandSent)
+                    onSendKey(MediaVirtualKeys.MEDIA_PLAY_PAUSE)
+                },
+                onNext = {
+                    haptics.perform(RemexHapticEvent.CommandSent)
+                    onSendKey(MediaVirtualKeys.MEDIA_NEXT_TRACK)
+                },
+                // Same gate as MediaControlSection: a greyed bar still opens the sheet.
+                enabled = uiState.isConnected && uiState.supportsInputSimulation,
                 modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         )
       }
@@ -725,6 +739,7 @@ private fun CommandCard(
         available: Boolean = true,
 ) {
     val haptics = rememberRemexHaptics()
+    val focusManager = LocalFocusManager.current
     val localizedTitle = stringResource(card.titleRes)
     val motionScheme = MaterialTheme.motionScheme
 
@@ -838,15 +853,18 @@ private fun CommandCard(
                         horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                            text =
-                                    if (awaitingConfirmation)
-                                            stringResource(R.string.remote_control_confirm_choice)
-                                    else localizedTitle,
+                            text = localizedTitle,
                             style = MaterialTheme.typography.titleSmallEmphasized,
                             textAlign = TextAlign.Center
                     )
 
                     if (awaitingConfirmation) {
+                        Text(
+                                text = stringResource(R.string.remote_control_confirm_choice),
+                                style = MaterialTheme.typography.labelMedium,
+                                textAlign = TextAlign.Center
+                        )
+
                         // Tie the measured size to THIS confirm face, not to the card. Without
                         // the reset, a second arm of the same card starts with the stale size
                         // from the first: the IntSize.Zero guard no longer fires, so the request
@@ -879,6 +897,14 @@ private fun CommandCard(
                                         Text(stringResource(R.string.remote_control_timer_label))
                                     },
                                     singleLine = true,
+                                    keyboardOptions =
+                                            KeyboardOptions(
+                                                    keyboardType = KeyboardType.Number,
+                                                    imeAction = ImeAction.Done
+                                            ),
+                                    // Done only closes the keyboard: it must never confirm the action.
+                                    keyboardActions =
+                                            KeyboardActions(onDone = { focusManager.clearFocus() }),
                                     modifier = Modifier.fillMaxWidth()
                             )
                         }

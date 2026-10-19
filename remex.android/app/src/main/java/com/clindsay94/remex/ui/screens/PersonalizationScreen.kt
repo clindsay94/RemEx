@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import com.clindsay94.remex.ui.components.ShuffleGlyph
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -47,6 +48,8 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.ui.theme.SplashPaletteResolver
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.data.BackgroundIntensity
+import com.clindsay94.remex.data.BackgroundStyles
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.data.ThemeDefaults
 import com.clindsay94.remex.data.SplashStyles
@@ -227,6 +230,7 @@ fun PersonalizationScreenContent(
 
     // Only a choice the user made is saved, so opening the screen writes nothing.
     var backgroundTouched by remember { mutableStateOf(false) }
+    var showResetAll by remember { mutableStateOf(false) }
     LaunchedEffect(backgroundStyle, backgroundIntensity) {
         if (backgroundTouched) onBackgroundChange(backgroundStyle, backgroundIntensity)
     }
@@ -544,11 +548,21 @@ fun PersonalizationScreenContent(
                                         modifier = Modifier.weight(1f).fillMaxHeight(),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
+                                    if (option == SplashStyles.Random) {
+                                        Icon(
+                                                ShuffleGlyph,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
                                     Text(
                                         when (option) {
                                             SplashStyles.LiveHandshake -> stringResource(R.string.personalization_splash_live)
                                             SplashStyles.RemexCommand -> stringResource(R.string.personalization_splash_original)
                                             SplashStyles.CosmicZoom -> stringResource(R.string.personalization_splash_cosmic)
+                                            SplashStyles.Pong -> stringResource(R.string.personalization_splash_pong)
+                                            SplashStyles.Random -> stringResource(R.string.personalization_splash_random)
                                             else -> stringResource(R.string.personalization_splash_pong)
                                         },
                                         textAlign = TextAlign.Center,
@@ -557,6 +571,14 @@ fun PersonalizationScreenContent(
                                 }
                             }
                         }
+                    }
+
+                    if (splashStyle == SplashStyles.Random) {
+                        Text(
+                                stringResource(R.string.personalization_splash_random_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     OutlinedButton(
@@ -1204,8 +1226,75 @@ fun PersonalizationScreenContent(
                 }
             }
 
+            TextButton(
+                    onClick = {
+                        haptics.perform(RemexHapticEvent.Press)
+                        showResetAll = true
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.TextButtonContentPadding
+            ) {
+                Text(stringResource(R.string.personalization_reset_all))
+            }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+
+    if (showResetAll) {
+        AlertDialog(
+                onDismissRequest = { showResetAll = false },
+                icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                title = { Text(stringResource(R.string.personalization_reset_all_title)) },
+                text = { Text(stringResource(R.string.personalization_reset_all_body)) },
+                confirmButton = {
+                    Button(
+                            onClick = {
+                                haptics.perform(RemexHapticEvent.Press)
+                                showResetAll = false
+                                // The language is deliberately left alone. Everything else goes back to
+                                // the fresh-install values; the effect above persists them.
+                                val fresh = SettingsManager.PersonalizationPreferences()
+                                themeMode = fresh.themeMode
+                                palette = fresh.themePalette
+                                themeStyle = fresh.themeStyle
+                                seedColor = fresh.themeSeedColor
+                                themeSeedChroma = fresh.themeSeedChroma
+                                themeContrast = fresh.themeContrast
+                                fontFamily = fresh.fontFamily
+                                fontScale = fresh.fontScale
+                                cornerRadius = fresh.cardCornerRadius
+                                cardOpacity = fresh.cardOpacity
+                                pcCardShapePreset = fresh.pcCardShapePreset
+                                telemetryCardShapePreset = fresh.telemetryCardShapePreset
+                                appLauncherCardShapePreset = fresh.appLauncherCardShapePreset
+                                taskManagerCardShapePreset = fresh.taskManagerCardShapePreset
+                                remoteDesktopCardShapePreset = fresh.remoteDesktopCardShapePreset
+                                remoteControlCardShapePreset = fresh.remoteControlCardShapePreset
+                                remoteMouseCardShapePreset = fresh.remoteMouseCardShapePreset
+                                splashStyle = fresh.splashStyle
+                                dynamicColor = ThemeDefaults.DYNAMIC_COLOR
+                                onDynamicColorChange(ThemeDefaults.DYNAMIC_COLOR)
+                                backgroundTouched = true
+                                backgroundStyle = BackgroundStyles.Default
+                                backgroundIntensity = BackgroundIntensity.DEFAULT
+                                DashboardShapes.CardCategory.entries.forEach { category ->
+                                    onCategoryShapeChange(category, DashboardShapes.SHAPE_PRESET_INHERIT)
+                                }
+                            },
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.ContentPadding
+                    ) { Text(stringResource(R.string.button_confirm)) }
+                },
+                dismissButton = {
+                    TextButton(
+                            onClick = { showResetAll = false },
+                            shapes = rememberRemexButtonShapes(),
+                            contentPadding = ButtonDefaults.TextButtonContentPadding
+                    ) { Text(stringResource(R.string.button_cancel)) }
+                }
+        )
     }
 
     if (showSplashPreview) {

@@ -32,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
@@ -45,9 +46,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -65,6 +68,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -149,7 +153,17 @@ import com.clindsay94.remex.ui.components.RemexHaptics
 private val DashboardFabFootprint = 56.dp + 16.dp
 
 /** One row of the Add-card list. */
-private data class AvailableCardItem(val id: String, val title: String, val subtitle: String, val group: String)
+internal data class AvailableCardItem(val id: String, val title: String, val subtitle: String, val group: String)
+
+/** A blank query matches everything; otherwise any of [fields] contains it, ignoring case. */
+internal fun matchesSensorQuery(query: String, vararg fields: String): Boolean {
+    val needle = query.trim()
+    return needle.isEmpty() || fields.any { it.contains(needle, ignoreCase = true) }
+}
+
+/** The Add-card list narrowed by a search: matches a sensor's name, its subtitle or its group. */
+internal fun filterAvailableCards(items: List<AvailableCardItem>, query: String): List<AvailableCardItem> =
+        items.filter { matchesSensorQuery(query, it.title, it.subtitle, it.group) }
 
 /**
  * The Sensors grid (RemEx-wqo7a.7 / .8): every sensor card on an aligned 2-column grid (4 columns
@@ -197,6 +211,8 @@ fun DashboardScreen(
 
     // Back leaves edit mode before it leaves the screen.
     BackHandler(enabled = editMode) { viewModel.exitEditMode() }
+    // Back closes the tips and remembers them as seen, so they do not return on every visit.
+    BackHandler(enabled = coachStep >= 0 && !editMode) { viewModel.dismissCoach() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         DashboardScreenContent(
@@ -299,7 +315,7 @@ fun DashboardScreenContent(
         onRemoveCard: (String) -> Unit,
         onUndo: () -> Unit,
         onRedo: () -> Unit,
-        onClearAllCards: () -> Unit,
+        onClearAllCards: () -> Boolean,
         onSetCardEnabled: (String, Boolean) -> Unit,
         onSetHomePin: (String, Boolean) -> Unit,
         onPickDisplayMode: (String, TelemetryDisplayMode, String?) -> Unit,
@@ -334,10 +350,13 @@ fun DashboardScreenContent(
     val chrome = SensorsChrome.forMode(editMode)
     val pairingBlocksGrid =
             !editMode && ConnectedPane.state(isConnected, needsPairing) == ConnectedPaneState.NeedsPairing
+    val waitingForReadings =
+            SensorsChrome.waitingForReadings(isConnected, needsPairing, editMode, hasReadings = telemetrySensors.isNotEmpty())
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
     val cardRemovedText = stringResource(R.string.dashboard_card_removed)
+    val allCardsRemovedText = stringResource(R.string.dashboard_all_cards_removed)
     val undoText = stringResource(R.string.dashboard_menu_undo)
     val pinUnavailableText = stringResource(R.string.dashboard_pin_unavailable)
 
@@ -368,6 +387,29 @@ fun DashboardScreenContent(
                         .distinctBy { it.id }
                         .sortedBy { it.group }
             }
+
+    // The Undo here is for the removal just made. Read the revision right after it; a newer edit (a
+    // resize, another removal) dismisses the snackbar, and a late tap still cannot undo that newer edit.
+    fun offerUndo(message: String) {
+        val offeredFor = editRevision.value
+        scope.launch {
+            val dismissOnNewerEdit =
+                    launch {
+                        editRevision.first { it != offeredFor }
+                        snackbarHostState.currentSnackbarData
+                                ?.takeIf { it.visuals.message == message }
+                                ?.dismiss()
+                    }
+            val result =
+                    snackbarHostState.showSnackbar(
+                            message,
+                            actionLabel = undoText,
+                            duration = SnackbarDuration.Short
+                    )
+            dismissOnNewerEdit.cancel()
+            if (result == SnackbarResult.ActionPerformed) onUndoIfUnchanged(offeredFor)
+        }
+    }
 
     var showCardDrawer by remember { mutableStateOf(false) }
     var pickerCardId by remember { mutableStateOf<String?>(null) }
@@ -473,7 +515,7 @@ fun DashboardScreenContent(
                                                 onClick = {
                                                     haptics.perform(RemexHapticEvent.Confirm)
                                                     menuOpen = false
-                                                    onClearAllCards()
+                                                    if (onClearAllCards()) offerUndo(allCardsRemovedText)
                                                 }
                                         )
                                     }
@@ -513,15 +555,36 @@ fun DashboardScreenContent(
                         )
                         GridWidthPicker(selected = gridWidth ?: GridWidth.AUTO, onSelect = onSetGridWidth)
                     }
+                    if (waitingForReadings) {
+                        WaitingForReadingsRow()
+                    }
                     if (pairingBlocksGrid) {
                         NeedsPairingContent(onPair = onPair)
                     } else if (visibleCards.isEmpty()) {
-                        Text(
-                                stringResource(if (editMode) R.string.dashboard_empty_grid_edit else R.string.dashboard_empty_grid),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 24.dp)
-                        )
+                        if (!waitingForReadings) {
+                            Text(
+                                    stringResource(if (editMode) R.string.dashboard_empty_grid_edit else R.string.dashboard_empty_grid),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 24.dp)
+                            )
+                        }
+                        if (!editMode && !waitingForReadings) {
+                            // Edit mode first: SensorLayoutEditor.setCardShown refuses outside it.
+                            FilledTonalButton(
+                                    onClick = {
+                                        haptics.perform(RemexHapticEvent.Press)
+                                        onEnterEditMode()
+                                        showCardDrawer = true
+                                    },
+                                    shapes = rememberRemexButtonShapes(),
+                                    contentPadding = ButtonDefaults.ContentPadding,
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                Text(stringResource(R.string.dashboard_add_cards))
+                            }
+                        }
                     } else {
                         SensorGridLayout(
                                 cards = visibleCards,
@@ -558,27 +621,7 @@ fun DashboardScreenContent(
                                     onCycleSize = { onCycleSpan(card.id) },
                                     onRemove = {
                                         onRemoveCard(card.id)
-                                        // The Undo here is for THIS removal. Read the revision right after
-                                        // it; a newer edit (a resize, another removal) dismisses the
-                                        // snackbar, and a late tap still cannot undo that newer edit.
-                                        val offeredFor = editRevision.value
-                                        scope.launch {
-                                            val dismissOnNewerEdit =
-                                                    launch {
-                                                        editRevision.first { it != offeredFor }
-                                                        snackbarHostState.currentSnackbarData
-                                                                ?.takeIf { it.visuals.message == cardRemovedText }
-                                                                ?.dismiss()
-                                                    }
-                                            val result =
-                                                    snackbarHostState.showSnackbar(
-                                                            cardRemovedText,
-                                                            actionLabel = undoText,
-                                                            duration = SnackbarDuration.Short
-                                                    )
-                                            dismissOnNewerEdit.cancel()
-                                            if (result == SnackbarResult.ActionPerformed) onUndoIfUnchanged(offeredFor)
-                                        }
+                                        offerUndo(cardRemovedText)
                                     },
                                     modifier =
                                             Modifier.fillMaxSize().semantics {
@@ -880,6 +923,25 @@ private fun NotConnectedBanner(onNavigateToConnection: () -> Unit) {
     }
 }
 
+@Composable
+private fun WaitingForReadingsRow() {
+    Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        RemexLoadingIndicator(modifier = Modifier.size(32.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.dashboard_waiting_readings), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                    stringResource(R.string.dashboard_waiting_readings_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardDrawerSheet(
@@ -889,6 +951,8 @@ private fun CardDrawerSheet(
         onDismiss: () -> Unit,
 ) {
     val haptics = rememberRemexHaptics()
+    var query by rememberSaveable { mutableStateOf("") }
+    val shownCards = remember(availableCards, query) { filterAvailableCards(availableCards, query) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
             Text(stringResource(R.string.dashboard_card_drawer_title), style = MaterialTheme.typography.titleLarge)
@@ -898,17 +962,36 @@ private fun CardDrawerSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
             )
+            if (availableCards.isNotEmpty()) {
+                OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = { Text(stringResource(R.string.dashboard_search_sensors)) },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { query = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+            }
             Column(modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
-                if (availableCards.isEmpty()) {
+                if (availableCards.isEmpty() || shownCards.isEmpty()) {
                     Text(
-                            stringResource(R.string.dashboard_card_drawer_empty),
+                            stringResource(
+                                    if (availableCards.isEmpty()) R.string.dashboard_card_drawer_empty
+                                    else R.string.dashboard_no_sensor_matches
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
                 var lastGroup: String? = null
-                availableCards.forEach { item ->
+                shownCards.forEach { item ->
                     if (item.group != lastGroup) {
                         lastGroup = item.group
                         Text(
@@ -993,7 +1076,7 @@ private fun DashboardScreenPreview() {
                 onRemoveCard = {},
                 onUndo = {},
                 onRedo = {},
-                onClearAllCards = {},
+                onClearAllCards = { false },
                 onSetCardEnabled = { _, _ -> },
                 onSetHomePin = { _, _ -> },
                 onPickDisplayMode = { _, _, _ -> },

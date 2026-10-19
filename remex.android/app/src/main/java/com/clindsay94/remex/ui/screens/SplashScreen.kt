@@ -49,19 +49,21 @@ fun SplashScreen(splashStyle: String = SplashStyles.Default, onFinished: () -> U
         }
     }
 
+    // Random resolves to a fresh pick per composition, so Preview of Random plays something new.
+    val playing = remember(splashStyle) { SplashStyles.forLaunch(splashStyle, null) }
     var skipRequested by remember { mutableStateOf(false) }
     Box(
         Modifier
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures { skipRequested = true } }
     ) {
-        when (splashStyle) {
+        when (playing) {
             // On a cold start Live Handshake does not come through here: AppNavigation hosts it as
             // an overlay above the live app so the portal can open into it. This arm is the
             // Personalization preview.
             SplashStyles.LiveHandshake -> SplashLiveHandshake(onFinished, skipRequested) { skipRequested = false }
-            "CosmicZoom" ->SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
-            "Pong" -> SplashPong(onFinished, skipRequested) { skipRequested = false }
+            SplashStyles.CosmicZoom -> SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
+            SplashStyles.Pong -> SplashPong(onFinished, skipRequested) { skipRequested = false }
             else -> SplashRemexCommand(onFinished, skipRequested) { skipRequested = false }
         }
     }

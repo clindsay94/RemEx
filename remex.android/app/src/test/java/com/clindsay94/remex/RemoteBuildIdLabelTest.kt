@@ -1,7 +1,12 @@
 package com.clindsay94.remex
 
+import com.clindsay94.remex.ui.screens.hostVersionLabel
 import com.clindsay94.remex.ui.screens.remoteBuildIdLabel
+import com.clindsay94.remex.ui.screens.versionDetailsText
+import com.clindsay94.remex.ui.screens.versionsDiffer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -34,4 +39,38 @@ class RemoteBuildIdLabelTest {
 
     @Test
     fun `a suffix with no sha compares as nothing`() = assertEquals("", remoteBuildIdLabel("+a3f1"))
+
+    @Test
+    fun `the host's four-part version drops a trailing zero`() {
+        assertEquals("3.1.0", hostVersionLabel("3.1.0.0"))
+        assertEquals("3.1.0.2", hostVersionLabel("3.1.0.2"))
+        assertEquals("3.1.0", hostVersionLabel("3.1.0"))
+        assertEquals("", hostVersionLabel(""))
+        assertEquals("", hostVersionLabel("  "))
+    }
+
+    @Test
+    fun `versions differ only on the first three parts`() {
+        assertFalse(versionsDiffer("3.1.0", "3.1.0.0"))
+        assertFalse(versionsDiffer("3.1.0", "3.1.0.7"))
+        assertTrue(versionsDiffer("3.1.0", "3.0.2.0"))
+        assertTrue(versionsDiffer("3.1.0", "3.1.1.0"))
+    }
+
+    @Test
+    fun `an unreadable version never reports a mismatch`() {
+        assertFalse(versionsDiffer("3.1.0", "Windows (Native)"))
+        assertFalse(versionsDiffer("3.1.0", ""))
+        assertFalse(versionsDiffer("", "3.1.0.0"))
+        assertFalse(versionsDiffer("3.1", "3.1.0.0"))
+    }
+
+    @Test
+    fun `copied version details name both sides and skip absent parts`() {
+        assertEquals(
+            "RemEx Android 3.1.0 (Build abc123)\nRemEx PC 3.1.0 (Build abc123+)",
+            versionDetailsText("3.1.0", "abc123", "3.1.0", "abc123+")
+        )
+        assertEquals("RemEx Android 3.1.0", versionDetailsText("3.1.0", "unknown", "", ""))
+    }
 }

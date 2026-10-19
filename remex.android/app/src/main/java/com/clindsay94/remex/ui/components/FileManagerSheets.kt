@@ -33,7 +33,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,8 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
@@ -287,22 +296,59 @@ fun FileManagerTextDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var text by remember { mutableStateOf(initialValue) }
+    // A rename starts with the name selected but not its extension, so typing replaces just the name.
+    var field by remember {
+        mutableStateOf(TextFieldValue(initialValue, TextRange(0, FileManagerLogic.renameSelectionEnd(initialValue))))
+    }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    val canConfirm = field.text.isNotBlank() && field.text != initialValue
+    val confirm = { if (canConfirm) { onConfirm(field.text); onDismiss() } }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
+                value = field,
+                onValueChange = { field = it },
                 label = { Text(hint) },
                 singleLine = true,
+                modifier = Modifier.focusRequester(focusRequester),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { confirm() }),
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text); onDismiss() }, enabled = text.isNotBlank(), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
+            TextButton(onClick = { confirm() }, enabled = canConfirm, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {
                 Text(confirmLabel)
             }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.dialog_cancel)) } },
+    )
+}
+
+/** Asks before a delete that can't be undone: the file goes straight off the PC, not to a recycle bin. */
+@Composable
+fun FileManagerConfirmDialog(
+    targets: List<RemoteFileEntry>,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val body = when (val form = FileManagerLogic.deleteConfirmation(targets)) {
+        is FileManagerLogic.DeleteConfirmation.One -> stringResource(R.string.files_delete_confirm_one, form.name)
+        is FileManagerLogic.DeleteConfirmation.Many -> pluralStringResource(R.plurals.files_delete_confirm_many, form.count, form.count)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.files_delete_confirm_title)) },
+        text = { Text(body) },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(); onDismiss() },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                shapes = rememberRemexButtonShapes(),
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+            ) { Text(stringResource(R.string.file_transfer_delete)) }
         },
         dismissButton = { TextButton(onClick = onDismiss, shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) { Text(stringResource(R.string.dialog_cancel)) } },
     )

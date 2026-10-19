@@ -118,4 +118,28 @@ class RemoteControlConfirmationTests {
                 (mustConfirm + mustNotConfirm).filter { it in cardActions }.sorted()
         )
     }
+
+    /** The confirm face's wait field and title, pinned as source shape (no Compose render in unit tests). */
+    @Test
+    fun `the wait field opens a number pad and Done never confirms`() {
+        val field = source.substringAfter("OutlinedTextField(", "").substringBefore("modifier = Modifier.fillMaxWidth()")
+        assertTrue("Could not find the wait field - this test is measuring nothing.", field.isNotEmpty())
+        assertTrue("the wait field must open a number pad", field.contains("KeyboardType.Number"))
+
+        val onDone = Regex("""KeyboardActions\(\s*onDone\s*=\s*\{([^}]*)\}""").find(field)?.groupValues?.get(1).orEmpty()
+        assertTrue("the wait field must handle onDone", onDone.isNotBlank())
+        assertTrue("onDone must close the keyboard", onDone.contains("clearFocus()"))
+        assertTrue("onDone must never confirm the destructive action", !onDone.contains("onConfirm"))
+    }
+
+    @Test
+    fun `the confirm face keeps the action's name`() {
+        val faceTitle = source.substringAfter("commandCardConfirmMode", "").substringBefore("if (awaitingConfirmation)")
+        assertTrue("Could not find the confirm face - this test is measuring nothing.", faceTitle.isNotEmpty())
+        assertTrue("the title line must always be the action's own name", faceTitle.contains("text = localizedTitle"))
+        assertTrue(
+                "the generic 'Confirm choice' line sits under the title, not in place of it",
+                source.contains("stringResource(R.string.remote_control_confirm_choice)")
+        )
+    }
 }

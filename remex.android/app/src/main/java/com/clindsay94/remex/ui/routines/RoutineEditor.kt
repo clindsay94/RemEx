@@ -931,9 +931,9 @@ private fun SensorParameters(
                     text = {
                         Column {
                             Text(option.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            val detail = listOf(option.group, option.unit).filter { it.isNotBlank() }
+                            val detail = listOf(option.group, option.unit, RoutineSensorCatalog.formatReading(option).orEmpty()).filter { it.isNotBlank() }
                             if (detail.isNotEmpty()) {
-                                // Two data values (the PC's group and unit), not a sentence.
+                                // Data values (the PC's group, unit and latest reading), not a sentence.
                                 Text(
                                     detail.joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall,
@@ -997,6 +997,13 @@ private fun SensorParameters(
         keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal, imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth(),
     )
+    chosen?.let(RoutineSensorCatalog::formatReading)?.let { reading ->
+        Text(
+            stringResource(R.string.sensor_alert_now, reading),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 
     var more by rememberSaveable { mutableStateOf(false) }
     TextButton(onClick = { more = !more }, modifier = Modifier.heightIn(min = 48.dp), shapes = rememberRemexButtonShapes(), contentPadding = ButtonDefaults.TextButtonContentPadding) {

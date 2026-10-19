@@ -72,6 +72,7 @@ fun FileTreePane(
     onRemoveBookmark: (String) -> Unit,
     onBrowsePcDevice: () -> Unit,
     modifier: Modifier = Modifier,
+    onRemovePcShortcut: (String) -> Unit = {},
 ) {
     LazyColumn(modifier = modifier, contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)) {
         rows.forEachIndexed { index, row ->
@@ -83,6 +84,7 @@ fun FileTreePane(
                     onToggle = { onToggle(row) },
                     onSetShared = onSetShared,
                     onRemoveBookmark = onRemoveBookmark,
+                    onRemovePcShortcut = onRemovePcShortcut,
                 )
             }
             val next = rows.getOrNull(index + 1)
@@ -121,6 +123,7 @@ private fun TreeRowItem(
     onToggle: () -> Unit,
     onSetShared: (String, Boolean) -> Unit,
     onRemoveBookmark: (String) -> Unit,
+    onRemovePcShortcut: (String) -> Unit,
 ) {
     val isDevice = row.kind == TreeRow.Kind.Device
     val label = when {
@@ -167,6 +170,8 @@ private fun TreeRowItem(
             )
             if (row.side == FileSide.Phone && row.kind == TreeRow.Kind.Root && row.root != null) {
                 PhoneFolderMenu(row.root, onSetShared, onRemoveBookmark)
+            } else if (row.side == FileSide.Pc && row.kind == TreeRow.Kind.Root && row.root?.canRemove == true) {
+                PcShortcutMenu(row.root, onRemovePcShortcut)
             }
             Expander(row, onToggle)
         }
@@ -218,6 +223,23 @@ private fun PhoneFolderMenu(root: TreeRootInfo, onSetShared: (String, Boolean) -
                     onClick = { open = false; onRemoveBookmark(root.rootId) },
                 )
             }
+        }
+    }
+}
+
+/** A PC folder pinned from this phone: its one option is to take the shortcut off the list. */
+@Composable
+private fun PcShortcutMenu(root: TreeRootInfo, onRemove: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }, shapes = rememberRemexIconButtonShapes()) {
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.files_folder_options, root.label))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.files_remove_shortcut)) },
+                onClick = { open = false; onRemove(root.rootId) },
+            )
         }
     }
 }

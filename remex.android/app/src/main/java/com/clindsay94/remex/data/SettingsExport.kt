@@ -76,6 +76,8 @@ object SettingsExport {
             "Same as has_completed_onboarding.",
         "routines_coach_seen" to
             "Same as has_completed_onboarding: the new phone has never shown the Routines tips.",
+        "files_coach_seen" to
+            "Same as routines_coach_seen: the new phone has never shown the Files tips.",
         "routines_opened" to
             "Same as routines_coach_seen: the More badge must still show on a phone that never opened Routines.",
         "desktop_unlimited_warning_shown" to
@@ -85,7 +87,9 @@ object SettingsExport {
         "shape_defaults_migrated_v3" to
             "Same as shape_defaults_migrated_v2.",
         "splash_style_migrated_v3" to
-            "Same as shape_defaults_migrated_v2."
+            "Same as shape_defaults_migrated_v2.",
+        "splash_last_random" to
+            "Device state: which animation the Random splash played last. Meaningless on another phone."
     )
 
     /**
