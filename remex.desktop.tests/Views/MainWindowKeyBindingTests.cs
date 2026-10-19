@@ -13,7 +13,7 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Pins MainWindow's 15 <c>KeyBinding</c> gestures and their bound commands (RemEx-l2yqy), and
+/// Pins MainWindow's 17 <c>KeyBinding</c> gestures and their bound commands (RemEx-l2yqy), and
 /// guards the two things the window-surface fix in this bead depends on: no <c>RenderTransform</c>
 /// snuck onto the root (it would desync the shadow from the LayoutTransform-scaled content), and
 /// <c>TransparencyBackgroundFallback</c> is a <c>DynamicResource</c> that follows the active
@@ -23,19 +23,19 @@ public class MainWindowKeyBindingTests
 {
     private static readonly string[] ExpectedGestures =
     {
-        "Ctrl+D1", "Ctrl+D2", "Ctrl+D3", "Ctrl+D4", "Ctrl+D5", "Ctrl+D6", "Ctrl+D7", "Ctrl+D8",
-        "Ctrl+OemComma", "Escape", "F5", "Ctrl+K", "Ctrl+Shift+P", "Ctrl+Z", "Ctrl+Y",
+        "Ctrl+D1", "Ctrl+D2", "Ctrl+D3", "Ctrl+D4", "Ctrl+D5", "Ctrl+D6", "Ctrl+D7", "Ctrl+D8", "Ctrl+D9",
+        "Ctrl+OemComma", "Escape", "F5", "Ctrl+K", "Ctrl+Shift+P", "Ctrl+Z", "Ctrl+Y", "Ctrl+S",
     };
 
     [Fact]
-    public void MainWindow_HasExactlyTheFifteenExpectedKeyBindings()
+    public void MainWindow_HasExactlyTheSeventeenExpectedKeyBindings()
     {
         var doc = XDocument.Parse(MainWindowMarkup());
         XNamespace ns = "https://github.com/avaloniaui";
 
         var bindings = doc.Descendants(ns + "KeyBinding").ToList();
 
-        bindings.Should().HaveCount(15, "MainWindow's 15 documented gestures are load-bearing");
+        bindings.Should().HaveCount(17, "MainWindow's 17 documented gestures are load-bearing");
 
         var gestures = bindings.Select(b => b.Attribute("Gesture")?.Value).ToList();
         gestures.Should().BeEquivalentTo(ExpectedGestures,
@@ -99,6 +99,22 @@ public class MainWindowKeyBindingTests
             byGesture[$"Ctrl+D{i + 1}"].Should().Be("{Binding " + commandForTag[firstEight[i]] + "}",
                 $"Ctrl+{i + 1} must open sidebar item {i + 1}");
         }
+    }
+
+    /// <summary>Ctrl+9 is Settings, the ninth drawer item (PC-4.2), and Ctrl+Z/Y/S act only while Sensors shows (PC-4.3).</summary>
+    [Fact]
+    public void MainWindow_Ctrl9OpensSettings_AndLayoutShortcutsUseTheSensorsOnlyCommands()
+    {
+        var doc = XDocument.Parse(MainWindowMarkup());
+        XNamespace ns = "https://github.com/avaloniaui";
+        var byGesture = doc.Descendants(ns + "KeyBinding")
+            .ToDictionary(b => b.Attribute("Gesture")!.Value, b => b.Attribute("Command")!.Value);
+
+        ShellViewModel.DrawerNavOrder[8].Should().Be(9, "Settings is the ninth sidebar item");
+        byGesture["Ctrl+D9"].Should().Be("{Binding NavigateToSettingsCommand}");
+        byGesture["Ctrl+Z"].Should().Be("{Binding CanvasUndoShortcutCommand}");
+        byGesture["Ctrl+Y"].Should().Be("{Binding CanvasRedoShortcutCommand}");
+        byGesture["Ctrl+S"].Should().Be("{Binding CanvasSaveShortcutCommand}");
     }
 
     [Fact]

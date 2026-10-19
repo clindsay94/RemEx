@@ -18,10 +18,16 @@ public partial class AddProgramViewModel : ObservableObject
     private const string DefaultHexColor = "#4A3AFF";
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyPropertyChangedFor(nameof(PathNotFound))]
     private string _targetPath = string.Empty;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _displayName = string.Empty;
+
+    /// <summary>True when a path is typed but no file exists there. A hint only: it never blocks Save.</summary>
+    public bool PathNotFound => !string.IsNullOrWhiteSpace(TargetPath) && !File.Exists(TargetPath.Trim());
 
     [ObservableProperty]
     private string _hexColor = AppLauncherViewModel.ToRgbHex(ThemeResources.Color("AccentPrimary", Avalonia.Media.Color.Parse(DefaultHexColor)));
@@ -88,13 +94,22 @@ public partial class AddProgramViewModel : ObservableObject
     {
         if (_isSeeding) return;
 
-        if (!string.IsNullOrWhiteSpace(value) && File.Exists(value))
+        // Explorer's "Copy as path" wraps the path in double quotes. Only that is rewritten here: the box writes back on
+        // every keystroke, so trimming would eat a space as it is typed. Whitespace is trimmed where the path is used.
+        var trimmed = (value ?? string.Empty).Trim();
+        if (trimmed is { Length: >= 2 } && trimmed[0] == '"' && trimmed[^1] == '"')
+        {
+            TargetPath = trimmed[1..^1].Trim();
+            return;
+        }
+
+        if (trimmed.Length > 0 && File.Exists(trimmed))
         {
             if (string.IsNullOrWhiteSpace(DisplayName))
             {
-                DisplayName = Path.GetFileNameWithoutExtension(value);
+                DisplayName = Path.GetFileNameWithoutExtension(trimmed);
             }
-            IconBase64 = _iconService.ExtractIconAsBase64(value);
+            IconBase64 = _iconService.ExtractIconAsBase64(trimmed);
         }
     }
 
@@ -102,9 +117,10 @@ public partial class AddProgramViewModel : ObservableObject
     [RelayCommand]
     private void RefreshIcon()
     {
-        if (!string.IsNullOrWhiteSpace(TargetPath) && File.Exists(TargetPath))
+        var path = TargetPath?.Trim();
+        if (!string.IsNullOrEmpty(path) && File.Exists(path))
         {
-            IconBase64 = _iconService.ExtractIconAsBase64(TargetPath);
+            IconBase64 = _iconService.ExtractIconAsBase64(path);
         }
     }
 
@@ -173,7 +189,9 @@ public partial class AddProgramViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    private bool CanSave() => !string.IsNullOrWhiteSpace(TargetPath) && !string.IsNullOrWhiteSpace(DisplayName);
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(TargetPath) || string.IsNullOrWhiteSpace(DisplayName))
@@ -183,7 +201,7 @@ public partial class AddProgramViewModel : ObservableObject
         var entry = new AppEntry(
             _editingId ?? Guid.NewGuid(),
             DisplayName,
-            TargetPath,
+            TargetPath.Trim(),
             HexColor,
             IconBase64 ?? string.Empty,
             _editingOrder

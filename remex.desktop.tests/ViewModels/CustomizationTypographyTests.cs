@@ -124,13 +124,17 @@ public class CustomizationTypographyTests : IDisposable
     }
 
     [Fact]
-    public void PickingAPalettePreset_DoesNotTouchTypography()
+    public async System.Threading.Tasks.Task PickingAPalettePreset_DoesNotTouchTypography()
     {
         var (vm, layout, _) = MakeVm(Tuned);
 
-        // The sheet's own "Reset to Theme Defaults" is a preset pick (ResetToDefault → SelectTheme("BaseDarkGlass"),
-        // CustomizationViewModel.cs:1788-1789) and the only public entry into SelectTheme.
-        vm.ResetToDefaultCommand.Execute(null);
+        // The sheet's own "Reset look to defaults" is a preset pick (ResetToDefaultAsync → SelectTheme("BaseDarkGlass"))
+        // and the only public entry into SelectTheme. It asks first, so the confirmation is stubbed to Yes;
+        // without that the command would decline and this test would pass vacuously.
+        var asked = 0;
+        vm.OnConfirmationRequested = (_, _, _) => { asked++; return System.Threading.Tasks.Task.FromResult(true); };
+        await vm.ResetToDefaultCommand.ExecuteAsync(null);
+        asked.Should().Be(1);
 
         layout.CurrentProfile.Customization.Typography.Should().Be(Tuned, "a palette is colours (spec § Persistence)");
     }

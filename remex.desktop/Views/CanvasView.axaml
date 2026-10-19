@@ -149,13 +149,13 @@
                         <TextBlock Text="{local:Localize Canvas_Redo}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="secondary" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="secondary" Command="{Binding SaveLayoutCommand}" ToolTip.Tip="{local:Localize Canvas_SaveTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Save}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="6" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="6" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" ToolTip.Tip="{local:Localize Canvas_SensorLibraryTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Download" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Theme="{StaticResource CaptionTextBlock}">
@@ -168,7 +168,7 @@
                         </TextBlock>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="7" Classes="secondary" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="7" Classes="secondary" Command="{Binding ResetViewCommand}" ToolTip.Tip="{local:Localize Canvas_ResetViewTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Restore" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_ResetView}" Theme="{StaticResource CaptionTextBlock}"/>
@@ -336,7 +336,7 @@
                                                  HostRuntimeText carried the host detail — it does not: that lives on
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
-                                            <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            <TextBlock Text="{Binding LinkStatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             <!-- No host-address box (sweep D1): this PC only ever links to its own host. -->
                                         </StackPanel>
 

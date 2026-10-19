@@ -60,6 +60,8 @@ public partial class FileTransferView : UserControl
             list.ContextMenu.Opening += (sender, _) => FillMenu(((ContextMenu)sender!).Items, forMoreButton: false);
         }
 
+        FolderTree.ContextMenu!.Opening += OnTreeContextMenuOpening;
+
         if (MoreButton.Flyout is MenuFlyout more)
             more.Opening += (_, _) => FillMenu(more.Items, forMoreButton: true);
 
@@ -243,6 +245,12 @@ public partial class FileTransferView : UserControl
         {
             if (vm.IsRenaming) { vm.CancelRenameCommand.Execute(null); e.Handled = true; }
             else if (vm.IsCreatingFolder) { vm.CancelNewFolderCommand.Execute(null); e.Handled = true; }
+            else if (e.Source is TextBox { Name: nameof(SearchBox) } && !string.IsNullOrEmpty(vm.SearchQuery))
+            {
+                // OnSearchQueryChanged tears the search down; Esc with nothing to clear still reaches DismissOverlays.
+                vm.SearchQuery = string.Empty;
+                e.Handled = true;
+            }
             return;
         }
 
@@ -251,6 +259,7 @@ public partial class FileTransferView : UserControl
 
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         bool Run(System.Windows.Input.ICommand command)
         {
             if (!command.CanExecute(null)) return false;
@@ -268,6 +277,8 @@ public partial class FileTransferView : UserControl
             Key.F2 => Run(vm.StartRenameCommand),
             Key.Delete => Run(vm.DeleteRemoteCommand),
             Key.F5 => Run(vm.BrowseRemoteCommand),
+            Key.E when ctrl && shift => Run(vm.ShowInFileManagerCommand),
+            Key.C when ctrl && shift => Run(vm.CopyLocalPathCommand),
             Key.C when ctrl => Run(vm.CopySelectionCommand),
             Key.X when ctrl => Run(vm.CutSelectionCommand),
             Key.V when ctrl => Run(vm.PasteCommand),
@@ -290,7 +301,7 @@ public partial class FileTransferView : UserControl
             return;
         var loc = LocalizationService.Instance;
 
-        void Add(string key, System.Windows.Input.ICommand command, MaterialIconKind icon, bool show = true, object? parameter = null)
+        void Add(string key, System.Windows.Input.ICommand command, MaterialIconKind icon, bool show = true, object? parameter = null, KeyGesture? gesture = null)
         {
             if (!show) return;
             items.Add(new MenuItem
@@ -299,13 +310,14 @@ public partial class FileTransferView : UserControl
                 Command = command,
                 CommandParameter = parameter,
                 Icon = new MaterialIcon { Kind = icon },
+                InputGesture = gesture,
             });
         }
 
         var hasSelection = vm.SelectedRemoteEntry is { Name: not ".." };
         var isFile = vm.SelectedRemoteEntry is { IsDirectory: false };
 
-        Add("FileTransfer_PreviewMenu", vm.TogglePreviewPaneCommand, MaterialIconKind.DockRight, hasSelection && !vm.IsPreviewPaneOpen);
+        Add("FileTransfer_PreviewMenu", vm.TogglePreviewPaneCommand, MaterialIconKind.DockRight, hasSelection && !vm.IsPreviewPaneOpen, gesture: new KeyGesture(Key.Space));
         Add("FileTransfer_DownloadBtn", vm.DownloadCommand, MaterialIconKind.Download, isFile);
         Add("FileTransfer_DownloadFolderBtn", vm.DownloadFolderCommand, MaterialIconKind.FolderDownloadOutline, vm.SupportsFolderTransfer && !isFile && hasSelection);
 
@@ -321,17 +333,21 @@ public partial class FileTransferView : UserControl
         if (forMoreButton)
         {
             Add("FileTransfer_UploadFolderBtn", vm.UploadFolderCommand, MaterialIconKind.FolderUploadOutline, vm.CanChangeFiles);
-            Add("FileTransfer_SelectAllBtn", vm.SelectAllCommand, MaterialIconKind.SelectAll);
+            Add("FileTransfer_SelectAllBtn", vm.SelectAllCommand, MaterialIconKind.SelectAll, gesture: new KeyGesture(Key.A, KeyModifiers.Control));
         }
 
         items.Add(new Separator());
-        Add("FileTransfer_RenameBtn", vm.StartRenameCommand, MaterialIconKind.RenameOutline, vm.CanChangeFiles && hasSelection);
-        Add("FileTransfer_CopyBtn", vm.CopySelectionCommand, MaterialIconKind.ContentCopy, vm.SupportsCopyMove && hasSelection);
-        Add("FileTransfer_CutBtn", vm.CutSelectionCommand, MaterialIconKind.ContentCut, vm.SupportsCopyMove && hasSelection);
-        Add("FileTransfer_PasteBtn", vm.PasteCommand, MaterialIconKind.ContentPaste, vm.SupportsCopyMove && vm.HasClipboard);
-        Add("FileTransfer_DeleteBtn", vm.DeleteRemoteCommand, MaterialIconKind.DeleteOutline, vm.CanChangeFiles && hasSelection);
+        Add("FileTransfer_RenameBtn", vm.StartRenameCommand, MaterialIconKind.RenameOutline, vm.CanChangeFiles && hasSelection, gesture: new KeyGesture(Key.F2));
+        Add("FileTransfer_CopyBtn", vm.CopySelectionCommand, MaterialIconKind.ContentCopy, vm.SupportsCopyMove && hasSelection, gesture: new KeyGesture(Key.C, KeyModifiers.Control));
+        Add("FileTransfer_CutBtn", vm.CutSelectionCommand, MaterialIconKind.ContentCut, vm.SupportsCopyMove && hasSelection, gesture: new KeyGesture(Key.X, KeyModifiers.Control));
+        Add("FileTransfer_PasteBtn", vm.PasteCommand, MaterialIconKind.ContentPaste, vm.SupportsCopyMove && vm.HasClipboard, gesture: new KeyGesture(Key.V, KeyModifiers.Control));
+        Add("FileTransfer_DeleteBtn", vm.DeleteRemoteCommand, MaterialIconKind.DeleteOutline, vm.CanChangeFiles && hasSelection, gesture: new KeyGesture(Key.Delete));
         items.Add(new Separator());
+        Add(FileManagerHeaderKey, vm.ShowInFileManagerCommand, MaterialIconKind.FolderOpenOutline, vm.CanShowInFileManager,
+            gesture: new KeyGesture(Key.E, KeyModifiers.Control | KeyModifiers.Shift));
         Add("FileTransfer_CopyPath", vm.CopyPathCommand, MaterialIconKind.LinkVariant);
+        Add("FileTransfer_CopyFullPath", vm.CopyLocalPathCommand, MaterialIconKind.ContentCopy, vm.CanShowInFileManager,
+            gesture: new KeyGesture(Key.C, KeyModifiers.Control | KeyModifiers.Shift));
         Add("FileTransfer_ComputeHashMenu", vm.ComputeSelectionHashCommand, MaterialIconKind.Fingerprint, isFile);
 
         if (forMoreButton)
@@ -344,6 +360,39 @@ public partial class FileTransferView : UserControl
         while (items.Count > 0 && items[^1] is Separator) items.RemoveAt(items.Count - 1);
         while (items.Count > 0 && items[0] is Separator) items.RemoveAt(0);
     }
+
+    private static string FileManagerHeaderKey =>
+        OperatingSystem.IsWindows() ? "FileTransfer_ShowInExplorer" : "FileTransfer_ShowInFileManager";
+
+    /// <summary>
+    /// The folder tree's menu is declared in XAML; This PC's "Show in file manager" is added here, on top, because its
+    /// label depends on the OS. It acts on the folder the menu was opened on (right-click selects that row first).
+    /// </summary>
+    private void OnTreeContextMenuOpening(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (sender is not ContextMenu menu || menu.Items is not { } items)
+            return;
+
+        foreach (var stale in items.OfType<MenuItem>().Where(i => Equals(i.Tag, TreeShowInFileManagerTag)).ToList())
+            items.Remove(stale);
+
+        // A right-click selects the row it landed on, so the selected node is the folder the menu was opened on.
+        if (DataContext is not FileTransferViewModel { Tree.SelectedNode: { IsDevice: false, IsPlaceholder: false, RootId: not null } node } vm
+            || !node.Source.IsThisPc)
+            return;
+
+        var item = new MenuItem
+        {
+            Tag = TreeShowInFileManagerTag,
+            Header = LocalizationService.Instance[FileManagerHeaderKey],
+            Icon = new MaterialIcon { Kind = MaterialIconKind.FolderOpenOutline },
+            InputGesture = new KeyGesture(Key.E, KeyModifiers.Control | KeyModifiers.Shift),
+        };
+        item.Click += async (_, _) => await vm.ShowTreeNodeInFileManagerAsync(node);
+        items.Insert(0, item);
+    }
+
+    private const string TreeShowInFileManagerTag = "show-in-file-manager";
 
     // ── View model wiring ──
 

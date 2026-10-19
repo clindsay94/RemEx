@@ -171,7 +171,34 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         if (!string.IsNullOrEmpty(e.PropertyName)) return;
 
         OnPropertyChanged(nameof(LastExportedStatusText));
+        RelabelPresetsAndScopes();
     }
+
+    /// <summary>
+    /// Presets and export scopes carry their own names, built once, so a language switch left both
+    /// drop-downs in the old language. Rebuild them and put each selection back by position.
+    /// </summary>
+    private void RelabelPresetsAndScopes()
+    {
+        var presetIndex = SelectedPreset is null ? -1 : Presets.IndexOf(SelectedPreset);
+        var scopeIndex = SelectedExportScope is null ? -1 : ExportScopes.IndexOf(SelectedExportScope);
+
+        _relabelling = true;
+        try
+        {
+            Presets.Clear();
+            ExportScopes.Clear();
+            BuildPresetsAndScopes();
+            SelectedPreset = presetIndex >= 0 && presetIndex < Presets.Count ? Presets[presetIndex] : Presets.FirstOrDefault();
+            SelectedExportScope = scopeIndex >= 0 && scopeIndex < ExportScopes.Count ? ExportScopes[scopeIndex] : ExportScopes.FirstOrDefault();
+        }
+        finally
+        {
+            _relabelling = false;
+        }
+    }
+
+    private bool _relabelling;
 
     private void BuildPresetsAndScopes()
     {
@@ -218,7 +245,11 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     }
 
     partial void OnSelectedDisplayLevelChanged(string value) => RebuildVisible();
-    partial void OnSelectedPresetChanged(LogPreset? value) => RebuildVisible();
+    partial void OnSelectedPresetChanged(LogPreset? value)
+    {
+        if (!_relabelling)
+            RebuildVisible();
+    }
     partial void OnSearchTextChanged(string value) => RebuildVisible();
 
     partial void OnSelectedCaptureLevelChanged(string value)

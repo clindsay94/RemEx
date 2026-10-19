@@ -147,6 +147,8 @@
                                          produce; no separate OnSurfaceBrush dot needed any more. -->
                                     <Button Classes="tile" Margin="4" Padding="0" HorizontalAlignment="Stretch"
                                             AutomationProperties.Name="{Binding DisplayName}" Classes.selected="{Binding IsSelected}"
+                                            AutomationProperties.HelpText="{Binding SelectionStatus}"
+                                            ToolTip.Tip="{Binding Description}"
                                             Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectSchemeVariantCommand}"
                                             CommandParameter="{Binding Variant}">
                                         <controls:PaletteChip Primary="{Binding PrimaryBrush}" Secondary="{Binding SecondaryBrush}" Tertiary="{Binding TertiaryBrush}"

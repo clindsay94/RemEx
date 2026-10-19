@@ -82,14 +82,7 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     /// window's link to its OWN in-process host, so the footer read "No phone connected" over
     /// "Status: Connected". With the link up and no phone attached it now says it is waiting for one.
     /// </summary>
-    public string LinkStatusText => LinkStatusKey(Connection.IsConnected, Presence.HasNoPhone) is { } key
-        ? LocalizationService.Instance[key]
-        : Connection.StatusText;
-
-    /// <summary>The localization key the status line shows, or null to show the link's own status
-    /// text. Pure, so the rule can be tested without a live connection.</summary>
-    internal static string? LinkStatusKey(bool linkConnected, bool hostUpWithNoPhone) =>
-        linkConnected && hostUpWithNoPhone ? "Home_WaitingForPhone" : null;
+    public string LinkStatusText => PhonePresenceText.LinkStatusText(Connection, Presence);
 
     /// <summary>Phone presence or the language changed: the status line is recomputed.</summary>
     private void OnLinkInputsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
@@ -226,6 +219,9 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void NavigateToRemote() => _shell.NavigateToRemote();
+
+    [RelayCommand]
+    private void NavigateToRoutines() => _shell.NavigateToRoutines();
 
     [RelayCommand]
     private void NavigateToAppLauncher() => _shell.NavigateToAppLauncher();

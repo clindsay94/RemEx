@@ -14,6 +14,7 @@ public partial class SecondMetricDialog : Window
     private readonly Action<string?>? _onResult;
     private readonly List<string> _all = new();
     private readonly ObservableCollection<string> _filtered = new();
+    private readonly string? _current;
 
     public SecondMetricDialog()
     {
@@ -24,6 +25,7 @@ public partial class SecondMetricDialog : Window
         Action<string?> onResult) : this()
     {
         _onResult = onResult;
+        _current = current;
         _all.AddRange(candidates);
         foreach (var c in _all) _filtered.Add(c);
 
@@ -32,18 +34,49 @@ public partial class SecondMetricDialog : Window
         if (current is not null) SensorList.SelectedItem = current;
 
         SearchBox.TextChanged += (_, _) => Filter();
-        SensorList.DoubleTapped += (_, _) => Apply(SensorList.SelectedItem as string);
+        SearchBox.KeyDown += OnSearchKeyDown;
+        SensorList.SelectionChanged += (_, _) => UpdateButtons();
+        SensorList.DoubleTapped += (_, _) => OnSet(null, new RoutedEventArgs());
+
+        // Nothing to clear when the card has no second metric yet.
+        ClearButton.IsEnabled = current is not null;
+        UpdateButtons();
     }
+
+    /// <summary>Set needs a highlighted sensor; with none it would only ever mean "clear".</summary>
+    private void UpdateButtons() => SetButton.IsEnabled = SensorList.SelectedItem is string;
 
     private void Filter()
     {
         var q = SearchBox.Text?.Trim() ?? string.Empty;
+        var previous = SensorList.SelectedItem as string;
         _filtered.Clear();
         foreach (var s in _all)
         {
             if (q.Length == 0 || s.Contains(q, StringComparison.OrdinalIgnoreCase))
                 _filtered.Add(s);
         }
+
+        SensorList.SelectedItem = SecondMetricSelection.AfterFilter(previous, _filtered);
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        SearchBox.Focus();
+        if (SensorList.SelectedItem is { } selected)
+            SensorList.ScrollIntoView(selected);
+    }
+
+    private void OnSearchKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key != Avalonia.Input.Key.Down || _filtered.Count == 0)
+            return;
+
+        SensorList.SelectedItem ??= _filtered[0];
+        var target = SensorList.SelectedItem is { } item ? SensorList.ContainerFromItem(item) : null;
+        (target ?? SensorList).Focus();
+        e.Handled = true;
     }
 
     private void Apply(string? name)
@@ -89,7 +122,24 @@ public partial class SecondMetricDialog : Window
     }
 
 
-    private void OnSet(object? sender, RoutedEventArgs e) => Apply(SensorList.SelectedItem as string);
+    private void OnSet(object? sender, RoutedEventArgs e)
+    {
+        if (SensorList.SelectedItem is string name)
+            Apply(name);
+    }
     private void OnClear(object? sender, RoutedEventArgs e) => Apply(null);
     private void OnCancel(object? sender, RoutedEventArgs e) => Close();
+}
+
+/// <summary>The list highlight after the search text changes.</summary>
+internal static class SecondMetricSelection
+{
+    /// <summary>Keeps the previous pick if it survived the filter, else the first match, else nothing.</summary>
+    internal static string? AfterFilter(string? previous, IReadOnlyList<string> filtered)
+    {
+        if (previous is not null && filtered.Contains(previous))
+            return previous;
+
+        return filtered.Count > 0 ? filtered[0] : null;
+    }
 }

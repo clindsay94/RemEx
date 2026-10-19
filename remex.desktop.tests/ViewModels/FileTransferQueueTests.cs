@@ -40,6 +40,42 @@ public class FileTransferQueueTests
     }
 
     [Fact]
+    public async Task Enqueue_WithALocalPath_ExposesItAndOffersShowInFolderOnlyOnceADownloadIsDone()
+    {
+        var queue = NewQueue();
+        var gate = new System.Threading.Tasks.TaskCompletionSource();
+        var first = queue.Enqueue(FileTransferQueueKind.Download, "a.bin", async (_, _) => await gate.Task, "/tmp/a.bin");
+        var second = queue.Enqueue(FileTransferQueueKind.Download, "b.bin", (_, _) => System.Threading.Tasks.Task.CompletedTask, "/tmp/b.bin");
+        var upload = queue.Enqueue(FileTransferQueueKind.Upload, "c.bin", (_, _) => System.Threading.Tasks.Task.CompletedTask, "/tmp/c.bin");
+
+        first.LocalPath.Should().Be("/tmp/a.bin");
+        first.CanShowInFolder.Should().BeFalse("it has not finished");
+        second.State.Should().Be(TransferState.Queued);
+        second.CanShowInFolder.Should().BeFalse("it has not started");
+
+        gate.SetResult();
+        await first.Completion.Task;
+        await second.Completion.Task;
+        await upload.Completion.Task;
+
+        first.CanShowInFolder.Should().BeTrue();
+        second.CanShowInFolder.Should().BeTrue();
+        upload.CanShowInFolder.Should().BeFalse("an upload has no saved file on this PC");
+    }
+
+    [Fact]
+    public async Task Enqueue_WithoutALocalPath_NeverOffersShowInFolder()
+    {
+        var queue = NewQueue();
+        var item = queue.Enqueue(FileTransferQueueKind.Download, "a.bin", (_, _) => System.Threading.Tasks.Task.CompletedTask);
+
+        await item.Completion.Task;
+
+        item.LocalPath.Should().BeNull();
+        item.CanShowInFolder.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Enqueue_RunsWorkAndReachesDone()
     {
         var queue = NewQueue();

@@ -568,11 +568,20 @@ public class CustomizationMigrationTests
         var migrated = CustomizationMigration.Migrate(SchemaSeven() with { SplashStyle = "Pong" }, out _);
         migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
 
-        foreach (var picked in new[] { "CosmicZoom", "Pong", "RemexCommand" })
+        foreach (var picked in new[] { "CosmicZoom", "Pong", "RemexCommand", "Random" })
         {
             var repicked = migrated with { SplashStyle = picked };
             CustomizationMigration.Migrate(repicked, out _).SplashStyle.Should().Be(picked);
         }
+    }
+
+    [Fact]
+    public void ACurrentSchemaRandomSplashProfileComesBackUnchanged()
+    {
+        var random = new CustomizationSettings { SchemaVersion = CustomizationMigration.CurrentSchemaVersion, SplashStyle = "Random" };
+
+        CustomizationMigration.Migrate(random, out var warning).Should().BeSameAs(random);
+        warning.Should().BeNull();
     }
 
     [Fact]

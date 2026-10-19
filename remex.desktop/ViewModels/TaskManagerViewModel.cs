@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Launching;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -59,6 +60,9 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private string _searchText = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSortedByName))]
+    [NotifyPropertyChangedFor(nameof(IsSortedByCpu))]
+    [NotifyPropertyChangedFor(nameof(IsSortedByMemory))]
     private string _sortBy = "Name"; // Name, Cpu, Memory
 
     [ObservableProperty]
@@ -71,6 +75,20 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private bool _isLoading = true;
 
     private List<ProcessInfo> _lastRawProcesses = new();
+
+    public bool IsSortedByName => SortBy == "Name";
+    public bool IsSortedByCpu => SortBy == "Cpu";
+    public bool IsSortedByMemory => SortBy == "Memory";
+
+    /// <summary>True when a search is hiding every program (and the first list has arrived).</summary>
+    public bool ShowNoMatches =>
+        !IsLoading && Processes.Count == 0 && !string.IsNullOrWhiteSpace(SearchText);
+
+    /// <summary>Shows a program's file in the PC's file manager; a seam so tests never spawn Explorer.</summary>
+    internal Action<string> RevealInFileManager { get; set; } = FileManagerLauncher.Reveal;
+
+    /// <summary>Puts text on the clipboard. The clipboard lives on the view, so the view wires this.</summary>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
 
     public ICommand RefreshCommand { get; }
     public ICommand KillProcessCommand { get; }
@@ -117,6 +135,27 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         UpdateProcessList();
     }
 
+    partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(ShowNoMatches));
+
+    [RelayCommand]
+    private void DismissKillError() => KillError = null;
+
+    private static bool HasFilePath(ProcessInfo? process) => !string.IsNullOrEmpty(process?.FilePath);
+
+    [RelayCommand(CanExecute = nameof(HasFilePath))]
+    private void OpenFileLocation(ProcessInfo? process)
+    {
+        if (HasFilePath(process))
+            RevealInFileManager(process!.FilePath);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasFilePath))]
+    private async Task CopyFilePathAsync(ProcessInfo? process)
+    {
+        if (HasFilePath(process) && CopyToClipboardAsync is { } copy)
+            await copy(process!.FilePath);
+    }
+
     private void SortByColumn(string? column)
     {
         if (string.IsNullOrEmpty(column)) return;
@@ -127,7 +166,8 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         else
         {
             SortBy = column;
-            SortDescending = false;
+            // CPU and memory read best biggest-first; names read A to Z (same rule as the phone).
+            SortDescending = column != "Name";
         }
         UpdateProcessList();
     }
@@ -172,6 +212,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         MaxCpuUsage = ScaleMax(visible.Select(p => p.CpuUsage));
         MaxMemoryUsage = ScaleMax(visible.Select(p => (double)p.MemoryUsage));
         Processes = new ObservableCollection<ProcessInfo>(visible);
+        OnPropertyChanged(nameof(ShowNoMatches));
     }
 
     /// <summary>

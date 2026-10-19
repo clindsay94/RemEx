@@ -175,7 +175,23 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Whether there are any unacknowledged sensor alerts.</summary>
     public bool HasAlerts => AlertBadgeCount > 0;
 
-    partial void OnAlertBadgeCountChanged(int value) => OnPropertyChanged(nameof(HasAlerts));
+    partial void OnAlertBadgeCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasAlerts));
+        RaiseNavAttentionChanged();
+    }
+
+    /// <summary>Drives the dot on the sidebar toggle. Diagnostics warnings are left out on purpose.</summary>
+    public bool HasNavAttention => HasAlerts || HasActiveTransfers;
+
+    public string NavAttentionHelp =>
+        HasNavAttention ? LocalizationService.Instance["Nav_AttentionHelp"] : string.Empty;
+
+    private void RaiseNavAttentionChanged()
+    {
+        OnPropertyChanged(nameof(HasNavAttention));
+        OnPropertyChanged(nameof(NavAttentionHelp));
+    }
 
     /// <summary>Recent sensor alert notifications (most recent first).</summary>
     public ObservableCollection<SensorAlertNotification> AlertNotifications { get; } = new();
@@ -229,7 +245,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Whether the Files nav badge should be visible - a zero count hides rather than shows "0".</summary>
     public bool HasActiveTransfers => ActiveTransferCount > 0;
 
-    partial void OnActiveTransferCountChanged(int value) => OnPropertyChanged(nameof(HasActiveTransfers));
+    partial void OnActiveTransferCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasActiveTransfers));
+        RaiseNavAttentionChanged();
+    }
 
     private void OnTransferQueueChanged() =>
         ActiveTransferCount = _transferQueue.Items.Count(item => item.IsActive);
@@ -436,6 +456,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     /// <summary>The view restarts the mounted SkiaSplashControl when this fires (Preview on the sheet).</summary>
     public event Action? SplashReplayRequested;
+
+    /// <summary>
+    /// Escape while the splash is up asks the view to skip it. With no subscriber (no view mounted),
+    /// <see cref="DismissOverlays"/> keeps its old meaning instead.
+    /// </summary>
+    public event Action? SplashSkipRequested;
 
     /// <summary>
     /// Set while a Preview-triggered replay is in flight (RemEx-8twk0.8 fix round, HIGH). The replay's
@@ -1241,6 +1267,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // same pattern as ThemeService.CustomizationApplied - so a view that outlives Dispose() (or a
         // subscription this VM cannot see) cannot keep firing Restart against a torn-down splash.
         SplashReplayRequested = null;
+        SplashSkipRequested = null;
 
         // No frame can still be compositing against this bitmap once the shell itself is going
         // away, so — unlike the live swap in LoadWallpaperAsync — disposing it inline here is safe.
@@ -1507,11 +1534,40 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Canvas Undo / Redo (routed from MainWindow key bindings) ═══════════════
 
+    /// <summary>True while the Sensors page is on screen: the only time the window shortcuts touch its layout.</summary>
+    private bool IsCanvasActive => ActiveNavIndex == 1;
+
+    partial void OnActiveNavIndexChanged(int value)
+    {
+        CanvasUndoShortcutCommand.NotifyCanExecuteChanged();
+        CanvasRedoShortcutCommand.NotifyCanExecuteChanged();
+        CanvasSaveShortcutCommand.NotifyCanExecuteChanged();
+    }
+
+    // The palette entries bring Sensors forward first, so the undo happens where the user can see it.
     [RelayCommand]
-    private void CanvasUndo() => _canvasViewModel?.UndoCommand.Execute(null);
+    private void CanvasUndo()
+    {
+        if (!IsCanvasActive) NavigateToCanvas();
+        _canvasViewModel?.UndoCommand.Execute(null);
+    }
 
     [RelayCommand]
-    private void CanvasRedo() => _canvasViewModel?.RedoCommand.Execute(null);
+    private void CanvasRedo()
+    {
+        if (!IsCanvasActive) NavigateToCanvas();
+        _canvasViewModel?.RedoCommand.Execute(null);
+    }
+
+    // Ctrl+Z / Ctrl+Y / Ctrl+S: act only while Sensors is showing, never on a hidden layout.
+    [RelayCommand(CanExecute = nameof(IsCanvasActive))]
+    private void CanvasUndoShortcut() => _canvasViewModel?.UndoCommand.Execute(null);
+
+    [RelayCommand(CanExecute = nameof(IsCanvasActive))]
+    private void CanvasRedoShortcut() => _canvasViewModel?.RedoCommand.Execute(null);
+
+    [RelayCommand(CanExecute = nameof(IsCanvasActive))]
+    private void CanvasSaveShortcut() => _canvasViewModel?.SaveLayoutCommand.Execute(null);
 
     // ═══════════════ Sensor Alert Notifications ═══════════════
 
@@ -1595,6 +1651,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private void OnBannerLocaleChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        OnPropertyChanged(nameof(NavAttentionHelp));
         if (_connectionBannerFeatureKey is { } key)
             ConnectionBannerMessage = BuildConnectionBannerMessage(key);
     }
@@ -1797,7 +1854,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _fileTransferViewModel ??= new FileTransferViewModel(
             Connection,
             _services.GetRequiredService<ILogger<FileTransferViewModel>>(),
-            transferQueue: _transferQueue);
+            transferQueue: _transferQueue,
+            layoutService: _layoutService);
         SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
 
@@ -1833,6 +1891,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void DismissOverlays()
     {
+        // Esc skips the splash first; it must not also close a Personalize sheet hidden behind a Preview.
+        if (ShowWelcomeSplash && SplashSkipRequested is not null)
+        {
+            SplashSkipRequested();
+            return;
+        }
+
         IsSettingsPanelOpen = false;
         IsDrawerOpen = false;
         // ESCAPE ON THE TUTORIAL IS SKIP (3.0 comb, tutorial-esc-not-persisted, Connor's call). It

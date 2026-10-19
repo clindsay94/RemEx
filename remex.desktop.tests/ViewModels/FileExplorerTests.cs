@@ -221,6 +221,119 @@ public sealed class FileExplorerTests : IDisposable
         condition().Should().BeTrue(because);
     }
 
+    // ── Show in file manager, Copy full path, transfer strip, search result (PC-2.1, 2.2, 2.3, 2.5) ──
+
+    private static async Task SelectEntryAsync(FileTransferViewModel vm, string folder, string? name)
+    {
+        vm.RemotePath = folder;
+        await vm.BrowseRemoteCommand.ExecuteAsync(null);
+        vm.SelectedRemoteEntry = name is null ? null : vm.RemoteEntries.First(e => e.Name == name);
+    }
+
+    private static string Full(string path) => Path.GetFullPath(path);
+
+    [Fact]
+    public async Task ShowInFileManager_RevealsASelectedFile_AndOpensAFolderOrTheCurrentFolder()
+    {
+        var kit = await OpenAsync();
+        var revealed = new List<string>();
+        var opened = new List<string>();
+        kit.Vm.RevealInFileManager = revealed.Add;
+        kit.Vm.OpenInFileManager = opened.Add;
+
+        await SelectEntryAsync(kit.Vm, "/Logs", "agent.log");
+        await kit.Vm.ShowInFileManagerCommand.ExecuteAsync(null);
+        revealed.Select(Full).Should().Equal(Full(Path.Combine(_disk, "Logs", "agent.log")));
+        opened.Should().BeEmpty();
+
+        await SelectEntryAsync(kit.Vm, "/", "Logs");
+        await kit.Vm.ShowInFileManagerCommand.ExecuteAsync(null);
+        opened.Select(Full).Should().Equal(Full(Path.Combine(_disk, "Logs")));
+
+        opened.Clear();
+        await SelectEntryAsync(kit.Vm, "/Logs", null);
+        await kit.Vm.ShowInFileManagerCommand.ExecuteAsync(null);
+        kit.Vm.SelectedRemoteEntry = new FileEntry { Name = "..", IsDirectory = true };
+        await kit.Vm.ShowInFileManagerCommand.ExecuteAsync(null);
+        opened.Select(Full).Should().Equal(Full(Path.Combine(_disk, "Logs")), Full(Path.Combine(_disk, "Logs")));
+        revealed.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ShowInFileManagerAndCopyFullPath_AreNotOfferedForAPhone()
+    {
+        var kit = await OpenAsync();
+        kit.Vm.CanShowInFileManager.Should().BeTrue();
+
+        kit.Vm.SelectedSource = kit.Vm.Sources.First(s => !s.IsThisPc);
+        await WaitForAsync(() => kit.Vm.IsPhoneSource && kit.Vm.SelectedRemoteRoot is not null, "the phone should be browsed");
+
+        kit.Vm.CanShowInFileManager.Should().BeFalse();
+        kit.Vm.ShowInFileManagerCommand.CanExecute(null).Should().BeFalse();
+        kit.Vm.CopyLocalPathCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CopyFullPath_CopiesThePlainDiskPath_OfTheSelectionOrTheCurrentFolder()
+    {
+        var kit = await OpenAsync();
+        var copied = new List<string>();
+        kit.Vm.CopyText = text => { copied.Add(text); return Task.CompletedTask; };
+
+        await SelectEntryAsync(kit.Vm, "/Logs", "agent.log");
+        await kit.Vm.CopyLocalPathCommand.ExecuteAsync(null);
+        await SelectEntryAsync(kit.Vm, "/Logs", null);
+        await kit.Vm.CopyLocalPathCommand.ExecuteAsync(null);
+
+        copied.Select(Full).Should().Equal(Full(Path.Combine(_disk, "Logs", "agent.log")), Full(Path.Combine(_disk, "Logs")));
+        copied.Should().OnlyContain(p => !p.Contains('"'), "the path is copied plain, not quoted");
+    }
+
+    [Fact]
+    public async Task ShowTransferInFolder_RevealsTheFinishedFile_ThenItsFolder_ThenSaysItIsGone()
+    {
+        var kit = await OpenAsync();
+        var revealed = new List<string>();
+        var opened = new List<string>();
+        kit.Vm.RevealInFileManager = revealed.Add;
+        kit.Vm.OpenInFileManager = opened.Add;
+        var file = Path.Combine(_disk, "saved.bin");
+        File.WriteAllText(file, "x");
+
+        var item = kit.Vm.TransferQueue.Enqueue(FileTransferQueueKind.Download, "saved.bin", (_, _) => Task.CompletedTask, file);
+        await item.Completion.Task;
+        kit.Vm.ShowTransferInFolderCommand.Execute(item);
+        revealed.Should().Equal(file);
+
+        File.Delete(file);
+        kit.Vm.ShowTransferInFolderCommand.Execute(item);
+        opened.Should().Equal(_disk);
+
+        var orphan = kit.Vm.TransferQueue.Enqueue(
+            FileTransferQueueKind.Download, "x.bin", (_, _) => Task.CompletedTask, Path.Combine(_disk, "gone-folder", "x.bin"));
+        await orphan.Completion.Task;
+        kit.Vm.ShowTransferInFolderCommand.Execute(orphan);
+        kit.Vm.StatusText.Should().Be(LocalizationService.Instance["FileTransfer_ShowInFolderMissing"]);
+        opened.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task OpeningAFileSearchResult_BrowsesItsFolder_AndHighlightsTheFile()
+    {
+        var kit = await OpenAsync(pc: d =>
+        {
+            d.AddFile("docs", "a/b/report.pdf", "pdf");
+            d.AddFile("docs", "a/b/x.txt", "x");
+        });
+        var hit = new FileSearchEntry { Name = "report.pdf", RelativePath = "a/b/report.pdf" };
+
+        await kit.Vm.OpenSearchResultCommand.ExecuteAsync(hit);
+
+        kit.Vm.RemotePath.Should().Be("/a/b");
+        kit.Vm.SelectedRemoteEntry.Should().NotBeNull();
+        kit.Vm.SelectedRemoteEntry!.Name.Should().Be("report.pdf");
+    }
+
     // ── Tree ──
 
     [Fact]
@@ -523,6 +636,49 @@ public sealed class FileExplorerTests : IDisposable
         (await kit.Vm.LocalPathForAsync("docs", "Logs/agent.log")).Should().Be(Path.Combine(_disk, "Logs", "agent.log"));
         (await kit.Vm.LocalPathForAsync("docs", "../outside.txt")).Should().BeNull();
         (await kit.Vm.LocalPathForAsync("not-a-root", "a.txt")).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ASharedFolderAddedInSettings_ResolvesWithoutARestart()
+    {
+        var kit = await OpenAsync();
+        var music = Path.Combine(_disk, "Music");
+        var loads = 0;
+        kit.Vm.LoadPcRoots = () =>
+        {
+            loads++;
+            IReadOnlyList<FileTransferRootConfiguration> roots = loads == 1
+                ? [new FileTransferRootConfiguration { RootId = "docs", DisplayName = "Documents", AbsolutePath = _disk, IsWritable = true }]
+                : [
+                    new FileTransferRootConfiguration { RootId = "docs", DisplayName = "Documents", AbsolutePath = _disk, IsWritable = true },
+                    new FileTransferRootConfiguration { RootId = "music", DisplayName = "Music", AbsolutePath = music, IsWritable = true },
+                ];
+            return Task.FromResult(roots);
+        };
+
+        (await kit.Vm.LocalPathForAsync("docs", "a.txt")).Should().Be(Path.Combine(_disk, "a.txt"));
+        (await kit.Vm.LocalPathForAsync("music", "song.mp3")).Should().Be(Path.Combine(music, "song.mp3"),
+            "a root the cached list does not know is re-read, since Settings can add one while this screen lives on");
+        loads.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ASharedFolderMovedUnderTheSameRoot_ResolvesToTheNewPathAfterTheRootsReload()
+    {
+        var kit = await OpenAsync();
+        var moved = Path.Combine(_disk, "Moved");
+        var current = _disk;
+        kit.Vm.LoadPcRoots = () => Task.FromResult<IReadOnlyList<FileTransferRootConfiguration>>(
+            [new FileTransferRootConfiguration { RootId = "docs", DisplayName = "Documents", AbsolutePath = current, IsWritable = true }]);
+
+        (await kit.Vm.LocalPathForAsync("docs", "a.txt")).Should().Be(Path.Combine(_disk, "a.txt"));
+        current = moved;
+        (await kit.Vm.LocalPathForAsync("docs", "a.txt")).Should().Be(Path.Combine(_disk, "a.txt"), "a known root is served from the cache");
+
+        await kit.Vm.LoadRemoteRootsCommand.ExecuteAsync(null);
+
+        (await kit.Vm.LocalPathForAsync("docs", "a.txt")).Should().Be(Path.Combine(moved, "a.txt"),
+            "reloading the root list must not leave Copy full path pointing at the old folder");
     }
 
     [Fact]

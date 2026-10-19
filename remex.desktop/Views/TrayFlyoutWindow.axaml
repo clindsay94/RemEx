@@ -93,6 +93,8 @@
                 </StackPanel>
 
                 <Button Grid.Column="2" Classes="tertiary icon-button compact" Click="OnOpenMainApp"
+                        Command="{Binding OpenSettingsCommand}"
+                        ToolTip.Tip="{local:Localize Palette_Settings}"
                         AutomationProperties.Name="{local:Localize Palette_Settings}">
                     <mi:MaterialIcon Kind="Cog" Width="14" Height="14"/>
                 </Button>
@@ -110,6 +112,7 @@
                 </ToggleButton>
 
                 <Button Grid.Column="4" Classes="tertiary icon-button compact" Click="OnCloseFlyout"
+                        ToolTip.Tip="{local:Localize A11y_Close}"
                         AutomationProperties.Name="{local:Localize A11y_Close}">
                     <mi:MaterialIcon Kind="Close" Width="14" Height="14"/>
                 </Button>

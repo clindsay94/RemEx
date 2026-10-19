@@ -41,7 +41,10 @@ public sealed partial class SeedPresetTileViewModel : ObservableObject, IDisposa
     /// what would make this defect invisible until someone localizes one of them.
     /// </summary>
     private void OnLocaleChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        => OnPropertyChanged(nameof(DisplayName));
+    {
+        OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(SelectionStatus));
+    }
 
     public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
 
@@ -56,6 +59,11 @@ public sealed partial class SeedPresetTileViewModel : ObservableObject, IDisposa
     /// SolarFlare's 48px remote radius on a 36px preview is a circle, not a rounded rectangle.
     /// </summary>
     public CornerRadius PreviewCornerRadius => new(Math.Clamp(Preset.CornerRadius, 0, 14));
+
+    /// <summary>"Selected" for screen readers while this tile is the chosen one, otherwise empty.</summary>
+    public string SelectionStatus => IsSelected ? LocalizationService.Instance["A11y_SelectedState"] : string.Empty;
+
+    partial void OnIsSelectedChanged(bool value) => OnPropertyChanged(nameof(SelectionStatus));
 
     [ObservableProperty] private IBrush _surfaceBrush;
     [ObservableProperty] private IBrush _primaryBrush;

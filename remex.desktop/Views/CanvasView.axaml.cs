@@ -184,7 +184,10 @@ public partial class CanvasView : UserControl
             if (topLevel is not Window ownerWindow) return;
 
             Remex.Core.Models.SensorAlert? result = null;
-            var dialog = new SetAlertDialog(sensorName, existing, r => result = r);
+            vm.TryResolve(sensorName, out var info);
+            double? live = vm.TryGetLiveValue(sensorName, out var liveValue) ? liveValue : null;
+            var dialog = new SetAlertDialog(sensorName, existing, r => result = r,
+                info?.DisplayName, info?.Unit, live);
             await dialog.ShowDialog(ownerWindow);
 
             // null means cancelled/dismissed — don't touch the existing alert.

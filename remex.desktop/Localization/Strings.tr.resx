@@ -412,7 +412,7 @@
     <value>Arka plan modu</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Tema varsayılanlarına sıfırla</value>
+    <value>Görünümü varsayılanlara sıfırla</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -812,7 +812,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Bir telefonun bu bilgisayarla eşleşmesi için gereken QR kodunu ve PIN'i göster</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>RemEx Android uygulamasıyla tarayın</value>
+    <value>Telefonunuzda RemEx’i açın, Bağlantı ekranında ‘PC ekle’ye, ardından ‘QR kodunu tara’ya dokunun ve kamerayı buraya tutun.</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>Eşleştirme PIN'i</value>
@@ -1948,7 +1948,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Piksel cinsinden neon parlama kalınlığı</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Başlangıç hoş geldiniz açılış ekranı animasyonu tarzını seç</value>
+    <value>RemEx açılırken oynatılacak animasyonu seçin. Rastgele her seferinde farklı bir animasyon oynatır.</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Sensör karolarının tuval üzerinde hizalanması için kılavuzları etkinleştir</value>
@@ -2132,7 +2132,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Eşleştirilmiş bir cihaz, bu PC'deki tüm sürücülere ve klasörlere göz atmak istiyor.</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>Bu cihaz için seçimimi hatırla</value>
+    <value>Bu cihaza her zaman izin ver</value>
   </data>
   <data name="FileConsent_Allow" xml:space="preserve">
     <value>İzin Ver</value>
@@ -2390,7 +2390,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Görünümü kişiselleştir</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>Atlamak için herhangi bir yere tıklayın</value>
+    <value>Atlamak için herhangi bir yere tıklayın veya Esc tuşuna basın</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Canlı El Sıkışma</value>
@@ -4406,5 +4406,167 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>Dosyalar bir telefondan diğerine doğrudan gidemez. Önce bu bilgisayara kopyalayın.</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>Rastgele</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>Görünüm sıfırlansın mı?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>Renginiz, açık veya koyu mod, kontrast, kart şekilleri ve açılış ekranı RemEx'in varsayılanlarına döner. Kayıtlı paletler, yazı tipleri ve metin boyutları korunur.</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>Sıfırla</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>Seçili</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>Sakin ve dengeli. Çoğu renge uyar.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>Parlak, doygun renkler.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>Eğlenceli. Renkleri seçtiğiniz renkten uzaklaştırır.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>Seçtiğiniz renge olabildiğince yakın kalır.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>Aslına uygun gibi, bir görselden seçilen renkler için ayarlanmıştır.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>Yalnızca gri tonları.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>Renginizin yumuşak, neredeyse gri tonları.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>Seçtiğiniz renk ve geniş bir yelpazede başka tonlar.</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>Seçtiğiniz renkten uzaklaşan cesur bir ton karışımı.</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>Dosya Gezgini'nde göster</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>Dosya yöneticisinde göster</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>Klasörde göster</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>Bu dosya artık orada değil. Taşınmış veya silinmiş olabilir.</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>Tam yolu kopyala</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>Dosyaları taşıma</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>Dosyaları buraya göndermek için bilgisayarınızın klasörlerinden sürükleyin. Daha fazla seçenek için bir dosyaya sağ tıklayın ya da önizlemek için Boşluk tuşuna basın. Bir dosyayı telefonunuza göndermek için soldaki listede telefonun üzerine sürükleyin.</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>Dosya ipuçlarını yeniden göster</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>Bu aramayla eşleşen çalışan program yok.</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>Dosya konumunu aç</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>Dosya yolunu kopyala</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>Kenar çubuğunda dikkatinizi gerektiren bir şey var</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>Ekranı kilitler. Her şey açık kalır.</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>Windows oturumunuzu kapatır. Açık programlar kapatılır.</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>Bilgisayarı kapatır. Programlar kaydetme fırsatı bulur.</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>Bilgisayarı kapatıp yeniden açar.</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>Düşük güç beklemesi. Hızlı uyanır, her şey açık kalır.</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>Her şeyi diske kaydedip kapanır. Uykudan daha geç uyanır, güç harcamaz.</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>Programları beklemeden bilgisayarı kapatır. Kaydedilmemiş çalışma kaybolur.</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>Programları beklemeden yeniden başlatır. Kaydedilmemiş çalışma kaybolur.</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>Bilgisayarın üretici yazılımı ayarlarına yeniden başlatır. Yalnızca BIOS/UEFI değişiklikleri için gerekir.</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>Bu düzeni şimdi kaydet (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>Bu bilgisayardaki sensörleri seçip kart olarak ekleyin</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>Başlangıçtaki yakınlaştırma ve konuma dön</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>Şu anda</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Görünüm</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>Renkler, açık veya koyu mod, yazı tipleri ve açılış ekranı Kişiselleştir bölümünde. Kısayol: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>Ayarlarınız değiştirilsin mi?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>Düzeniniz, uygulamalarınız, paylaşılan klasörleriniz ve görünümünüz bu dosyadakilerle değiştirilecek. Telefon eşleştirmeniz etkilenmez.</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>İçe aktar</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>Otomatik yedekleri aç</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx son 5 ayar yedeğinizi burada otomatik olarak saklar. Birini geri yüklemek için İçe aktar'ı kullanın.</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>Ayrıntıları kopyala</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>RemEx sürümünü, derlemeyi ve sistem ayrıntılarını bir hata raporuna yapıştırabilmeniz için kopyalar.</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>Ayrıntılar kopyalandı</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>Bunları mesajınıza veya hata raporunuza yapıştırın.</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx bu yolda bir program bulamıyor.</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>Bunu daha sonra Ayarlar'da, Dosya paylaşımı güveni bölümünden kapatabilirsiniz.</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>Eşleştirme QR kodu</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>Aramayı temizle</value>
   </data>
 </root>

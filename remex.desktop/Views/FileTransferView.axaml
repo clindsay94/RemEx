@@ -46,10 +46,16 @@
     <Grid RowDefinitions="Auto,*,Auto" Margin="20,16,20,16">
 
         <!-- ═══ HEADER ═══ -->
-        <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,12">
-            <TextBlock Classes="page-title" Text="{local:Localize FileTransfer_Header}"/>
-            <TextBlock Classes="page-subtitle" Text="{local:Localize FileTransfer_Subheader}"/>
-        </StackPanel>
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <StackPanel Spacing="2">
+                <TextBlock Classes="page-title" Text="{local:Localize FileTransfer_Header}"/>
+                <TextBlock Classes="page-subtitle" Text="{local:Localize FileTransfer_Subheader}"/>
+            </StackPanel>
+            <Button x:Name="CoachReplayButton" Grid.Column="1" VerticalAlignment="Top" Classes="tertiary icon-button" Command="{Binding ReplayCoachMarkCommand}"
+                    ToolTip.Tip="{local:Localize FileTransfer_CoachReplay}" AutomationProperties.Name="{local:Localize FileTransfer_CoachReplay}">
+                <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+            </Button>
+        </Grid>
 
         <!-- ═══ TREE | CONTENTS | PREVIEW ═══ -->
         <material:Card Grid.Row="1" Padding="0" InsideClipping="True">
@@ -72,7 +78,7 @@
                               Background="Transparent" DragDrop.AllowDrop="True" AutomationProperties.Name="{local:Localize FileTransfer_FoldersHeader}">
                         <TreeView.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="{local:Localize FileTransfer_TreeRefresh}" Command="{Binding BrowseRemoteCommand}">
+                                <MenuItem Header="{local:Localize FileTransfer_TreeRefresh}" Command="{Binding BrowseRemoteCommand}" InputGesture="F5">
                                     <MenuItem.Icon><mi:MaterialIcon Kind="Refresh"/></MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="{local:Localize FileTransfer_PinFolderTooltip}" Command="{Binding PinCurrentFolderCommand}" IsVisible="{Binding CanManageFiles}">
@@ -134,7 +140,7 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
-                                <TextBox x:Name="SearchBox" Text="{Binding SearchQuery}" PlaceholderText="{local:Localize FileTransfer_SearchWatermark}" Width="180"
+                                <TextBox x:Name="SearchBox" Classes="clearButton" Text="{Binding SearchQuery}" PlaceholderText="{local:Localize FileTransfer_SearchWatermark}" Width="180"
                                          IsVisible="{Binding SupportsSearch}" VerticalContentAlignment="Center" AutomationProperties.Name="{local:Localize FileTransfer_SearchWatermark}"/>
                                 <Button Classes="tertiary icon-button" ToolTip.Tip="{local:Localize FileTransfer_SortLabel}" AutomationProperties.Name="{local:Localize FileTransfer_SortLabel}">
                                     <Panel>
@@ -143,9 +149,21 @@
                                     </Panel>
                                     <Button.Flyout>
                                         <MenuFlyout>
-                                            <MenuItem Header="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name"/>
-                                            <MenuItem Header="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
-                                            <MenuItem Header="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
+                                            <MenuItem Header="{local:Localize FileTransfer_SortName}" Command="{Binding SortByCommand}" CommandParameter="name">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="Check" IsVisible="{Binding SortField, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Name}"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="Check" IsVisible="{Binding SortField, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Size}"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date">
+                                                <MenuItem.Icon>
+                                                    <mi:MaterialIcon Kind="Check" IsVisible="{Binding SortField, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Modified}"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
                                         </MenuFlyout>
                                     </Button.Flyout>
                                 </Button>
@@ -572,6 +590,11 @@
                                                 ToolTip.Tip="{local:Localize FileTransfer_CopyHashMenu}" AutomationProperties.Name="{local:Localize FileTransfer_CopyHashMenu}">
                                             <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14"/>
                                         </Button>
+                                        <Button Classes="tertiary icon-button" IsVisible="{Binding CanShowInFolder}"
+                                                Command="{Binding $parent[ItemsControl].((vm:FileTransferViewModel)DataContext).ShowTransferInFolderCommand}" CommandParameter="{Binding}"
+                                                ToolTip.Tip="{local:Localize FileTransfer_ShowInFolder}" AutomationProperties.Name="{local:Localize FileTransfer_ShowInFolder}">
+                                            <mi:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14"/>
+                                        </Button>
                                     </StackPanel>
                                     <Button Grid.Column="3" Classes="tertiary icon-button" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_CancelTooltip}">
                                         <mi:MaterialIcon Kind="Close" Width="18" Height="18"/>
@@ -583,5 +606,17 @@
                 </ScrollViewer>
             </StackPanel>
         </material:Card>
+
+        <!-- First-visit tips: the Routines coach pattern as one step, a scrim over the content and a 320-wide card by the file list. -->
+        <Grid x:Name="CoachOverlay" Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowCoachMark}" Background="{DynamicResource GlassOverlayBrush}">
+            <Border Classes="detail-pane" Padding="16" Width="320" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="260,24,0,0">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{local:Localize FileTransfer_CoachTitle}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="{local:Localize FileTransfer_CoachBody}" Theme="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <Button x:Name="CoachGotItButton" HorizontalAlignment="Right" Classes="primary" Command="{Binding DismissCoachMarkCommand}"
+                            Content="{local:Localize Routines_Coach_GotIt}" AutomationProperties.Name="{local:Localize Routines_Coach_GotIt}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

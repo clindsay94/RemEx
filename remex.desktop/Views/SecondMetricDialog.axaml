@@ -38,11 +38,11 @@
 
         <!-- Buttons -->
         <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,16,0,0">
-            <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Click="OnClear"
+            <Button Grid.Column="1" x:Name="ClearButton" Content="{local:Localize Btn_Clear}" Click="OnClear"
                     Classes="tertiary danger" MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Click="OnCancel"
                     Classes="tertiary" MinWidth="80" Margin="0,0,8,0"/>
-            <Button Grid.Column="3" Content="{local:Localize SecondMetric_SetBtn}" Click="OnSet"
+            <Button Grid.Column="3" x:Name="SetButton" Content="{local:Localize SecondMetric_SetBtn}" Click="OnSet"
                     Classes="primary" MinWidth="90"/>
         </Grid>
 

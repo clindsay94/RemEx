@@ -562,8 +562,11 @@
                             HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}"
-                            AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}">
-                        <mi:MaterialIcon Kind="Menu" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}"
+                            AutomationProperties.HelpText="{Binding NavAttentionHelp}">
+                        <material:Badged IsBadgeVisible="{Binding HasNavAttention}" BadgeDisplayContent="False" BadgeWidth="10" BadgeHeight="10">
+                            <mi:MaterialIcon Kind="Menu" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </material:Badged>
                     </Button>
                     <TextBlock Grid.Column="1" Name="AppBarTitle" IsHitTestVisible="False"
                                Text="{Binding ActiveNavIndex, Converter={x:Static conv:NavIndexToTitleConverter.Instance}}"
@@ -767,7 +770,13 @@
                                     </ListBox.ItemsPanel>
 
                                     <!-- Home Dashboard -->
-                                    <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Home}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Home}"/>
+                                                <TextBlock Text="Ctrl+1" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="Home" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -775,7 +784,13 @@
                                     </ListBoxItem>
 
                                     <!-- Live Sensors -->
-                                    <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Sensors}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Sensors}"/>
+                                                <TextBlock Text="Ctrl+2" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
                                                  incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
@@ -799,7 +814,13 @@
                                     </ListBoxItem>
 
                                     <!-- Commands (remote power/control commands) -->
-                                    <ListBoxItem Tag="2" AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Commands}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="2" AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Commands}"/>
+                                                <TextBlock Text="Ctrl+3" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -809,7 +830,13 @@
                                     <!-- Routines (3.0, RemEx-pp0rt.9): next to Commands, the other "make the PC do
                                          something" page. Tag 10 sits out of numeric order on purpose; the
                                          slide direction reads ShellViewModel.DrawerNavOrder, not the Tag. -->
-                                    <ListBoxItem Tag="10" AutomationProperties.Name="{conv:Localize Nav_Routines}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Routines}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="10" AutomationProperties.Name="{conv:Localize Nav_Routines}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Routines}"/>
+                                                <TextBlock Text="Ctrl+4" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="Routes" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Routines}" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -817,7 +844,13 @@
                                     </ListBoxItem>
 
                                     <!-- App Launcher -->
-                                    <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Launcher}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="3" AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Launcher}"/>
+                                                <TextBlock Text="Ctrl+5" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="Apps" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -825,7 +858,13 @@
                                     </ListBoxItem>
 
                                     <!-- Processes (running programs / task manager) -->
-                                    <ListBoxItem Tag="4" AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Processes}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="4" AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Processes}"/>
+                                                <TextBlock Text="Ctrl+6" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="MonitorDashboard" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -833,7 +872,13 @@
                                     </ListBoxItem>
 
                                     <!-- File Explorer -->
-                                    <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Files}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Files}"/>
+                                                <TextBlock Text="Ctrl+7" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <!-- THE ACTIVE-TRANSFER COUNT REACHES A SCREEN (RemEx-rjnbo.1). ShellViewModel
                                                  owns _transferQueue eagerly - not FileTransferViewModel, which is only
@@ -851,7 +896,13 @@
                                     </ListBoxItem>
 
                                     <!-- Logs & Diagnostics -->
-                                    <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Shell_LogsDiagnostics}"/>
+                                                <TextBlock Text="Ctrl+8" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <!-- THE UNREAD-DIAGNOSTICS COUNT REACHES A SCREEN (RemEx-rjnbo.1). The smallest
                                                  honest source: entries at Warning or above since this page was last
@@ -881,7 +932,13 @@
                                     </ListBoxItem>
 
                                     <!-- Settings -->
-                                    <ListBoxItem Tag="9" AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9, Mode=OneWay}" ToolTip.Tip="{conv:Localize Nav_Settings}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <ListBoxItem Tag="9" AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Settings}"/>
+                                                <TextBlock Text="Ctrl+9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="Tune" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0"/>

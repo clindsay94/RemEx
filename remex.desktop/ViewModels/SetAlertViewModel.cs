@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -10,6 +11,18 @@ public partial class SetAlertViewModel : ObservableObject
     private readonly Action<SensorAlert?> _close;
 
     public string SensorName { get; }
+
+    /// <summary>The sensor's friendly name for the header, or <see cref="SensorName"/> when none was given.</summary>
+    public string HeaderName { get; }
+
+    /// <summary>The sensor's unit, shown after the threshold box. Null or empty shows nothing.</summary>
+    public string? Unit { get; }
+
+    /// <summary>The live reading with its unit, or null when the sensor has not reported.</summary>
+    public string? CurrentReadingText { get; }
+
+    /// <summary>True when editing an alert that already exists (only then is there something to clear).</summary>
+    public bool HasExisting { get; }
 
     [ObservableProperty]
     private double _threshold;
@@ -29,16 +42,30 @@ public partial class SetAlertViewModel : ObservableObject
     /// <param name="sensorName">Sensor this alert is for.</param>
     /// <param name="existing">Pre-populate from an existing alert (edit mode).</param>
     /// <param name="close">Called with the result; null means cancel, non-null means save.</param>
-    public SetAlertViewModel(string sensorName, SensorAlert? existing, Action<SensorAlert?> close)
+    /// <param name="displayName">Friendly name for the header (falls back to the raw sensor name).</param>
+    /// <param name="unit">Unit shown beside the threshold and the live reading.</param>
+    /// <param name="currentValue">Live reading; a new alert starts its threshold here.</param>
+    public SetAlertViewModel(string sensorName, SensorAlert? existing, Action<SensorAlert?> close,
+        string? displayName = null, string? unit = null, double? currentValue = null)
     {
         SensorName = sensorName;
+        HeaderName = string.IsNullOrWhiteSpace(displayName) ? sensorName : displayName;
+        Unit = unit;
+        HasExisting = existing != null;
         _close = close;
+
+        if (currentValue is { } live)
+            CurrentReadingText = SensorReadingFormat.FormatReading(live, unit);
 
         if (existing != null)
         {
             _threshold = existing.Threshold;
             _direction = existing.Direction;
             _severity  = existing.Severity;
+        }
+        else if (currentValue is { } start)
+        {
+            _threshold = Math.Round(start, MidpointRounding.AwayFromZero);
         }
     }
 

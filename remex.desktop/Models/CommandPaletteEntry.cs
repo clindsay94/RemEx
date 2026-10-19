@@ -28,6 +28,10 @@ namespace Remex.Desktop.Models;
 /// Remote screen is exactly where waking lives. Localized rather than English keywords, because a
 /// search alias that only works in English is half a fix in an app that ships nine languages.
 /// </param>
+/// <param name="Shortcut">
+/// The window shortcut that does the same thing, shown at the row's right edge ("Ctrl+1"). A literal
+/// key name, not localized, like the Undo tooltips; null for entries with no shortcut.
+/// </param>
 public sealed record CommandPaletteEntry(
     string Label,
     string Category,
@@ -35,7 +39,8 @@ public sealed record CommandPaletteEntry(
     string? ConfirmTitleKey = null,
     string? ConfirmMessageKey = null,
     string? ConfirmBtnKey = null,
-    string? SearchAliases = null)
+    string? SearchAliases = null,
+    string? Shortcut = null)
 {
     /// <summary>
     /// What a screen reader announces for the row: the label, then its category ("Pause all routines,
@@ -55,6 +60,7 @@ public sealed record CommandPaletteEntry(
 
     /// <summary>
     /// Whether this entry should show for <paramref name="query"/>. An empty query matches everything.
+    /// Accents and case are ignored and every word must match some field, in any order.
     /// </summary>
     /// <remarks>
     /// Lives on the entry rather than inside the view model's filter loop so the rule can be tested
@@ -66,9 +72,7 @@ public sealed record CommandPaletteEntry(
         if (string.IsNullOrEmpty(query))
             return true;
 
-        return Label.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || Category.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || SearchAliases?.Contains(query, StringComparison.OrdinalIgnoreCase) == true;
+        return Remex.Desktop.Services.SettingsSearchMatcher.Matches(query, Label, Category, SearchAliases);
     }
 
     // Rejects a half-marked entry loudly, at construction. Without this the failure direction is

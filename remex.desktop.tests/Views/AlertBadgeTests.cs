@@ -42,10 +42,12 @@ public class AlertBadgeTests
         // Material renders a badge containing "0" quite happily. A notification that there is
         // nothing to notify is worse than no badge: it trains people to ignore the one that
         // matters. This is the bead's acceptance criterion, word for word.
-        var badge = Regex.Match(Shell(), @"<material:Badged\b[^>]*?>", RegexOptions.Singleline);
+        // The drawer toggle's attention dot (HasNavAttention) is also a Badged; this is the Sensors one.
+        var badge = Regex.Matches(Shell(), @"<material:Badged\b[^>]*?>", RegexOptions.Singleline)
+            .FirstOrDefault(m => m.Value.Contains("BadgeContent=\"{Binding AlertBadgeCount}\""));
 
-        badge.Success.Should().BeTrue("the Sensors destination carries the badge");
-        badge.Value.Should().Contain("IsBadgeVisible=\"{Binding HasAlerts}\"",
+        badge.Should().NotBeNull("the Sensors destination carries the badge");
+        badge!.Value.Should().Contain("IsBadgeVisible=\"{Binding HasAlerts}\"",
             "without an explicit visibility binding the badge renders 0 when nothing has fired");
     }
 

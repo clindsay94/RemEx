@@ -104,6 +104,48 @@ public sealed class CombRoundOnePcBehaviourTests : IAsyncLifetime
             "Escape used to hide the overlay without recording that the tutorial was finished");
     }
 
+    [Fact]
+    public void EscapeOverTheSplash_SkipsIt_AndLeavesThePersonalizeSheetAndTutorialAlone()
+    {
+        var skips = 0;
+        _shell.SplashSkipRequested += () => skips++;
+        _shell.ShowWelcomeSplash = true;
+        _shell.IsSettingsPanelOpen = true;
+        _shell.ShowTutorialOverlay = true;
+
+        _shell.DismissOverlays();
+
+        skips.Should().Be(1);
+        _shell.IsSettingsPanelOpen.Should().BeTrue("the sheet behind a Preview must not close under the splash");
+        _shell.ShowTutorialOverlay.Should().BeTrue();
+    }
+
+    [Fact]
+    public void EscapeWithTheSplashHidden_OrNobodyListening_KeepsItsOldMeaning()
+    {
+        var skips = 0;
+        _shell.SplashSkipRequested += () => skips++;
+        _shell.ShowWelcomeSplash = false;
+        _shell.IsSettingsPanelOpen = true;
+
+        _shell.DismissOverlays();
+
+        skips.Should().Be(0);
+        _shell.IsSettingsPanelOpen.Should().BeFalse();
+
+    }
+
+    [Fact]
+    public void EscapeOverTheSplash_WithNoViewListening_KeepsItsOldMeaning()
+    {
+        _shell.ShowWelcomeSplash = true;
+        _shell.IsSettingsPanelOpen = true;
+
+        _shell.DismissOverlays();
+
+        _shell.IsSettingsPanelOpen.Should().BeFalse("a shell with no view mounted has nothing to skip");
+    }
+
     // ─── no-reselect-to-top ──────────────────────────────────────────────────────
 
     [Fact]

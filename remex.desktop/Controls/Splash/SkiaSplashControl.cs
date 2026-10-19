@@ -87,6 +87,7 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
     private bool _completed;
     private bool _skipping;
     private double _skipElapsed;
+    private string? _randomPick;
 
     private static bool _typefaceLoaded;
     private static readonly string VersionLabel = ResolveVersion();
@@ -111,7 +112,7 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
         base.OnPropertyChanged(change);
         if (change.Property == SplashStyleProperty)
         {
-            SetVariant(CreateVariant(SplashStyle));
+            SetVariant(CreateVariant(ResolveStyle(SplashStyle)));
             _completed = false;
             _skipping = false;
             _skipElapsed = 0;
@@ -156,7 +157,8 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
         // frame already carries the resolved palette (RemEx-alwfa.1, decision (b)) — the dashboard
         // profile has not loaded yet at this point, only the tiny sidecar has.
         SplashBrand.ApplyPalette(SplashPaletteResolver.ResolveFromSidecar());
-        SetVariant(CreateVariant(SplashStyle));
+        SetVariant(CreateVariant(ResolveStyle(SplashStyle)));
+        RememberRandomPick();
         _completed = false;
         _skipping = false;
         _skipElapsed = 0;
@@ -174,7 +176,9 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
     /// <summary>Plays the current <see cref="SplashStyle"/> from the start while attached — the sheet's Preview.</summary>
     public void Restart()
     {
-        SetVariant(CreateVariant(SplashStyle));
+        _randomPick = null;
+        SetVariant(CreateVariant(ResolveStyle(SplashStyle)));
+        RememberRandomPick();
         _completed = false;
         _skipping = false;
         _skipElapsed = 0;
@@ -274,6 +278,17 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
         context.Custom(new SplashDrawOp(bounds, _variant, _clock, (float)_clock.Elapsed, (float)_clock.LastDt, skipAlpha, VersionLabel, SkipHint()));
     }
 
+    /// <summary>"Random" resolves to one real style, held until the next <see cref="Restart"/> so a re-attach replays the same one.</summary>
+    private string? ResolveStyle(string? style) =>
+        style == SplashRotation.Random
+            ? _randomPick ??= SplashRotation.Next(SplashRotation.ReadLast(), Random.Shared)
+            : style;
+
+    private void RememberRandomPick()
+    {
+        if (SplashStyle == SplashRotation.Random && _randomPick is not null) SplashRotation.Remember(_randomPick);
+    }
+
     private static ISplashVariant CreateVariant(string? style) => style switch
     {
         "LiveHandshake" => new LiveHandshakeVariant(new LocalizedHandshakeText()),
@@ -328,7 +343,7 @@ public sealed class SkiaSplashControl : Control, ICustomHitTest, IDisposable
             if (!string.IsNullOrEmpty(s)) return s;
         }
         catch { /* fall through */ }
-        return "Click anywhere to skip";
+        return "Click anywhere or press Esc to skip";
     }
 
     /// <summary>The custom draw op that leases the Skia canvas and paints one frame.</summary>

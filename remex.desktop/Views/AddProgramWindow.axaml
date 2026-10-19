@@ -21,6 +21,7 @@
         <StackPanel Grid.Row="1" Spacing="16">
 
             <TextBox Text="{Binding TargetPath}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize AddProgram_ExePath}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkPath}" AutomationProperties.Name="{local:Localize AddProgram_ExePath}" />
+            <TextBlock Text="{local:Localize AddProgram_PathNotFound}" IsVisible="{Binding PathNotFound}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" />
             <Button Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" HorizontalAlignment="Left" />
 
             <TextBox Text="{Binding DisplayName}" Classes="outline" UseFloatingPlaceholder="True" assists:TextFieldAssist.Label="{local:Localize AddProgram_DisplayName}" assists:TextFieldAssist.Hints="{local:Localize AddProgram_WatermarkName}" AutomationProperties.Name="{local:Localize AddProgram_DisplayName}"/>

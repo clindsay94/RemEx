@@ -33,7 +33,7 @@
             <Rectangle Height="1" Fill="{DynamicResource CardBorderBrush}" Margin="12,0" />
 
             <!-- Results -->
-            <ListBox ItemsSource="{Binding FilteredResults}" x:Name="ResultsList" MaxHeight="360" Background="Transparent" BorderThickness="0" Margin="8,4,8,0" SelectionMode="Single">
+            <ListBox ItemsSource="{Binding FilteredResults}" x:Name="ResultsList" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" Tapped="OnResultTapped" MaxHeight="360" Background="Transparent" BorderThickness="0" Margin="8,4,8,0" SelectionMode="Single">
 
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:CommandPaletteEntry}">
@@ -70,6 +70,8 @@
                                     </TextBlock.Inlines>
                                 </TextBlock>
                             </StackPanel>
+                            <!-- Shortcut hint. palette-category so the selected-row AccentForeground rule applies. -->
+                            <TextBlock Grid.Column="1" Classes="palette-category" Theme="{StaticResource CaptionTextBlock}" FontFamily="{StaticResource JetBrainsMono}" VerticalAlignment="Center" Margin="12,0,0,0" Text="{Binding Shortcut}" IsVisible="{Binding Shortcut, Converter={x:Static ObjectConverters.IsNotNull}}"/>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

@@ -12,14 +12,14 @@ public class HomeFooterStatusTests
 {
     [Fact]
     public void LinkUp_NoPhone_SaysItIsWaitingForOne() =>
-        HomeViewModel.LinkStatusKey(linkConnected: true, hostUpWithNoPhone: true).Should().Be("Home_WaitingForPhone");
+        PhonePresenceText.LinkStatusKey(linkConnected: true, hostUpWithNoPhone: true).Should().Be("Home_WaitingForPhone");
 
     [Theory]
     [InlineData(true, false)]   // a phone is attached: the link's own "Connected" is true
     [InlineData(false, true)]   // the link is down or connecting: its own text says so
     [InlineData(false, false)]
     public void OtherwiseTheLinksOwnStatusShows(bool linkConnected, bool hostUpWithNoPhone) =>
-        HomeViewModel.LinkStatusKey(linkConnected, hostUpWithNoPhone).Should().BeNull();
+        PhonePresenceText.LinkStatusKey(linkConnected, hostUpWithNoPhone).Should().BeNull();
 
     [Fact]
     public void TheFooterBindsTheReconciledLine_NotTheRawLinkStatus()

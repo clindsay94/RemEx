@@ -850,6 +850,12 @@
         <Style Selector="TextBox:focus">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
+        <!-- Material's ClearTextBoxButton theme hardcodes an English "Click to clear field" tip and
+             no accessible name; every clearButton box in the app is a search box. -->
+        <Style Selector="TextBox.clearButton Button#PART_ClearButton">
+            <Setter Property="ToolTip.Tip" Value="{local:Localize A11y_ClearSearch}"/>
+            <Setter Property="AutomationProperties.Name" Value="{local:Localize A11y_ClearSearch}"/>
+        </Style>
 
         <!-- INVALID, as a class rather than as TextFieldAssist.HasError: HasError and ErrorColor
              exist on Material.Avalonia's master branch but NOT in 3.19.0, which ships

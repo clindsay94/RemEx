@@ -26,7 +26,8 @@ public sealed class ShellNavRoutinesTests
         (routines.Attribute("Tag")?.Value).Should().Be("10", "Routines sits right after Commands");
         (children[2].Attribute("Tag")?.Value).Should().Be("2", "Commands is directly above it");
         (routines.Attribute("AutomationProperties.Name")?.Value).Should().Be("{conv:Localize Nav_Routines}");
-        (routines.Attribute("ToolTip.Tip")?.Value).Should().Be("{conv:Localize Nav_Routines}");
+        routines.Element(Avalonia + "ToolTip.Tip")!.Descendants(Avalonia + "TextBlock")
+            .Select(t => t.Attribute("Text")?.Value).Should().Contain("{conv:Localize Nav_Routines}", "the tooltip still names the page, then its Ctrl+4 shortcut");
         (routines.Attribute("Classes")?.Value).Should().Be("nav-item");
         routines.Descendants().Any(e => e.Name.LocalName == "MaterialIcon" && e.Attribute("Kind")?.Value == "Routes")
             .Should().BeTrue("§2.3 names the Routes icon");

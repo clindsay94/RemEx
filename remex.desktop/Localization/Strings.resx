@@ -157,7 +157,7 @@
     <value>Sign out</value>
   </data>
   <data name="Remote_Shutdown" xml:space="preserve">
-    <value>Shutdown</value>
+    <value>Shut down</value>
   </data>
   <data name="Remote_Restart" xml:space="preserve">
     <value>Restart</value>
@@ -169,7 +169,7 @@
     <value>Hibernate</value>
   </data>
   <data name="Remote_ForceShutdown" xml:space="preserve">
-    <value>Force shutdown</value>
+    <value>Force shut down</value>
   </data>
   <data name="Remote_ForceRestart" xml:space="preserve">
     <value>Force restart</value>
@@ -433,7 +433,7 @@
     <value>Background mode</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Reset to theme defaults</value>
+    <value>Reset look to defaults</value>
   </data>
   <data name="Custom_PageTitleFont" xml:space="preserve">
     <value>Page title font</value>
@@ -854,7 +854,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Show the QR code and PIN a phone needs to pair with this PC</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>Scan with RemEx Android app</value>
+    <value>On your phone, open RemEx, tap ‘Add a PC’ on the Connection screen, then ‘Scan QR code’ and point it here.</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>Pairing PIN</value>
@@ -2155,7 +2155,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Neon glow thickness/spread in pixels</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Select the style of startup welcome splash screen sequence animation</value>
+    <value>Choose the animation RemEx plays when it opens. Random plays a different one each time.</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Enable alignment guides so sensor tiles snap to standard increments on placement canvas</value>
@@ -2591,7 +2591,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>A paired device is asking to browse all of the drives and folders on this PC.</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>Remember my choice for this device</value>
+    <value>Always allow this device</value>
   </data>
   <data name="FileConsent_Allow" xml:space="preserve">
     <value>Allow</value>
@@ -2635,7 +2635,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Signal Pong</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>Click anywhere to skip</value>
+    <value>Click anywhere or press Esc to skip</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Live Handshake</value>
@@ -4408,5 +4408,167 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>Files can't go straight from one phone to another. Copy them to this PC first.</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>Random</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>Reset the look?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>Your colour, light or dark mode, contrast, card shapes and splash screen go back to RemEx's defaults. Saved palettes, fonts and text sizes are kept.</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>Selected</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>Calm and balanced. Suits most colours.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>Bright, saturated colours.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>Playful. Moves the colours away from yours.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>Stays as close to your exact colour as it can.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>Like Fidelity, tuned for colours picked from an image.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>Shades of grey only.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>Soft, nearly grey tints of your colour.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>Your colour plus a wide spread of other hues.</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>A bold mix of hues turned away from your colour.</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>Show in File Explorer</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>Show in file manager</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>That file isn't there any more. It may have been moved or deleted.</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>Copy full path</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>Moving files around</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>Drag files in from your PC's folders to send them here. Right-click any file for more options, or press Space to preview it. To send a file to your phone, drag it onto the phone in the list on the left.</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>Show the file tips again</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>No running programs match that search.</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>Open file location</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>Copy file path</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>Something in the sidebar needs your attention</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>Locks the screen. Everything stays open.</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>Signs you out of Windows. Open programs are closed.</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>Turns the PC off. Programs get a chance to save.</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>Turns the PC off and back on.</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>Low-power pause. Wakes quickly, keeps everything open.</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>Saves everything to disk and powers off. Slower to wake than Sleep, uses no power.</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>Turns the PC off without waiting for programs. Unsaved work is lost.</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>Restarts without waiting for programs. Unsaved work is lost.</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>Restarts into the PC's firmware settings. Only needed for BIOS/UEFI changes.</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>Save this layout now (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>Pick sensors from this PC to add as cards</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>Go back to the starting zoom and position</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>Right now</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Look and feel</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>Colours, light or dark mode, fonts and the splash screen are in Personalize. Shortcut: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>Replace your settings?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>Your layout, apps, shared folders and look will be replaced with the ones in this file. Your phone pairing is not affected.</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>Open automatic backups</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx keeps your last 5 settings backups here automatically. Use Import to restore one.</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>Copy details</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>Copies the RemEx version, build and system details so you can paste them into a bug report.</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>Details copied</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>Paste them into your message or bug report.</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx can't find a program at this path.</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>You can turn this off later in Settings, under File-sharing trust.</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>Pairing QR code</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>Clear search</value>
   </data>
 </root>

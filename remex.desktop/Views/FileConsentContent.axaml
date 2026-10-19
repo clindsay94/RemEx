@@ -54,6 +54,12 @@
         <CheckBox IsChecked="{Binding Remember}"
                   Content="{local:Localize FileConsent_Remember}"
                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <TextBlock Text="{local:Localize FileConsent_RememberHint}"
+                   Theme="{StaticResource CaptionTextBlock}"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,-6,0,0"
+                   MaxWidth="440"/>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button Classes="secondary" Content="{local:Localize FileConsent_Deny}" Command="{Binding DenyCommand}"/>

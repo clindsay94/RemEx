@@ -98,9 +98,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         FileTransferQueue? transferQueue = null,
         FileTransferClient? client = null,
         Func<IPhoneFileAccess?>? phoneAccess = null,
-        Func<IPhoneFileTransfers?>? phoneTransfers = null)
+        Func<IPhoneFileTransfers?>? phoneTransfers = null,
+        DashboardLayoutService? layoutService = null)
     {
         _connection = connection;
+        _layoutService = layoutService;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
 
         // RESOLVED ON EVERY USE, NEVER CACHED (RemEx-xt0af). The host publishes its container after it
@@ -589,6 +591,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             if (!ReferenceEquals(client, _client))
                 return; // The source changed while this was in flight; its answer is for a screen that is gone.
             RefreshCapabilityFlags();
+            _pcRootPathsStale = true;
             var previousRootId = SelectedRemoteRoot?.RootId;
             RemoteRoots.Clear();
             foreach (var root in roots.OrderBy(root => root.DisplayName))
@@ -961,9 +964,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         SearchResults.Clear();
     }
 
-    /// <summary>Navigates the folder view to the directory that contains a search hit.</summary>
+    /// <summary>Navigates the folder view to the directory that contains a search hit, and highlights a file hit there.</summary>
     [RelayCommand]
-    private void OpenSearchResult(FileSearchEntry entry)
+    private async Task OpenSearchResultAsync(FileSearchEntry entry)
     {
         if (entry is null) return;
         var containerRelative = entry.IsDirectory
@@ -971,7 +974,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             : GetParentRemotePath("/" + entry.RelativePath.Replace('\\', '/'));
         ClearSearch();
         RemotePath = string.IsNullOrWhiteSpace(containerRelative) ? "/" : "/" + containerRelative.TrimStart('/');
-        _ = BrowseRemoteAsync();
+        await BrowseRemoteAsync();
+        if (!entry.IsDirectory)
+            SelectedRemoteEntry = RemoteEntries.FirstOrDefault(e => e.Name == entry.Name);
     }
 
     // ─── Upload / Download / Send (queued) ─────────────────────────────────────
@@ -1170,7 +1175,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         var root = SelectedRemoteRoot;
         var fileName = SelectedRemoteEntry.Name;
         var remoteFile = CombineRemotePath(RemotePath, fileName);
-        TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, DownloadWork(root.RootId, remoteFile, localFile!));
+        TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, DownloadWork(root.RootId, remoteFile, localFile!), localFile);
         SetStatus(() => LocalizationService.Instance["FileTransfer_QueuedForDownload"]);
     }
 
@@ -1327,7 +1332,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             }
 
             TransferQueue.Enqueue(
-                FileTransferQueueKind.Download, Path.GetFileName(localPath), DownloadWork(root.RootId, file.RelativePath, localPath));
+                FileTransferQueueKind.Download, Path.GetFileName(localPath), DownloadWork(root.RootId, file.RelativePath, localPath), localPath);
             queued++;
         }
 

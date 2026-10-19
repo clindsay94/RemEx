@@ -53,7 +53,7 @@
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="{local:Localize About_KeyboardShortcuts}" Theme="{StaticResource Subtitle1TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
 
-                                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
+                                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,4">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + K" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{local:Localize About_CommandPalette}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
 
@@ -63,8 +63,14 @@
                                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl + Y" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
                                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{local:Localize About_RedoLayout}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{local:Localize About_CloseOverlays}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl + 1–9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{local:Localize Home_ScNav}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl + ," FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{local:Localize Home_ScSettings}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Esc" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="1" Text="{local:Localize About_CloseOverlays}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -163,6 +169,11 @@
                                             Command="{Binding DownloadUpdateCommand}"
                                             IsVisible="{Binding IsUpdateAvailable}"/>
                                 </StackPanel>
+                                <Button Classes="secondary" HorizontalAlignment="Left" Margin="30,4,0,0"
+                                        Content="{local:Localize About_CopyDetails}"
+                                        Command="{Binding CopySupportDetailsCommand}"
+                                        ToolTip.Tip="{local:Localize About_CopyDetailsTip}"
+                                        AutomationProperties.Name="{local:Localize About_CopyDetails}"/>
                             </StackPanel>
                         </StackPanel>
                     </material:Card>
@@ -181,7 +192,7 @@
                                     <DataTemplate>
                                         <StackPanel Spacing="4" Margin="0,0,0,12">
                                             <TextBlock Text="{Binding Version}" Theme="{StaticResource Subtitle2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Description}" ToolTip.Tip="{Binding Description}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

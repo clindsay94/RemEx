@@ -412,7 +412,7 @@
     <value>Mode latar belakang</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Atur ulang ke default tema</value>
+    <value>Atur ulang tampilan ke default</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -812,7 +812,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Tampilkan kode QR dan PIN yang dibutuhkan ponsel untuk dipasangkan dengan PC ini</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>Pindai dengan aplikasi RemEx Android</value>
+    <value>Di ponsel Anda, buka RemEx, ketuk ‘Tambah PC’ di layar Koneksi, lalu ‘Pindai kode QR’ dan arahkan ke sini.</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PIN pairing</value>
@@ -1948,7 +1948,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ketebalan cahaya neon dalam piksel</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Pilih gaya animasi layar selamat datang</value>
+    <value>Pilih animasi yang diputar RemEx saat dibuka. Acak memutar animasi yang berbeda setiap kali.</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Aktifkan panduan perataan agar ubin sensor sejajar dengan kisi-kisi</value>
@@ -2134,7 +2134,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Izinkan penjelajahan perangkat penuh?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>Ingat pilihan saya untuk perangkat ini</value>
+    <value>Selalu izinkan perangkat ini</value>
   </data>
   <data name="FileConsent_WindowTitle" xml:space="preserve">
     <value>Permintaan izin</value>
@@ -2386,7 +2386,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Personalisasi tampilan</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>Klik di mana saja untuk melewati</value>
+    <value>Klik di mana saja atau tekan Esc untuk melewati</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Jabat Tangan Langsung</value>
@@ -4405,5 +4405,167 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>File tidak bisa langsung dari satu ponsel ke ponsel lain. Salin dulu ke PC ini.</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>Acak</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>Atur ulang tampilan?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>Warna, mode terang atau gelap, kontras, bentuk kartu, dan layar pembuka akan kembali ke default RemEx. Palet tersimpan, font, dan ukuran teks tetap dipertahankan.</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>Atur ulang</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>Dipilih</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>Tenang dan seimbang. Cocok untuk kebanyakan warna.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>Warna cerah dan pekat.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>Ceria. Menjauhkan warna dari warna pilihanmu.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>Tetap sedekat mungkin dengan warna pilihanmu.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>Seperti Fidelitas, disetel untuk warna yang dipilih dari gambar.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>Hanya nuansa abu-abu.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>Warna lembut yang hampir abu-abu dari warna pilihanmu.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>Warna pilihanmu ditambah beragam rona lainnya.</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>Perpaduan rona berani yang menjauh dari warna pilihanmu.</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>Tampilkan di File Explorer</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>Tampilkan di pengelola berkas</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>Tampilkan di folder</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>Berkas itu sudah tidak ada. Mungkin sudah dipindahkan atau dihapus.</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>Salin jalur lengkap</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>Memindahkan berkas</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>Seret berkas dari folder PC Anda untuk mengirimnya ke sini. Klik kanan berkas mana pun untuk opsi lainnya, atau tekan Spasi untuk melihat pratinjaunya. Untuk mengirim berkas ke ponsel, seret ke ponsel di daftar sebelah kiri.</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>Tampilkan lagi tips berkas</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>Tidak ada program yang berjalan yang cocok dengan pencarian itu.</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>Buka lokasi file</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>Salin jalur file</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>Ada yang perlu Anda perhatikan di bilah samping</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>Mengunci layar. Semuanya tetap terbuka.</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>Mengeluarkan Anda dari Windows. Program yang terbuka akan ditutup.</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>Mematikan PC. Program diberi kesempatan untuk menyimpan.</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>Mematikan PC lalu menyalakannya kembali.</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>Jeda hemat daya. Cepat aktif kembali, semuanya tetap terbuka.</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>Menyimpan semuanya ke disk lalu mati. Bangun lebih lambat daripada Tidur, tidak memakai daya.</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>Mematikan PC tanpa menunggu program. Pekerjaan yang belum disimpan akan hilang.</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>Memulai ulang tanpa menunggu program. Pekerjaan yang belum disimpan akan hilang.</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>Memulai ulang ke pengaturan firmware PC. Hanya diperlukan untuk mengubah BIOS/UEFI.</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>Simpan tata letak ini sekarang (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>Pilih sensor dari PC ini untuk ditambahkan sebagai kartu</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>Kembali ke zoom dan posisi awal</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>Saat ini</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Tampilan</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>Warna, mode terang atau gelap, font, dan layar pembuka ada di Personalisasi. Pintasan: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>Ganti pengaturan Anda?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>Tata letak, aplikasi, folder bersama, dan tampilan Anda akan diganti dengan yang ada di berkas ini. Pemasangan dengan ponsel Anda tidak terpengaruh.</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>Impor</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>Buka cadangan otomatis</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx menyimpan 5 cadangan pengaturan terakhir Anda di sini secara otomatis. Gunakan Impor untuk memulihkannya.</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>Salin detail</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>Menyalin versi RemEx, build, dan detail sistem agar bisa ditempel ke laporan bug.</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>Detail disalin</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>Tempel ke pesan atau laporan bug Anda.</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx tidak menemukan program di jalur ini.</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>Anda dapat mematikannya nanti di Pengaturan, di bagian Kepercayaan berbagi file.</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>Kode QR pemasangan</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>Hapus pencarian</value>
   </data>
 </root>

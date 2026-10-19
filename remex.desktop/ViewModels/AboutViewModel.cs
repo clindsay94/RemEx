@@ -83,6 +83,49 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _hostFingerprint = SpkiFingerprintDisplay.Unavailable;
 
+    /// <summary>Set by the view; copies text to the system clipboard.</summary>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
+
+    /// <summary>English-only on purpose: the text is pasted into bug reports, which are read in English.</summary>
+    internal string BuildSupportDetails()
+    {
+        var lines = new List<string>
+        {
+            string.IsNullOrEmpty(ClientBuildId)
+                ? $"RemEx {ClientVersion}"
+                : $"RemEx {ClientVersion} (build {ClientBuildId})",
+            string.IsNullOrEmpty(HostBuildId)
+                ? $"PC host: {HostVersion}"
+                : $"PC host: {HostVersion} (build {HostBuildId})",
+            $"System: {System.Runtime.InteropServices.RuntimeInformation.OSDescription} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}",
+            $"Language: {LocalizationService.Instance.CultureTag}",
+        };
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    [RelayCommand]
+    private async Task CopySupportDetailsAsync()
+    {
+        if (CopyToClipboardAsync is null)
+            return;
+
+        try
+        {
+            await CopyToClipboardAsync(BuildSupportDetails());
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["About_DetailsCopied"],
+                LocalizationService.Instance["About_DetailsCopiedMessage"]);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["About_CopyDetails"],
+                string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
     // ── Update check (RemEx-<update-checker>) ──────────────────────────────────
     private readonly UpdateCheckService? _updateService;
     private string? _downloadUrl;

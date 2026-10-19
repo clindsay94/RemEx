@@ -1485,7 +1485,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> AvailableSplashStyles { get; } = new()
     {
-        "LiveHandshake", "RemexCommand", "CosmicZoom", "Pong"
+        "LiveHandshake", "RemexCommand", "CosmicZoom", "Pong", "Random"
     };
 
     /// <summary>Plays the selected splash over the shell (spec section 8).</summary>
@@ -2380,8 +2380,23 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         else if (IsWallpaperSource) ApplyAndSave();
     }
 
+    /// <summary>Set by the view (ConfirmationDialogHost.For). Fails closed: with no delegate, Reset does nothing.</summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand]
-    private void ResetToDefault() => SelectTheme("BaseDarkGlass");
+    private async Task ResetToDefaultAsync()
+    {
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_ResetLook_Title"],
+                LocalizationService.Instance["Confirm_ResetLook_Message"],
+                LocalizationService.Instance["Confirm_ResetLook_Btn"]))
+        {
+            return;
+        }
+
+        SelectTheme("BaseDarkGlass");
+    }
 
     // ═══════════════ Navigation ═══════════════
 

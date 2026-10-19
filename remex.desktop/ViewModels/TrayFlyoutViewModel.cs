@@ -573,6 +573,9 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenPairing() => _shell.StartPairing();
 
+    [RelayCommand]
+    private void OpenSettings() => _shell.NavigateToSettings();
+
     /// <summary>The Power tile opens a submenu from the view; the tile's own command does nothing.</summary>
     [RelayCommand]
     private void NoOp() { }

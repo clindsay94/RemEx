@@ -88,7 +88,7 @@ public class SensorTextThemeTests
     public void HomeTileTitle_TakesTheSensorTitleTheme_AndKeepsItsMonoFont()
     {
         View("HomeView.axaml").Should().Contain(
-            @"<TextBlock Text=""{Binding Name}"" Theme=""{StaticResource SensorTitleTextBlock}"" FontFamily=""{StaticResource JetBrainsMono}""");
+            @"<TextBlock Text=""{Binding DisplayName}"" Theme=""{StaticResource SensorTitleTextBlock}"" FontFamily=""{StaticResource JetBrainsMono}""");
     }
 
     // TrayStripName_TakesTheMetricNameTheme_KeepingItsStripStyling removed (RemEx-4kv0g.18.2): the

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Remex.Desktop.ViewModels;
 
@@ -13,8 +14,16 @@ public partial class TaskManagerView : UserControl
         // the delegate is present even if a kill is triggered before the view is first loaded.
         DataContextChanged += (_, _) =>
         {
-            if (DataContext is TaskManagerViewModel vm)
-                vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+            if (DataContext is not TaskManagerViewModel vm)
+                return;
+
+            vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+            vm.CopyToClipboardAsync = async text =>
+            {
+                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+                if (clipboard is not null)
+                    await clipboard.SetTextAsync(text);
+            };
         };
     }
 

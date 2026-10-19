@@ -30,7 +30,7 @@
                  desk by a phone that is also holding a camera steady, and 180 device-independent
                  pixels on a 4K panel is a small target. Square is kept explicitly — a QR stretched
                  by one axis stops decoding, and Image would happily letterbox one. -->
-            <Image Source="{Binding QrCodeImage}" Width="260" Height="260"/>
+            <Image Source="{Binding QrCodeImage}" Width="260" Height="260" AutomationProperties.Name="{conv:Localize A11y_PairingQrCode}"/>
         </Border>
 
         <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>

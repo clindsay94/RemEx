@@ -412,7 +412,7 @@
     <value>Режим тла</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Скинути до стандартів теми</value>
+    <value>Скинути вигляд до стандартного</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -812,7 +812,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Показати QR-код і PIN, потрібні телефону для пов’язання з цим ПК</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>Скануйте додатком RemEx Android</value>
+    <value>На телефоні відкрийте RemEx, на екрані «Підключення» торкніться ‘Додати ПК’, потім ‘Сканувати QR-код’ і наведіть камеру сюди.</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PIN-код сполучення</value>
@@ -1948,7 +1948,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Товщина неонового свічення у пікселях</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Вибрати стиль анімації екрана привітання</value>
+    <value>Виберіть анімацію, яку RemEx показує під час відкриття. Випадкова показує щоразу іншу.</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Увімкнути напрямні вирівнювання для прив'язки сенсорів до сітки</value>
@@ -2135,7 +2135,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Дозволити повний перегляд пристрою?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>Запам'ятати мій вибір для цього пристрою</value>
+    <value>Завжди дозволяти цьому пристрою</value>
   </data>
   <data name="FileConsent_WindowTitle" xml:space="preserve">
     <value>Запит дозволу</value>
@@ -2387,7 +2387,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Персоналізувати вигляд</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>Натисніть будь-де, щоб пропустити</value>
+    <value>Натисніть будь-де або клавішу Esc, щоб пропустити</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Живе рукостискання</value>
@@ -4403,5 +4403,167 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>Файли не можна передати напряму з одного телефона на інший. Спершу скопіюйте їх на цей ПК.</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>Випадкова</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>Скинути вигляд?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>Ваш колір, світлий або темний режим, контраст, форми карток і екран привітання повернуться до стандартних налаштувань RemEx. Збережені палітри, шрифти та розміри тексту залишаться.</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>Скинути</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>Вибрано</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>Спокійний і збалансований. Пасує до більшості кольорів.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>Яскраві, насичені кольори.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>Грайливий. Віддаляє кольори від вашого.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>Тримається якомога ближче до вашого точного кольору.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>Як Точність, але налаштований для кольорів, вибраних із зображення.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>Лише відтінки сірого.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>М'які, майже сірі відтінки вашого кольору.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>Ваш колір плюс широкий добір інших відтінків.</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>Сміливе поєднання відтінків, відвернутих від вашого кольору.</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>Показати в Провіднику</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>Показати у файловому менеджері</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>Показати в папці</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>Цього файлу там більше немає. Його могли перемістити або видалити.</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>Копіювати повний шлях</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>Переміщення файлів</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>Перетягуйте файли з папок комп'ютера, щоб надіслати їх сюди. Клацніть файл правою кнопкою миші, щоб побачити більше дій, або натисніть Пробіл для перегляду. Щоб надіслати файл на телефон, перетягніть його на телефон у списку ліворуч.</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>Показати поради щодо файлів ще раз</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>Жодна запущена програма не відповідає цьому пошуку.</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>Відкрити розташування файлу</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>Копіювати шлях до файлу</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>Щось на бічній панелі потребує вашої уваги</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>Блокує екран. Усе залишається відкритим.</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>Виконує вихід із Windows. Відкриті програми закриваються.</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>Вимикає ПК. Програми встигають зберегти дані.</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>Вимикає ПК і вмикає його знову.</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>Пауза з низьким споживанням. Швидко прокидається, усе залишається відкритим.</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>Зберігає все на диск і вимикається. Прокидається повільніше, ніж зі сну, не споживає енергії.</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>Вимикає ПК, не чекаючи програм. Незбережена робота буде втрачена.</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>Перезапускає, не чекаючи програм. Незбережена робота буде втрачена.</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>Перезапускає в налаштування мікропрограми ПК. Потрібно лише для змін BIOS/UEFI.</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>Зберегти це розташування зараз (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>Виберіть датчики цього ПК, щоб додати їх як картки</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>Повернутися до початкового масштабу й позиції</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>Зараз</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Вигляд</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>Кольори, світлий або темний режим, шрифти та заставка розташовані в розділі «Персоналізувати». Скорочення: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>Замінити ваші налаштування?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>Ваше компонування, програми, спільні папки та вигляд буде замінено тими, що в цьому файлі. Підключення вашого телефона не зміниться.</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>Імпортувати</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>Відкрити автоматичні резервні копії</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx автоматично зберігає тут ваші 5 останніх резервних копій налаштувань. Щоб відновити одну з них, скористайтеся «Імпортувати».</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>Копіювати відомості</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>Копіює версію RemEx, збірку та відомості про систему, щоб їх можна було вставити у звіт про помилку.</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>Відомості скопійовано</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>Вставте їх у своє повідомлення або звіт про помилку.</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx не знаходить програму за цим шляхом.</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>Ви можете вимкнути це пізніше в Налаштуваннях, у розділі «Довіра для спільного доступу до файлів».</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>QR-код для підключення</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>Очистити пошук</value>
   </data>
 </root>

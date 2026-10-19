@@ -173,12 +173,36 @@ public partial class CanvasCardViewModel : ObservableObject
     /// rendering the previous language until <see cref="HasAlert"/> or <see cref="IsAlertTripped"/>
     /// next changed for an unrelated reason (guarded by <c>LocalizedPropertyRefreshTests</c>).
     /// </summary>
-    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) =>
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
         OnPropertyChanged(nameof(AlertTooltip));
+        OnPropertyChanged(nameof(LinkStatusText));
+    }
+
+    /// <summary>The Connection card's status line: "waiting for a phone" while the link is up with no
+    /// phone attached, so it never reads "Connected" under "No phone connected" (RemEx-pp4cm.24).</summary>
+    public string LinkStatusText => Connection is { } connection
+        ? PhonePresenceText.LinkStatusText(connection, Presence)
+        : string.Empty;
+
+    private void OnLinkInputChanged(object? sender, PropertyChangedEventArgs e) =>
+        OnPropertyChanged(nameof(LinkStatusText));
+
+    partial void OnConnectionChanged(ConnectionViewModel? oldValue, ConnectionViewModel? newValue)
+    {
+        if (oldValue is not null)
+            oldValue.PropertyChanged -= OnLinkInputChanged;
+
+        if (newValue is not null)
+            newValue.PropertyChanged += OnLinkInputChanged;
+
+        OnPropertyChanged(nameof(LinkStatusText));
+    }
 
     public CanvasCardViewModel()
     {
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+        Presence.PropertyChanged += OnLinkInputChanged;
     }
 
     /// <summary>
@@ -193,6 +217,9 @@ public partial class CanvasCardViewModel : ObservableObject
     {
         Sensor = null;
         LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+        Presence.PropertyChanged -= OnLinkInputChanged;
+        if (Connection is not null)
+            Connection.PropertyChanged -= OnLinkInputChanged;
     }
 
     /// <summary>Action to acknowledge this card's tripped alert, wired by the dashboard to

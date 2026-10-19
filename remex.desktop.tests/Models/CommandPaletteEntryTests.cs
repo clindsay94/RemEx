@@ -123,6 +123,24 @@ public class CommandPaletteEntryTests
             .Matches("wake").Should().BeFalse();
     }
 
+    // PC-4.5: search folds accents and ignores word order (SettingsSearchMatcher).
+    [Theory]
+    [InlineData("Énergie", "energie")]
+    [InlineData("Bağlantı", "baglanti")]
+    [InlineData("Pair a phone", "pair phone")]
+    [InlineData("Pair a phone", "phone pair")]
+    public void Matches_FoldsAccentsAndIgnoresWordOrder(string label, string query)
+    {
+        new CommandPaletteEntry(label, "Navigate", Command).Matches(query).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matches_EveryWordMustMatchSomeField()
+    {
+        new CommandPaletteEntry("Pair a phone", "Connection", Command)
+            .Matches("pair wake").Should().BeFalse();
+    }
+
     // Live pass 2026-09-27: rows announced the record's ToString ("CommandPaletteEntry { Label = ... }")
     // because nothing named them (RemEx-pp0rt.16). The row's automation name is the label and category.
     [Fact]

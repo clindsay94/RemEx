@@ -21,6 +21,8 @@ public partial class PersonalizationPanelView : UserControl
         if (DataContext is not CustomizationViewModel vm)
             return;
 
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
         vm.CopyToClipboardAsync = async text =>
         {
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;

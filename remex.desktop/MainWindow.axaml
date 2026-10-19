@@ -33,7 +33,7 @@
 
     <Window.KeyBindings>
         <!-- Direct navigation shortcuts, in SIDEBAR ORDER (3.0 comb, ctrl-digit-order): Home,
-             Sensors, Commands, Routines, Apps, Processes, Files, Logs & Diagnostics. Routines was
+             Sensors, Commands, Routines, Apps, Processes, Files, Logs & Diagnostics, Settings. Routines was
              missing, so every shortcut after Commands was one off from the item it sits beside. -->
         <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToHomeCommand}" />
         <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCanvasCommand}" />
@@ -43,6 +43,7 @@
         <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToTaskManagerCommand}" />
         <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToFileTransferCommand}" />
         <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToDiagnosticLogsCommand}" />
+        <KeyBinding Gesture="Ctrl+D9" Command="{Binding NavigateToSettingsCommand}" />
         <!-- Settings (Ctrl+,) -->
         <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding ToggleSettingsPanelCommand}" />
         <!-- Dismiss overlays -->
@@ -55,9 +56,10 @@
              learned it from the old tooltip is not stranded. -->
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
-        <!-- Canvas undo / redo -->
-        <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />
-        <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />
+        <!-- Sensor layout undo / redo / save: only live while Sensors is on screen -->
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoShortcutCommand}" />
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoShortcutCommand}" />
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding CanvasSaveShortcutCommand}" />
     </Window.KeyBindings>
 
     <!-- Whole-UI scale for the personalization "UI size" slider. Scales the entire shell (text and

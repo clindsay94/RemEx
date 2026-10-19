@@ -23,6 +23,10 @@ public partial class CommandPaletteViewModel : ObservableObject
     [ObservableProperty]
     private bool _isEmpty = true;
 
+    /// <summary>The row Enter will run; always the first match after the query changes.</summary>
+    [ObservableProperty]
+    private CommandPaletteEntry? _selectedEntry;
+
     public ObservableCollection<CommandPaletteEntry> FilteredResults { get; } = new();
 
     public CommandPaletteViewModel(ShellViewModel shell)
@@ -43,6 +47,7 @@ public partial class CommandPaletteViewModel : ObservableObject
                 FilteredResults.Add(entry);
         }
         IsEmpty = FilteredResults.Count == 0;
+        SelectedEntry = FilteredResults.FirstOrDefault();
     }
 
     /// <summary>
@@ -101,31 +106,31 @@ public partial class CommandPaletteViewModel : ObservableObject
 
     private static CommandPaletteEntry[] BuildEntries(ShellViewModel shell) =>
     [
-        new(LocalizationService.Instance["Palette_Home"],                    LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToHomeCommand),
-        new(LocalizationService.Instance["Palette_SensorCanvas"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToCanvasCommand),
+        new(LocalizationService.Instance["Palette_Home"],                    LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToHomeCommand, Shortcut: "Ctrl+1"),
+        new(LocalizationService.Instance["Palette_SensorCanvas"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToCanvasCommand, Shortcut: "Ctrl+2"),
         // Aliased so "wake" finds it. Removing the broken Wake-on-LAN entry (RemEx-paa7) left the
         // term matching nothing at all, even though this screen is where waking actually lives —
         // with the configured MAC, validation, and the local-send path that works when the PC is
         // off. The alias reuses that entry's own nine translations verbatim. (RemEx-efse.)
         new(LocalizationService.Instance["Palette_RemoteControl"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteCommand,
-            SearchAliases: LocalizationService.Instance["Palette_RemoteControl_SearchAliases"]),
-        new(LocalizationService.Instance["Palette_Routines"],               LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRoutinesCommand),
+            SearchAliases: LocalizationService.Instance["Palette_RemoteControl_SearchAliases"], Shortcut: "Ctrl+3"),
+        new(LocalizationService.Instance["Palette_Routines"],               LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRoutinesCommand, Shortcut: "Ctrl+4"),
         new(LocalizationService.Instance["Palette_PauseRoutines"],          LocalizationService.Instance["PaletteCategory_Routines"], shell.PauseAllRoutinesCommand),
         new(LocalizationService.Instance["Palette_ResumeRoutines"],         LocalizationService.Instance["PaletteCategory_Routines"], shell.ResumeRoutinesCommand),
-        new(LocalizationService.Instance["Palette_AppLauncher"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToAppLauncherCommand),
-        new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand),
+        new(LocalizationService.Instance["Palette_AppLauncher"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToAppLauncherCommand, Shortcut: "Ctrl+5"),
+        new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand, Shortcut: "Ctrl+6"),
         new(LocalizationService.Instance["Palette_RemoteDesktop"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteDesktopCommand),
-        new(LocalizationService.Instance["Palette_FileTransfer"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToFileTransferCommand),
+        new(LocalizationService.Instance["Palette_FileTransfer"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToFileTransferCommand, Shortcut: "Ctrl+7"),
         // "Settings" goes to the Settings PAGE (3.0 comb, palette-settings). It used to toggle the
         // Personalize sheet, so the palette could not reach Settings at all and two entries did the
         // same thing; the sheet's own entry is now labelled with the sheet's name.
-        new(LocalizationService.Instance["Palette_Settings"],                LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToSettingsCommand),
-        new(LocalizationService.Instance["Shell_LogsDiagnostics"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToDiagnosticLogsCommand),
-        new(LocalizationService.Instance["Personalize_Title"],              LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleSettingsPanelCommand),
+        new(LocalizationService.Instance["Palette_Settings"],                LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToSettingsCommand, Shortcut: "Ctrl+9"),
+        new(LocalizationService.Instance["Shell_LogsDiagnostics"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToDiagnosticLogsCommand, Shortcut: "Ctrl+8"),
+        new(LocalizationService.Instance["Personalize_Title"],              LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleSettingsPanelCommand, Shortcut: "Ctrl+,"),
         new(LocalizationService.Instance["Palette_CloseSettingsPanel"],    LocalizationService.Instance["PaletteCategory_Interface"], shell.CloseSettingsPanelCommand),
         new(LocalizationService.Instance["Palette_ToggleNavigationDrawer"],LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleDrawerCommand),
-        new(LocalizationService.Instance["Palette_UndoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasUndoCommand),
-        new(LocalizationService.Instance["Palette_RedoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasRedoCommand),
+        new(LocalizationService.Instance["Palette_UndoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasUndoCommand, Shortcut: "Ctrl+Z"),
+        new(LocalizationService.Instance["Palette_RedoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasRedoCommand, Shortcut: "Ctrl+Y"),
         new(LocalizationService.Instance["Palette_DismissConnectionBanner"],LocalizationService.Instance["PaletteCategory_Status"],   shell.DismissConnectionBannerCommand),
         new(LocalizationService.Instance["Palette_AboutWhatsNew"],      LocalizationService.Instance["PaletteCategory_Help"],     shell.NavigateToAboutCommand),
         new(LocalizationService.Instance["Palette_TutorialGlossary"],     LocalizationService.Instance["PaletteCategory_Help"],     shell.ReplayTutorialCommand),

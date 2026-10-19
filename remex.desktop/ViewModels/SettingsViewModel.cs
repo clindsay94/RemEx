@@ -744,6 +744,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void OpenPersonalize()
+    {
+        _shell.NavigateToCustomization();
+    }
+
+    [RelayCommand]
     private void ReplayTutorial()
     {
         _shell.CloseSettingsPanel();
@@ -1068,6 +1074,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             if (files.Count == 0)
                 return;
 
+            // Import replaces the layout, apps, folders and look in one go; fails CLOSED with no dialog wired.
+            if (OnConfirmationRequested is null
+                || !await OnConfirmationRequested(
+                    LocalizationService.Instance["Confirm_ImportSettings_Title"],
+                    LocalizationService.Instance["Confirm_ImportSettings_Message"],
+                    LocalizationService.Instance["Confirm_ImportSettings_Btn"]))
+            {
+                return;
+            }
+
             await using var stream = await files[0].OpenReadAsync();
             var result = await _savefileService.ImportAsync(stream);
 
@@ -1102,6 +1118,27 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
         }
     }
+
+    /// <summary>Test seam for opening a folder; the default opens it with the user's normal permissions.</summary>
+    internal Func<string, bool>? OpenFolder { get; set; }
+
+    [RelayCommand]
+    private void OpenBackupsFolder()
+    {
+        try
+        {
+            var directory = _savefileService.BackupsDirectory;
+            Directory.CreateDirectory(directory);
+            (OpenFolder ?? DefaultOpenFolder)(directory);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    private static bool DefaultOpenFolder(string path)
+        => Services.Launching.UserLauncher.LaunchOrNotify(EmbeddedHostServiceLocator.TryResolve<Services.Launching.IUnelevatedLauncher>(), path);
 
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

@@ -38,7 +38,11 @@ public sealed partial class SchemeVariantStripViewModel : ObservableObject, IDis
     /// this handler forcing one. Mirrors <see cref="SeedPresetTileViewModel.OnLocaleChanged"/>.
     /// </summary>
     private void OnLocaleChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        => OnPropertyChanged(nameof(DisplayName));
+    {
+        OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(Description));
+        OnPropertyChanged(nameof(SelectionStatus));
+    }
 
     public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
 
@@ -47,6 +51,14 @@ public sealed partial class SchemeVariantStripViewModel : ObservableObject, IDis
 
     /// <summary>The localized label. Reuses the <c>Custom_Scheme_*</c> keys the old ComboBox already read.</summary>
     public string DisplayName => LocalizationService.Instance[$"Custom_Scheme_{Variant}"];
+
+    /// <summary>One plain-English line shown as the strip's hover tip.</summary>
+    public string Description => LocalizationService.Instance[$"Custom_SchemeDesc_{Variant}"];
+
+    /// <summary>"Selected" for screen readers while this strip is the chosen one, otherwise empty.</summary>
+    public string SelectionStatus => IsSelected ? LocalizationService.Instance["A11y_SelectedState"] : string.Empty;
+
+    partial void OnIsSelectedChanged(bool value) => OnPropertyChanged(nameof(SelectionStatus));
 
     [ObservableProperty] private IBrush _surfaceBrush;
     [ObservableProperty] private IBrush _primaryBrush;

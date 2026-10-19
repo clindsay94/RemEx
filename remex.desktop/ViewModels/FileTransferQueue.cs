@@ -101,6 +101,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanCancel))]
     [NotifyPropertyChangedFor(nameof(StateLabel))]
     [NotifyPropertyChangedFor(nameof(IsVerified))]
+    [NotifyPropertyChangedFor(nameof(CanShowInFolder))]
     [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
     private TransferState _state = TransferState.Queued;
 
@@ -145,10 +146,17 @@ public sealed partial class FileTransferQueueItem : ObservableObject
             ? RateText
             : string.Format(LocalizationService.Instance["FileTransfer_RateEtaFormat"], RateText, EtaText);
 
-    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work, Func<long>? nowMillis = null)
+    /// <summary>Where a download was saved on this PC, or null for an upload or when it is not known.</summary>
+    public string? LocalPath { get; }
+
+    /// <summary>True once a download has finished and its saved file can be shown in the file manager.</summary>
+    public bool CanShowInFolder => Kind == FileTransferQueueKind.Download && State == TransferState.Done && LocalPath is not null;
+
+    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work, Func<long>? nowMillis = null, string? localPath = null)
     {
         Kind = kind;
         FileName = fileName;
+        LocalPath = localPath;
         Work = work;
         _nowMillis = nowMillis ?? (() => Environment.TickCount64);
     }
@@ -511,11 +519,11 @@ public sealed class FileTransferQueue : IDisposable
     }
 
     /// <summary>Adds a transfer to the tail of the queue and starts the pump if idle. Returns the new item.</summary>
-    public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work)
+    public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work, string? localPath = null)
     {
         // The item's clock is THIS queue's, not its own default - see _timeProvider's remarks. Every
         // item a queue produces shares one controllable "now" with that queue's refresh timer.
-        var item = new FileTransferQueueItem(kind, fileName, work, NowMillis);
+        var item = new FileTransferQueueItem(kind, fileName, work, NowMillis, localPath);
         item.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(FileTransferQueueItem.State))

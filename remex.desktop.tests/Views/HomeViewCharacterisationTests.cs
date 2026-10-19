@@ -63,6 +63,8 @@ public class HomeViewCharacterisationTests
         "NavigateToDiagnosticLogsCommand",
         "NavigateToFileTransferCommand",
         "NavigateToRemoteCommand",
+        "NavigateToRoutinesCommand",
+        "NavigateToSettingsCommand",
         "NavigateToTaskManagerCommand",
         "OpenGitHubCommand",
         "OpenHwInfoCommand",
@@ -121,11 +123,12 @@ public class HomeViewCharacterisationTests
     {
         // A number in a diff, the same device TheAllowListHasNotGrown uses. Twenty is the figure
         // RemEx-1qpjh recorded and it is the one RemEx-oszfm is verified against.
-        Count(Home(), @"<Button[\s>]").Should().Be(20,
+        Count(Home(), @"<Button[\s>]").Should().Be(22,
             "the dashboard had 20 buttons when it was characterised, then lost the footer Connect and "
             + "Disconnect (3.0 comb, home-disconnect: they drove the window's link to its own host), gained "
             + "the Pair a phone button (home-pair-cta-missing), and gained the Play card flyout's Open in "
-            + "browser instead button (RemEx-2p7um); a rewrite that ends with fewer "
+            + "browser instead button (RemEx-2p7um), and gained the Routines and Settings quick-launch tiles "
+            + "(PC-5.2); a rewrite that ends with fewer "
             + "has dropped an action, and one that ends with more has grown scope");
     }
 
@@ -144,7 +147,7 @@ public class HomeViewCharacterisationTests
         var grid = Between(Home(), "<UniformGrid", "</UniformGrid>");
         var tiles = Elements(grid).Where(e => e.StartsWith("<Button", StringComparison.Ordinal)).ToArray();
 
-        tiles.Should().HaveCount(8, "the quick-launch grid is eight tiles");
+        tiles.Should().HaveCount(10, "the quick-launch grid is ten tiles: one per sidebar destination people jump to");
 
         // The tiles are icon-and-caption, and the caption is a child TextBlock rather than Content —
         // so a screen reader has nothing to read but AutomationProperties.Name. All eight carry one
@@ -314,8 +317,8 @@ public class HomeViewCharacterisationTests
         // The earlier version of this comment enumerated seven controls, called it eighteen, and
         // claimed all eighteen were icon-or-glyph. Review caught it against §7 of the document, which
         // had the split right.
-        Count(Home(), @"AutomationProperties\.Name").Should().Be(20,
-            "20 controls (18 plus the Pair a phone button, which also has a visible caption, plus the Play "
+        Count(Home(), @"AutomationProperties\.Name").Should().Be(22,
+            "22 controls (the Routines and Settings quick-launch tiles included, plus the Pair a phone button, which also has a visible caption, plus the Play "
             + "flyout's QR code image, RemEx-2p7um) on this view carry an automation name and 14 of them have no other "
             + "accessible label; a restyle that drops one makes that control unreachable to a screen "
             + "reader with no visible sign");
@@ -365,8 +368,8 @@ public class HomeViewCharacterisationTests
         // ANTI-VACUITY, and it is the specific bug this repo has already been bitten by: a matcher
         // that finds nothing makes every "no offenders" assertion pass. StatusDotPresenceBindingTests
         // was inert for months on exactly that shape.
-        found.Should().HaveCount(19,
-            "HomeView has 19 Command-bound buttons; finding a different number means this matcher has "
+        found.Should().HaveCount(21,
+            "HomeView has 21 Command-bound buttons; finding a different number means this matcher has "
             + "stopped seeing the view, and the assertions built on it are no longer testing anything");
 
         return found;

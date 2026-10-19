@@ -385,7 +385,7 @@
     <value>Tryb tła</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>Resetuj do domyślnych motywu</value>
+    <value>Przywróć domyślny wygląd</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -745,7 +745,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Pokaż kod QR i PIN, których telefon potrzebuje do sparowania z tym komputerem</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>Skanuj aplikacją RemEx Android</value>
+    <value>Na telefonie otwórz RemEx, na ekranie Połączenie dotknij ‘Dodaj komputer’, potem ‘Skanuj kod QR’ i skieruj aparat tutaj.</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>Kod PIN parowania</value>
@@ -1708,7 +1708,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Grubość poświaty neonowej w pikselach</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Wybierz styl animacji ekranu powitalnego</value>
+    <value>Wybierz animację odtwarzaną przy otwieraniu RemEx. Losowa odtwarza za każdym razem inną.</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Włącz przyciąganie do siatki, aby sensory wyrównywały się do standardowych przyrostów</value>
@@ -1895,7 +1895,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Zezwolić na pełne przeglądanie urządzenia?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>Zapamiętaj mój wybór dla tego urządzenia</value>
+    <value>Zawsze zezwalaj temu urządzeniu</value>
   </data>
   <data name="FileConsent_WindowTitle" xml:space="preserve">
     <value>Prośba o uprawnienia</value>
@@ -2147,7 +2147,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Personalizuj wygląd</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>Kliknij w dowolnym miejscu, aby pominąć</value>
+    <value>Kliknij w dowolnym miejscu lub naciśnij Esc, aby pominąć</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>Połączenie na żywo</value>
@@ -4403,5 +4403,167 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>Pliki nie mogą trafić bezpośrednio z jednego telefonu na drugi. Najpierw skopiuj je na ten komputer.</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>Losowa</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>Zresetować wygląd?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>Kolor, tryb jasny lub ciemny, kontrast, kształty kart i ekran powitalny wrócą do ustawień domyślnych RemEx. Zapisane palety, czcionki i rozmiary tekstu zostaną zachowane.</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>Resetuj</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>Wybrane</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>Spokojny i wyważony. Pasuje do większości kolorów.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>Jasne, nasycone kolory.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>Zabawny. Odsuwa kolory od wybranego.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>Trzyma się możliwie najbliżej wybranego koloru.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>Jak Wierność, dostrojony do kolorów wybranych z obrazu.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>Tylko odcienie szarości.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>Delikatne, prawie szare odcienie wybranego koloru.</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>Twój kolor plus szeroka gama innych barw.</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>Odważna mieszanka barw odsuniętych od wybranego koloru.</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>Pokaż w Eksploratorze plików</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>Pokaż w menedżerze plików</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>Pokaż w folderze</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>Tego pliku już tam nie ma. Mógł zostać przeniesiony lub usunięty.</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>Kopiuj pełną ścieżkę</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>Przenoszenie plików</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>Przeciągnij pliki z folderów komputera, aby wysłać je tutaj. Kliknij plik prawym przyciskiem, aby zobaczyć więcej opcji, albo naciśnij spację, aby go podejrzeć. Aby wysłać plik na telefon, przeciągnij go na telefon na liście po lewej.</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>Pokaż ponownie wskazówki dotyczące plików</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>Żaden uruchomiony program nie pasuje do tego wyszukiwania.</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>Otwórz lokalizację pliku</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>Kopiuj ścieżkę pliku</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>Coś na pasku bocznym wymaga Twojej uwagi</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>Blokuje ekran. Wszystko pozostaje otwarte.</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>Wylogowuje Cię z Windows. Otwarte programy zostaną zamknięte.</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>Wyłącza komputer. Programy mają szansę zapisać dane.</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>Wyłącza komputer i włącza go ponownie.</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>Wstrzymanie z niskim poborem prądu. Szybko się wybudza, wszystko pozostaje otwarte.</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>Zapisuje wszystko na dysku i wyłącza komputer. Wybudza się wolniej niż uśpienie, nie pobiera prądu.</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>Wyłącza komputer bez czekania na programy. Niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>Uruchamia ponownie bez czekania na programy. Niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>Uruchamia ponownie w ustawieniach oprogramowania układowego komputera. Potrzebne tylko do zmian BIOS/UEFI.</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>Zapisz ten układ teraz (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>Wybierz czujniki z tego komputera, aby dodać je jako karty</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>Wróć do początkowego powiększenia i położenia</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>Teraz</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Wygląd</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>Kolory, tryb jasny lub ciemny, czcionki i ekran startowy znajdziesz w Personalizacji. Skrót: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>Zastąpić Twoje ustawienia?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>Twój układ, aplikacje, udostępnione foldery i wygląd zostaną zastąpione tymi z tego pliku. Parowanie z telefonem pozostanie bez zmian.</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>Importuj</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>Otwórz kopie automatyczne</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx automatycznie przechowuje tutaj Twoje 5 ostatnich kopii ustawień. Użyj Importuj, aby którąś przywrócić.</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>Kopiuj szczegóły</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>Kopiuje wersję RemEx, numer kompilacji i dane systemu, aby można je było wkleić do zgłoszenia błędu.</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>Skopiowano szczegóły</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>Wklej je do swojej wiadomości lub zgłoszenia błędu.</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx nie może znaleźć programu pod tą ścieżką.</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>Możesz to później wyłączyć w Ustawieniach, w sekcji Zaufanie do udostępniania plików.</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>Kod QR do parowania</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>Wyczyść wyszukiwanie</value>
   </data>
 </root>

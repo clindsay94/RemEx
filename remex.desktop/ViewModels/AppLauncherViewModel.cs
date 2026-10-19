@@ -6,6 +6,7 @@ using Remex.Core.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Launching;
 using Remex.Desktop.Services.Backup;
 using Remex.Core.Messages;
 
@@ -519,6 +520,64 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void EditApp(AppEntry entry) => OnOpenEditProgramDialogRequested?.Invoke(entry);
+
+    /// <summary>Shows a program's file in the PC's file manager; a seam so tests never spawn Explorer.</summary>
+    internal Action<string> RevealInFileManager { get; set; } = FileManagerLauncher.Reveal;
+
+    /// <summary>
+    /// Only a local, fully qualified path that exists can be shown. UNC paths, mapped network drives and
+    /// network mounts are refused up front so opening the menu never stats a share (a dead one blocks the
+    /// UI thread for the SMB timeout), and <c>shell:</c> and URL targets have no file.
+    /// </summary>
+    internal static bool CanOpenFileLocation(AppEntry? entry)
+    {
+        var target = entry?.TargetPath;
+        if (string.IsNullOrWhiteSpace(target) || !Path.IsPathFullyQualified(target))
+            return false;
+        if (target.StartsWith(@"\\", StringComparison.Ordinal) || target.StartsWith("//", StringComparison.Ordinal))
+            return false;
+        if (IsOnNetworkDrive(target, LocalDrives()))
+            return false;
+        return File.Exists(target) || Directory.Exists(target);
+    }
+
+    // DriveType comes from the drive letter mapping or the mount table; it never contacts the share.
+    private static IEnumerable<(string Root, DriveType Type)> LocalDrives()
+    {
+        try
+        {
+            return DriveInfo.GetDrives().Select(d => (d.RootDirectory.FullName, d.DriveType)).ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>True when the drive or mount holding <paramref name="path"/> (the longest matching root) is a network one.</summary>
+    internal static bool IsOnNetworkDrive(string path, IEnumerable<(string Root, DriveType Type)> drives)
+    {
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        (string Root, DriveType Type)? best = null;
+        foreach (var drive in drives)
+        {
+            var root = drive.Root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var contains = path.Equals(root, comparison)
+                || path.StartsWith(root + Path.DirectorySeparatorChar, comparison)
+                || path.StartsWith(root + Path.AltDirectorySeparatorChar, comparison);
+            if (contains && (best is null || root.Length > best.Value.Root.Length))
+                best = (root, drive.Type);
+        }
+
+        return best?.Type == DriveType.Network;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanOpenFileLocation))]
+    private void OpenFileLocation(AppEntry? entry)
+    {
+        if (CanOpenFileLocation(entry))
+            RevealInFileManager(entry!.TargetPath);
+    }
 
     /// <summary>
     /// Applies an edited entry in place (replace-in-place keeps the card's visual slot), then

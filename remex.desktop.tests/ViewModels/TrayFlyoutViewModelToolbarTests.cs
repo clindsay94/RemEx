@@ -11,6 +11,8 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Backup;
+using Remex.Desktop.Services.FileTransfer;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -53,6 +55,7 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
             new ServiceCollection().AddLogging()
                 .AddSingleton<SensorAlertStore>()
                 .AddSingleton<SensorAlertTracker>()
+                .AddSingleton(new RemexSavefileService(layoutService, _launcherStorage, new FileTransferRootSettingsService()))
                 .BuildServiceProvider());
         _shell.ProfileReplacedDispatch = run => run();
         _shell.DiagnosticsLogDispatch = run => run();
@@ -69,6 +72,29 @@ public sealed class TrayFlyoutViewModelToolbarTests : IAsyncLifetime
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort cleanup */ }
         return Task.CompletedTask;
     }
+
+    [Fact]
+    public void TheSettingsCogOpensTheSettingsPage()
+    {
+        _tray.OpenSettingsCommand.Execute(null);
+
+        _shell.CurrentView.Should().BeSameAs(_shell.SettingsVm);
+        _shell.SettingsVm.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void TheCogBindsOpenSettings_AndBothHeaderButtonsCarryATooltip()
+    {
+        var path = Path.Combine(
+            Path.GetDirectoryName(ThisFile())!, "..", "..", "remex.desktop", "Views", "TrayFlyoutWindow.axaml");
+        var xaml = System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(path), @"\s+", " ");
+
+        xaml.Should().Contain("Command=\"{Binding OpenSettingsCommand}\"");
+        xaml.Should().MatchRegex(@"<Button[^>]*Click=""OnOpenMainApp""[^>]*ToolTip\.Tip=");
+        xaml.Should().MatchRegex(@"<Button[^>]*Click=""OnCloseFlyout""[^>]*ToolTip\.Tip=");
+    }
+
+    private static string ThisFile([System.Runtime.CompilerServices.CallerFilePath] string file = "") => file;
 
     [Fact]
     public void SixTilesInOrderByDefault()

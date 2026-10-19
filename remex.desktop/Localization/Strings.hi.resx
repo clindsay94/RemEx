@@ -412,7 +412,7 @@
     <value>पृष्ठभूमि मोड</value>
   </data>
   <data name="Custom_Reset" xml:space="preserve">
-    <value>थीम डिफ़ॉल्ट पर रीसेट करें</value>
+    <value>लुक को डिफ़ॉल्ट पर रीसेट करें</value>
   </data>
   <data name="Custom_PresetGlass" xml:space="preserve">
     <value>Glass</value>
@@ -812,7 +812,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>इस PC से पेयर करने के लिए फ़ोन को जो QR कोड और PIN चाहिए, वह दिखाएँ</value>
   </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
-    <value>RemEx Android ऐप से स्कैन करें</value>
+    <value>अपने फ़ोन पर RemEx खोलें, कनेक्शन स्क्रीन पर ‘PC जोड़ें’ पर टैप करें, फिर ‘QR कोड स्कैन करें’ चुनें और कैमरा यहाँ की ओर करें।</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>पेयरिंग पिन</value>
@@ -1948,7 +1948,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पिक्सेल में नियॉन चमक मोटाई</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>स्टार्टअप स्वागत स्प्लैश स्क्रीन अनुक्रम एनीमेशन की शैली चुनें</value>
+    <value>चुनें कि RemEx खुलते समय कौन सा एनीमेशन चलाए। यादृच्छिक हर बार अलग एनीमेशन चलाता है।</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>संरेखण मार्गदर्शिकाएँ सक्षम करें ताकि सेंसर टाइलें प्लेसमेंट कैनवास पर मानक वेतन वृद्धि में स्नैप हो सकें</value>
@@ -2134,7 +2134,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>पूर्ण डिवाइस ब्राउज़िंग की अनुमति दें?</value>
   </data>
   <data name="FileConsent_Remember" xml:space="preserve">
-    <value>इस डिवाइस के लिए मेरा चयन याद रखें</value>
+    <value>इस डिवाइस को हमेशा अनुमति दें</value>
   </data>
   <data name="FileConsent_WindowTitle" xml:space="preserve">
     <value>अनुमति अनुरोध</value>
@@ -2386,7 +2386,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>दिखावट वैयक्तिकृत करें</value>
   </data>
   <data name="Splash_SkipHint" xml:space="preserve">
-    <value>छोड़ने के लिए कहीं भी क्लिक करें</value>
+    <value>छोड़ने के लिए कहीं भी क्लिक करें या Esc दबाएँ</value>
   </data>
   <data name="Splash_Style_LiveHandshake" xml:space="preserve">
     <value>लाइव हैंडशेक</value>
@@ -4402,5 +4402,167 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="FilePreview_PhoneToPhoneUnsupported" xml:space="preserve">
     <value>फ़ाइलें सीधे एक फ़ोन से दूसरे फ़ोन पर नहीं जा सकतीं। पहले उन्हें इस PC पर कॉपी करें।</value>
+  </data>
+  <data name="Splash_Style_Random" xml:space="preserve">
+    <value>यादृच्छिक</value>
+  </data>
+  <data name="Confirm_ResetLook_Title" xml:space="preserve">
+    <value>लुक रीसेट करें?</value>
+  </data>
+  <data name="Confirm_ResetLook_Message" xml:space="preserve">
+    <value>आपका रंग, लाइट या डार्क मोड, कंट्रास्ट, कार्ड के आकार और स्प्लैश स्क्रीन RemEx के डिफ़ॉल्ट पर लौट जाएंगे। सहेजे गए पैलेट, फ़ॉन्ट और टेक्स्ट आकार बने रहेंगे।</value>
+  </data>
+  <data name="Confirm_ResetLook_Btn" xml:space="preserve">
+    <value>रीसेट करें</value>
+  </data>
+  <data name="A11y_SelectedState" xml:space="preserve">
+    <value>चयनित</value>
+  </data>
+  <data name="Custom_SchemeDesc_TonalSpot" xml:space="preserve">
+    <value>शांत और संतुलित। ज़्यादातर रंगों के साथ अच्छा लगता है।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Vibrant" xml:space="preserve">
+    <value>चमकीले, गहरे रंग।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Expressive" xml:space="preserve">
+    <value>मज़ेदार। रंगों को आपके रंग से दूर ले जाता है।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Fidelity" xml:space="preserve">
+    <value>आपके चुने हुए रंग के जितना हो सके उतना क़रीब रहता है।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Content" xml:space="preserve">
+    <value>फ़िडेलिटी जैसा, किसी छवि से चुने गए रंगों के लिए ट्यून किया गया।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Monochrome" xml:space="preserve">
+    <value>सिर्फ़ धूसर रंग की छटाएँ।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Neutral" xml:space="preserve">
+    <value>आपके रंग की हल्की, लगभग धूसर आभा।</value>
+  </data>
+  <data name="Custom_SchemeDesc_Rainbow" xml:space="preserve">
+    <value>आपका रंग और उसके साथ अन्य रंगों की विस्तृत श्रृंखला।</value>
+  </data>
+  <data name="Custom_SchemeDesc_FruitSalad" xml:space="preserve">
+    <value>आपके रंग से हटकर रंगों का बोल्ड मिश्रण।</value>
+  </data>
+  <data name="FileTransfer_ShowInExplorer" xml:space="preserve">
+    <value>फ़ाइल एक्सप्लोरर में दिखाएँ</value>
+  </data>
+  <data name="FileTransfer_ShowInFileManager" xml:space="preserve">
+    <value>फ़ाइल मैनेजर में दिखाएँ</value>
+  </data>
+  <data name="FileTransfer_ShowInFolder" xml:space="preserve">
+    <value>फ़ोल्डर में दिखाएँ</value>
+  </data>
+  <data name="FileTransfer_ShowInFolderMissing" xml:space="preserve">
+    <value>वह फ़ाइल अब वहाँ नहीं है। हो सकता है उसे हटा दिया गया हो या दूसरी जगह ले जाया गया हो।</value>
+  </data>
+  <data name="FileTransfer_CopyFullPath" xml:space="preserve">
+    <value>पूरा पथ कॉपी करें</value>
+  </data>
+  <data name="FileTransfer_CoachTitle" xml:space="preserve">
+    <value>फ़ाइलें इधर-उधर ले जाना</value>
+  </data>
+  <data name="FileTransfer_CoachBody" xml:space="preserve">
+    <value>अपने पीसी के फ़ोल्डर से फ़ाइलें यहाँ खींचकर भेजें। ज़्यादा विकल्पों के लिए किसी भी फ़ाइल पर राइट-क्लिक करें, या उसका पूर्वावलोकन देखने के लिए स्पेस दबाएँ। फ़ाइल को अपने फ़ोन पर भेजने के लिए, उसे बाईं ओर की सूची में फ़ोन पर खींचकर छोड़ें।</value>
+  </data>
+  <data name="FileTransfer_CoachReplay" xml:space="preserve">
+    <value>फ़ाइलों के सुझाव फिर से दिखाएँ</value>
+  </data>
+  <data name="TaskMgr_NoMatches" xml:space="preserve">
+    <value>इस खोज से कोई चालू प्रोग्राम मेल नहीं खाता।</value>
+  </data>
+  <data name="Launch_OpenFileLocation" xml:space="preserve">
+    <value>फ़ाइल का स्थान खोलें</value>
+  </data>
+  <data name="TaskMgr_CopyPath" xml:space="preserve">
+    <value>फ़ाइल का पथ कॉपी करें</value>
+  </data>
+  <data name="Nav_AttentionHelp" xml:space="preserve">
+    <value>साइडबार में कुछ चीज़ पर आपका ध्यान चाहिए</value>
+  </data>
+  <data name="Remote_LockTip" xml:space="preserve">
+    <value>स्क्रीन को लॉक करता है। सब कुछ खुला रहता है।</value>
+  </data>
+  <data name="Remote_SignOutTip" xml:space="preserve">
+    <value>आपको Windows से साइन आउट करता है। खुले प्रोग्राम बंद हो जाते हैं।</value>
+  </data>
+  <data name="Remote_ShutdownTip" xml:space="preserve">
+    <value>पीसी को बंद करता है। प्रोग्रामों को सेव करने का मौका मिलता है।</value>
+  </data>
+  <data name="Remote_RestartTip" xml:space="preserve">
+    <value>पीसी को बंद करके फिर से चालू करता है।</value>
+  </data>
+  <data name="Remote_SleepTip" xml:space="preserve">
+    <value>कम बिजली वाला विराम। जल्दी जागता है, सब कुछ खुला रहता है।</value>
+  </data>
+  <data name="Remote_HibernateTip" xml:space="preserve">
+    <value>सब कुछ डिस्क में सेव करके बंद हो जाता है। स्लीप से देर में जागता है, बिजली नहीं लेता।</value>
+  </data>
+  <data name="Remote_ForceShutdownTip" xml:space="preserve">
+    <value>प्रोग्रामों का इंतज़ार किए बिना पीसी बंद करता है। बिना सेव किया काम खो जाता है।</value>
+  </data>
+  <data name="Remote_ForceRestartTip" xml:space="preserve">
+    <value>प्रोग्रामों का इंतज़ार किए बिना रीस्टार्ट करता है। बिना सेव किया काम खो जाता है।</value>
+  </data>
+  <data name="Remote_RebootUefiTip" xml:space="preserve">
+    <value>पीसी की फ़र्मवेयर सेटिंग में रीस्टार्ट करता है। केवल BIOS/UEFI बदलावों के लिए ज़रूरी है।</value>
+  </data>
+  <data name="Canvas_SaveTooltip" xml:space="preserve">
+    <value>इस लेआउट को अभी सेव करें (Ctrl+S)</value>
+  </data>
+  <data name="Canvas_SensorLibraryTooltip" xml:space="preserve">
+    <value>इस पीसी के सेंसर चुनें और कार्ड के रूप में जोड़ें</value>
+  </data>
+  <data name="Canvas_ResetViewTooltip" xml:space="preserve">
+    <value>शुरुआती ज़ूम और स्थिति पर लौटें</value>
+  </data>
+  <data name="SetAlert_RightNow" xml:space="preserve">
+    <value>अभी</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>रूप और अनुभव</value>
+  </data>
+  <data name="Settings_AppearanceDesc" xml:space="preserve">
+    <value>रंग, लाइट या डार्क मोड, फ़ॉन्ट और स्प्लैश स्क्रीन वैयक्तिकृत करें में हैं। शॉर्टकट: Ctrl+,</value>
+  </data>
+  <data name="Confirm_ImportSettings_Title" xml:space="preserve">
+    <value>आपकी सेटिंग्स बदल दें?</value>
+  </data>
+  <data name="Confirm_ImportSettings_Message" xml:space="preserve">
+    <value>आपका लेआउट, ऐप्स, साझा फ़ोल्डर और रूप इस फ़ाइल वाले से बदल दिए जाएँगे। आपके फ़ोन की पेयरिंग पर कोई असर नहीं पड़ेगा।</value>
+  </data>
+  <data name="Confirm_ImportSettings_Btn" xml:space="preserve">
+    <value>आयात करें</value>
+  </data>
+  <data name="Settings_OpenBackupsFolder" xml:space="preserve">
+    <value>स्वचालित बैकअप खोलें</value>
+  </data>
+  <data name="Settings_OpenBackupsFolderTip" xml:space="preserve">
+    <value>RemEx आपकी पिछली 5 सेटिंग्स बैकअप अपने-आप यहाँ रखता है। किसी को वापस लाने के लिए आयात करें का उपयोग करें।</value>
+  </data>
+  <data name="About_CopyDetails" xml:space="preserve">
+    <value>विवरण कॉपी करें</value>
+  </data>
+  <data name="About_CopyDetailsTip" xml:space="preserve">
+    <value>RemEx संस्करण, बिल्ड और सिस्टम का विवरण कॉपी करता है ताकि आप उसे बग रिपोर्ट में चिपका सकें।</value>
+  </data>
+  <data name="About_DetailsCopied" xml:space="preserve">
+    <value>विवरण कॉपी किया गया</value>
+  </data>
+  <data name="About_DetailsCopiedMessage" xml:space="preserve">
+    <value>इन्हें अपने संदेश या बग रिपोर्ट में चिपका दें।</value>
+  </data>
+  <data name="AddProgram_PathNotFound" xml:space="preserve">
+    <value>RemEx को इस पथ पर कोई प्रोग्राम नहीं मिला।</value>
+  </data>
+  <data name="FileConsent_RememberHint" xml:space="preserve">
+    <value>आप इसे बाद में सेटिंग्स में फ़ाइल-साझाकरण विश्वास के अंतर्गत बंद कर सकते हैं।</value>
+  </data>
+  <data name="A11y_PairingQrCode" xml:space="preserve">
+    <value>पेयरिंग QR कोड</value>
+  </data>
+  <data name="A11y_ClearSearch" xml:space="preserve">
+    <value>खोज साफ़ करें</value>
   </data>
 </root>

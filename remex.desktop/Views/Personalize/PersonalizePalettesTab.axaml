@@ -43,6 +43,7 @@
                                      caption underneath it. -->
                                 <Button Classes="tile" Margin="4" Padding="0" HorizontalAlignment="Stretch"
                                         AutomationProperties.Name="{Binding DisplayName}"
+                                        AutomationProperties.HelpText="{Binding SelectionStatus}"
                                         Classes.selected="{Binding IsSelected}"
                                         Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
                                         CommandParameter="{Binding Id}">

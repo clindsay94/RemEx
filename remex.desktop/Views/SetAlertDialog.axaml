@@ -21,9 +21,16 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="4">
             <TextBlock Text="{local:Localize SetAlert_Header}" Theme="{StaticResource OverlineTextBlock}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <TextBlock Text="{Binding SensorName}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold"
+            <TextBlock Text="{Binding HeaderName}" Theme="{StaticResource Headline6TextBlock}" FontWeight="Bold"
                        Foreground="{DynamicResource AccentPrimaryBrush}"
                        TextTrimming="CharacterEllipsis"/>
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        IsVisible="{Binding CurrentReadingText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{local:Localize SetAlert_RightNow}" Theme="{StaticResource CaptionTextBlock}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBlock Text="{Binding CurrentReadingText}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Threshold. NOT assists:TextFieldAssist.Label (Opus review round 2, MEDIUM): confirmed
@@ -43,11 +50,16 @@
                  ~100 GB of RAM (Physical Memory Total = 131072 MB), and a NumericUpDown silently
                  reverts out-of-range text on focus loss, so a tight cap read as "Set Alert ignored
                  me" (RemEx-8wpvr.9). -->
-            <NumericUpDown Value="{Binding Threshold}" Increment="1"
-                           Minimum="-1000000000" Maximum="1000000000"
-                           FormatString="F1"
-                           AutomationProperties.Name="{local:Localize SetAlert_ThresholdValue}"
-                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
+            <Grid ColumnDefinitions="*,Auto">
+                <NumericUpDown Value="{Binding Threshold}" Increment="1"
+                               Minimum="-1000000000" Maximum="1000000000"
+                               FormatString="F1"
+                               AutomationProperties.Name="{local:Localize SetAlert_ThresholdValue}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
+                <TextBlock Grid.Column="1" Text="{Binding Unit}" Theme="{StaticResource Body2TextBlock}"
+                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0"
+                           IsVisible="{Binding Unit, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </Grid>
         </StackPanel>
 
         <!-- Direction -->
@@ -81,6 +93,7 @@
         <!-- Buttons -->
         <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto,Auto">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Command="{Binding ClearAlertCommand}"
+                    IsVisible="{Binding HasExisting}"
                     Classes="tertiary danger"
                     MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"

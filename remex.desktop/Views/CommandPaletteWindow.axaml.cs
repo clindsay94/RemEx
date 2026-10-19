@@ -100,8 +100,8 @@ public partial class CommandPaletteWindow : Window
 
         if (e.Key == Key.Return && DataContext is CommandPaletteViewModel vm)
         {
-            // Execute the first/selected result on Enter
-            if (this.FindControl<ListBox>("ResultsList") is { SelectedItem: CommandPaletteEntry entry })
+            // SelectedEntry always tracks the highlighted row, so Enter runs what the user sees.
+            if (vm.SelectedEntry is { } entry)
             {
                 vm.ExecuteEntryCommand.Execute(entry);
             }
@@ -111,18 +111,29 @@ public partial class CommandPaletteWindow : Window
             }
             e.Handled = true;
         }
-        else if (e.Key == Key.Down && this.FindControl<ListBox>("ResultsList") is { } list)
+        else if (e.Key is Key.Down or Key.Up && this.FindControl<ListBox>("ResultsList") is { } list)
         {
-            // Move selection down
-            var next = list.SelectedIndex + 1;
-            if (next < list.ItemCount) list.SelectedIndex = next;
+            var count = list.ItemCount;
+            if (count > 0)
+            {
+                var step = e.Key == Key.Down ? 1 : -1;
+                var next = list.SelectedIndex < 0
+                    ? (step > 0 ? 0 : count - 1)
+                    : (list.SelectedIndex + step + count) % count;
+                list.SelectedIndex = next;
+                list.ScrollIntoView(next);
+            }
             e.Handled = true;
         }
-        else if (e.Key == Key.Up && this.FindControl<ListBox>("ResultsList") is { } list2)
+    }
+
+    // Tapped, not PointerPressed: the row must not run while the pointer is still dragging a scrollbar.
+    private void OnResultTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is CommandPaletteViewModel vm
+            && (e.Source as Control)?.DataContext is CommandPaletteEntry entry)
         {
-            // Move selection up
-            var prev = list2.SelectedIndex - 1;
-            if (prev >= 0) list2.SelectedIndex = prev;
+            vm.ExecuteEntryCommand.Execute(entry);
             e.Handled = true;
         }
     }

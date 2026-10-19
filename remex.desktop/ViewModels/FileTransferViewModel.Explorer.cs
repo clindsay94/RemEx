@@ -8,6 +8,7 @@ using Remex.Core.Validation;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FilePreview;
 using Remex.Desktop.Services.FileTransfer;
+using Remex.Desktop.Services.Launching;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -41,6 +42,7 @@ public sealed partial class FileTransferViewModel
     internal Func<Task<IReadOnlyList<FileTransferRootConfiguration>>>? LoadPcRoots { get; set; }
 
     private IReadOnlyList<FileTransferRootConfiguration> _pcRootPaths = [];
+    private bool _pcRootPathsStale;
 
     /// <summary>A separate connection per phone the TREE lists, so both devices can be listed at once.</summary>
     private readonly Dictionary<string, (IPhoneFileConnection Connection, FileTransferClient Client)> _treePhones = new();
@@ -71,6 +73,7 @@ public sealed partial class FileTransferViewModel
         Preview.LastFolderOn = source => _lastFolder.TryGetValue(SourceKey(source), out var last) ? last : null;
         Preview.OtherDevices = () => Sources.Where(s => SelectedSource is null || !s.SameSourceAs(SelectedSource)).ToList();
         PropertyChanged += OnExplorerPropertyChanged;
+        InitCoachMark();
     }
 
     /// <summary>
@@ -96,6 +99,12 @@ public sealed partial class FileTransferViewModel
             case nameof(SelectedSource):
                 OnPropertyChanged(nameof(CurrentDeviceLabel));
                 break;
+            case nameof(IsPhoneSource):
+            case nameof(SelectedRemoteRoot):
+                OnPropertyChanged(nameof(CanShowInFileManager));
+                ShowInFileManagerCommand.NotifyCanExecuteChanged();
+                CopyLocalPathCommand.NotifyCanExecuteChanged();
+                break;
         }
     }
 
@@ -112,6 +121,44 @@ public sealed partial class FileTransferViewModel
             _client, SelectedSource ?? FileSourceOption.ThisPc, root.RootId,
             FileTreeViewModel.Combine(ToRootRelative(RemotePath), entry.Name), entry));
     }
+
+    // ── First-visit tips ──
+
+    internal const string CoachKey = "files";
+
+    /// <summary>Null in tests and any caller without a profile store, so the tips never show there.</summary>
+    private readonly DashboardLayoutService? _layoutService;
+
+    /// <summary>Whether the first-visit tips card is up.</summary>
+    [ObservableProperty]
+    private bool _showCoachMark;
+
+    private void InitCoachMark()
+    {
+        var seen = _layoutService?.CurrentProfile.SeenCoachMarks;
+        ShowCoachMark = _layoutService is not null && (seen is null || !seen.Contains(CoachKey));
+    }
+
+    /// <summary>"Got it": hides the tips and records them as seen, so they never auto-show again.</summary>
+    [RelayCommand]
+    private void DismissCoachMark()
+    {
+        ShowCoachMark = false;
+        if (_layoutService is null)
+            return;
+
+        var profile = _layoutService.CurrentProfile;
+        var seen = profile.SeenCoachMarks ?? new();
+        if (seen.Contains(CoachKey))
+            return;
+
+        // A copy, not an in-place Add: CurrentProfile is shared with the rest of the app.
+        _layoutService.RequestSave(profile with { SeenCoachMarks = [.. seen, CoachKey] });
+    }
+
+    /// <summary>The header's "?" shows the tips again.</summary>
+    [RelayCommand]
+    private void ReplayCoachMark() => ShowCoachMark = true;
 
     // ── Transfer strip ──
 
@@ -170,6 +217,27 @@ public sealed partial class FileTransferViewModel
         OnPropertyChanged(nameof(HasActiveTransfers));
         OnPropertyChanged(nameof(HasVerifiedTransfers));
         OnPropertyChanged(nameof(HasFailedTransfers));
+    }
+
+    /// <summary>Shows a finished download in the file manager, or its folder when the file has since gone.</summary>
+    [RelayCommand]
+    private void ShowTransferInFolder(FileTransferQueueItem? item)
+    {
+        if (item?.LocalPath is not { } path)
+            return;
+
+        if (File.Exists(path))
+        {
+            RevealInFileManager(path);
+        }
+        else if (Path.GetDirectoryName(path) is { Length: > 0 } parent && Directory.Exists(parent))
+        {
+            OpenInFileManager(parent);
+        }
+        else
+        {
+            SetStatus(() => LocalizationService.Instance["FileTransfer_ShowInFolderMissing"]);
+        }
     }
 
     /// <summary>Copies a finished transfer's verified SHA-256 (hex).</summary>
@@ -365,6 +433,75 @@ public sealed partial class FileTransferViewModel
         await copy(string.Join(" › ", parts));
     }
 
+    /// <summary>Whether the selection (or current folder) is a real folder on this PC's disk that the file manager can show.</summary>
+    public bool CanShowInFileManager => !IsPhoneSource && SelectedRemoteRoot is not null;
+
+    /// <summary>Test seam: shows a file selected in the PC's file manager.</summary>
+    internal Action<string> RevealInFileManager { get; set; } = FileManagerLauncher.Reveal;
+
+    /// <summary>Test seam: opens a folder in the PC's file manager.</summary>
+    internal Action<string> OpenInFileManager { get; set; } = FileManagerLauncher.OpenFolder;
+
+    /// <summary>
+    /// The selected entry's path on this PC's disk, or the current folder's when nothing is selected. Null when the
+    /// path cannot be resolved inside its shared folder.
+    /// </summary>
+    private async Task<(string? Path, bool IsFile)> ResolveSelectionLocalPathAsync()
+    {
+        if (SelectedRemoteRoot is not { } root)
+            return (null, false);
+        var folder = ToRootRelative(RemotePath);
+        if (SelectedRemoteEntry is { Name: not ".." } entry)
+            return (await LocalPathForAsync(root.RootId, FileTreeViewModel.Combine(folder, entry.Name)), !entry.IsDirectory);
+        return (await LocalPathForAsync(root.RootId, folder), false);
+    }
+
+    /// <summary>Shows the selected file in File Explorer (or opens the folder), for This PC's files.</summary>
+    [RelayCommand(CanExecute = nameof(CanShowInFileManager))]
+    private async Task ShowInFileManagerAsync()
+    {
+        var (path, isFile) = await ResolveSelectionLocalPathAsync();
+        if (path is null)
+        {
+            SetStatus(() => LocalizationService.Instance["FileTransfer_LocalPathUnavailable"]);
+            return;
+        }
+
+        if (isFile)
+            RevealInFileManager(path);
+        else
+            OpenInFileManager(path);
+    }
+
+    /// <summary>Opens the folder a tree row stands for, when it is one of This PC's shared folders.</summary>
+    public async Task ShowTreeNodeInFileManagerAsync(FileTreeNode node)
+    {
+        if (!node.Source.IsThisPc || node.IsDevice || node.IsPlaceholder || node.RootId is null)
+            return;
+        if (await LocalPathForAsync(node.RootId, node.Path) is not { } path)
+        {
+            SetStatus(() => LocalizationService.Instance["FileTransfer_LocalPathUnavailable"]);
+            return;
+        }
+
+        OpenInFileManager(path);
+    }
+
+    /// <summary>Copies the plain disk path of the selection (or current folder) on This PC.</summary>
+    [RelayCommand(CanExecute = nameof(CanShowInFileManager))]
+    private async Task CopyLocalPathAsync()
+    {
+        var (path, _) = await ResolveSelectionLocalPathAsync();
+        if (path is null)
+        {
+            SetStatus(() => LocalizationService.Instance["FileTransfer_LocalPathUnavailable"]);
+            return;
+        }
+
+        if (CopyText is { } copy)
+            await copy(path);
+    }
+
     /// <summary>Opens the preview pane on the selection and starts its SHA-256.</summary>
     [RelayCommand]
     private async Task ComputeSelectionHashAsync()
@@ -521,7 +658,8 @@ public sealed partial class FileTransferViewModel
                 var localFile = UniqueLocalPath(Path.Combine(localFolder, SanitizeLocalName(entry.Name)));
                 var remote = FileTreeViewModel.Combine(payload.Folder, entry.Name);
                 TransferQueue.Enqueue(FileTransferQueueKind.Download, entry.Name,
-                    (progress, ct) => transfers.DownloadAsync(phoneId, payload.RootId, remote, localFile, progress, ct));
+                    (progress, ct) => transfers.DownloadAsync(phoneId, payload.RootId, remote, localFile, progress, ct),
+                    localFile);
             }
             SetStatus(() => LocalizationService.Instance["FileTransfer_QueuedForDownload"]);
         }
@@ -533,12 +671,15 @@ public sealed partial class FileTransferViewModel
     /// </summary>
     public async Task<string?> LocalPathForAsync(string rootId, string relativePath)
     {
-        if (_pcRootPaths.Count == 0)
+        // This view model lives for the whole session while Settings edits the shared folders, so an unknown root or a
+        // root list reload re-reads them.
+        if (_pcRootPathsStale || _pcRootPaths.All(r => r.RootId != rootId))
         {
             try
             {
                 var load = LoadPcRoots ?? (() => new FileTransferRootSettingsService().LoadAsync());
                 _pcRootPaths = await load();
+                _pcRootPathsStale = false;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
             {

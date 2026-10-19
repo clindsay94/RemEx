@@ -27,6 +27,7 @@ public class AboutViewCharacterisationTests
         "CheckForUpdatesCommand",
         "ClientBuildId",
         "ClientVersion",
+        "CopySupportDetailsCommand",
         "Description",
         "DownloadUpdateCommand",
         "FaqItems",
@@ -184,6 +185,24 @@ public class AboutViewCharacterisationTests
             "the description must clamp to two lines rather than showing one silently clipped line");
         descriptionTag.Should().Contain(@"TextTrimming=""CharacterEllipsis""",
             "an overflowing description must end in a visible ellipsis, not a hard clip");
+    }
+
+    // PC-4.2: the flyout lists every window shortcut, and a clamped What's New entry shows its full text on hover.
+    [Fact]
+    public void ShortcutsFlyoutListsNavigationAndPersonalize()
+    {
+        var flyout = Between(About(), "<Flyout ", "</Flyout>");
+        flyout.Should().Contain(@"Text=""Ctrl + 1–9""").And.Contain("Home_ScNav");
+        flyout.Should().Contain(@"Text=""Ctrl + ,""").And.Contain("Home_ScSettings");
+    }
+
+    [Fact]
+    public void WhatsNewDescriptionShowsItsFullTextInATooltip()
+    {
+        var itemTemplate = Between(About(), @"<TextBlock Text=""{Binding Version}""", "</DataTemplate>");
+
+        Elements(itemTemplate).Should().ContainSingle(e => e.Contains(@"Text=""{Binding Description}""")
+            && e.Contains(@"ToolTip.Tip=""{Binding Description}"""));
     }
 
     [Fact]

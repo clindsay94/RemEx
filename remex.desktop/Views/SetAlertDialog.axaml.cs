@@ -8,14 +8,15 @@ public partial class SetAlertDialog : Window
 {
     public SetAlertDialog() { InitializeComponent(); }
 
-    public SetAlertDialog(string sensorName, SensorAlert? existing, System.Action<SensorAlert?> onResult)
+    public SetAlertDialog(string sensorName, SensorAlert? existing, System.Action<SensorAlert?> onResult,
+        string? displayName = null, string? unit = null, double? currentValue = null)
     {
         InitializeComponent();
         DataContext = new SetAlertViewModel(sensorName, existing, result =>
         {
             onResult(result);
             Close();
-        });
+        }, displayName, unit, currentValue);
     }
 
     // No hand-written InitializeComponent: a parameterless one shadows the generated

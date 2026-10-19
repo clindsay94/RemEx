@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 
@@ -26,6 +28,28 @@ public partial class HomeView : UserControl
             && StaggeredEntrance.ShouldPlay(nameof(HomeView), vm.Shell.IsReducedMotion))
         {
             DashboardSections.Classes.Add(StaggeredEntrance.Class);
+        }
+    }
+
+    // Tapped/KeyDown rather than SelectionChanged, so merely moving the highlight never navigates away.
+    private void OnPinnedSensorTapped(object? sender, TappedEventArgs e) => OpenSensorsFromItem(e.Source);
+
+    private void OnPinnedSensorKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space))
+            return;
+
+        OpenSensorsFromItem(e.Source);
+        e.Handled = true;
+    }
+
+    private void OpenSensorsFromItem(object? source)
+    {
+        if (source is Visual visual
+            && visual.FindAncestorOfType<ListBoxItem>(includeSelf: true) is not null
+            && DataContext is HomeViewModel vm)
+        {
+            vm.NavigateToCanvasCommand.Execute(null);
         }
     }
 
