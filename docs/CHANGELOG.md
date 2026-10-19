@@ -11,10 +11,101 @@ Jump to: [Unreleased](#unreleased) · [3.1.0](#310--2026-10-08) · [3.0.0](#300-
 
 ## [Unreleased]
 
+A polish pass over the parts of the PC app and the phone app that had been touched the least: about sixty small
+features and fixes, plus first-visit tips for the screens people tend to miss. (RemEx-flmfi)
+
+### Added
+
+- **A Random splash, on both the PC and the phone.** Pick **Random** in Personalize and RemEx plays a different
+  opening animation each time it starts, never the same one twice in a row. Preview plays a fresh pick.
+- **Show in File Explorer on the PC's File Transfer screen.** Right-click a file or folder on This PC and choose
+  **Show in File Explorer** (**Show in file manager** on Linux), or press **Ctrl+Shift+E**, to open its folder with
+  the item selected. Finished downloads in the transfer strip get a **Show in folder** button, and **Copy full
+  path** (**Ctrl+Shift+C**) copies where a This PC item really lives on disk. These follow shared folders added or
+  moved in Settings without a restart.
+- **First-visit tips.** The PC's File Transfer page shows a short tips card the first time you open it, and a **?**
+  button in the header brings it back. The phone's Files screen points out the folder list and press-and-hold
+  selection once. The Desktop tab shows a **Touch controls** cheat sheet (tap, hold, two-finger scroll, pinch)
+  before you start streaming.
+- **Open file location** and **Copy file path** on the PC's Task Manager (right-click a program; Delete ends the
+  selected one and still asks first), and **Open file location** on an Apps tile. Programs on a network drive skip
+  it, so a disconnected share never stalls the menu.
+- **Clear buttons** in the File Transfer, Task Manager, Apps and Logs search boxes on the PC, with a translated
+  "Clear search" tooltip and screen-reader name.
+- **More keyboard shortcuts on the PC.** **Ctrl+9** opens Settings, **Ctrl+S** saves the Sensors layout, **Esc**
+  skips the opening splash and clears the File Transfer search box. Sidebar tooltips, the Home shortcut strip,
+  About, File Transfer's menus and the command palette rows now show their shortcuts.
+- **PC Settings** gains the **Language** picker, a **Look and feel** row that opens Personalize, and **Open
+  automatic backups**, which opens the folder holding your last five settings backups. **About** has a **Copy
+  details** button for bug reports (version, build, system and language, nothing private).
+- **PC Home**'s Quick launch grid adds **Routines** and **Settings** tiles, and a small dot on the sidebar button
+  says when a sensor alert or a file transfer is waiting in the sidebar.
+- **Phone Personalization** has **Reset appearance**, which returns colours, fonts, card shapes, splash and
+  background to the fresh-install look and keeps your language.
+- **FAQ search on the phone.** The FAQ filters questions and answers as you type and opens the matches. Settings >
+  Help scrolls and has an **Open FAQ** button.
+- **Phone Settings > Notifications** warns when Android has turned RemEx's notifications off (with a button to fix
+  it) and shows whether RemEx may run in the background.
+- **Phone Files:** rows show when each item was last changed, a finished download in the transfers panel has an
+  **Open** button, a failed one shows its whole reason, and the **Downloaded** notification has a **Share** action
+  (RemEx-gc94). Your sort order and list or grid choice are remembered.
+- **Search on the phone's Apps page** (once you have more than eight apps), in Sensors' **Add cards** list and in
+  the second-sensor picker, which also shows each sensor's group.
+- **Phone Sensors** says "Waiting for readings from your PC" while it's connected and nothing has arrived yet, and
+  an empty grid has an **Add cards** button (RemEx-pp4cm.18). Picking a sensor trigger in Routines shows each
+  sensor's current reading.
+- **Phone trackpad:** lift a finger you held still for about half a second to right-click; a one-line hint under
+  the Trackpad label says so.
+- **Phone About** shows the PC version the same way as the phone's, notes when the two differ, and has **Copy
+  version details**.
+
+### Changed
+
+- **Personalize on the PC:** **Reset look to defaults** asks first and says what it resets. Colour strategy chips
+  explain themselves on hover, and screen readers announce which preset and strategy are selected.
+- **File Transfer on the PC:** the Sort menu ticks the current sort, and clicking a search result opens its
+  folder and highlights the file.
+- **Task Manager on the PC:** the sorted column shows an arrow, CPU and memory sort biggest-first, the error banner
+  after a failed End process can be closed, and a search with no matches says so.
+- **Command palette on the PC:** clicking a result runs it, the row Enter will run is always highlighted, the
+  arrow keys wrap, and search ignores accents and word order ("pair phone" finds "Pair a phone").
+- **Sensors on the PC:** pinned Home tiles use the card's own name and number format and open Sensors. The Set
+  alert dialog shows the sensor's friendly name, live reading and unit, and a new alert starts at the current
+  value. The Commands power tiles and the Sensors toolbar buttons have plain-English tooltips, and the power tiles
+  now read **Shut down** and **Force shut down**.
+- **PC dialogs:** importing a settings file asks before it replaces everything. Add program accepts a path pasted
+  from Explorer's **Copy as path** and keeps Save greyed out until the path and name are filled in. The
+  file-sharing consent checkbox reads **Always allow this device** and says where to turn it off. The pairing QR
+  says where to scan from, and the tray flyout's cog opens Settings.
+- **Phone Files:** deleting PC files asks first and says it's permanent. Back ends a selection, closes search or
+  goes up a folder before it leaves Files, and the Send/Save folder picker does the same. Rename selects the name
+  without the extension and Enter confirms. Selection works with TalkBack.
+- **Phone Control tab:** tapping an app says whether your PC opened it. Media controls grey out when the PC can't
+  take key presses, there's a **Next** button, and long tracks show h:mm:ss. The Commands confirm card keeps the
+  action's name, and the wait field opens a number pad. Processes says "Ended X." and has a no-matches state.
+- **Phone tips and tutorial:** the Sensors and Routines tips say "Tip 2 of 3" and Back dismisses them for good.
+  The tutorial has a Back button and answers the Back gesture. **Clear all cards** on Sensors offers Undo, and
+  Done in the alert threshold field saves. The QR scanner says when a code isn't a RemEx code.
+
 ### Fixed
 
 - **Developer tooling:** `scripts/check-mcp-health.ps1` no longer crashes at session start when `~/.claude.json`
   holds an empty `mcpServers` block for the repo. (RemEx-nv57h)
+- **PC Sensors' Connection card** no longer says "Connected" under "No phone connected". (RemEx-pp4cm.24)
+- **PC:** Ctrl+Z and Ctrl+Y only undo Sensors layout edits while Sensors is on screen. **Set** in the
+  second-metric picker no longer clears the overlay when nothing is selected. The Logs page's Preset and Export
+  scope menus switch language with the rest of the page. Pressing Esc over a splash Preview no longer closes the
+  Personalize sheet behind it.
+- **Phone:** PC folders pinned from the phone have **Remove shortcut** again. Replaying the tutorial no longer
+  stacks a second Home or re-arms the first-run tour. The trackpad's keyboard button reopens the keyboard every
+  time. The Apps and Processes messages no longer reappear when you come back to the page.
+- **Translations:** the selected-items count reads correctly in every language, and a few strings now name the
+  pages and tiles they refer to in Spanish and Indonesian.
+
+### Tooling
+
+- `scripts/android_add_strings.py` adds Android strings to all nine `strings.xml` files from one JSON map, the
+  phone-side twin of `scripts/resx_add_keys.py`.
 
 ### Tests
 
