@@ -14,6 +14,96 @@ Jump to: [Unreleased](#unreleased) · [3.1.0](#310--2026-10-08) · [3.0.0](#300-
 A polish pass over the parts of the PC app and the phone app that had been touched the least: about sixty small
 features and fixes, plus first-visit tips for the screens people tend to miss. (RemEx-flmfi)
 
+It also reorganises where things live on both apps, so each page is grouped by what you are doing. (RemEx-172ba)
+
+### Changed: where things live now (RemEx-172ba)
+
+**PC**
+- The sidebar is grouped by task: Home, Remote desktop, Files, Commands, Apps, Processes, then Sensors and
+  Routines, then Settings, Logs & diagnostics and About. Remote desktop has its own sidebar entry; before, you
+  could only reach it from Home, the command palette and the tray.
+- Shortcuts follow the new sidebar: Ctrl+1 to Ctrl+8 go to Home through Routines, Ctrl+9 and Ctrl+, open
+  Settings, and Personalize moved to Ctrl+Shift+,. Logs & diagnostics no longer has a number shortcut. Tooltips,
+  the command palette, Home's shortcut list and About all show the new keys.
+- Settings is one column in this order: Connection & pairing, Paired devices, General, Tray pop-up, Files &
+  sharing, Sensor alerts, Backup & restore, Help. Shared folders and file-sharing trust now sit together under
+  Files & sharing. The "Look and feel" button in General still opens Personalize.
+- Personalize is for looks only. The tray pop-up settings (opacity, cards, buttons, apps) moved to Settings ›
+  Tray pop-up. Snap to grid and grid size moved to a Grid button on the Sensors toolbar, next to Save; your saved
+  values are kept. Personalize › Layout now holds interface size and behaviour.
+- The language picker is only in Settings › General. Personalize no longer has a second one.
+- Pin sensors to Home from each sensor card (or select several and pin them). The pinned-sensors checklist in
+  Personalize is gone.
+- Home's Quick launch has a Remote desktop tile and follows the sidebar order.
+- The tutorial says where things live now: add a program on the Apps page, stream quality on the Remote desktop
+  page, looks in Personalize, the new sidebar order, and Ctrl+, for Settings.
+- `--view` accepts `RemoteDesktop` and `Routines`.
+
+**Android**
+- More and the tablet rail now read Routines, Files, Sensors, PCs, Settings, Help & diagnostics. The Connection
+  page is called **PCs** everywhere.
+- Settings is now Personalize, Input, Files and Notifications. It no longer has the PCs page inside it; links
+  that used to open Settings › Connection open PCs.
+- Send to PC (from the share sheet) lets you choose which paired PC to send to and connects to it, remembers your
+  last few folders on each PC, and only accepts files shared as content links. With no PC paired, it explains
+  why and opens the PCs page.
+
+### Added (RemEx-172ba)
+
+**PC**
+- The tray pop-up's **Send** tile picks files and sends them straight to the connected phone's first shared
+  folder you can write to, the same way the Files page does. Progress shows in the Files page queue, with a
+  notification when sending starts and ends. The tile is greyed out, with a tooltip, when no phone is connected;
+  with two phones connected it opens Files so you can choose.
+- After a phone pairs, Settings › Connection & pairing says "<phone> is now paired with this PC."
+
+**Android**
+- **Help & diagnostics**: one list for FAQ, PC logs & diagnostics, Share diagnostics, Replay tutorial and About.
+  FAQ and PC logs left More, and Settings lost its Help section.
+- Home's connected-PC card has **Switch PC** (a quick list of your other paired PCs, or the PCs page) and
+  **Disconnect**. Disconnect really closes the connection, and the phone does not reconnect on its own until you
+  connect again, even after Android closes the app in the background. Widget taps (including the hardware
+  widget's refresh) and routines still get their one try and leave Disconnect in place. Send to PC asks for the
+  local network permission before it connects, and says why when a connect fails.
+- Stream settings on the Desktop tab before you start streaming: presets, quality, frame rate, scale, adaptive
+  scale, touch and scroll. Choosing a display and the window controls stay in the stream's own sheet.
+
+### Fixed (RemEx-172ba)
+
+- PC: the sidebar opens with the current page's entry on screen, and at the very top for Home, on windows too
+  short to show the whole list. It could open scrolled to wherever it was left.
+- Android: Replay tutorial returns to Help & diagnostics instead of Home, and the pairing PIN screen hides the
+  navigation bar.
+- PC: the "now paired" line under the pairing button no longer names a phone that only reconnected after a PIN
+  was cancelled. It reads a new host-side last-paired time that only a successful pairing writes.
+- PC: the tray's Send tile comes back as soon as the files are queued instead of staying greyed out until every
+  upload finishes, and a file picker or queue error shows "not reachable" instead of closing RemEx. Its errors
+  now reach the log in Release builds.
+- PC host: a connection from this PC (loopback) that completes a pairing stays with no proven identity, as
+  loopback always should (RemEx-4215). It used to become findable as the client id it typed, once the handler
+  finished with `pairing_complete`.
+- Phone core: a Disconnect still in progress when a new connect starts no longer closes that new connection.
+
+### Removed (RemEx-172ba)
+
+- Android: the "Remote mouse" card shape in Personalize › Geometry and its saved setting. The trackpad uses the
+  Desktop shape.
+- PC: unused strings `Settings_Connection`, `Settings_PinnedSensors` and `Settings_PinnedSensorsDesc`, the tray
+  pop-up's own Open transfers command (the tray menu's **Open transfers** item is unchanged), and
+  `LayoutSettingsViewModel`, which only served the old Personalize › Layout controls.
+
+### Internal (RemEx-172ba)
+
+- `ShellViewModel.TransferQueue` exposes the session's one transfer queue; the tray Send tile uses it.
+- New native export `RemexCoreClient.DisconnectNative` (`remex.core/Native/AndroidNativeExports.cs`) backs the
+  phone's Disconnect.
+- `PairedDeviceActivity` and `PairedDeviceRow` gain an optional `LastPairedUtc`, written only by
+  `PairedDeviceActivityStore.RecordPaired`. Older `paired_device_activity.json` files load with it null. The
+  pairing registry is untouched.
+- Two flaky tests are now deterministic. `ConnectionBecomesRegistryVisibleTests` waits for a pong so it reads
+  the registry after the handler finishes with `pairing_complete`. `CanvasGridSettingsTests` waits for the
+  shell's own canvas load, which used to land mid-test and wipe the marker.
+
 ### Added
 
 - **A Random splash, on both the PC and the phone.** Pick **Random** in Personalize and RemEx plays a different

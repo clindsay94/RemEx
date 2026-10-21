@@ -601,7 +601,7 @@ happened and misses real ones, and the only symptom is routines running at the w
 ### Routines: the PC Routines page resolves its host on every use, never caching "no host"
 
 `remex.desktop/ViewModels/RoutinesViewModel.cs:240` (`AttachHost`: `_resolveHost()` until it returns a
-host, then one `Changed` subscription) and `remex.desktop/ViewModels/ShellViewModel.cs:1572`
+host, then one `Changed` subscription) and `remex.desktop/ViewModels/ShellViewModel.cs:1801`
 (`EnsureRoutinesViewModel`, resolving through `EmbeddedHostServiceLocator.TryResolve`); pinned by
 `RoutinesViewModelTests.AHostPublishedAfterThePageWasBuiltIsPickedUpOnTheNextRefresh` — RemEx-pp0rt.9, S4b.
 
@@ -630,9 +630,9 @@ routine runs from this page only after a dialog the person answered Yes to; anyt
 
 ### Routines: the drawer page is five edits that must agree
 
-`remex.desktop/Views/ShellView.axaml:844` (the `Tag="10"` item after Commands) and `:1109` (the
-`RoutinesViewModel` DataTemplate), `remex.desktop/Views/ShellView.axaml.cs:857` (`case 10`),
-`remex.desktop/ViewModels/ShellViewModel.cs:383` (`_drawerNavOrder`) and
+`remex.desktop/Views/ShellView.axaml:941` (the `Tag="10"` item after Sensors) and `:1207` (the
+`RoutinesViewModel` DataTemplate), `remex.desktop/Views/ShellView.axaml.cs:923` (`case 10`),
+`remex.desktop/ViewModels/ShellViewModel.cs:431` (`_drawerNavOrder`) and
 `remex.desktop/Converters/NavIndexToTitleConverter.cs` (`10 => "Nav_Routines"`, or the app-bar title goes
 blank on the page); pinned by `NavIndexToTitleConverterTests`, `ShellNavRoutinesTests`,
 `ShellNavListTests.TheTagSetInMarkupMatchesTheCaseSetInActivateNavItem`,
