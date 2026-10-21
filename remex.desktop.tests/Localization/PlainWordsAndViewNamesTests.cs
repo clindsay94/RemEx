@@ -22,13 +22,13 @@ public class PlainWordsAndViewNamesTests
     /// </summary>
     public static TheoryData<string> PlainLabels =>
     [
-        "Settings_Header", "Settings_General", "Settings_Help", "Settings_Connection",
+        "Settings_Header", "Settings_General", "Settings_Help", "Settings_ConnectionPairing", "Settings_FilesSharing",
         "Home_StatMemory", "Home_StatUptime", "Home_PhoneStatus", "Home_ClearActivity",
         "FileTransfer_QueueTitle", "FileTransfer_QueueKindUpload", "FileTransfer_QueueKindDownload",
         "FileTransfer_QueueKindSend", "FileTransfer_PropertiesTitle", "FileTransfer_VolumesTitle",
         "Custom_SectionFlyout", "Custom_SectionBehaviour", "Custom_SectionFonts", "SecondMetric_Header",
         "Remote_ThisPcMac", "About_Tagline", "Logs_Header", "RemoteDesktop_Header", "Remote_Header",
-        "AppLauncher_Header", "Home_LogoTooltip", "Settings_PinnedSensors", "Canvas_ActiveSensors",
+        "AppLauncher_Header", "Home_LogoTooltip", "Canvas_ActiveSensors",
         "Canvas_NewSensors", "Tutorial_Header", "Settings_PairingPinTitle", "Settings_FileTransferSection",
         "Settings_BackupSection", "Settings_TrustSection", "Personalize_Subtitle",
         "Canvas_GraphType", "Canvas_GraphBar", "Canvas_GraphLine", "Canvas_GraphGauge", "Canvas_GraphRing",

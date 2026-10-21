@@ -19,8 +19,8 @@ namespace Remex.Desktop.ViewModels;
 
 /// <summary>
 /// ViewModel for the Settings page. Manages persisted host address, language, tray/update/session
-/// toggles, sensor alerts, file-sharing trust and backup/restore. Snap-to-grid, grid size and pinned
-/// sensors moved to <see cref="LayoutSettingsViewModel"/> on the Personalize sheet (RemEx-4kv0g.4.2).
+/// toggles, sensor alerts, file-sharing trust and backup/restore. Snap to grid and grid size live on
+/// the Sensors page (<see cref="CanvasDashboardViewModel"/>, RemEx-172ba).
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
@@ -318,6 +318,113 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void RefreshPairedDeviceList() => RefreshPairedDevices();
 
+    // ═══════════════ "Paired" success line (RemEx-172ba) ═══════════════
+    //
+    // UI STATE ONLY. The host's PinCleared means "consumed, expired or cancelled" and nothing on the wire
+    // or in IPairedDeviceSource says which, so success is read off the paired list: a device that was
+    // not there when the PIN appeared, or one whose last-PAIRED time moved. Not last-seen: a reconnect
+    // bumps that, so a cancelled PIN plus a known phone coming back would have been called a pairing
+    // (review R1). Only RecordPaired writes last-paired. The QR and PIN panels already close on PinCleared
+    // (ConnectionViewModel.ClearActivePairingPin); this only adds the line that says who paired.
+
+    private IReadOnlyList<PairedDeviceRow>? _pairingBaseline;
+    private bool _pairingPinExpired;
+    private int _pairingWatchGeneration;
+
+    /// <summary>The phone that just paired, for the success line under the pairing button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasJustPairedDevice))]
+    private string? _justPairedDeviceName;
+
+    public bool HasJustPairedDevice => !string.IsNullOrEmpty(JustPairedDeviceName);
+
+    /// <summary>
+    /// PinCleared is raised when the session is consumed, before the host has recorded the device, and
+    /// it reaches this VM through a dispatcher post, so the new row can trail it. Polled for ~10 s.
+    /// </summary>
+    internal static readonly TimeSpan PairingWatchInterval = TimeSpan.FromMilliseconds(500);
+    internal const int PairingWatchAttempts = 20;
+
+    /// <summary>Test seam: the wait between two looks at the paired list.</summary>
+    internal Func<TimeSpan, Task> PairingWatchDelay { get; init; } = Task.Delay;
+
+    private void OnPairingPinPresenceChanged()
+    {
+        if (_connection.HasActivePairingPin)
+        {
+            ArmPairingWatch();
+            return;
+        }
+
+        if (_pairingBaseline is not { } baseline)
+            return;
+        _pairingBaseline = null;
+
+        // An expired PIN can only have ended without a pairing.
+        if (_pairingPinExpired)
+            return;
+
+        var generation = ++_pairingWatchGeneration;
+        WatchForNewPairingAsync(baseline, generation).FireAndForget("SettingsViewModel.WatchForNewPairing");
+    }
+
+    private void ArmPairingWatch()
+    {
+        // A fresh PIN replaces the last success line and stops any watch still polling for it.
+        JustPairedDeviceName = null;
+        _pairingWatchGeneration++;
+        _pairingPinExpired = _connection.IsPairingPinExpired;
+
+        // Kept from the FIRST PIN of a window: a "get a new PIN" after expiry must not move it.
+        // No host means no list to compare against, and an empty baseline would call every phone new.
+        if (_pairingBaseline is null && ResolvePairedDeviceSource() is { } source)
+            _pairingBaseline = source.PairedDevices();
+    }
+
+    private async Task WatchForNewPairingAsync(IReadOnlyList<PairedDeviceRow> baseline, int generation)
+    {
+        for (var attempt = 0; attempt < PairingWatchAttempts; attempt++)
+        {
+            if (generation != _pairingWatchGeneration || ResolvePairedDeviceSource() is not { } source)
+                return;
+
+            var rows = source.PairedDevices();
+            if (FindNewlyPaired(baseline, rows) is { } paired)
+            {
+                JustPairedDeviceName = PairedDeviceDisplayName.Resolve(paired.ClientId, BuildDeviceNameMap(rows));
+                RefreshPairedDevices();
+                return;
+            }
+
+            await PairingWatchDelay(PairingWatchInterval);
+        }
+    }
+
+    /// <summary>
+    /// The device a pairing just added, comparing the paired list from when the PIN appeared with the
+    /// list now: a client id that is new, else one whose last-paired time moved forward. Null when neither.
+    /// </summary>
+    internal static PairedDeviceRow? FindNewlyPaired(
+        IReadOnlyList<PairedDeviceRow> before, IReadOnlyList<PairedDeviceRow> after)
+    {
+        var earlier = before.ToDictionary(r => r.ClientId, StringComparer.Ordinal);
+
+        foreach (var row in after)
+        {
+            if (!earlier.ContainsKey(row.ClientId))
+                return row;
+        }
+
+        foreach (var row in after)
+        {
+            var was = earlier[row.ClientId].LastPairedUtc;
+            if (row.LastPairedUtc is { } paired && (was is null || paired > was))
+                return row;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// The friendly names to show for paired devices, keyed by client id.
     /// </summary>
@@ -564,12 +671,35 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _savefileService = Guard.NotNull(savefileService);
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+        // Null in some tests, which pass null! for the shell.
+        if (shell is not null)
+            shell.PropertyChanged += OnShellPropertyChanged;
 
         // RemEx-8wpvr.5: constructed here, not resolved lazily, because ShellViewModel builds its
         // CanvasDashboardViewModel (the ISensorCatalog implementation) in its own constructor, before
         // EnsureSettingsVm can ever run — unlike this ViewModel, the canvas is never null by the time
         // Settings is first opened.
         AlertsSection = new SensorAlertsSectionViewModel(alertStore, alertTracker, sensorCatalog);
+
+        // A PIN already on screen when Settings is first built still gets its success line.
+        if (_connection.HasActivePairingPin)
+            ArmPairingWatch();
+    }
+
+    /// <summary>
+    /// The Settings › Tray pop-up card (moved off Personalize › Layout, RemEx-172ba). It is the shell's
+    /// one <see cref="CustomizationViewModel"/>, not a second copy: that VM writes every
+    /// CustomizationSettings field in one save, so a second writer of the flyout fields would clobber it.
+    /// Null only when there is no shell (some tests).
+    /// </summary>
+    public CustomizationViewModel? TrayFlyoutSettings => _shell?.CustomizationVm;
+
+    // The shell rebuilds its CustomizationViewModel when a savefile import replaces the profile, and
+    // raises CustomizationVm when it does; the card must follow, or it stays bound to a disposed VM.
+    private void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellViewModel.CustomizationVm))
+            OnPropertyChanged(nameof(TrayFlyoutSettings));
     }
 
     /// <summary>Backs the Settings "Sensor alerts" card (RemEx-8wpvr.5).</summary>
@@ -695,6 +825,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+        if (_shell is not null)
+            _shell.PropertyChanged -= OnShellPropertyChanged;
+        _pairingWatchGeneration++;
         foreach (var root in SharedRoots)
             UnsubscribeSharedRoot(root);
         foreach (var device in TrustedDevices)
@@ -737,9 +870,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NavigateBack()
     {
-        // Home's pinned sensors are refreshed per pin change now, by LayoutSettingsViewModel itself
-        // (RemEx-4kv0g.4.2) — the Layout section is not something you navigate away from to trigger a
-        // save, unlike this page was.
         _shell.NavigateToHome();
     }
 
@@ -1089,12 +1219,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             // Import wrote the imported layout to disk and reloaded the live theme/language, but the
             // already-open canvas holds its own cards — refresh it in place so the restored layout
-            // appears without an app restart (RemEx-83c4). The Layout VM (snap/grid/pinned sensors,
-            // RemEx-4kv0g.4.2) is a sibling view model now, not owned here, and may not even be
-            // constructed yet if Personalize was never opened — reload it only if it exists; a fresh
-            // construction reads the just-imported profile on its own.
+            // appears without an app restart (RemEx-83c4). That also re-reads snap to grid and grid
+            // size, which live on the canvas since RemEx-172ba.
             _shell.CanvasViewModel?.ReloadFromPersistedLayout();
-            _ = (_shell.LayoutSettingsVm?.ReloadFromProfileAsync() ?? Task.CompletedTask);
 
             ShowTransientStatus(string.Format(
                 LocalizationService.Instance["Settings_ImportDone"],
@@ -1142,6 +1269,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ConnectionViewModel.HasActivePairingPin))
+        {
+            OnPairingPinPresenceChanged();
+            return;
+        }
+
+        // Only while a PIN exists: clearing the PIN also raises this (as false), and that must not
+        // erase the fact that the PIN had run out first.
+        if (e.PropertyName == nameof(ConnectionViewModel.IsPairingPinExpired) && _connection.HasActivePairingPin)
+        {
+            _pairingPinExpired = _connection.IsPairingPinExpired;
+            return;
+        }
+
         if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
             or nameof(ConnectionViewModel.IsConnected)
             or nameof(ConnectionViewModel.IsConnecting)
@@ -1322,11 +1463,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void Save()
     {
         // BASE OF THE `with` IS _layoutService.CurrentProfile, NOT THE STALE _profile FIELD
-        // (RemEx-4kv0g.4.2). This VM no longer owns IsSnapToGridEnabled/GridSize/PinnedSensorIds —
-        // LayoutSettingsViewModel does, saving through its own CurrentProfile-based RequestSave calls
-        // — so _profile here is only ever as fresh as this VM's own last load/save. Building from it
-        // would silently clobber whatever the Layout VM had just written with whatever this field
-        // still remembered from InitializeAsync.
+        // (RemEx-4kv0g.4.2). This VM does not own IsSnapToGridEnabled/GridSize/PinnedSensorIds — the
+        // canvas does, saving through its own CurrentProfile-based RequestSave calls — so _profile here
+        // is only ever as fresh as this VM's own last load/save. Building from it would silently
+        // clobber whatever the canvas had just written with whatever this field still remembered.
         var updated = _layoutService.CurrentProfile with
         {
             Language = Language,

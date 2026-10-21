@@ -963,7 +963,10 @@ public sealed class PingPongHandler(
                             // this one is blank — so falling back would file a name against an id
                             // that was never paired, which is the one case worth excluding.
                             var pairedClientId = message.PairingComplete?.ClientId;
-                            if (!identityProven && !string.IsNullOrWhiteSpace(pairedClientId))
+                            // NOT ON LOOPBACK (RemEx-4215's rule, which this path skipped): loopback
+                            // proves no identity, so a local process that pairs freezes to none below
+                            // rather than becoming findable as the id it typed (RemEx-172ba).
+                            if (!identityProven && !isLoopback && !string.IsNullOrWhiteSpace(pairedClientId))
                             {
                                 nameStore.Remember(pairedClientId, reportedDeviceName);
                                 // Alongside the name, and gated by the same condition for the same

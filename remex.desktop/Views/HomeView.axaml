@@ -443,22 +443,23 @@
                 <StackPanel Width="340" Spacing="16">
                     <TextBlock Text="{local:Localize Home_Directives}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
                     <UniformGrid Columns="2">
-                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <!-- Drawer order (RemEx-172ba), then Personalize, which sits under the drawer list. -->
+                        <Button AutomationProperties.Name="{local:Localize Nav_RemoteDesktop}" Classes="card interactive" Command="{Binding NavigateToRemoteDesktopCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <mi:MaterialIcon Kind="ChartLineVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="RemoteDesktop" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Nav_RemoteDesktop}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                            <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
+                                <mi:MaterialIcon Kind="FolderOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsFiles}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="RemoteTv" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsCommands}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button AutomationProperties.Name="{local:Localize Nav_Routines}" Classes="card interactive" Command="{Binding NavigateToRoutinesCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
-                            <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <mi:MaterialIcon Kind="Routes" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Nav_Routines}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
@@ -473,16 +474,16 @@
                                 <TextBlock Text="{local:Localize Home_QsProcesses}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <mi:MaterialIcon Kind="FolderOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsFiles}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="ChartLineVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsSensors}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Nav_Routines}" Classes="card interactive" Command="{Binding NavigateToRoutinesCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <mi:MaterialIcon Kind="FileDocument" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsLogs}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Routes" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Nav_Routines}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Nav_Settings}" Classes="card interactive" Command="{Binding NavigateToSettingsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
@@ -491,16 +492,22 @@
                                 <TextBlock Text="{local:Localize Nav_Settings}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                        <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{local:Localize Home_QsPersonalize}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FileDocument" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsLogs}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
                                 <mi:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsAbout}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
+                            <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
+                                <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_QsPersonalize}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>

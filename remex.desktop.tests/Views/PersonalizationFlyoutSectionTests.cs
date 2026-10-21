@@ -8,26 +8,22 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Flyout D2 .2 (RemEx-4kv0g.18.6): the Flyout card sits on the Layout tab, between the Layout
-/// section's own rows (spec 2026-09-13-personalize-tabs §2) and Behaviour, its four controls bind
-/// FlyoutOpacity/FlyoutCards/FlyoutTiles/FlyoutApps, every visible string routes through
-/// <c>local:Localize</c>, and it adds exactly one inline size (the header, matching its six
-/// siblings) so <c>TypographyVocabularyTests</c>' ratchet keeps its arithmetic. Source-text, like
-/// its siblings — <c>remex.desktop.tests</c> has no headless render. Re-pointed at
-/// PersonalizeLayoutTab.axaml (RemEx-4kv0g.4.3); assertions on the card's own contents unchanged.
+/// Flyout D2 .2 (RemEx-4kv0g.18.6): the tray pop-up section's four controls bind
+/// FlyoutOpacity/FlyoutCards/FlyoutTiles/FlyoutApps and every visible string routes through
+/// <c>local:Localize</c>. Moved from Personalize › Layout to Settings in RemEx-172ba
+/// (Views/TrayFlyoutSettingsView.axaml), with the Settings section-header style and so no inline size.
+/// Source-text, like its siblings — <c>remex.desktop.tests</c> has no headless render.
 /// </summary>
 public class PersonalizationFlyoutSectionTests
 {
     [Fact]
-    public void TheFlyoutCard_SitsBetweenTheLayoutRowsAndBehaviour()
+    public void TheTrayPopUpCard_IsInSettings_BoundToTheShellsCustomizationViewModel()
     {
-        var markup = PanelMarkup();
-        var uiScale = markup.IndexOf("Localize Custom_UiScale}", System.StringComparison.Ordinal);
-        var flyout = markup.IndexOf("Localize Custom_SectionFlyout}", System.StringComparison.Ordinal);
-        var behaviour = markup.IndexOf("Localize Custom_SectionBehaviour}", System.StringComparison.Ordinal);
+        var settings = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "SettingsView.axaml"));
 
-        flyout.Should().BeGreaterThan(uiScale).And.BeLessThan(behaviour,
-            "spec §2: the Layout tab is Layout rows, UI scale, then Flyout, then Behaviour");
+        settings.Should().Contain(@"<views:TrayFlyoutSettingsView DataContext=""{Binding TrayFlyoutSettings}""/>");
+        File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeLayoutTab.axaml"))
+            .Should().NotContain("Custom_SectionFlyout", "Personalize is for looks only (RemEx-172ba)");
     }
 
     [Fact]
@@ -88,10 +84,10 @@ public class PersonalizationFlyoutSectionTests
     }
 
     [Fact]
-    public void TheFlyoutCard_AddsExactlyOneInlineSize()
+    public void TheFlyoutCard_HasNoInlineSize()
     {
-        Regex.Matches(FlyoutCard(), @"FontSize=""\d").Count.Should().Be(1,
-            "only the section header, like its siblings — every other size on this card comes from a Theme");
+        Regex.Matches(FlyoutCard(), @"FontSize=""\d").Count.Should().Be(0,
+            "the header uses the Settings section-header Theme, like every other Settings card");
     }
 
     [Fact]
@@ -99,8 +95,8 @@ public class PersonalizationFlyoutSectionTests
     {
         // Fix round 1 (RemEx-4kv0g.18.6 review, HIGH 2): ShellViewModel caches CustomizationViewModel
         // with ??=, and the constructor's own RefreshFlyoutApps runs exactly once - without a call
-        // here too, an app added to the launcher after the sheet first opened never appears.
-        var code = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "PersonalizationPanelView.axaml.cs"));
+        // here too, an app added to the launcher after the section first showed never appears.
+        var code = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayFlyoutSettingsView.axaml.cs"));
 
         var method = Regex.Match(code,
             @"private void ConfigureViewModel\(\)\s*\{(?<body>.*?)\n    \}",
@@ -108,22 +104,16 @@ public class PersonalizationFlyoutSectionTests
 
         method.Success.Should().BeTrue("ConfigureViewModel moved or was reshaped - re-point this test rather than deleting it");
         method.Groups["body"].Value.Should().Contain("vm.RefreshFlyoutApps()",
-            "the Apps checklist must reload every time the sheet attaches, not only the first time it is constructed");
+            "the Apps checklist must reload every time the section attaches, not only the first time it is constructed");
     }
 
-    /// <summary>Markup from the Flyout header's card open tag to that card's closing tag.</summary>
+    /// <summary>The tray pop-up section's whole markup.</summary>
     private static string FlyoutCard()
     {
-        var markup = PanelMarkup();
-        var header = markup.IndexOf("Localize Custom_SectionFlyout}", System.StringComparison.Ordinal);
-        header.Should().BeGreaterOrEqualTo(0, "the Flyout section must be on the sheet");
-        var open = markup.LastIndexOf("<material:Card", header, System.StringComparison.Ordinal);
-        var close = markup.IndexOf("</material:Card>", header, System.StringComparison.Ordinal);
-        return markup.Substring(open, close - open);
+        var markup = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayFlyoutSettingsView.axaml"));
+        markup.Should().Contain("Localize Custom_SectionFlyout}", "the section keeps its heading");
+        return markup;
     }
-
-    private static string PanelMarkup() => File.ReadAllText(
-        Path.Combine(RepoRoot(), "remex.desktop", "Views", "Personalize", "PersonalizeLayoutTab.axaml"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));

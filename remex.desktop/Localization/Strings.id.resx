@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Pengaturan disimpan</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Koneksi</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kunci ke grid</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Ukuran grid</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Sensor disematkan</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Pilih sensor untuk ditampilkan di layar beranda</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Bahasa</value>
@@ -750,7 +741,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Cara tercepat untuk menghubungkan ponsel Anda adalah dengan memindai kode QR. PC menghasilkan kode pairing yang berisi semua yang dibutuhkan aplikasi mobile Anda.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Buka Pengaturan → Koneksi di PC
+    <value>1. Buka Pengaturan → Koneksi &amp; pemasangan di PC
 2. Klik "Pasangkan ponsel" untuk menampilkan kode QR
 3. Buka aplikasi seluler RemEx
 4. Di layar Koneksi, ketuk "Tambah PC", lalu "Pindai Kode QR"
@@ -777,10 +768,10 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Anda siap!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Gunakan bilah samping untuk berpindah antara Beranda, Sensor, Perintah, Rutinitas, Aplikasi, Proses, File, Log &amp; Diagnostik, Pengaturan, dan Tentang. Personalisasi ada di bagian bawah bilah samping.</value>
+    <value>Gunakan bilah samping untuk berpindah antara Beranda, Desktop jarak jauh, File, Perintah, Aplikasi, Proses, Sensor, Rutinitas, Pengaturan, Log &amp; Diagnostik, dan Tentang. Personalisasi ada di bagian bawah bilah samping.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Pengaturan berisi penyandingan, folder bersama, perangkat tepercaya, peringatan sensor, dan cadangan. Bahasa, tema, dan sensor yang disematkan ada di Personalisasi.</value>
+    <value>Pengaturan berisi penyandingan, perangkat yang disandingkan, bahasa, folder bersama, peringatan sensor, dan cadangan. Tekan Ctrl+, untuk membukanya. Warna, font, dan tampilan lainnya ada di Personalisasi, dan sensor disematkan dari halaman Sensor.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Anda dapat memutar ulang tutorial ini kapan saja dari Pengaturan.</value>
@@ -1221,7 +1212,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Glosarium: Aplikasi</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Luncurkan aplikasi dan skrip yang dikurasi di PC. Konfigurasikan entri sekali di PC, lalu jalankan dari jarak jauh melalui RemEx.</value>
+    <value>Jalankan aplikasi dan skrip pilihan di PC ini dari ponsel Anda. Tambahkan masing-masing di halaman Aplikasi lewat Tambah program, tempat Anda mengisi jalur dan namanya.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glosarium: Proses</value>
@@ -1245,7 +1236,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Glosarium: Desktop jarak jauh</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Streaming layar PC dengan kualitas, skala, dan FPS yang dapat disesuaikan untuk menyeimbangkan kejernihan dan bandwidth.</value>
+    <value>Lihat dan kendalikan layar PC dari ponsel Anda. Kualitas, skala, dan FPS ada di halaman Desktop jarak jauh, jadi Anda bisa menukar ketajaman dengan gambar yang lebih lancar di jaringan lambat.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glosarium: Pengaturan Cepat</value>
@@ -1257,7 +1248,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Glosarium: Personalisasi</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Sesuaikan tema, strategi palet, font, bentuk kartu, dan opasitas sesuai cara Anda memantau dan mengontrol setup.</value>
+    <value>Ubah warna, mode terang atau gelap, font, bentuk kartu, dan opasitas di Personalisasi, di bagian bawah bilah samping. Tekan Ctrl+Shift+, untuk membukanya dari mana saja.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Rutinitas</value>
@@ -2617,7 +2608,7 @@ Hal ini wajar pada desktop yang menjalankan RemEx langsung dari XDG autostart, b
     <value>Ganti layar</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personalisasi</value>
+    <value>Pengaturan</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Tutup pop-up</value>
@@ -4527,7 +4518,7 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
     <value>Tampilan</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Warna, mode terang atau gelap, font, dan layar pembuka ada di Personalisasi. Pintasan: Ctrl+,</value>
+    <value>Warna, mode terang atau gelap, font, dan layar pembuka ada di Personalisasi. Pintasan: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Ganti pengaturan Anda?</value>
@@ -4567,5 +4558,47 @@ Agar rutinitas tidak mulai sendiri, klik Jeda semua di halaman Rutinitas. Tidak 
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Hapus pencarian</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Koneksi &amp; pemasangan</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>File &amp; berbagi</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} sudah dipasangkan dengan PC ini.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Kisi</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Tempelkan kartu ke kisi dan pilih ukurannya</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Pilih file untuk dikirim ke ponsel Anda</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Tidak dapat mengirim ke ponsel Anda</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx tidak dapat menjangkau ponsel Anda saat ini. Buka RemEx di ponsel, pastikan tertulis Terhubung, lalu coba lagi.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Ponsel Anda tidak membagikan folder yang bisa diisi oleh RemEx. Di ponsel, bagikan folder dengan PC Anda dan izinkan menyimpan ke sana, lalu coba lagi.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Mengirim ke ponsel Anda</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Mengirim ke {0}. Anda bisa memantaunya di halaman File.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Terkirim ke ponsel Anda</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Semuanya sudah sampai di {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{0} dari {1} file sampai di {2}. Buka halaman File untuk melihat apa yang salah.</value>
   </data>
 </root>

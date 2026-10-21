@@ -29,7 +29,7 @@ public class ShellNavTooltipShortcutTests
             .Where(e => (e.Attribute("Classes")?.Value ?? "").Split(' ').Contains("nav-item"))
             .ToDictionary(e => int.Parse(e.Attribute("Tag")!.Value));
 
-        // Home..Logs are drawer positions 1-8 and Settings is 9; About (the tenth) has no key.
+        // Home..Routines are drawer positions 1-8 and Settings is 9; Logs and About have no key.
         for (var position = 1; position <= 9; position++)
         {
             var tag = ShellViewModel.DrawerNavOrder[position - 1];
@@ -38,6 +38,13 @@ public class ShellNavTooltipShortcutTests
             tip!.Descendants(XName.Get("TextBlock", Avalonia))
                 .Select(t => t.Attribute("Text")?.Value)
                 .Should().Contain($"Ctrl+{position}");
+        }
+
+        // Items past the ninth have no digit, so a leftover "Ctrl+8" on Logs would lie.
+        foreach (var tag in ShellViewModel.DrawerNavOrder.Skip(9))
+        {
+            items[tag].ToString().Should().NotContain("Ctrl+",
+                $"drawer item with Tag {tag} sits past Ctrl+9 and has no shortcut to show");
         }
     }
 

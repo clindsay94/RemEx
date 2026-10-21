@@ -79,7 +79,7 @@ public class ShellPersonalizeFooterTests
     public void ThePersonalizeEntryOpensTheSheet()
     {
         PersonalizeButtonOpenTag().Should().MatchRegex(@"\bCommand=""\{Binding ToggleSettingsPanelCommand\}""",
-            "the footer entry uses the same command Ctrl+, and the command palette use");
+            "the footer entry uses the same command Ctrl+Shift+, and the command palette use");
     }
 
     [Fact]

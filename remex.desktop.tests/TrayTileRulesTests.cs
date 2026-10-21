@@ -11,6 +11,13 @@ public class TrayTileRulesTests
         Assert.False(TrayTileRules.IsRemoteDesktopEnabled(isPhoneAttached: false));
     }
 
+    [Fact]
+    public void Send_is_enabled_only_when_a_phone_is_attached()
+    {
+        Assert.True(TrayTileRules.IsSendToPhoneEnabled(isPhoneAttached: true));
+        Assert.False(TrayTileRules.IsSendToPhoneEnabled(isPhoneAttached: false));
+    }
+
     [Theory]
     [InlineData(TrayPowerAction.Restart)]
     [InlineData(TrayPowerAction.Shutdown)]

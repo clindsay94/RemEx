@@ -59,7 +59,7 @@ public class TutorialQrStepsLocalizationTests
         {
             var values = PcValues(locale);
             var steps = values["Tutorial_P8_QR_Steps"];
-            var path = $"{values["Nav_Settings"]} → {values["Settings_Connection"]}";
+            var path = $"{values["Nav_Settings"]} → {values["Settings_ConnectionPairing"]}";
             if (!steps.Contains(path, StringComparison.Ordinal))
             {
                 offenders.Add($"{(locale.Length == 0 ? "en" : locale)}: steps do not say \"{path}\"");

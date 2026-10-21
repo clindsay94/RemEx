@@ -151,14 +151,13 @@ public sealed class HomePinsBridgeTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task APinFromThePcChecklistIsPublished()
+    public async Task APinFromTheSensorCardIsPublished()
     {
-        Place("CPU Temp");
+        // The card's own pin toggle is the PC's only pin control since the Personalize checklist went (RemEx-172ba).
+        var card = Place("CPU Temp");
         Bridge();
-        var layout = new LayoutSettingsViewModel(_layoutService, Canvas, home: null);
-        await layout.InitializeAsync();
 
-        layout.PinnedSensors.Single().IsPinned = true;
+        Canvas.TogglePinToHomeCommand.Execute(card);
 
         // Published on ProfileSaved, which follows the layout service's debounced write.
         var deadline = DateTime.UtcNow.AddSeconds(10);
@@ -166,20 +165,6 @@ public sealed class HomePinsBridgeTests : IAsyncLifetime
             await Task.Delay(50);
 
         _store.Current.SensorNames.Should().Equal("CPU Temp");
-    }
-
-    [Fact]
-    public void APhonePinShowsInTheLayoutChecklist()
-    {
-        Place("CPU Temp");
-        Bridge();
-        var layout = new LayoutSettingsViewModel(_layoutService, Canvas, home: null);
-        layout.RefreshSensors();
-        layout.PinnedSensors.Single().IsPinned.Should().BeFalse();
-
-        _store.RequestFromPhone(new HomePinChange { SensorName = "CPU Temp", Pinned = true }, "phone-1");
-
-        layout.PinnedSensors.Single().IsPinned.Should().BeTrue();
     }
 
     [Fact]

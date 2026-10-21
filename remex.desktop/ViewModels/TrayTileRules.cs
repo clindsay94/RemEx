@@ -27,6 +27,9 @@ public static class TrayTileRules
     /// </summary>
     public static bool IsRemoteDesktopEnabled(bool isPhoneAttached) => isPhoneAttached;
 
+    /// <summary>Send needs a phone to send to, by the same phone-presence signal (RemEx-172ba).</summary>
+    public static bool IsSendToPhoneEnabled(bool isPhoneAttached) => isPhoneAttached;
+
     /// <summary>
     /// Whether an action ends the session and so must be confirmed first.
     /// </summary>

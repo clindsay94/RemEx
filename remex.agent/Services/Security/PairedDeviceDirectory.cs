@@ -50,7 +50,8 @@ public sealed class PairedDeviceDirectory(
                 // PER-DEVICE, from the session registry's own id lookup. Deliberately not derived
                 // from PhonePresence, which answers "is ANY phone attached" — using it here would
                 // light every row in the list whenever a single device connected.
-                IsOnline: sessions.IsConnected(id)));
+                IsOnline: sessions.IsConnected(id),
+                LastPairedUtc: seen?.LastPairedUtc));
         }
 
         return rows;

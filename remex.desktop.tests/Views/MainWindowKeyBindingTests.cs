@@ -13,7 +13,7 @@ using Xunit;
 namespace Remex.Desktop.Tests.Views;
 
 /// <summary>
-/// Pins MainWindow's 17 <c>KeyBinding</c> gestures and their bound commands (RemEx-l2yqy), and
+/// Pins MainWindow's 18 <c>KeyBinding</c> gestures and their bound commands (RemEx-l2yqy), and
 /// guards the two things the window-surface fix in this bead depends on: no <c>RenderTransform</c>
 /// snuck onto the root (it would desync the shadow from the LayoutTransform-scaled content), and
 /// <c>TransparencyBackgroundFallback</c> is a <c>DynamicResource</c> that follows the active
@@ -24,18 +24,18 @@ public class MainWindowKeyBindingTests
     private static readonly string[] ExpectedGestures =
     {
         "Ctrl+D1", "Ctrl+D2", "Ctrl+D3", "Ctrl+D4", "Ctrl+D5", "Ctrl+D6", "Ctrl+D7", "Ctrl+D8", "Ctrl+D9",
-        "Ctrl+OemComma", "Escape", "F5", "Ctrl+K", "Ctrl+Shift+P", "Ctrl+Z", "Ctrl+Y", "Ctrl+S",
+        "Ctrl+OemComma", "Ctrl+Shift+OemComma", "Escape", "F5", "Ctrl+K", "Ctrl+Shift+P", "Ctrl+Z", "Ctrl+Y", "Ctrl+S",
     };
 
     [Fact]
-    public void MainWindow_HasExactlyTheSeventeenExpectedKeyBindings()
+    public void MainWindow_HasExactlyTheEighteenExpectedKeyBindings()
     {
         var doc = XDocument.Parse(MainWindowMarkup());
         XNamespace ns = "https://github.com/avaloniaui";
 
         var bindings = doc.Descendants(ns + "KeyBinding").ToList();
 
-        bindings.Should().HaveCount(17, "MainWindow's 17 documented gestures are load-bearing");
+        bindings.Should().HaveCount(18, "MainWindow's 18 documented gestures are load-bearing");
 
         var gestures = bindings.Select(b => b.Attribute("Gesture")?.Value).ToList();
         gestures.Should().BeEquivalentTo(ExpectedGestures,
@@ -69,10 +69,10 @@ public class MainWindowKeyBindingTests
     }
 
     /// <summary>
-    /// Ctrl+1..8 follow the sidebar top to bottom (3.0 comb, ctrl-digit-order). Routines was missing,
-    /// so from Ctrl+4 on every shortcut opened the item BELOW the one in that position. The expected
-    /// order is derived from <see cref="ShellViewModel.DrawerNavOrder"/>, which is itself pinned to
-    /// the drawer XAML, so a new sidebar item fails here until the shortcuts are re-laid.
+    /// Ctrl+1..8 follow the sidebar top to bottom (3.0 comb, ctrl-digit-order; re-laid for the
+    /// task-grouped drawer in RemEx-172ba). The expected order is derived from
+    /// <see cref="ShellViewModel.DrawerNavOrder"/>, which is itself pinned to the drawer XAML, so a
+    /// new sidebar item fails here until the shortcuts are re-laid.
     /// </summary>
     [Fact]
     public void MainWindow_CtrlDigitShortcuts_FollowTheSidebarOrder()
@@ -82,13 +82,13 @@ public class MainWindowKeyBindingTests
         var byGesture = doc.Descendants(ns + "KeyBinding")
             .ToDictionary(b => b.Attribute("Gesture")!.Value, b => b.Attribute("Command")!.Value);
 
-        // Tag -> command, for the first eight drawer items (Settings and About have their own keys).
+        // Tag -> command, for the first eight drawer items (Home..Routines; Settings is Ctrl+9).
         var commandForTag = new Dictionary<int, string>
         {
-            [0] = "NavigateToHomeCommand", [1] = "NavigateToCanvasCommand", [2] = "NavigateToRemoteCommand",
-            [10] = "NavigateToRoutinesCommand", [3] = "NavigateToAppLauncherCommand",
-            [4] = "NavigateToTaskManagerCommand", [7] = "NavigateToFileTransferCommand",
-            [8] = "NavigateToDiagnosticLogsCommand",
+            [0] = "NavigateToHomeCommand", [5] = "NavigateToRemoteDesktopCommand",
+            [7] = "NavigateToFileTransferCommand", [2] = "NavigateToRemoteCommand",
+            [3] = "NavigateToAppLauncherCommand", [4] = "NavigateToTaskManagerCommand",
+            [1] = "NavigateToCanvasCommand", [10] = "NavigateToRoutinesCommand",
         };
         var firstEight = ShellViewModel.DrawerNavOrder.Take(8).ToList();
         firstEight.Should().HaveCount(8);
@@ -112,6 +112,10 @@ public class MainWindowKeyBindingTests
 
         ShellViewModel.DrawerNavOrder[8].Should().Be(9, "Settings is the ninth sidebar item");
         byGesture["Ctrl+D9"].Should().Be("{Binding NavigateToSettingsCommand}");
+        byGesture["Ctrl+OemComma"].Should().Be("{Binding NavigateToSettingsCommand}",
+            "Ctrl+, opens Settings (RemEx-172ba)");
+        byGesture["Ctrl+Shift+OemComma"].Should().Be("{Binding ToggleSettingsPanelCommand}",
+            "Personalize moved to Ctrl+Shift+, when Ctrl+, became Settings");
         byGesture["Ctrl+Z"].Should().Be("{Binding CanvasUndoShortcutCommand}");
         byGesture["Ctrl+Y"].Should().Be("{Binding CanvasRedoShortcutCommand}");
         byGesture["Ctrl+S"].Should().Be("{Binding CanvasSaveShortcutCommand}");

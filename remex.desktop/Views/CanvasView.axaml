@@ -118,7 +118,7 @@
 
         <!-- ═══ Toolbar ═══ -->
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <!-- Background="Transparent" stays: this "button" is a non-interactive title label
                      (IsHitTestVisible="False"), not a real secondary surface — a documented exception,
                      not drift (RemEx-cgrv3). -->
@@ -155,7 +155,37 @@
                         <TextBlock Text="{local:Localize Canvas_Save}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="6" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" ToolTip.Tip="{local:Localize Canvas_SensorLibraryTooltip}" Margin="0,0,4,0">
+                <!-- Snap to grid and grid size live here, next to the edit controls they affect (RemEx-172ba).
+                     They used to sit on Personalize, which is now for looks only. Same keys and profile fields. -->
+                <Button x:Name="GridSettingsButton" AutomationProperties.Name="{local:Localize Canvas_Grid}" Grid.Column="6" Classes="secondary" ToolTip.Tip="{local:Localize Canvas_GridTooltip}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="Grid" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Grid}" Theme="{StaticResource CaptionTextBlock}"/>
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="Bottom">
+                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Width="300">
+                                <StackPanel Spacing="16">
+                                    <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_EnableAlignmentGuidesTooltip}">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{local:Localize Settings_SnapToGrid}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_SnapToGrid}" Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}" ToolTip.Tip="{local:Localize Settings_GridPlacementIncrementTooltip}">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{local:Localize Settings_GridSize}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Theme="{StaticResource Body2TextBlock}" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
+                                        </Grid>
+                                        <Slider Minimum="10" Maximum="100" TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" SmallChange="10" LargeChange="20" Value="{Binding GridSize}" AutomationProperties.Name="{local:Localize Settings_GridSize}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="7" Classes="secondary" Command="{Binding ToggleStagingDrawerCommand}" ToolTip.Tip="{local:Localize Canvas_SensorLibraryTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Download" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Theme="{StaticResource CaptionTextBlock}">
@@ -168,26 +198,26 @@
                         </TextBlock>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="7" Classes="secondary" Command="{Binding ResetViewCommand}" ToolTip.Tip="{local:Localize Canvas_ResetViewTooltip}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="8" Classes="secondary" Command="{Binding ResetViewCommand}" ToolTip.Tip="{local:Localize Canvas_ResetViewTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Restore" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_ResetView}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
-                <Button AutomationProperties.Name="{local:Localize Canvas_ToggleMinimapTooltip}" Grid.Column="8" Classes="secondary" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ToggleMinimapTooltip}" Grid.Column="9" Classes="secondary" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Map" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Map}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
                 <!-- P8-I: Snapshot export -->
-                <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="9" Classes="secondary" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="10" Classes="secondary" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Export" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Export}" Theme="{StaticResource CaptionTextBlock}"/>
                     </StackPanel>
                 </Button>
-                <StackPanel Grid.Column="10" Orientation="Vertical" VerticalAlignment="Center">
+                <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
                     <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="secondary" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
                         <TextBlock Text="{local:Localize Canvas_Copy}" Theme="{StaticResource CaptionTextBlock}"/>
                     </Button>

@@ -97,6 +97,41 @@ public sealed class PairedDeviceActivityStoreTests : IDisposable
     }
 
     [Fact]
+    public void LastPairedMovesOnARePair_AndNeverOnAReconnect()
+    {
+        // Settings names the phone that just paired by this field (RemEx-172ba R1). A reconnect that
+        // moved it would make a known phone coming back look like a fresh pairing.
+        var first = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+        var seen = new DateTimeOffset(2026, 8, 9, 10, 11, 12, TimeSpan.Zero);
+        var again = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
+
+        var store = NewStore();
+        store.RecordPaired("phone-a", first);
+        store.RecordSeen("phone-a", seen);
+        Assert.Equal(first, store.Resolve("phone-a")!.LastPairedUtc);
+
+        store.RecordPaired("phone-a", again);
+        Assert.Equal(again, NewStore().Resolve("phone-a")!.LastPairedUtc);
+        Assert.Equal(first, store.Resolve("phone-a")!.FirstPairedUtc);
+    }
+
+    [Fact]
+    public void ASeenOnlyDevice_AndAFileFromBeforeLastPaired_HaveNoLastPairedDate()
+    {
+        var store = NewStore();
+        store.RecordSeen("phone-a", new DateTimeOffset(2026, 8, 9, 0, 0, 0, TimeSpan.Zero));
+        Assert.Null(store.Resolve("phone-a")!.LastPairedUtc);
+
+        File.WriteAllText(StorePath,
+            """{ "phone-b": { "FirstPairedUtc": "2026-01-02T03:04:05+00:00", "LastSeenUtc": "2026-08-09T00:00:00+00:00" } }""");
+        var old = NewStore().Resolve("phone-b");
+
+        Assert.NotNull(old);
+        Assert.Null(old!.LastPairedUtc);
+        Assert.Equal(new DateTimeOffset(2026, 8, 9, 0, 0, 0, TimeSpan.Zero), old.LastSeenUtc);
+    }
+
+    [Fact]
     public void AReconnectInsideTheGranularityWindowDoesNotRewriteTheFile()
     {
         // P3-49: every authenticated connect used to rewrite the whole store. Deleting the file after

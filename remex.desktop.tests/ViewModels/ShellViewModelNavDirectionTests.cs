@@ -13,12 +13,11 @@ namespace Remex.Desktop.Tests.ViewModels;
 
 /// <summary>
 /// RemEx-pp0rt.2: the shell's shared-axis page transition used to read its direction off the nav
-/// items' numeric <c>Tag</c>, but the Tags are ids, not positions. The drawer shows
-/// Home, Sensors, Commands, Launcher, Processes, Files, Logs, Settings, About (Tags
-/// 0,1,2,3,4,7,8,9,6), so moving between Settings and About, or from either to Files or Logs, slid
-/// the wrong way. Direction now follows visual drawer order, and the structural guard below keeps
-/// <see cref="ShellViewModel.DrawerNavOrder"/> and <c>ShellView.axaml</c> from drifting apart - the
-/// Routines item (Tag 10, after Commands) is meant to be a one-line change to each.
+/// items' numeric <c>Tag</c>, but the Tags are ids, not positions. Since RemEx-172ba the drawer
+/// shows Home, Remote desktop, Files, Commands, Launcher, Processes, Sensors, Routines, Settings,
+/// Logs, About (Tags 0,5,7,2,3,4,1,10,9,8,6), so a Tag comparison gets most moves wrong. Direction
+/// follows visual drawer order, and the structural guard below keeps
+/// <see cref="ShellViewModel.DrawerNavOrder"/> and <c>ShellView.axaml</c> from drifting apart.
 /// </summary>
 public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
 {
@@ -70,12 +69,16 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(Home, Sensors)]
-    [InlineData(Commands, Routines)]
-    [InlineData(Routines, Launcher)]
-    [InlineData(Processes, Files)]
-    [InlineData(Logs, Settings)]
-    [InlineData(Settings, About)]
+    [InlineData(Home, RemoteDesktop)]
+    [InlineData(RemoteDesktop, Files)]
+    [InlineData(Files, Commands)]
+    [InlineData(Commands, Launcher)]
+    [InlineData(Launcher, Processes)]
+    [InlineData(Processes, Sensors)]
+    [InlineData(Sensors, Routines)]
+    [InlineData(Routines, Settings)]
+    [InlineData(Settings, Logs)]
+    [InlineData(Logs, About)]
     public void MovingOneItemDownTheDrawerIsForward(int from, int to)
     {
         ShellViewModel.TransitionDirectionFor(from, to).Should().Be(1);
@@ -85,12 +88,11 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
     [Theory]
     [InlineData(Home, About)]
     [InlineData(Home, Settings)]
-    [InlineData(Sensors, Logs)]
-    [InlineData(Processes, Settings)]
-    [InlineData(Files, About)]
-    [InlineData(Commands, Files)]
-    [InlineData(Routines, About)]
-    [InlineData(Sensors, Routines)]
+    [InlineData(RemoteDesktop, Sensors)]
+    [InlineData(Files, Logs)]
+    [InlineData(Commands, Routines)]
+    [InlineData(Processes, About)]
+    [InlineData(Files, Launcher)]
     public void MovingSeveralItemsDownTheDrawerIsForward(int from, int to)
     {
         ShellViewModel.TransitionDirectionFor(from, to).Should().Be(1);
@@ -117,25 +119,45 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
         => ShellViewModel.TransitionDirectionFor(page, page).Should().Be(1);
 
     [Theory]
-    [InlineData(Home)]
     [InlineData(Files)]
+    [InlineData(Commands)]
     [InlineData(About)]
-    public void RemoteDesktopHasNoDrawerItemSoItDrillsInForwardAndComesBack(int drawerPage)
+    public void LeavingRemoteDesktopForAPageBelowItIsForward(int drawerPage)
     {
-        ShellViewModel.TransitionDirectionFor(drawerPage, RemoteDesktop).Should().Be(1);
-        ShellViewModel.TransitionDirectionFor(RemoteDesktop, drawerPage).Should().Be(-1);
+        // Remote desktop is second in the drawer since RemEx-172ba; it used to rank below the whole
+        // drawer as an off-drawer page.
+        ShellViewModel.TransitionDirectionFor(RemoteDesktop, drawerPage).Should().Be(1);
+        ShellViewModel.TransitionDirectionFor(drawerPage, RemoteDesktop).Should().Be(-1);
+    }
+
+    [Fact]
+    public void AnIndexWithNoDrawerItemRanksBelowTheWholeDrawer()
+    {
+        ShellViewModel.TransitionDirectionFor(About, 99).Should().Be(1);
+        ShellViewModel.TransitionDirectionFor(99, Home).Should().Be(-1);
     }
 
     [Theory]
-    [InlineData(Launcher)]
-    [InlineData(Processes)]
-    [InlineData(Files)]
-    public void LeavingRoutinesForAPageBelowItIsForwardDespiteTheHigherTag(int to)
+    [InlineData(Settings)]
+    [InlineData(Logs)]
+    [InlineData(About)]
+    public void LeavingRoutinesForAPageBelowItIsForwardDespiteTheLowerTag(int to)
     {
-        // Routines is Tag 10 but sits fourth, right after Commands (R-UX-03). A Tag comparison would
-        // read every one of these as backward.
+        // Routines is Tag 10 but sits eighth, above the Settings family. A Tag comparison would read
+        // every one of these as backward.
         ShellViewModel.TransitionDirectionFor(Routines, to).Should().Be(1);
         ShellViewModel.TransitionDirectionFor(to, Routines).Should().Be(-1);
+    }
+
+    [Theory]
+    [InlineData(Commands)]
+    [InlineData(Launcher)]
+    [InlineData(Processes)]
+    public void LeavingSensorsForAPageAboveItIsBackDespiteTheHigherTag(int to)
+    {
+        // Sensors is Tag 1 but sits seventh, after Processes.
+        ShellViewModel.TransitionDirectionFor(Sensors, to).Should().Be(-1);
+        ShellViewModel.TransitionDirectionFor(to, Sensors).Should().Be(1);
     }
 
     [Fact]
@@ -146,12 +168,15 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
         _shell.NavigateToTaskManager();
         _shell.NavigateToRoutines();
 
-        _shell.TransitionDirection.Should().Be(-1, "Routines sits above Processes");
+        _shell.TransitionDirection.Should().Be(1, "Routines sits below Processes");
         _shell.ActiveNavIndex.Should().Be(Routines);
         _shell.CurrentView.Should().BeOfType<RoutinesViewModel>();
 
         _shell.NavigateToAbout();
         _shell.TransitionDirection.Should().Be(1, "About sits below Routines");
+
+        _shell.NavigateToRoutines();
+        _shell.TransitionDirection.Should().Be(-1, "Routines sits above About");
     }
 
     [Fact]
@@ -166,12 +191,12 @@ public sealed class ShellViewModelNavDirectionTests : IAsyncLifetime
         _shell.NavigateToTaskManager();
         _shell.TransitionDirection.Should().Be(-1);
 
-        // Processes -> Remote Desktop (off-drawer): forward, then back out to About.
+        // Processes -> Remote desktop: RD is second, so back up; then down again to About.
         _shell.NavigateToRemoteDesktop();
-        _shell.TransitionDirection.Should().Be(1);
+        _shell.TransitionDirection.Should().Be(-1);
+        _shell.ActiveNavIndex.Should().Be(RemoteDesktop);
         _shell.NavigateToAbout();
-        _shell.TransitionDirection.Should().Be(-1,
-            "Tag 6 > Tag 5 read as forward before RemEx-pp0rt.2; About is a drawer page, RD is not");
+        _shell.TransitionDirection.Should().Be(1);
     }
 
     [Fact]

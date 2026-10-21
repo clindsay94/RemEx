@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Paramètres enregistrés</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Connexion</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Aligner sur la grille</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Taille de la grille</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Capteurs épinglés</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Sélectionnez les capteurs à afficher sur l'écran d'accueil</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Langue</value>
@@ -750,7 +741,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>La façon la plus rapide de connecter votre téléphone est de scanner un QR code. L'hôte génère un code d'appairage qui contient tout ce dont votre application mobile a besoin.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Ouvrez Paramètres → Connexion sur le PC
+    <value>1. Ouvrez Paramètres → Connexion et association sur le PC
 2. Cliquez sur « Associer un téléphone » pour afficher le code QR
 3. Ouvrez l'application mobile RemEx
 4. Sur l'écran Connexion, touchez « Ajouter un PC », puis « Scanner le code QR »
@@ -777,10 +768,10 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Vous êtes prêt !</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Utilisez la barre latérale pour naviguer entre Accueil, Capteurs, Commandes, Routines, Applications, Processus, Fichiers, Journaux et Diagnostics, Paramètres et À propos. Personnaliser se trouve en bas de la barre latérale.</value>
+    <value>Utilisez la barre latérale pour naviguer entre Accueil, Bureau distant, Fichiers, Commandes, Applications, Processus, Capteurs, Routines, Paramètres, Journaux et Diagnostics et À propos. Personnaliser se trouve en bas de la barre latérale.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Paramètres regroupe l'appairage, les dossiers partagés, les appareils de confiance, les alertes des capteurs et les sauvegardes. La langue, le thème et les capteurs épinglés se trouvent dans Personnaliser.</value>
+    <value>Paramètres regroupe l'appairage, les appareils appairés, la langue, les dossiers partagés, les alertes des capteurs et les sauvegardes. Appuyez sur Ctrl+, pour l'ouvrir. Les couleurs, les polices et le reste de l'apparence se trouvent dans Personnaliser, et les capteurs s'épinglent depuis la page Capteurs.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Vous pouvez rejouer ce tutoriel à tout moment depuis Paramètres.</value>
@@ -1221,7 +1212,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Glossaire : Applications</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Lancez des applications et des scripts sur l'hôte. Configurez les entrées une fois sur le PC, puis démarrez-les à distance depuis RemEx.</value>
+    <value>Lancez depuis votre téléphone les applications et scripts choisis sur ce PC. Ajoutez-les sur la page Applications avec Ajouter un programme, où vous indiquez leur chemin et leur nom.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glossaire : Processus</value>
@@ -1245,7 +1236,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Glossaire : Bureau distant</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Diffusez l'écran de l'hôte avec une qualité, une échelle et des FPS ajustables pour équilibrer clarté et bande passante.</value>
+    <value>Affichez et contrôlez l'écran de votre PC depuis votre téléphone. La qualité, l'échelle et les FPS se règlent sur la page Bureau distant, pour privilégier la netteté ou la fluidité sur un réseau lent.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glossaire : Paramètres rapides</value>
@@ -1257,7 +1248,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Glossaire : Personnaliser</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Ajustez les thèmes, la stratégie de palette, les polices, les formes de cartes et l'opacité pour personnaliser votre expérience.</value>
+    <value>Changez les couleurs, le mode clair ou sombre, les polices, la forme des cartes et l'opacité dans Personnaliser, en bas de la barre latérale. Appuyez sur Ctrl+Shift+, pour l'ouvrir depuis n'importe où.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Routines</value>
@@ -2605,7 +2596,7 @@ C'est normal sur les bureaux qui démarrent RemEx directement via le démarrage 
     <value>Basculer les écrans</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personnaliser</value>
+    <value>Paramètres</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Rechercher les écrans et actions…</value>
@@ -4524,7 +4515,7 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
     <value>Apparence</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Les couleurs, le mode clair ou sombre, les polices et l'écran de démarrage se trouvent dans Personnaliser. Raccourci : Ctrl+,</value>
+    <value>Les couleurs, le mode clair ou sombre, les polices et l'écran de démarrage se trouvent dans Personnaliser. Raccourci : Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Remplacer vos paramètres ?</value>
@@ -4564,5 +4555,47 @@ Pour empêcher les routines de démarrer seules, cliquez sur Tout mettre en paus
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Effacer la recherche</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Connexion et association</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Fichiers et partage</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} est maintenant associé à ce PC.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Grille</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Aligner les cartes sur une grille et choisir sa taille</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Choisissez les fichiers à envoyer sur votre téléphone</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Envoi sur votre téléphone impossible</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx ne parvient pas à joindre votre téléphone pour le moment. Ouvrez RemEx sur le téléphone, vérifiez qu'il indique Connecté, puis réessayez.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Votre téléphone ne partage aucun dossier dans lequel RemEx peut enregistrer. Sur le téléphone, partagez un dossier avec votre PC et autorisez l'enregistrement, puis réessayez.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Envoi sur votre téléphone</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Envoi vers {0}. Vous pouvez suivre la progression sur la page Fichiers.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Envoyé sur votre téléphone</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Tout est bien arrivé sur {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{0} fichier(s) sur {1} sont arrivés sur {2}. Ouvrez la page Fichiers pour voir ce qui n'a pas fonctionné.</value>
   </data>
 </root>

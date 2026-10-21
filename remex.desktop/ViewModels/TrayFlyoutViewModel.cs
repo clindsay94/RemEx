@@ -3,12 +3,16 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Input;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.FileTransfer;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -95,6 +99,8 @@ public sealed record TrayShortcut : TrayToolbarItem
 /// message type in <c>remex.core</c> that could carry one (see RemEx-uov9y). Do not add a tile
 /// whose label implies the phone is being controlled. This is also why <see cref="TrayShortcut"/>'s
 /// launch never routes through a connected session the way the App Launcher page's own launch does.
+/// The one exception is Send, which copies files into a folder the phone already shares for writing
+/// through the host's file relay (RemEx-xt0af): the phone's share is the consent, nothing is commanded.
 /// </para>
 /// </remarks>
 public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
@@ -102,6 +108,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly HomeViewModel _home;
     private readonly ILauncherStorageService _launcherStorage;
+    private readonly ILogger<TrayFlyoutViewModel> _logger;
 
     /// <summary>
     /// The launcher's own entries, cached from the last <see cref="ILauncherStorageService.LoadEntriesAsync"/>
@@ -182,11 +189,16 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 
     partial void OnOnlineDeviceCountChanged(int value) => OnPropertyChanged(nameof(HasOnlineDevices));
 
-    public TrayFlyoutViewModel(ShellViewModel shell, HomeViewModel home, ILauncherStorageService launcherStorage)
+    public TrayFlyoutViewModel(
+        ShellViewModel shell,
+        HomeViewModel home,
+        ILauncherStorageService launcherStorage,
+        ILogger<TrayFlyoutViewModel>? logger = null)
     {
         _shell = shell;
         _home = home;
         _launcherStorage = launcherStorage;
+        _logger = logger ?? NullLogger<TrayFlyoutViewModel>.Instance;
 
         // Rebuild when phone presence changes, so the Remote tile enables and disables in place
         // rather than at the next time the flyout happens to be reopened. Also refresh the badge's
@@ -413,7 +425,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         {
             // Best-effort, like LauncherStorageService's own catch-and-empty on the read side: a
             // corrupt or unreadable launchers.json must not stop the six action tiles from showing.
-            System.Diagnostics.Debug.WriteLine($"[TrayFlyout] Failed to load launcher entries: {ex.Message}");
+            _logger.LogWarning(ex, "Tray flyout could not load launcher entries; showing the action tiles only.");
             _launcherEntries = [];
         }
 
@@ -423,6 +435,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     private void RebuildToolbar()
     {
         var remoteEnabled = TrayTileRules.IsRemoteDesktopEnabled(Presence.IsPhoneAttached);
+        var sendEnabled = TrayTileRules.IsSendToPhoneEnabled(Presence.IsPhoneAttached);
 
         RefreshOnlineDeviceCount();
 
@@ -464,8 +477,13 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
                 Id = "send",
                 Label = LocalizationService.Instance["Tray_Tile_SendFile"],
                 Icon = MaterialIconKind.Upload,
-                Command = OpenTransfersCommand,
-                OpensMainWindow = true,
+                // Picks files and sends them straight to the phone (RemEx-172ba). The window stays
+                // where it is: the transfers show on the Files page queue and as notifications.
+                Command = SendFilesToPhoneCommand,
+                IsEnabled = sendEnabled,
+                DisabledTooltip = sendEnabled
+                    ? null
+                    : LocalizationService.Instance["Tray_Disabled_NeedsPhone"],
             },
             new TrayTile
             {
@@ -523,12 +541,10 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
 
             // Logged as the set-difference, not per-miss inside the loop above - orderedEntries no
             // longer walks appIds in ticked order, so there is no single loop iteration left to log
-            // a miss from. Debug.WriteLine, not an ILogger (fix round 1, RemEx-4kv0g.18.6 review,
-            // LOW) - this view model has no ILogger field (see the other Debug.WriteLine at :367,
-            // same reasoning); adding one is out of this fix's scope.
+            // a miss from.
             var missingIds = appIdSet.Except(orderedEntries.Select(e => e.Id));
             foreach (var missingId in missingIds)
-                System.Diagnostics.Debug.WriteLine($"[TrayFlyout] FlyoutAppIds contains {missingId}, no matching launcher entry - skipped.");
+                _logger.LogDebug("FlyoutAppIds contains {AppId}, which has no launcher entry; skipped.", missingId);
         }
 
         ToolbarItems = items;
@@ -542,7 +558,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
     /// own remarks for why this never checks <c>ConnectionViewModel.IsConnected</c> the way
     /// <c>AppLauncherViewModel.LaunchAppAsync</c> does.
     /// </summary>
-    private static async Task LaunchShortcutAsync(AppEntry entry)
+    private async Task LaunchShortcutAsync(AppEntry entry)
     {
         // Feeds the Home "Recent activity" panel, same as the App Launcher page's own launch,
         // BEFORE the try - a launch failure shouldn't erase the fact that it was attempted.
@@ -554,21 +570,189 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            // Debug.WriteLine, not an ILogger (this VM has none - see the other two Debug.WriteLine
-            // calls at :367 and :482, same reasoning). Without this catch the exception is not
-            // swallowed: AsyncRelayCommand's default options (no FlowExceptionsToTaskScheduler
-            // anywhere in the desktop) rethrow it on the UI thread, and the desktop has no
-            // UnhandledException handler - a ticked app whose exe was removed would have taken the
-            // process down from the tray (D2 branch review, MEDIUM). Log it and leave the popup up.
-            System.Diagnostics.Debug.WriteLine($"[TrayFlyout] Launching '{entry.DisplayName}' failed: {ex.Message}");
+            // Without this catch the exception is not swallowed: AsyncRelayCommand's default options
+            // (no FlowExceptionsToTaskScheduler anywhere in the desktop) rethrow it on the UI thread,
+            // and the desktop has no UnhandledException handler - a ticked app whose exe was removed
+            // would have taken the process down from the tray (D2 branch review, MEDIUM).
+            _logger.LogWarning(ex, "Launching {App} from the tray failed.", entry.DisplayName);
         }
     }
 
     [RelayCommand]
     private void OpenRemoteDesktop() => _shell.NavigateToRemoteDesktop();
 
+    // ═══ Send to phone (RemEx-172ba) ═══
+
+    /// <summary>Supplied by the view: the native multi-select file picker (<c>TrayFlyoutWindow</c>).</summary>
+    public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickFilesToSendAsync { get; set; }
+
+    /// <summary>Supplied by the app: raises RemEx's main window, for the Files page fallback below.</summary>
+    public Action? RaiseMainWindow { get; set; }
+
+    /// <summary>Test seam for the host's phone relay; production resolves it on every use.</summary>
+    internal Func<IPhoneFileAccess?> ResolvePhoneAccess { get; init; } = EmbeddedHostServiceLocator.TryResolve<IPhoneFileAccess>;
+
+    /// <summary>Test seam for the host's PC-started transfer engine.</summary>
+    internal Func<IPhoneFileTransfers?> ResolvePhoneTransfers { get; init; } = EmbeddedHostServiceLocator.TryResolve<IPhoneFileTransfers>;
+
+    /// <summary>
+    /// The Send tile: picks files on this PC and offers them to the attached phone through the same
+    /// PC-started upload the Files page uses (<see cref="IPhoneFileTransfers.UploadAsync"/>, a
+    /// <c>file_transfer_offer</c> into a folder the phone shares for writing; API_CONTRACTS §3).
+    /// </summary>
+    /// <remarks>
+    /// With more than one phone attached there is no single "the phone", so it opens the Files page,
+    /// where the person picks one, rather than guessing.
+    /// </remarks>
     [RelayCommand]
-    private void OpenTransfers() => _shell.NavigateToFileTransfer();
+    private async Task SendFilesToPhoneAsync()
+    {
+        var phones = ResolvePhoneAccess()?.AvailablePhones() ?? [];
+        if (phones.Count > 1)
+        {
+            _shell.NavigateToFileTransfer();
+            RaiseMainWindow?.Invoke();
+            return;
+        }
+
+        if (phones.Count == 0)
+        {
+            NotifySendProblem("Tray_Send_NotReachable");
+            return;
+        }
+
+        if (PickFilesToSendAsync is null)
+            return;
+
+        // One catch for the picker and the queueing: an AsyncRelayCommand rethrows on the UI thread,
+        // and the desktop has no UnhandledException handler (review R3).
+        try
+        {
+            var picked = await PickFilesToSendAsync(new FilePickerOpenOptions
+            {
+                Title = LocalizationService.Instance["Tray_Send_PickerTitle"],
+                AllowMultiple = true,
+            });
+
+            var localPaths = picked
+                .Select(file => file.TryGetLocalPath())
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Select(path => path!)
+                .ToList();
+            if (localPaths.Count == 0)
+            {
+                if (picked.Count > 0)
+                    NotifySendProblem("FileTransfer_LocalPathUnavailable");
+                return;
+            }
+
+            await SendToPhoneAsync(phones[0], localPaths);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Sending files to {Phone} from the tray failed.", phones[0].ClientId);
+            NotifySendProblem("Tray_Send_NotReachable");
+        }
+    }
+
+    /// <summary>
+    /// The wait for the last send's uploads to finish and be reported. Test seam: the command no longer
+    /// waits for it, so a test that wants the outcome awaits this instead.
+    /// </summary>
+    internal Task LastSendOutcome { get; private set; } = Task.CompletedTask;
+
+    /// <summary>
+    /// Queues <paramref name="localPaths"/> for upload to <paramref name="phone"/>'s first writable shared
+    /// folder and says so. Returns once they are queued; how it went is reported later, from
+    /// <see cref="LastSendOutcome"/>, so the Send tile is not held disabled for the length of the uploads
+    /// (review R2). Internal so a test can drive it without a picker.
+    /// </summary>
+    internal async Task SendToPhoneAsync(PhoneFileSource phone, IReadOnlyList<string> localPaths)
+    {
+        var access = ResolvePhoneAccess();
+        var transfers = ResolvePhoneTransfers();
+        if (access is null || transfers is null)
+        {
+            NotifySendProblem("Tray_Send_NotReachable");
+            return;
+        }
+
+        string? rootId;
+        try
+        {
+            rootId = await FindWritableRootAsync(access, phone.ClientId);
+        }
+        catch (Exception ex)
+        {
+            // Not connected, timed out, or the phone refused the roots request: all read the same to
+            // the person at the tray, and none of them should take the process down.
+            _logger.LogWarning(ex, "Listing {Phone}'s shared folders for a tray send failed.", phone.ClientId);
+            NotifySendProblem("Tray_Send_NotReachable");
+            return;
+        }
+
+        if (rootId is null)
+        {
+            NotifySendProblem("Tray_Send_NoFolder");
+            return;
+        }
+
+        var phoneName = string.IsNullOrWhiteSpace(phone.DisplayName) ? phone.ClientId : phone.DisplayName;
+        var queue = _shell.TransferQueue;
+        var items = localPaths
+            .Select(path => queue.Enqueue(
+                FileTransferQueueKind.Upload,
+                Path.GetFileName(path),
+                (progress, ct) => transfers.UploadAsync(phone.ClientId, path, rootId, string.Empty, progress, ct)))
+            .ToList();
+
+        NotificationService.Instance.Notify(
+            NotificationImportance.Outcome,
+            LocalizationService.Instance["Tray_Send_StartedTitle"],
+            string.Format(LocalizationService.Instance["Tray_Send_Started"], phoneName));
+
+        var outcome = ReportSendOutcomeAsync(items, phoneName);
+        LastSendOutcome = outcome;
+        outcome.FireAndForget("TrayFlyoutViewModel.ReportSendOutcome", _logger);    }
+
+    private static async Task ReportSendOutcomeAsync(IReadOnlyList<FileTransferQueueItem> items, string phoneName)
+    {
+        // Completion always completes (never faults) once the item reaches a terminal state.
+        await Task.WhenAll(items.Select(item => item.Completion.Task));
+
+        var sent = items.Count(item => item.State == TransferState.Done);
+        if (sent == items.Count)
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Tray_Send_DoneTitle"],
+                string.Format(LocalizationService.Instance["Tray_Send_Done"], phoneName));
+        }
+        else
+        {
+            NotificationService.Instance.Notify(
+                NotificationImportance.Outcome,
+                LocalizationService.Instance["Tray_Send_ProblemTitle"],
+                string.Format(LocalizationService.Instance["Tray_Send_Partial"], sent, items.Count, phoneName));
+        }
+    }
+
+    /// <summary>The phone's first shared folder it allows writing to, the way the Files page's
+    /// "Send to" picks one when nothing was opened there yet. Null when it shares none.</summary>
+    private static async Task<string?> FindWritableRootAsync(IPhoneFileAccess access, string clientId)
+    {
+        using var connection = access.Open(clientId);
+        using var client = new FileTransferClient(connection);
+        var roots = await client.ListRemoteRootsAsync(CancellationToken.None);
+        return roots.FirstOrDefault(root => root.IsWritable)?.RootId;
+    }
+
+    private static void NotifySendProblem(string messageKey) =>
+        NotificationService.Instance.Notify(
+            NotificationImportance.Outcome,
+            LocalizationService.Instance["Tray_Send_ProblemTitle"],
+            LocalizationService.Instance[messageKey]);
+
 
     [RelayCommand]
     private void OpenPairing() => _shell.StartPairing();

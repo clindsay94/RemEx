@@ -6,6 +6,8 @@
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
     xmlns:views="using:Remex.Desktop.Views"
+    xmlns:svc="using:Remex.Desktop.Services"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:coreModels="using:Remex.Core.Models"
     xmlns:controls="using:Remex.Desktop.Controls"
     xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles" x:Class="Remex.Desktop.Views.SettingsView" x:DataType="vm:SettingsViewModel">
@@ -16,8 +18,8 @@
 
         <!-- Settings view entrance (RemEx-alwfa.2), reusing the dashboard's once-per-process
              staggered entrance (RemEx-dnfq0). Opacity + TranslateTransform.Y only - RenderTransform
-             keyframes crash Avalonia at startup (RemEx-qolhg). 3 direct children, 25ms step so the
-             budget (max Delay 50ms + Duration 175ms = 225ms) stays under the 300ms ceiling. The
+             keyframes crash Avalonia at startup (RemEx-qolhg). 2 direct children, 25ms step so the
+             budget (max Delay 25ms + Duration 175ms = 200ms) stays under the 300ms ceiling. The
              class is added by SettingsView.axaml.cs only on the first visit this process, when
              reduced motion is off. -->
         <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(1)">
@@ -37,20 +39,6 @@
         <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(2)">
             <Style.Animations>
                 <Animation Duration="0:0:0.175" Delay="0:0:0.025" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
-                    <KeyFrame Cue="0%">
-                        <Setter Property="Opacity" Value="0"/>
-                        <Setter Property="TranslateTransform.Y" Value="12"/>
-                    </KeyFrame>
-                    <KeyFrame Cue="100%">
-                        <Setter Property="Opacity" Value="1"/>
-                        <Setter Property="TranslateTransform.Y" Value="0"/>
-                    </KeyFrame>
-                </Animation>
-            </Style.Animations>
-        </Style>
-        <Style Selector="StackPanel#SettingsSections.entrance > :is(Control):nth-child(3)">
-            <Style.Animations>
-                <Animation Duration="0:0:0.175" Delay="0:0:0.050" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -85,284 +73,96 @@
                 </StackPanel>
             </Grid>
 
-            <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
-            <WrapPanel x:Name="SettingsCards" Margin="0,10,0,0" HorizontalAlignment="Stretch">
+            <!-- ═══ Sections, one column, in task order (RemEx-172ba) ═══ -->
+            <StackPanel Spacing="24" Margin="0,10,0,0">
+                <!-- ═══ Connection & pairing ═══ -->
+                <material:Card Padding="24">
+                    <StackPanel Spacing="20">
+                        <TextBlock Text="{local:Localize Settings_ConnectionPairing}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                <!-- LEFT COLUMN -->
-                <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,24,16">
-
-                    <!-- ═══ Connection Section ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="20">
-                            <TextBlock Text="{local:Localize Settings_Connection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                            <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <StackPanel Spacing="10">
-                                    <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <!-- Phone presence, not the loopback link (RemEx-7zzw). Connection.IsConnected is this app's
-                                             socket to its own background service and is up essentially always, so a dot
-                                             bound to it was green whether or not a phone was there. The host link
-                                             is still shown, demoted beneath it — this card is about both, and only one of
-                                             them is a fact about the phone. -->
-                                        <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
-                                        </Ellipse>
-                                        <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <!-- UNGATED on purpose (review). HostRuntimeText and HostCapabilityText below are
-                                         both IsVisible-bound to Connection.IsConnected, so replacing this line rather
-                                         than demoting it left the card saying nothing at all about the host in exactly
-                                         the state a user opens it to diagnose. -->
-                                    <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                    <TextBlock Text="{Binding HostRuntimeText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
-                                    <TextBlock Text="{Binding HostCapabilityText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                        <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <!-- Phone presence, not the loopback link (RemEx-7zzw). Connection.IsConnected is this app's
+                                         socket to its own background service and is up essentially always, so a dot
+                                         bound to it was green whether or not a phone was there. The host link
+                                         is still shown, demoted beneath it — this card is about both, and only one of
+                                         them is a fact about the phone. -->
+                                    <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding Presence.PresenceText}" Theme="{StaticResource Body1TextBlock}" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
-
-                            <!-- NO ADDRESS BOX, DISCOVER, SAVE & RECONNECT OR DISCONNECT HERE (sweep D1, hard
-                                 rule 1). They made this PC a client that could be pointed at ANOTHER PC; the
-                                 phone is the only client. The UI's link to its own host is internal plumbing,
-                                 and the only thing a user does from this card is pair a phone. -->
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3): the QR and the PIN are one act. -->
-                                <Button
-                                        Classes="secondary"
-                                        Command="{Binding Connection.GenerateQrCodeCommand}"
-                                        IsVisible="{Binding Connection.CanRevealPairingPin}"
-                                        Foreground="{DynamicResource TextSecondaryBrush}"
-                                        Padding="18,10" Cursor="Hand"
-                                        ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"
-                                        AutomationProperties.Name="{local:Localize Home_PairPhoneButton}">
-                                    <TextBlock Text="{local:Localize Home_PairPhoneButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
-                                </Button>
+                                <!-- UNGATED on purpose (review). HostRuntimeText and HostCapabilityText below are
+                                     both IsVisible-bound to Connection.IsConnected, so replacing this line rather
+                                     than demoting it left the card saying nothing at all about the host in exactly
+                                     the state a user opens it to diagnose. -->
+                                <TextBlock Text="{Binding Connection.StatusText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                <TextBlock Text="{Binding HostRuntimeText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                                <TextBlock Text="{Binding HostCapabilityText}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
                             </StackPanel>
+                        </Border>
 
-                            <!-- QR Code Display Panel — contents in PairingQrPanelView (RemEx-xmgw). -->
-                            <Border IsVisible="{Binding Connection.ShowQrCode}"
-                                    Background="{DynamicResource GlassBaseDarkBrush}"
-                                    CornerRadius="12" Padding="20"
-                                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <views:PairingQrPanelView DataContext="{Binding Connection}"/>
-                            </Border>
-
-                            <!-- Pairing PIN Display Panel — contents in PairingPinPanelView -->
-                            <Border IsVisible="{Binding Connection.ShowPairingPin}"
-                                    Background="{DynamicResource GlassBaseDarkBrush}"
-                                    CornerRadius="12" Padding="20"
-                                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <views:PairingPinPanelView DataContext="{Binding Connection}"/>
-                            </Border>
+                        <!-- NO ADDRESS BOX, DISCOVER, SAVE & RECONNECT OR DISCONNECT HERE (sweep D1, hard
+                             rule 1). They made this PC a client that could be pointed at ANOTHER PC; the
+                             phone is the only client. The UI's link to its own host is internal plumbing,
+                             and the only thing a user does from this card is pair a phone. -->
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3): the QR and the PIN are one act. -->
+                            <Button
+                                    Classes="secondary"
+                                    Command="{Binding Connection.GenerateQrCodeCommand}"
+                                    IsVisible="{Binding Connection.CanRevealPairingPin}"
+                                    Foreground="{DynamicResource TextSecondaryBrush}"
+                                    Padding="18,10" Cursor="Hand"
+                                    ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"
+                                    AutomationProperties.Name="{local:Localize Home_PairPhoneButton}">
+                                <TextBlock Text="{local:Localize Home_PairPhoneButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                            </Button>
                         </StackPanel>
-                    </material:Card>
 
-                    <!-- ═══ General Section ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_General}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                        <!-- QR Code Display Panel — contents in PairingQrPanelView (RemEx-xmgw). -->
+                        <Border IsVisible="{Binding Connection.ShowQrCode}"
+                                Background="{DynamicResource GlassBaseDarkBrush}"
+                                CornerRadius="12" Padding="20"
+                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <views:PairingQrPanelView DataContext="{Binding Connection}"/>
+                        </Border>
 
-                            <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch" AutomationProperties.Name="{local:Localize Settings_Language}" assists:ComboBoxAssist.Label="{local:Localize Settings_Language}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                        <!-- Pairing PIN Display Panel — contents in PairingPinPanelView -->
+                        <Border IsVisible="{Binding Connection.ShowPairingPin}"
+                                Background="{DynamicResource GlassBaseDarkBrush}"
+                                CornerRadius="12" Padding="20"
+                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <views:PairingPinPanelView DataContext="{Binding Connection}"/>
+                        </Border>
 
-                            <!-- The look settings live in the Personalize sheet, not here -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_Appearance}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_AppearanceDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <Button Grid.Column="1" Classes="secondary" Command="{Binding OpenPersonalizeCommand}" Content="{local:Localize Personalize_Title}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Personalize_Title}"/>
-                            </Grid>
-
-                            <!-- Close behavior: minimize to tray vs. exit on window close -->
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CloseToTrayTooltip}">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_CloseToTray}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_CloseToTrayDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CloseToTray}" Grid.Column="1" IsChecked="{Binding IsCloseToTrayEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                            </Grid>
-
-                            <!-- Automatic update check: query GitHub for a newer release on startup -->
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CheckForUpdatesTooltip}">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_CheckForUpdates}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_CheckForUpdatesDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CheckForUpdates}" Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                            </Grid>
-
-                            <!-- Launch at Login behavior: run minimized on sign-in.
-                                 The "could not check" warning sits ABOVE the switch and inside the same gated
-                                 StackPanel, matching the keep-session-unlocked block below. Review caught it
-                                 placed after the switch while all nine translations say "the switch below",
-                                 and gated only by coincidence - the flag happened never to be set when the
-                                 feature is unsupported, which is a fact in a different file. (RemEx-h5lr) -->
-                            <StackPanel Spacing="4" IsVisible="{Binding IsLaunchAtLoginSupported}">
-                                <TextBlock Text="{local:Localize Settings_LaunchAtLoginStateUnknown}"
-                                           IsVisible="{Binding IsLaunchAtLoginStateUnknown}"
-                                           Theme="{StaticResource CaptionTextBlock}"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource SystemWarningBrush}"/>
-                                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_LaunchAtLoginTooltip}">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                            </Grid>
-                            </StackPanel>
-
-                            <!-- Keep session unlocked while a paired client is connected (opt-in unattended access) (RemEx-l6o) -->
-                            <StackPanel Spacing="4" IsVisible="{Binding IsKeepSessionUnlockedSupported}">
-                                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_KeepSessionUnlockedTooltip}">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_KeepSessionUnlocked}" Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                                </Grid>
-                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
-                            </StackPanel>
-
-                            <!-- Fully exit the application (ends the process) -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_ExitApp}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_ExitAppDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <!-- Background/Foreground removed: pre-vocabulary danger shape, see the
-                                     Disconnect button above (RemEx-cgrv3). -->
-                                <Button Grid.Column="1" Classes="secondary danger" Command="{Binding ExitApplicationCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" Cursor="Hand" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Settings_ExitAppButton}">
-                                    <TextBlock Text="{local:Localize Settings_ExitAppButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
-                                </Button>
-                            </Grid>
+                    <!-- Once a phone pairs, ConnectionViewModel closes the QR and PIN panels above (PinCleared);
+                         this line says which phone it was. UI state only (RemEx-172ba). -->
+                    <Border IsVisible="{Binding HasJustPairedDevice}"
+                            Background="{DynamicResource CardPlateNeutralBrush}"
+                            CornerRadius="12" Padding="16,12"
+                            BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                        <Binding Path="[Settings_PairingSucceeded]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                        <Binding Path="JustPairedDeviceName"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
                         </StackPanel>
-                    </material:Card>
-
-                </StackPanel>
-
-                <!-- RIGHT COLUMN -->
-                <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
-
-                    <!-- ═══ Sensor Alerts Section (RemEx-8wpvr.5) ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="16" DataContext="{Binding AlertsSection}">
-                            <TextBlock Text="{local:Localize Settings_Alerts_Title}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                            <!-- Secondary (OnSurfaceVariant), not Muted (Outline): this is the card's only content
-                                 when there are no alerts, and Outline is a border tone that vanished against the
-                                 wallpaper in the eyes pass (RemEx-8wpvr.12). -->
-                            <TextBlock Text="{local:Localize Settings_Alerts_Empty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"/>
-
-                            <!-- Virtualising ListBox, not a bare ItemsControl (bd memory: a bare
-                                 ItemsControl realizes every row). MaxHeight bounds the card height
-                                 once the alert list grows past a handful of rows. -->
-                            <ListBox ItemsSource="{Binding Rows}" MaxHeight="320" IsVisible="{Binding !IsEmpty}" Background="Transparent" BorderThickness="0">
-                                <!-- Without this the ListBoxItem announces the view-model's type name
-                                     to UI Automation (RemEx-8wpvr.11): name the row after its sensor. -->
-                                <ListBox.Styles>
-                                    <Style Selector="ListBoxItem" x:DataType="vm:SensorAlertRowViewModel">
-                                        <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}"/>
-                                    </Style>
-                                </ListBox.Styles>
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:SensorAlertRowViewModel">
-                                        <Grid ColumnDefinitions="*,Auto" Margin="0,6">
-                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
-                                                           Opacity="{Binding IsDisconnected, Converter={x:Static local:BoolToDoubleConverter.Instance}, ConverterParameter='0.55|1.0'}"/>
-                                                <TextBlock Text="{Binding Summary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                <TextBlock Text="{Binding TrippedSummary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemErrorBrush}" IsVisible="{Binding IsTripped}"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_Edit}" Command="{Binding EditCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Edit}"/>
-                                                <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_CopyTo}" Command="{Binding CopyToCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_CopyTo}"/>
-                                                <Button Classes="tertiary danger compact" Content="{local:Localize Settings_Alerts_Remove}" Command="{Binding RemoveCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Remove}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="secondary" Content="{local:Localize Settings_Alerts_AcknowledgeAll}" Command="{Binding AcknowledgeAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_AcknowledgeAll}"/>
-                                <Button Classes="secondary danger" Content="{local:Localize Settings_Alerts_ResetAll}" Command="{Binding ResetAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_ResetAll}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </material:Card>
-
-                    <!-- ═══ Backup &amp; Restore Section ═══ -->
-                    <material:Card Padding="24">
-                        <StackPanel Spacing="16">
-                            <TextBlock Text="{local:Localize Settings_BackupSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_BackupDescription}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
-
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="secondary" Command="{Binding ExportSettingsCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ExportButton}">
-                                    <TextBlock Text="{local:Localize Settings_ExportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
-                                </Button>
-                                <Button Classes="secondary" Command="{Binding ImportSettingsCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ImportButton}">
-                                    <TextBlock Text="{local:Localize Settings_ImportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
-                                </Button>
-                                <Button Classes="tertiary" Command="{Binding OpenBackupsFolderCommand}" Content="{local:Localize Settings_OpenBackupsFolder}" ToolTip.Tip="{local:Localize Settings_OpenBackupsFolderTip}" AutomationProperties.Name="{local:Localize Settings_OpenBackupsFolder}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </material:Card>
-
-                </StackPanel>
-            </WrapPanel>
-
-            <!-- ═══ FULL WIDTH SECTIONS ═══ -->
-            <StackPanel Spacing="24">
-                <!-- ═══ Shared Folders Section ═══ -->
-                <material:Card Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="{local:Localize Settings_FileTransferSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                <Button Classes="secondary" Command="{Binding AddSharedFolderCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferAddFolder}">
-                                    <TextBlock Text="{local:Localize Settings_FileTransferAddFolder}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
-                                </Button>
-                                <Button Classes="secondary" Command="{Binding RestoreDefaultSharedFoldersCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferRestoreDefaults}">
-                                    <TextBlock Text="{local:Localize Settings_FileTransferRestoreDefaults}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-
-                        <ItemsControl ItemsSource="{Binding SharedRoots}" Margin="0,10,0,0">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
-                                    <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
-                                        <Grid ColumnDefinitions="*,Auto,Auto">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding AbsolutePath}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="24,0">
-                                                <TextBlock Text="{local:Localize Settings_FileTransferWritable}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_FileTransferWritable}" IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
-                                            </StackPanel>
-                                            <!-- Background/Foreground removed: pre-vocabulary danger shape (RemEx-cgrv3). -->
-                                            <Button Grid.Column="2" Classes="secondary danger" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" Cursor="Hand"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                    </Border>
                     </StackPanel>
                 </material:Card>
 
                 <!-- ═══ Paired Devices (RemEx-kirdm) ═══
-                     DELIBERATELY ITS OWN CARD, directly above File-Sharing Trust and never merged
-                     with it. That list is per-device FILE grants, revocable without touching the
-                     pairing; this one IS the pairing. One list would let a user revoke the wrong
-                     thing, and on this side that costs them a phone that has to pair again with a
-                     new PIN. Read-only for now — rename and unpair are RemEx-4gbp2. -->
+                     DELIBERATELY ITS OWN CARD, never merged with File-sharing trust below. That list is
+                     per-device FILE grants, revocable without touching the pairing; this one IS the
+                     pairing. One list would let a user revoke the wrong thing, and on this side that
+                     costs them a phone that has to pair again with a new PIN. Second on the page so it
+                     sits with Connection & pairing (RemEx-172ba). -->
                 <material:Card Padding="24" IsVisible="{Binding CanListPairedDevices}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
@@ -457,49 +257,251 @@
                     </StackPanel>
                 </material:Card>
 
-                <!-- ═══ File-Sharing Trust Section ═══ -->
-                <material:Card Padding="24" IsVisible="{Binding SupportsTrustManagement}">
+                <!-- ═══ General Section ═══ -->
+                <material:Card Padding="24">
                     <StackPanel Spacing="16">
+                        <TextBlock Text="{local:Localize Settings_General}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                        <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch" AutomationProperties.Name="{local:Localize Settings_Language}" assists:ComboBoxAssist.Label="{local:Localize Settings_Language}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <!-- The look settings live in the Personalize sheet, not here -->
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="secondary" Command="{Binding RefreshTrustedDevicesCommand}" Padding="14,8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_TrustRefresh}">
-                                <TextBlock Text="{local:Localize Settings_TrustRefresh}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
-                            </Button>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{local:Localize Settings_Appearance}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{local:Localize Settings_AppearanceDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="secondary" Command="{Binding OpenPersonalizeCommand}" Content="{local:Localize Personalize_Title}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Personalize_Title}"/>
                         </Grid>
 
-                        <TextBlock Text="{local:Localize Settings_TrustDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <!-- Close behavior: minimize to tray vs. exit on window close -->
+                        <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CloseToTrayTooltip}">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{local:Localize Settings_CloseToTray}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{local:Localize Settings_CloseToTrayDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CloseToTray}" Grid.Column="1" IsChecked="{Binding IsCloseToTrayEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        </Grid>
 
-                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding ShowNoTrustedDevices}"/>
+                        <!-- Automatic update check: query GitHub for a newer release on startup -->
+                        <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CheckForUpdatesTooltip}">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{local:Localize Settings_CheckForUpdates}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{local:Localize Settings_CheckForUpdatesDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CheckForUpdates}" Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        </Grid>
 
-                        <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoadingTrustedDevices}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
-                        <ItemsControl ItemsSource="{Binding TrustedDevices}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:FileTrustDeviceItem">
-                                    <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
-                                        <StackPanel Spacing="12">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <!-- Name first, id underneath (RemEx-9me77). The id stays because it is the
-                                                     one thing here comparable against what the phone shows; it is just no
-                                                     longer the only thing, which is what made this card unreadable. -->
-                                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding ShortId}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                        <!-- Launch at Login behavior: run minimized on sign-in.
+                             The "could not check" warning sits ABOVE the switch and inside the same gated
+                             StackPanel, matching the keep-session-unlocked block below. Review caught it
+                             placed after the switch while all nine translations say "the switch below",
+                             and gated only by coincidence - the flag happened never to be set when the
+                             feature is unsupported, which is a fact in a different file. (RemEx-h5lr) -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsLaunchAtLoginSupported}">
+                            <TextBlock Text="{local:Localize Settings_LaunchAtLoginStateUnknown}"
+                                       IsVisible="{Binding IsLaunchAtLoginStateUnknown}"
+                                       Theme="{StaticResource CaptionTextBlock}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource SystemWarningBrush}"/>
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_LaunchAtLoginTooltip}">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        </Grid>
+                        </StackPanel>
+
+                        <!-- Keep session unlocked while a paired client is connected (opt-in unattended access) (RemEx-l6o) -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsKeepSessionUnlockedSupported}">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_KeepSessionUnlockedTooltip}">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_KeepSessionUnlocked}" Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+                            <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
+                        </StackPanel>
+
+                        <!-- Fully exit the application (ends the process) -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{local:Localize Settings_ExitApp}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{local:Localize Settings_ExitAppDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <!-- Background/Foreground removed: pre-vocabulary danger shape, see the
+                                 Disconnect button above (RemEx-cgrv3). -->
+                            <Button Grid.Column="1" Classes="secondary danger" Command="{Binding ExitApplicationCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" Cursor="Hand" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Settings_ExitAppButton}">
+                                <TextBlock Text="{local:Localize Settings_ExitAppButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </material:Card>
+
+                <!-- ═══ Tray pop-up ═══ Moved from Personalize › Layout (RemEx-172ba): it chooses what the
+                     pop-up shows, not how RemEx looks. Bound to the shell's one CustomizationViewModel. -->
+                <material:Card Padding="24" IsVisible="{Binding TrayFlyoutSettings, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <views:TrayFlyoutSettingsView DataContext="{Binding TrayFlyoutSettings}"/>
+                </material:Card>
+
+                <!-- ═══ Files & sharing (RemEx-172ba) ═══ Shared folders and file-sharing trust under one
+                     heading. Still two lists: the folders are what this PC shares, trust is what each
+                     paired phone may do with them. -->
+                <material:Card Padding="24">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="{local:Localize Settings_FilesSharing}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                        <StackPanel Spacing="16" IsVisible="{Binding SupportsSharedFolderConfiguration}">
+                            <TextBlock Text="{local:Localize Settings_FileTransferSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                    <Button Classes="secondary" Command="{Binding AddSharedFolderCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferAddFolder}">
+                                        <TextBlock Text="{local:Localize Settings_FileTransferAddFolder}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                                    </Button>
+                                    <Button Classes="secondary" Command="{Binding RestoreDefaultSharedFoldersCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_FileTransferRestoreDefaults}">
+                                        <TextBlock Text="{local:Localize Settings_FileTransferRestoreDefaults}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding SharedRoots}" Margin="0,10,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
+                                        <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                    <TextBlock Text="{Binding AbsolutePath}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="24,0">
+                                                    <TextBlock Text="{local:Localize Settings_FileTransferWritable}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_FileTransferWritable}" IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
                                                 </StackPanel>
                                                 <!-- Background/Foreground removed: pre-vocabulary danger shape (RemEx-cgrv3). -->
-                                                <Button Grid.Column="1" Classes="secondary danger" Content="{local:Localize Settings_TrustRevoke}" Command="{Binding RevokeCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" Cursor="Hand"/>
+                                                <Button Grid.Column="2" Classes="secondary danger" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" Cursor="Hand"/>
                                             </Grid>
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustFullBrowse}" Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
-                                            </Grid>
-                                            <!-- No "auto-accept incoming" switch (RemEx-bezf): nothing read it. -->
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
+                        <StackPanel Spacing="16" IsVisible="{Binding SupportsTrustManagement}">
+                            <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Classes="secondary" Command="{Binding RefreshTrustedDevicesCommand}" Padding="14,8" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_TrustRefresh}">
+                                    <TextBlock Text="{local:Localize Settings_TrustRefresh}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                                </Button>
+                            </Grid>
+
+                            <TextBlock Text="{local:Localize Settings_TrustDesc}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+                            <TextBlock Text="{local:Localize Settings_TrustEmpty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding ShowNoTrustedDevices}"/>
+
+                            <controls:BusyPlaceholder Mode="Skeleton" IsBusy="{Binding IsLoadingTrustedDevices}" IsReducedMotion="{Binding IsReducedMotion}" AutomationProperties.Name="{local:Localize Busy_Loading}">
+                            <ItemsControl ItemsSource="{Binding TrustedDevices}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:FileTrustDeviceItem">
+                                        <Border Background="{DynamicResource CardPlateNeutralBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                            <StackPanel Spacing="12">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <!-- Name first, id underneath (RemEx-9me77). The id stays because it is the
+                                                         one thing here comparable against what the phone shows; it is just no
+                                                         longer the only thing, which is what made this card unreadable. -->
+                                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding ShortId}" Theme="{StaticResource CaptionTextBlock}" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <!-- Background/Foreground removed: pre-vocabulary danger shape (RemEx-cgrv3). -->
+                                                    <Button Grid.Column="1" Classes="secondary danger" Content="{local:Localize Settings_TrustRevoke}" Command="{Binding RevokeCommand}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" Cursor="Hand"/>
+                                                </Grid>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustFullBrowse}" Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
+                                                </Grid>
+                                                <!-- No "auto-accept incoming" switch (RemEx-bezf): nothing read it. -->
+
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            </controls:BusyPlaceholder>
+                        </StackPanel>
+                    </StackPanel>
+                </material:Card>
+
+                <!-- ═══ Sensor Alerts Section (RemEx-8wpvr.5) ═══ -->
+                <material:Card Padding="24">
+                    <StackPanel Spacing="16" DataContext="{Binding AlertsSection}">
+                        <TextBlock Text="{local:Localize Settings_Alerts_Title}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                        <!-- Secondary (OnSurfaceVariant), not Muted (Outline): this is the card's only content
+                             when there are no alerts, and Outline is a border tone that vanished against the
+                             wallpaper in the eyes pass (RemEx-8wpvr.12). -->
+                        <TextBlock Text="{local:Localize Settings_Alerts_Empty}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"/>
+
+                        <!-- Virtualising ListBox, not a bare ItemsControl (bd memory: a bare
+                             ItemsControl realizes every row). MaxHeight bounds the card height
+                             once the alert list grows past a handful of rows. -->
+                        <ListBox ItemsSource="{Binding Rows}" MaxHeight="320" IsVisible="{Binding !IsEmpty}" Background="Transparent" BorderThickness="0">
+                            <!-- Without this the ListBoxItem announces the view-model's type name
+                                 to UI Automation (RemEx-8wpvr.11): name the row after its sensor. -->
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem" x:DataType="vm:SensorAlertRowViewModel">
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SensorAlertRowViewModel">
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+                                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" Theme="{StaticResource Body2TextBlock}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       Opacity="{Binding IsDisconnected, Converter={x:Static local:BoolToDoubleConverter.Instance}, ConverterParameter='0.55|1.0'}"/>
+                                            <TextBlock Text="{Binding Summary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding TrippedSummary}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource SystemErrorBrush}" IsVisible="{Binding IsTripped}"/>
                                         </StackPanel>
-                                    </Border>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_Edit}" Command="{Binding EditCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Edit}"/>
+                                            <Button Classes="tertiary compact" Content="{local:Localize Settings_Alerts_CopyTo}" Command="{Binding CopyToCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_CopyTo}"/>
+                                            <Button Classes="tertiary danger compact" Content="{local:Localize Settings_Alerts_Remove}" Command="{Binding RemoveCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_Remove}"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        </controls:BusyPlaceholder>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Classes="secondary" Content="{local:Localize Settings_Alerts_AcknowledgeAll}" Command="{Binding AcknowledgeAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_AcknowledgeAll}"/>
+                            <Button Classes="secondary danger" Content="{local:Localize Settings_Alerts_ResetAll}" Command="{Binding ResetAllCommand}" AutomationProperties.Name="{local:Localize Settings_Alerts_ResetAll}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </material:Card>
+
+                <!-- ═══ Backup &amp; Restore Section ═══ -->
+                <material:Card Padding="24">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="{local:Localize Settings_BackupSection}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                        <TextBlock Text="{local:Localize Settings_BackupDescription}" Theme="{StaticResource CaptionTextBlock}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Classes="secondary" Command="{Binding ExportSettingsCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ExportButton}">
+                                <TextBlock Text="{local:Localize Settings_ExportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="Bold"/>
+                            </Button>
+                            <Button Classes="secondary" Command="{Binding ImportSettingsCommand}" Padding="16,10" Cursor="Hand" AutomationProperties.Name="{local:Localize Settings_ImportButton}">
+                                <TextBlock Text="{local:Localize Settings_ImportButton}" Theme="{StaticResource CaptionTextBlock}" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Classes="tertiary" Command="{Binding OpenBackupsFolderCommand}" Content="{local:Localize Settings_OpenBackupsFolder}" ToolTip.Tip="{local:Localize Settings_OpenBackupsFolderTip}" AutomationProperties.Name="{local:Localize Settings_OpenBackupsFolder}"/>
+                        </StackPanel>
                     </StackPanel>
                 </material:Card>
 

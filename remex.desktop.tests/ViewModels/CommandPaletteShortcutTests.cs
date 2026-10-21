@@ -155,7 +155,18 @@ public sealed class CommandPaletteShortcutTests : IAsyncLifetime
         nav.Should().Equal("Ctrl+1", "Ctrl+2", "Ctrl+3", "Ctrl+4", "Ctrl+5", "Ctrl+6", "Ctrl+7", "Ctrl+8", "Ctrl+9");
     }
 
-    // MainWindow gesture ("Ctrl+D2", "Ctrl+OemComma") in palette spelling ("Ctrl+2", "Ctrl+,") -> bound command name.
+    [Fact]
+    public void PersonalizeAdvertisesCtrlShiftComma_AndNoRowStillClaimsCtrlCommaForIt()
+    {
+        var palette = new CommandPaletteViewModel(_shell);
+        var personalize = palette.FilteredResults.Single(e => ReferenceEquals(e.Command, _shell.ToggleSettingsPanelCommand));
+
+        personalize.Shortcut.Should().Be("Ctrl+Shift+,", "Ctrl+, opens Settings since RemEx-172ba");
+        palette.FilteredResults.Should().NotContain(e => e.Shortcut == "Ctrl+,"
+            && !ReferenceEquals(e.Command, _shell.NavigateToSettingsCommand));
+    }
+
+    // MainWindow gesture ("Ctrl+D2", "Ctrl+Shift+OemComma") in palette spelling ("Ctrl+2", "Ctrl+Shift+,") -> bound command name.
     private static System.Collections.Generic.Dictionary<string, string> MainWindowGestures([CallerFilePath] string f = "")
     {
         XNamespace ns = "https://github.com/avaloniaui";
@@ -166,7 +177,7 @@ public sealed class CommandPaletteShortcutTests : IAsyncLifetime
             .Select(g => g.First())
             .ToDictionary(
             b => b.Attribute("Gesture")!.Value
-                .Replace("Ctrl+OemComma", "Ctrl+,")
+                .Replace("OemComma", ",")
                 .Replace("Ctrl+D", "Ctrl+"),
             b => System.Text.RegularExpressions.Regex.Match(b.Attribute("Command")!.Value, @"\{Binding\s+(\w+)\}").Groups[1].Value);
     }

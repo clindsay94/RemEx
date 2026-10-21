@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Ajustes guardados</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Conexión</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Ajustar a la cuadrícula</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Tamaño de cuadrícula</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Sensores fijados</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Seleccionar sensores para mostrar en la pantalla de inicio</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Idioma</value>
@@ -754,7 +745,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>La forma más rápida de conectar tu teléfono es escanear un código QR. El PC genera un código de emparejamiento que contiene todo lo que necesita tu aplicación móvil.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Abre Ajustes → Conexión en el PC
+    <value>1. Abre Ajustes → Conexión y emparejamiento en el PC
 2. Haz clic en "Vincular un teléfono" para mostrar el código QR
 3. Abre la aplicación móvil RemEx
 4. En la pantalla Conexión, toca "Añadir un PC" y luego "Escanear código QR"
@@ -781,10 +772,10 @@ Linux: ip addr  o  hostname -I</value>
     <value>¡Ya estás listo!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Usa la barra lateral para ir a Inicio, Sensores, Comandos, Rutinas, Aplicaciones, Procesos, Archivos, Registros y Diagnósticos, Ajustes y Acerca de. Personalizar está al final de la barra lateral.</value>
+    <value>Usa la barra lateral para ir a Inicio, Escritorio remoto, Archivos, Comandos, Aplicaciones, Procesos, Sensores, Rutinas, Ajustes, Registros y Diagnósticos y Acerca de. Personalizar está al final de la barra lateral.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>En Ajustes encontrarás el emparejamiento, las carpetas compartidas, los dispositivos de confianza, las alertas de sensores y las copias de seguridad. El idioma, el tema y los sensores fijados están en Personalizar.</value>
+    <value>En Ajustes encontrarás el emparejamiento, los dispositivos emparejados, el idioma, las carpetas compartidas, las alertas de sensores y las copias de seguridad. Pulsa Ctrl+, para abrirlo. Los colores, las fuentes y el resto del aspecto están en Personalizar, y los sensores se fijan desde la página Sensores.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Puedes repetir este tutorial en cualquier momento desde Ajustes.</value>
@@ -1225,7 +1216,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Glosario: Aplicaciones</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Inicia aplicaciones y scripts seleccionados en el PC. Configura las entradas una vez en el PC y luego ábrelas de forma remota desde RemEx.</value>
+    <value>Abre aplicaciones y scripts elegidos en este PC desde tu teléfono. Añade cada uno en la página Aplicaciones con Agregar un programa, donde indicas su ruta y su nombre.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glosario: Procesos</value>
@@ -1249,7 +1240,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Glosario: Escritorio remoto</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Transmite la pantalla de tu PC con calidad, escala y FPS ajustables para equilibrar nitidez y ancho de banda.</value>
+    <value>Ve y controla la pantalla de tu PC desde el teléfono. La calidad, la escala y los FPS están en la página Escritorio remoto, para cambiar nitidez por una imagen más fluida en una red lenta.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glosario: Ajustes rápidos</value>
@@ -1261,7 +1252,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Glosario: Personalizar</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Ajusta temas, estrategia de paleta, fuentes, formas de tarjeta y opacidad para adaptarlos a tu forma de supervisar y controlar tu equipo.</value>
+    <value>Cambia los colores, el modo claro u oscuro, las fuentes, la forma de las tarjetas y la opacidad en Personalizar, al final de la barra lateral. Pulsa Ctrl+Shift+, para abrirlo desde cualquier lugar.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Rutinas</value>
@@ -2617,7 +2608,7 @@ Esto es esperable en escritorios que inician RemEx directamente desde el autoarr
     <value>Cambiar pantallas</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personalizar</value>
+    <value>Ajustes</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Buscar pantallas y acciones…</value>
@@ -4536,7 +4527,7 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
     <value>Aspecto</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Los colores, el modo claro u oscuro, las fuentes y la pantalla de inicio están en Personalizar. Atajo: Ctrl+,</value>
+    <value>Los colores, el modo claro u oscuro, las fuentes y la pantalla de inicio están en Personalizar. Atajo: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>¿Reemplazar tu configuración?</value>
@@ -4576,5 +4567,47 @@ Para que las rutinas no empiecen solas, haz clic en Pausar todo en la página Ru
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Borrar búsqueda</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Conexión y emparejamiento</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Archivos y uso compartido</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} ya está emparejado con este PC.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Cuadrícula</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Ajusta las tarjetas a una cuadrícula y elige su tamaño</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Elige archivos para enviar a tu teléfono</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>No se pudo enviar a tu teléfono</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx no puede comunicarse con tu teléfono ahora. Abre RemEx en el teléfono, comprueba que diga Conectado y vuelve a intentarlo.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Tu teléfono no comparte ninguna carpeta en la que RemEx pueda guardar. En el teléfono, comparte una carpeta con tu PC y permite guardar en ella; luego vuelve a intentarlo.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Enviando a tu teléfono</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Enviando a {0}. Puedes seguir el progreso en la página Archivos.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Enviado a tu teléfono</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Todo llegó a {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>Llegaron {0} de {1} archivos a {2}. Abre la página Archivos para ver qué falló.</value>
   </data>
 </root>

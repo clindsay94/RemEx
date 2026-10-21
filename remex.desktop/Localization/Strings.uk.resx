@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Налаштування збережено</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Підключення</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Прив'язати до сітки</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Розмір сітки</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Закріплені датчики</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Виберіть датчики для відображення на головному екрані</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Мова</value>
@@ -750,7 +741,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Найшвидший спосіб під'єднати телефон — відсканувати QR-код. Комп'ютер створює код пари, який містить усе потрібне мобільному застосунку.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Відкрийте Налаштування → Підключення на комп'ютері
+    <value>1. Відкрийте Налаштування → Підключення та пов’язування на комп'ютері
 2. Натисніть «Пов’язати телефон», щоб показати QR-код
 3. Відкрийте мобільний застосунок RemEx
 4. На екрані «Підключення» торкніться «Додати ПК», а потім «Сканувати QR-код»
@@ -777,10 +768,10 @@ Linux: ip addr  або  hostname -I</value>
     <value>Ви готові!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Використовуйте бічну панель, щоб переходити між сторінками Головна, Датчики, Команди, Рутини, Застосунки, Процеси, Файли, Журнали та діагностика, Налаштування та Про програму. Персоналізувати — унизу бічної панелі.</value>
+    <value>Використовуйте бічну панель, щоб переходити між сторінками Головна, Віддалений робочий стіл, Файли, Команди, Застосунки, Процеси, Датчики, Рутини, Налаштування, Журнали та діагностика та Про програму. Персоналізувати — унизу бічної панелі.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>У Налаштуваннях — сполучення, спільні папки, довірені пристрої, сповіщення датчиків і резервні копії. Мова, тема та закріплені датчики — у Персоналізувати.</value>
+    <value>У Налаштуваннях — сполучення, сполучені пристрої, мова, спільні папки, сповіщення датчиків і резервні копії. Натисніть Ctrl+, щоб їх відкрити. Кольори, шрифти й решта вигляду — у Персоналізувати, а датчики закріплюються на сторінці Датчики.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Ви можете повторно переглянути це навчання в будь-який час у Налаштуваннях.</value>
@@ -1221,7 +1212,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Глосарій: Застосунки</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Запускайте вибрані програми та скрипти на комп'ютері. Налаштуйте записи один раз на комп'ютері, а потім запускайте їх віддалено з RemEx.</value>
+    <value>Запускайте з телефона вибрані програми та скрипти на цьому комп'ютері. Додайте кожну на сторінці Застосунки кнопкою Додати програму, де вказуєте її шлях і назву.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Глосарій: Процеси</value>
@@ -1245,7 +1236,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Глосарій: Віддалений робочий стіл</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Транслюйте екран комп'ютера з налаштовуваними якістю, масштабом і частотою кадрів, щоб збалансувати чіткість і трафік.</value>
+    <value>Переглядайте екран комп'ютера й керуйте ним із телефона. Якість, масштаб і частота кадрів — на сторінці Віддалений робочий стіл, тож у повільній мережі можна обміняти чіткість на плавніше зображення.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Глосарій: Швидкі налаштування</value>
@@ -1257,7 +1248,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Глосарій: Персоналізувати</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Налаштуйте теми, стратегію палітри, шрифти, форми карток і прозорість під свій спосіб стеження та керування.</value>
+    <value>Змінюйте кольори, світлий або темний режим, шрифти, форму карток і прозорість у Персоналізувати, унизу бічної панелі. Натисніть Ctrl+Shift+, щоб відкрити його будь-звідки.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Рутини</value>
@@ -2606,7 +2597,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Перемикати екрани</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Персоналізація</value>
+    <value>Налаштування</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Пошук екранів і дій…</value>
@@ -4525,7 +4516,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Вигляд</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Кольори, світлий або темний режим, шрифти та заставка розташовані в розділі «Персоналізувати». Скорочення: Ctrl+,</value>
+    <value>Кольори, світлий або темний режим, шрифти та заставка розташовані в розділі «Персоналізувати». Скорочення: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Замінити ваші налаштування?</value>
@@ -4565,5 +4556,47 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Очистити пошук</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Підключення та пов’язування</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Файли та спільний доступ</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} тепер пов’язано з цим ПК.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Сітка</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Прив’язуйте картки до сітки та виберіть її розмір</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Виберіть файли, щоб надіслати їх на телефон</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Не вдалося надіслати на телефон</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx зараз не може зв’язатися з телефоном. Відкрийте RemEx на телефоні, перевірте, що там написано «Підключено», і спробуйте ще раз.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Телефон не надає спільного доступу до папки, у яку RemEx може зберігати. На телефоні поділіться папкою з ПК і дозвольте зберігати в неї, а потім спробуйте ще раз.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Надсилання на телефон</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Надсилання на {0}. Стежити за ходом можна на сторінці «Файли».</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Надіслано на телефон</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Усе надійшло на {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>На {2} надійшло файлів: {0} з {1}. Відкрийте сторінку «Файли», щоб побачити, що пішло не так.</value>
   </data>
 </root>

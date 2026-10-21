@@ -120,8 +120,13 @@ public class PlateSurfaceTests
             @"<Border Grid\.Row=""0"" Background=""\{DynamicResource GlassBaseDarkBrush\}"" Padding=""12 8"">",
             "the toolbar is not an in-content plate and must keep the window glass brush");
 
-        Count(Markup("CanvasView.axaml"), @"\{DynamicResource GlassBaseDarkBrush\}").Should().Be(1,
-            "only the toolbar strip should still reference the window glass brush in CanvasView");
+        // Plus the Grid button's pop-up (RemEx-172ba): a floating flyout surface, the same brush the
+        // Home and About flyouts use, not an in-content plate.
+        Count(Markup("CanvasView.axaml"), @"\{DynamicResource GlassBaseDarkBrush\}").Should().Be(2,
+            "only the toolbar strip and the Grid flyout should reference the window glass brush in CanvasView");
+        Markup("CanvasView.axaml").Should().MatchRegex(
+            @"<Flyout Placement=""Bottom"">\s*<Border Background=""\{DynamicResource GlassBaseDarkBrush\}""",
+            "the second use is the flyout's own surface");
     }
 
     private static int Count(string text, string pattern) => Regex.Matches(text, pattern).Count;

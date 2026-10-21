@@ -62,11 +62,10 @@ public class PersonalizationSheetLayoutTests
     /// <summary>
     /// Keys legitimately reused across two tabs — generic vocabulary, not a copy-paste duplicate.
     /// Pre-existing in the single-file sheet, unrelated to this task's move: "Preview" labels both
-    /// the Colour tab's ramp preview AND the Layout tab's splash-screen Preview button;
-    /// "Clear"/"Frosted" are the end-of-slider labels shared by GlassOpacity (Surfaces) and
-    /// FlyoutOpacity (Layout) — both are 0..1 opacity sliders with the same two-word range caption.
+    /// the Colour tab's ramp preview AND the Layout tab's splash-screen Preview button. ("Clear" and
+    /// "Frosted" were here too until the FlyoutOpacity slider moved to Settings in RemEx-172ba.)
     /// </summary>
-    private static readonly string[] LegitimatelySharedKeys = { "Custom_Preview", "Custom_Clear", "Custom_Frosted" };
+    private static readonly string[] LegitimatelySharedKeys = { "Custom_Preview" };
 
     private static readonly (string File, string Header)[] Tabs =
     {
@@ -190,13 +189,17 @@ public class PersonalizationSheetLayoutTests
     {
         // Union includes the host, not just the five tab files: RemEx-4kv0g.4.3 fix round 1 moved
         // Custom_Reset off the Palettes tab onto the host's own Grid footer, so it is reachable from
-        // the sheet as a whole even though no single tab file carries it any more.
+        // the sheet as a whole even though no single tab file carries it any more. And the tray pop-up
+        // section moved off the sheet to Settings (RemEx-172ba), so its keys count where they went.
         var expected = BeforeCustomKeys.Except(RetiredKeys).ToArray();
-        var union = AllTabCustomKeys().Concat(TabCustomKeysIn(HostMarkup())).Distinct().ToArray();
+        var union = AllTabCustomKeys()
+            .Concat(TabCustomKeysIn(HostMarkup()))
+            .Concat(TabCustomKeysIn(File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayFlyoutSettingsView.axaml"))))
+            .Distinct().ToArray();
 
         var missing = expected.Except(union).ToArray();
         missing.Should().BeEmpty(
-            "every Custom_* key the sheet carried before this task, other than the six retired section/disclosure headers, must still be reachable from one of the five tabs or the host");
+            "every Custom_* key the sheet carried before this task, other than the six retired section/disclosure headers, must still be reachable from one of the five tabs, the host, or the Settings tray pop-up section");
     }
 
     [Fact]

@@ -191,9 +191,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Settings saved</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Connection</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Snap to grid</value>
   </data>
@@ -202,12 +199,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Grid size</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Pinned sensors</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Select sensors to display on the Home screen</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Language</value>
@@ -792,7 +783,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
+    <value>1. Open Settings → Connection &amp; pairing on the PC
 2. Click "Pair a phone" to show the QR code
 3. Open the RemEx mobile app
 4. On the Connection screen, tap "Add a PC", then "Scan QR code"
@@ -819,10 +810,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>You're all set!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Use the sidebar to move between Home, Sensors, Commands, Routines, Apps, Processes, Files, Logs &amp; Diagnostics, Settings, and About. Personalize is at the bottom of the sidebar.</value>
+    <value>Use the sidebar to move between Home, Remote desktop, Files, Commands, Apps, Processes, Sensors, Routines, Settings, Logs &amp; Diagnostics, and About. Personalize is at the bottom of the sidebar.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Settings holds pairing, shared folders, trusted devices, sensor alerts and backups. Language, theme and pinned sensors are in Personalize.</value>
+    <value>Settings holds pairing, paired devices, language, shared folders, sensor alerts and backups. Press Ctrl+, to open it. Colours, fonts and other looks are in Personalize, and you pin sensors from the Sensors page.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>You can replay this tutorial anytime from Settings.</value>
@@ -1263,7 +1254,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: Apps</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Start chosen apps and scripts on this PC from your phone. Add each one on the Apps page with Add a program, where you set its path and name.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glossary: Processes</value>
@@ -1287,7 +1278,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: Remote desktop</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>See and control your PC's screen from your phone. Quality, scale and FPS are on the Remote desktop page, so you can trade sharpness for a smoother picture on a slow network.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glossary: Quick Settings</value>
@@ -1299,7 +1290,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: Personalize</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>Change colours, light or dark mode, fonts, card shapes and opacity in Personalize, at the bottom of the sidebar. Press Ctrl+Shift+, to open it from anywhere.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Routines</value>
@@ -1993,7 +1984,7 @@ That is expected on desktops that start RemEx directly from XDG autostart rather
     <value>Switch screens</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personalize</value>
+    <value>Settings</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>Close pop-ups</value>
@@ -4530,7 +4521,7 @@ To stop routines from starting on their own, click Pause all on the Routines pag
     <value>Look and feel</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Colours, light or dark mode, fonts and the splash screen are in Personalize. Shortcut: Ctrl+,</value>
+    <value>Colours, light or dark mode, fonts and the splash screen are in Personalize. Shortcut: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Replace your settings?</value>
@@ -4570,5 +4561,47 @@ To stop routines from starting on their own, click Pause all on the Routines pag
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Clear search</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Connection &amp; pairing</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Files &amp; sharing</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} is now paired with this PC.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Grid</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Snap cards to a grid and choose how big it is</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Choose files to send to your phone</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Couldn't send to your phone</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx can't reach your phone right now. Open RemEx on the phone, check it says Connected, then try again.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Your phone isn't sharing a folder RemEx can save into. On the phone, share a folder with your PC and allow saving to it, then try again.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Sending to your phone</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Sending to {0}. You can follow along on the Files page.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Sent to your phone</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Everything arrived on {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{0} of {1} files arrived on {2}. Open the Files page to see what went wrong.</value>
   </data>
 </root>

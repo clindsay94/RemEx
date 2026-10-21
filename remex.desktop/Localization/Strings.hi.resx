@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>सेटिंग्स सहेजी गईं</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>कनेक्शन</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>ग्रिड पर स्नैप</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>ग्रिड आकार</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>पिन किए गए सेंसर</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>होम स्क्रीन पर प्रदर्शित करने के लिए सेंसर चुनें</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>भाषा</value>
@@ -750,7 +741,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>अपना फ़ोन जोड़ने का सबसे तेज़ तरीका QR कोड स्कैन करना है। PC एक पेयरिंग कोड बनाता है जिसमें वह सब कुछ होता है जो आपके मोबाइल ऐप को चाहिए।</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. PC पर सेटिंग्स → कनेक्शन खोलें
+    <value>1. PC पर सेटिंग्स → कनेक्शन और पेयरिंग खोलें
 2. QR कोड दिखाने के लिए "फ़ोन पेयर करें" पर क्लिक करें
 3. RemEx मोबाइल ऐप खोलें
 4. कनेक्शन स्क्रीन पर "पीसी जोड़ें" टैप करें, फिर "QR कोड स्कैन करें"
@@ -777,10 +768,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>आप तैयार हैं!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>होम, सेंसर, कमांड, रूटीन, ऐप्स, प्रक्रियाएँ, फ़ाइलें, लॉग और निदान, सेटिंग्स और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें। वैयक्तिकृत करें साइडबार में सबसे नीचे है।</value>
+    <value>होम, रिमोट डेस्कटॉप, फ़ाइलें, कमांड, ऐप्स, प्रक्रियाएँ, सेंसर, रूटीन, सेटिंग्स, लॉग और निदान और के बारे में के बीच जाने के लिए साइडबार का उपयोग करें। वैयक्तिकृत करें साइडबार में सबसे नीचे है।</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>सेटिंग्स में पेयरिंग, साझा फ़ोल्डर, भरोसेमंद डिवाइस, सेंसर अलर्ट और बैकअप हैं। भाषा, थीम और पिन किए गए सेंसर वैयक्तिकृत करें में हैं।</value>
+    <value>सेटिंग्स में पेयरिंग, पेयर किए गए डिवाइस, भाषा, साझा फ़ोल्डर, सेंसर अलर्ट और बैकअप हैं। इसे खोलने के लिए Ctrl+, दबाएँ। रंग, फ़ॉन्ट और बाकी रूप-रंग वैयक्तिकृत करें में हैं, और सेंसर सेंसर पेज से पिन किए जाते हैं।</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>आप सेटिंग्स से कभी भी इस ट्यूटोरियल को फिर से चला सकते हैं।</value>
@@ -1221,7 +1212,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>शब्दावली: ऐप्स</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>PC पर चुनी हुई ऐप्स और स्क्रिप्ट चलाएँ। प्रविष्टियाँ PC पर एक बार सेट करें, फिर उन्हें RemEx से दूर से शुरू करें।</value>
+    <value>अपने फ़ोन से इस PC पर चुनी हुई ऐप्स और स्क्रिप्ट चलाएँ। हर एक को ऐप्स पेज पर प्रोग्राम जोड़ें से जोड़ें, जहाँ आप उसका पाथ और नाम देते हैं।</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>शब्दावली: प्रक्रियाएँ</value>
@@ -1245,7 +1236,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>शब्दावली: रिमोट डेस्कटॉप</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>अपनी PC स्क्रीन को समायोज्य गुणवत्ता, स्केल और FPS के साथ स्ट्रीम करें ताकि स्पष्टता और बैंडविड्थ के बीच संतुलन बना रहे।</value>
+    <value>अपने फ़ोन से PC की स्क्रीन देखें और नियंत्रित करें। गुणवत्ता, स्केल और FPS रिमोट डेस्कटॉप पेज पर हैं, ताकि धीमे नेटवर्क पर आप स्पष्टता की जगह सहज तस्वीर चुन सकें।</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>शब्दावली: क्विक सेटिंग्स</value>
@@ -1257,7 +1248,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>शब्दावली: वैयक्तिकृत करें</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>थीम, पैलेट रणनीति, फ़ॉन्ट, कार्ड आकार और अपारदर्शिता को अपनी निगरानी और नियंत्रण की शैली के अनुसार समायोजित करें।</value>
+    <value>रंग, लाइट या डार्क मोड, फ़ॉन्ट, कार्ड का आकार और अपारदर्शिता वैयक्तिकृत करें में बदलें, जो साइडबार में सबसे नीचे है। इसे कहीं से भी खोलने के लिए Ctrl+Shift+, दबाएँ।</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>रूटीन</value>
@@ -2614,7 +2605,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>स्क्रीन स्विच करें</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>व्यक्तिगत करें</value>
+    <value>सेटिंग्स</value>
   </data>
   <data name="Home_ScClose" xml:space="preserve">
     <value>पॉप-अप बंद करें</value>
@@ -4524,7 +4515,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>रूप और अनुभव</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>रंग, लाइट या डार्क मोड, फ़ॉन्ट और स्प्लैश स्क्रीन वैयक्तिकृत करें में हैं। शॉर्टकट: Ctrl+,</value>
+    <value>रंग, लाइट या डार्क मोड, फ़ॉन्ट और स्प्लैश स्क्रीन वैयक्तिकृत करें में हैं। शॉर्टकट: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>आपकी सेटिंग्स बदल दें?</value>
@@ -4564,5 +4555,47 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>खोज साफ़ करें</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>कनेक्शन और पेयरिंग</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>फ़ाइलें और शेयरिंग</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} अब इस पीसी से पेयर हो गया है।</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>ग्रिड</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>कार्ड को ग्रिड पर जमाएँ और उसका आकार चुनें</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>अपने फ़ोन पर भेजने के लिए फ़ाइलें चुनें</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>आपके फ़ोन पर नहीं भेजा जा सका</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx अभी आपके फ़ोन तक नहीं पहुँच पा रहा है। फ़ोन पर RemEx खोलें, देखें कि वह कनेक्टेड दिखा रहा है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>आपका फ़ोन ऐसा कोई फ़ोल्डर शेयर नहीं कर रहा जिसमें RemEx सहेज सके। फ़ोन पर अपने पीसी के साथ एक फ़ोल्डर शेयर करें और उसमें सहेजने की अनुमति दें, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>आपके फ़ोन पर भेजा जा रहा है</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>{0} पर भेजा जा रहा है। आप फ़ाइलें पेज पर प्रगति देख सकते हैं।</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>आपके फ़ोन पर भेज दिया गया</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>सब कुछ {0} पर पहुँच गया।</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{1} में से {0} फ़ाइलें {2} पर पहुँचीं। क्या गड़बड़ हुई, यह देखने के लिए फ़ाइलें पेज खोलें।</value>
   </data>
 </root>

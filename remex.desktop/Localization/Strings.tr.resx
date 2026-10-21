@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Ayarlar kaydedildi</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Bağlantı</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Kılavuza yapıştır</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Kılavuz boyutu</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Sabitlenmiş sensörler</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Ana ekranda görüntülenecek sensörleri seçin</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Dil</value>
@@ -750,7 +741,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Telefonunuzu bağlamanın en hızlı yolu bir QR kodu taramaktır. Bilgisayar, mobil uygulamanızın ihtiyaç duyduğu her şeyi içeren bir eşleştirme kodu oluşturur.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Bilgisayarda Ayarlar → Bağlantı bölümünü açın
+    <value>1. Bilgisayarda Ayarlar → Bağlantı ve eşleştirme bölümünü açın
 2. QR kodunu göstermek için "Telefon eşleştir" düğmesine tıklayın
 3. RemEx mobil uygulamasını açın
 4. Bağlantı ekranında "Bilgisayar ekle"ye, ardından "QR Kodunu Tara"ya dokunun
@@ -777,10 +768,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Hazırsınız!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Ana Sayfa, Sensörler, Komutlar, Rutinler, Uygulamalar, İşlemler, Dosyalar, Günlükler ve Tanılama, Ayarlar ve Hakkında arasında geçiş yapmak için kenar çubuğunu kullanın. Kişiselleştir, kenar çubuğunun en altındadır.</value>
+    <value>Ana Sayfa, Uzak masaüstü, Dosyalar, Komutlar, Uygulamalar, İşlemler, Sensörler, Rutinler, Ayarlar, Günlükler ve Tanılama ve Hakkında arasında geçiş yapmak için kenar çubuğunu kullanın. Kişiselleştir, kenar çubuğunun en altındadır.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Ayarlar'da eşleştirme, paylaşılan klasörler, güvenilen cihazlar, sensör uyarıları ve yedekler bulunur. Dil, tema ve sabitlenmiş sensörler Kişiselleştir'dedir.</value>
+    <value>Ayarlar'da eşleştirme, eşleştirilmiş cihazlar, dil, paylaşılan klasörler, sensör uyarıları ve yedekler bulunur. Açmak için Ctrl+, tuşlarına basın. Renkler, yazı tipleri ve diğer görünüm ayarları Kişiselleştir'dedir; sensörleri Sensörler sayfasından sabitlersiniz.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Bu öğreticiyi Ayarlar'dan istediğiniz zaman tekrar izleyebilirsiniz.</value>
@@ -1221,7 +1212,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Uygulamalar</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Bilgisayarda seçtiğiniz uygulamaları ve betikleri çalıştırın. Girişleri bilgisayarda bir kez ayarlayın, sonra RemEx'ten uzaktan başlatın.</value>
+    <value>Bu bilgisayarda seçtiğiniz uygulamaları ve betikleri telefonunuzdan başlatın. Her birini Uygulamalar sayfasında Program ekle ile ekleyin; yolunu ve adını orada girersiniz.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Sözlük: İşlemler</value>
@@ -1245,7 +1236,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Uzak masaüstü</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Netlik ile bant genişliği arasında denge kurabilmek için bilgisayar ekranınızı ayarlanabilir kalite, ölçek ve FPS ile aktarın.</value>
+    <value>Bilgisayarınızın ekranını telefonunuzdan görün ve denetleyin. Kalite, ölçek ve FPS Uzak masaüstü sayfasındadır; yavaş bir ağda netlik yerine daha akıcı bir görüntü seçebilirsiniz.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Sözlük: Hızlı Ayarlar</value>
@@ -1257,7 +1248,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Sözlük: Kişiselleştir</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Temaları, palet stratejisini, yazı tiplerini, kart biçimlerini ve saydamlığı izleme ve denetleme tarzınıza göre ayarlayın.</value>
+    <value>Renkleri, açık veya koyu modu, yazı tiplerini, kart biçimlerini ve saydamlığı kenar çubuğunun en altındaki Kişiselleştir bölümünde değiştirin. Her yerden açmak için Ctrl+Shift+, tuşlarına basın.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Rutinler</value>
@@ -2609,7 +2600,7 @@ Bu, RemEx'i systemd yerine doğrudan XDG otomatik başlatmadan çalıştıran ma
     <value>Ekranları değiştir</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Kişiselleştir</value>
+    <value>Ayarlar</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Ekranları ve işlemleri ara…</value>
@@ -4528,7 +4519,7 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
     <value>Görünüm</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Renkler, açık veya koyu mod, yazı tipleri ve açılış ekranı Kişiselleştir bölümünde. Kısayol: Ctrl+,</value>
+    <value>Renkler, açık veya koyu mod, yazı tipleri ve açılış ekranı Kişiselleştir bölümünde. Kısayol: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Ayarlarınız değiştirilsin mi?</value>
@@ -4568,5 +4559,47 @@ Rutinlerin kendiliğinden başlamasını durdurmak için Rutinler sayfasında T�
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Aramayı temizle</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Bağlantı ve eşleştirme</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Dosyalar ve paylaşım</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} artık bu bilgisayarla eşleştirildi.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Izgara</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Kartları bir ızgaraya hizalayın ve boyutunu seçin</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Telefonunuza gönderilecek dosyaları seçin</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Telefonunuza gönderilemedi</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx şu anda telefonunuza ulaşamıyor. Telefonda RemEx'i açın, Bağlı yazdığından emin olun ve tekrar deneyin.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Telefonunuz RemEx'in kaydedebileceği bir klasör paylaşmıyor. Telefonda bilgisayarınızla bir klasör paylaşın ve oraya kaydetmeye izin verin, ardından tekrar deneyin.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Telefonunuza gönderiliyor</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>{0} cihazına gönderiliyor. İlerlemeyi Dosyalar sayfasından izleyebilirsiniz.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Telefonunuza gönderildi</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Her şey {0} cihazına ulaştı.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{1} dosyadan {0} tanesi {2} cihazına ulaştı. Neyin yanlış gittiğini görmek için Dosyalar sayfasını açın.</value>
   </data>
 </root>

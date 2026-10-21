@@ -34,12 +34,10 @@ public class PersonalizeTabsTests
         [Layout] = (
             new[]
             {
-                "Settings_SnapToGrid", "Settings_GridSize", "Settings_PinnedSensors", "Custom_UiScale",
-                "Custom_SectionFlyout", "Custom_FlyoutOpacity", "Custom_FlyoutCards", "Custom_FlyoutButtons",
-                "Custom_FlyoutApps", "Custom_SectionBehaviour", "Custom_SplashScreen", "Custom_ReducedMotionTitle",
+                "Custom_UiScale", "Custom_SectionBehaviour", "Custom_SplashScreen", "Custom_ReducedMotionTitle",
             },
-            "spec §2: the Layout rows, then UI scale, then the Flyout sub-heading + block, then the Behaviour sub-heading + block",
-            4),
+            "RemEx-172ba: UI scale, then the Behaviour sub-heading + block (grid and tray pop-up moved out)",
+            3),
         [Palettes] = (
             new[]
             {
@@ -108,33 +106,33 @@ public class PersonalizeTabsTests
     }
 
     [Fact]
-    public void Layout_TheLayoutSectionsOwnHeaderIsGoneButTheSubHeadingsSurvive()
+    public void Layout_TheLayoutSectionsOwnHeaderIsGoneButTheBehaviourSubHeadingSurvives()
     {
         var markup = TabMarkup(Layout);
         markup.Should().NotContain("Settings_Layout",
             "the tab strip is the header now - the temporary LAYOUT section's own header is retired");
-        markup.Should().Contain("Localize Custom_SectionFlyout}").And.Contain("Localize Custom_SectionBehaviour}",
-            "Flyout and Behaviour are NOT retired - they are reused as in-tab sub-headings (spec §5)");
+        markup.Should().Contain("Localize Custom_SectionBehaviour}",
+            "Behaviour is NOT retired - it is reused as an in-tab sub-heading (spec §5)");
     }
 
-    [Fact]
-    public void Layout_TheNullLayoutGuardSurvives()
+    /// <summary>
+    /// Personalize is for looks only (RemEx-172ba). Snap to grid and grid size moved to the Sensors
+    /// toolbar, the tray pop-up section to Settings, and the pinned-sensors checklist was dropped for
+    /// the per-card pin toggle.
+    /// </summary>
+    [Theory]
+    [InlineData("Settings_SnapToGrid")]
+    [InlineData("Settings_GridSize")]
+    [InlineData("Settings_PinnedSensors")]
+    [InlineData("Custom_SectionFlyout")]
+    [InlineData("Custom_FlyoutOpacity")]
+    [InlineData("Custom_FlyoutCards")]
+    [InlineData("Custom_FlyoutButtons")]
+    [InlineData("Custom_FlyoutApps")]
+    [InlineData("Layout.")]
+    public void Layout_NoLongerCarriesTheMovedControls(string token)
     {
-        TabMarkup(Layout).Should().Contain("Converter={x:Static ObjectConverters.IsNotNull}",
-            "a null Layout (some tests construct CustomizationViewModel without one) must render nothing");
-    }
-
-    [Fact]
-    public void Layout_SnapToGridDescription_Wraps()
-    {
-        // Fix round 2 (RemEx-4kv0g.4.4): on the 440px sheet the description clipped behind the
-        // ToggleSwitch; the enclosing Grid already gives the text column the star, so wrapping was
-        // the missing piece.
-        var desc = Regex.Match(TabMarkup(Layout),
-            @"<TextBlock[^>]*Text=""\{local:Localize Settings_SnapToGridDesc\}""[^>]*/>");
-
-        desc.Success.Should().BeTrue();
-        desc.Value.Should().Contain(@"TextWrapping=""Wrap""");
+        TabMarkup(Layout).Should().NotContain(token);
     }
 
     [Fact]

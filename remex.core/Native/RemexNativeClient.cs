@@ -117,8 +117,12 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         _reconnectSecretBase64 = reconnectSecretBase64;
         await DisconnectAsync();
 
+        // From here the fields belong to this connection; a DisconnectAsync that began before this
+        // line sees the generation move and leaves them alone (review R5).
+        Interlocked.Increment(ref _connectionGeneration);
         _connectionCts = new CancellationTokenSource();
-        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_connectionCts.Token, ct);
+        var connectionToken = _connectionCts.Token;
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(connectionToken, ct);
 
         // Force wss:// for 2.0
         var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}");
@@ -222,7 +226,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
             await _webSocket.ConnectAsync(wsUri, linkedCts.Token);
             JniHelper.AndroidLogE("RemexNative", "Successfully connected to remote server", JniHelper.LogPriorityInfo);
             ConnectionStateChanged?.Invoke(true);
-            _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_connectionCts.Token));
+            _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(connectionToken));
 
             // PAIR-1 kickoff: the host issues its reconnect challenge lazily, on the first inbound
             // message that carries our clientId (PingPongHandler). Nothing else is guaranteed to
@@ -266,27 +270,50 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>Moves when <see cref="ConnectAsync"/> takes over the connection fields.</summary>
+    private int _connectionGeneration;
+
+    /// <summary>
+    /// Test seam: runs inside <see cref="DisconnectAsync"/> after the receive loop has drained, the
+    /// await a connect started from another thread can slip in behind.
+    /// </summary>
+    internal Func<Task>? AfterReceiveLoopDrainedForTests { get; set; }
+
     public async Task DisconnectAsync()
     {
-        _connectionCts?.Cancel();
-        if (_receiveLoopTask != null)
+        // SNAPSHOT, THEN TOUCH ONLY THE SNAPSHOT (review R5). DisconnectNative runs this on the thread
+        // pool, so a ConnectAsync can install a new socket while it awaits; re-reading the fields after
+        // an await used to close that new connection and report it dropped.
+        var generation = Volatile.Read(ref _connectionGeneration);
+        var cts = _connectionCts;
+        var receiveLoop = _receiveLoopTask;
+        var socket = _webSocket;
+
+        try { cts?.Cancel(); } catch (ObjectDisposedException) { /* another disconnect already finished with it */ }
+        if (receiveLoop != null)
         {
-            try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - whatever it surfaces describes the shutdown, not a fault */ }
+            try { await receiveLoop; } catch { /* draining the receive loop after cancelling it - whatever it surfaces describes the shutdown, not a fault */ }
         }
 
-        if (_webSocket != null)
+        if (AfterReceiveLoopDrainedForTests is { } drained)
+            await drained();
+        if (socket != null)
         {
-            if (_webSocket.State == WebSocketState.Open)
+            if (socket.State == WebSocketState.Open)
             {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone; the disconnect happens either way */ }
+                try { await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone; the disconnect happens either way */ }
             }
-            _webSocket.Dispose();
-            _webSocket = null;
+            socket.Dispose();
         }
 
-        _connectionCts?.Dispose();
-        _connectionCts = null;
-        _receiveLoopTask = null;
+        // A connect that started meanwhile owns the fields and has reported its own state.
+        if (Volatile.Read(ref _connectionGeneration) != generation)
+            return;
+
+        Interlocked.CompareExchange(ref _webSocket, null, socket);
+        Interlocked.CompareExchange(ref _connectionCts, null, cts);
+        _ = Interlocked.CompareExchange(ref _receiveLoopTask, null, receiveLoop);
+        cts?.Dispose();
         ConnectionStateChanged?.Invoke(false);
     }
 

@@ -268,10 +268,10 @@
              later-staggered item does not flash at full opacity before its turn, and gated once per
              process by ShellView.axaml.cs's OnAttachedToVisualTree so re-navigating never replays it.
 
-             NavList has eleven direct ListBoxItem children (ten destinations plus the non-interactive
-             nav-divider at index 9), so one nth-child style per child at an 18ms step keeps the last
-             item's Delay+Duration at 180ms+120ms = 300ms, the bead's ceiling (Routines added the
-             eleventh item in RemEx-pp0rt.9 and the step shrank from 20ms to keep the ceiling). ListBoxItems are
+             NavList has thirteen direct ListBoxItem children (eleven destinations plus two
+             non-interactive nav-dividers), so one nth-child style per child at a 15ms step keeps the
+             last item's Delay+Duration at 180ms+120ms = 300ms, the bead's ceiling (the step shrank
+             from 18ms when RemEx-172ba added Remote desktop and the second divider). ListBoxItems are
              logical children of the ListBox but visual children of its ItemsPanel; Avalonia's
              :nth-child counts against the ItemsControl's own children and the '>' combinator walks
              the LOGICAL parent, so this selector reaches them directly with no descendant combinator
@@ -296,7 +296,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(2)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.018" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.015" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -310,7 +310,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(3)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.036" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.030" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -324,7 +324,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(4)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.054" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.045" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -338,7 +338,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(5)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.072" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.060" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -352,7 +352,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(6)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.090" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.075" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -366,7 +366,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(7)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.108" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.090" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -380,7 +380,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(8)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.126" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.105" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -394,7 +394,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(9)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.144" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.120" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -408,7 +408,7 @@
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(10)">
             <Style.Animations>
-                <Animation Duration="0:0:0.120" Delay="0:0:0.162" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                <Animation Duration="0:0:0.120" Delay="0:0:0.135" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
                         <Setter Property="Opacity" Value="0"/>
                         <Setter Property="TranslateTransform.Y" Value="12"/>
@@ -421,6 +421,34 @@
             </Style.Animations>
         </Style>
         <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(11)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.150" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(12)">
+            <Style.Animations>
+                <Animation Duration="0:0:0.120" Delay="0:0:0.165" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="ListBox#NavList.entrance > ListBoxItem:nth-child(13)">
             <Style.Animations>
                 <Animation Duration="0:0:0.120" Delay="0:0:0.180" Easing="{x:Static motion:Motion.EmphasizedDecelerate}" FillMode="Backward">
                     <KeyFrame Cue="0%">
@@ -769,6 +797,10 @@
                                         </ItemsPanelTemplate>
                                     </ListBox.ItemsPanel>
 
+                                    <!-- Drawer order is task-grouped (RemEx-172ba): the everyday pages, then
+                                         Sensors and Routines, then the Settings family. Tags are page ids, not
+                                         positions; ShellViewModel.DrawerNavOrder lists them top to bottom. -->
+
                                     <!-- Home Dashboard -->
                                     <ListBoxItem Tag="0" AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <ToolTip.Tip>
@@ -783,33 +815,42 @@
                                         </Grid>
                                     </ListBoxItem>
 
-                                    <!-- Live Sensors -->
-                                    <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <!-- Remote desktop: a drawer entry of its own since RemEx-172ba (it used to be
+                                         reachable only from Home, the palette and the tray). -->
+                                    <ListBoxItem Tag="5" AutomationProperties.Name="{conv:Localize Nav_RemoteDesktop}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <ToolTip.Tip>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{conv:Localize Nav_Sensors}"/>
+                                                <TextBlock Text="{conv:Localize Nav_RemoteDesktop}"/>
                                                 <TextBlock Text="Ctrl+2" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                         </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
-                                            <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
-                                                 incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
-                                                 kept twenty AlertNotifications and offered a DismissAlerts command
-                                                 since it was written - and NO view bound any of it. The pipeline ran
-                                                 correctly into a number nobody could see. Sensors is where the alerts
-                                                 come from, so it is where the count belongs.
+                                            <mi:MaterialIcon Grid.Column="0" Kind="RemoteDesktop" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_RemoteDesktop}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
 
-                                                 IsBadgeVisible is bound rather than left to Material, which renders a
-                                                 badge reading "0" quite happily - a notification that there is nothing
-                                                 to notify. Placement and colour come from App.axaml so no call site
-                                                 can put one somewhere else. -->
+                                    <!-- File Explorer -->
+                                    <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <ToolTip.Tip>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{conv:Localize Nav_Files}"/>
+                                                <TextBlock Text="Ctrl+3" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                        </ToolTip.Tip>
+                                        <Grid ColumnDefinitions="64,*">
+                                            <!-- THE ACTIVE-TRANSFER COUNT REACHES A SCREEN (RemEx-rjnbo.1). ShellViewModel
+                                                 owns _transferQueue eagerly - not FileTransferViewModel, which is only
+                                                 built the first time a user opens this page - so the count exists before
+                                                 the page does. Same IsBadgeVisible-hides-zero shape as the Sensors badge
+                                                 below; placement/paint come from App.axaml. -->
                                             <material:Badged Grid.Column="0"
-                                                             BadgeContent="{Binding AlertBadgeCount}"
-                                                             IsBadgeVisible="{Binding HasAlerts}"
+                                                             BadgeContent="{Binding ActiveTransferCount}"
+                                                             IsBadgeVisible="{Binding HasActiveTransfers}"
                                                              HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
+                                                <mi:MaterialIcon Kind="FolderOutline" Width="22" Height="22"/>
                                             </material:Badged>
-                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>
 
@@ -818,28 +859,12 @@
                                         <ToolTip.Tip>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{conv:Localize Nav_Commands}"/>
-                                                <TextBlock Text="Ctrl+3" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Text="Ctrl+4" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                         </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="RemoteTv" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                        </Grid>
-                                    </ListBoxItem>
-
-                                    <!-- Routines (3.0, RemEx-pp0rt.9): next to Commands, the other "make the PC do
-                                         something" page. Tag 10 sits out of numeric order on purpose; the
-                                         slide direction reads ShellViewModel.DrawerNavOrder, not the Tag. -->
-                                    <ListBoxItem Tag="10" AutomationProperties.Name="{conv:Localize Nav_Routines}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
-                                        <ToolTip.Tip>
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{conv:Localize Nav_Routines}"/>
-                                                <TextBlock Text="Ctrl+4" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            </StackPanel>
-                                        </ToolTip.Tip>
-                                        <Grid ColumnDefinitions="64,*">
-                                            <mi:MaterialIcon Grid.Column="0" Kind="Routes" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Routines}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>
 
@@ -871,62 +896,62 @@
                                         </Grid>
                                     </ListBoxItem>
 
-                                    <!-- File Explorer -->
-                                    <ListBoxItem Tag="7" AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <!-- ═══ Dividers ═══ Not selectable, not focusable, not a nav
+                                         destination - see the comment above this ListBox for why
+                                         Focusable="False" is what keeps arrow travel from stopping here.
+                                         Focusable/IsHitTestVisible keep it out of keyboard and pointer
+                                         traversal, but Avalonia still builds an automation peer for every
+                                         ListBoxItem regardless - without AccessibilityView="Raw" a screen
+                                         reader announces an unnamed, unreachable entry in the list. -->
+                                    <ListBoxItem Focusable="False" IsHitTestVisible="False" Classes="nav-divider" AutomationProperties.AccessibilityView="Raw">
+                                        <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,12" Opacity="0.3"/>
+                                    </ListBoxItem>
+
+                                    <!-- Live Sensors -->
+                                    <ListBoxItem Tag="1" AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <ToolTip.Tip>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{conv:Localize Nav_Files}"/>
+                                                <TextBlock Text="{conv:Localize Nav_Sensors}"/>
                                                 <TextBlock Text="Ctrl+7" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                         </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
-                                            <!-- THE ACTIVE-TRANSFER COUNT REACHES A SCREEN (RemEx-rjnbo.1). ShellViewModel
-                                                 owns _transferQueue eagerly - not FileTransferViewModel, which is only
-                                                 built the first time a user opens this page - so the count exists before
-                                                 the page does. Same IsBadgeVisible-hides-zero shape as the Sensors badge
-                                                 below; placement/paint come from App.axaml. -->
+                                            <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
+                                                 incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
+                                                 kept twenty AlertNotifications and offered a DismissAlerts command
+                                                 since it was written - and NO view bound any of it. The pipeline ran
+                                                 correctly into a number nobody could see. Sensors is where the alerts
+                                                 come from, so it is where the count belongs.
+
+                                                 IsBadgeVisible is bound rather than left to Material, which renders a
+                                                 badge reading "0" quite happily - a notification that there is nothing
+                                                 to notify. Placement and colour come from App.axaml so no call site
+                                                 can put one somewhere else. -->
                                             <material:Badged Grid.Column="0"
-                                                             BadgeContent="{Binding ActiveTransferCount}"
-                                                             IsBadgeVisible="{Binding HasActiveTransfers}"
+                                                             BadgeContent="{Binding AlertBadgeCount}"
+                                                             IsBadgeVisible="{Binding HasAlerts}"
                                                              HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <mi:MaterialIcon Kind="FolderOutline" Width="22" Height="22"/>
+                                                <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
                                             </material:Badged>
-                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>
 
-                                    <!-- Logs & Diagnostics -->
-                                    <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                    <!-- Routines (3.0, RemEx-pp0rt.9) -->
+                                    <ListBoxItem Tag="10" AutomationProperties.Name="{conv:Localize Nav_Routines}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10, Mode=OneWay}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <ToolTip.Tip>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{conv:Localize Shell_LogsDiagnostics}"/>
+                                                <TextBlock Text="{conv:Localize Nav_Routines}"/>
                                                 <TextBlock Text="Ctrl+8" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                         </ToolTip.Tip>
                                         <Grid ColumnDefinitions="64,*">
-                                            <!-- THE UNREAD-DIAGNOSTICS COUNT REACHES A SCREEN (RemEx-rjnbo.1). The smallest
-                                                 honest source: entries at Warning or above since this page was last
-                                                 opened. NavigateToDiagnosticLogs is the acknowledgement, same shape as
-                                                 NavigateToCanvas clearing AlertBadgeCount. -->
-                                            <material:Badged Grid.Column="0"
-                                                             BadgeContent="{Binding DiagnosticsBadgeCount}"
-                                                             IsBadgeVisible="{Binding HasUnreadDiagnostics}"
-                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <mi:MaterialIcon Kind="FileDocument" Width="22" Height="22"/>
-                                            </material:Badged>
-                                            <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            <mi:MaterialIcon Grid.Column="0" Kind="Routes" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Routines}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                         </Grid>
                                     </ListBoxItem>
 
-                                    <!-- ═══ Settings family divider ═══ Not selectable, not
-                                         focusable, not a nav destination - see the comment above
-                                         this ListBox for why Focusable="False" is what keeps arrow
-                                         travel from stopping here. Focusable/IsHitTestVisible keep
-                                         it out of keyboard and pointer traversal, but Avalonia still
-                                         builds an automation peer for every ListBoxItem regardless -
-                                         without AccessibilityView="Raw" a screen reader announces a
-                                         10-item list with one unnamed, unreachable entry, which the
-                                         old sibling Separator (not a list item at all) never did. -->
+                                    <!-- ═══ Settings family divider ═══ -->
                                     <ListBoxItem Focusable="False" IsHitTestVisible="False" Classes="nav-divider" AutomationProperties.AccessibilityView="Raw">
                                         <Separator Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,12" Opacity="0.3"/>
                                     </ListBoxItem>
@@ -945,7 +970,24 @@
                                         </Grid>
                                     </ListBoxItem>
 
-                                    <!-- About (moved into settings cluster) -->
+                                    <!-- Logs & Diagnostics -->
+                                    <!-- Past Ctrl+9, so its tooltip names no shortcut. -->
+                                    <ListBoxItem Tag="8" AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
+                                        <Grid ColumnDefinitions="64,*">
+                                            <!-- THE UNREAD-DIAGNOSTICS COUNT REACHES A SCREEN (RemEx-rjnbo.1). The smallest
+                                                 honest source: entries at Warning or above since this page was last
+                                                 opened. NavigateToDiagnosticLogs is the acknowledgement. -->
+                                            <material:Badged Grid.Column="0"
+                                                             BadgeContent="{Binding DiagnosticsBadgeCount}"
+                                                             IsBadgeVisible="{Binding HasUnreadDiagnostics}"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <mi:MaterialIcon Kind="FileDocument" Width="22" Height="22"/>
+                                            </material:Badged>
+                                            <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </ListBoxItem>
+
+                                    <!-- About -->
                                     <ListBoxItem Tag="6" AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" IsSelected="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6, Mode=OneWay}" ToolTip.Tip="{conv:Localize Shell_About}" Tapped="OnNavItemTapped" KeyDown="OnNavItemKeyDown">
                                         <Grid ColumnDefinitions="64,*">
                                             <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -960,7 +1002,7 @@
                                      be a floating palette button in the window's bottom-right corner on every
                                      page; it lives here now, directly above the connection chip, so the shell
                                      has one floating element (the snackbar) instead of two. It opens the side
-                                     sheet through the same ToggleSettingsPanelCommand that Ctrl+, and the
+                                     sheet through the same ToggleSettingsPanelCommand that Ctrl+Shift+, and the
                                      command palette use. Opening the sheet closes the drawer
                                      (ShellViewModel.OnIsSettingsPanelOpenChanged), so the sheet's focus
                                      fallback is the app bar's DrawerToggle, not this button.
@@ -1265,37 +1307,18 @@
                                  SideSheetHeaderTemplate="{x:Null}"
                                  IsHitTestVisible="{Binding IsSettingsPanelOpen}">
                 <material:SideSheet.SideSheetHeader>
-                    <!-- LANGUAGE now lives inside the header (RemEx-4kv0g.4.3), not the scrolling
-                         content: the five Personalize tabs each own their own ScrollViewer, so
-                         nothing below this Border scrolls independently any more, and Language has
-                         to stay reachable regardless of which tab is selected. Folding it in here
-                         also means SettingsSheetHeader.Bounds.Height - the second input to
-                         SubtractHeightConverter below - already covers it for free. -->
+                    <!-- Language left this header in RemEx-172ba: Personalize is for looks only, and
+                         Settings › General keeps the one language picker. -->
                     <Border Name="SettingsSheetHeader" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                        <StackPanel Spacing="16">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
-                                    <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
-                                </StackPanel>
-                                <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Padding="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
-                                    <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
-                                </Button>
-                            </Grid>
-
-                            <!-- ═══ LANGUAGE (binds the shared SettingsViewModel) ═══ -->
-                            <material:Card Padding="16" DataContext="{Binding SettingsVm}">
-                                <StackPanel Spacing="10">
-                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" HorizontalAlignment="Stretch" AutomationProperties.Name="{conv:Localize Settings_Language}" assists:ComboBoxAssist.Label="{conv:Localize Settings_Language}">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding DisplayName}"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                </StackPanel>
-                            </material:Card>
-                        </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
+                                <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
+                            </StackPanel>
+                            <Button Name="SettingsSheetCloseButton" AutomationProperties.Name="{conv:Localize A11y_Close}" Classes="tertiary icon-button" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Padding="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                                <mi:MaterialIcon Kind="Close" Foreground="{DynamicResource TextMutedBrush}" Width="10" Height="10"/>
+                            </Button>
+                        </Grid>
                     </Border>
                 </material:SideSheet.SideSheetHeader>
 
@@ -1316,7 +1339,7 @@
                      TabControl with infinite height regardless of what height the StackPanel itself
                      was given, swallowing the bound the same way one level up). SubtractHeightConverter
                      turns two live Bounds readings (this sheet's own full height, minus the header's
-                     actual rendered height - which now includes the Language card above) into the one
+                     actual rendered height) into the one
                      number that is actually available, so a translated Subtitle that wraps to two
                      lines still gets the header height it really needs instead of a guessed constant.
 

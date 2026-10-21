@@ -82,6 +82,26 @@ public partial class TrayFlyoutWindow : Window
     /// <summary>Tells the window to ignore the next deactivation, because we caused it.</summary>
     public void SuppressNextDeactivate() => _suppressDeactivate = true;
 
+    /// <summary>
+    /// The Send tile's file picker, owned by this window. The dialog taking focus would otherwise
+    /// count as a click-away and hide its own owner mid-pick; a transient flyout closes once the
+    /// choice is made, a pinned one stays.
+    /// </summary>
+    public async Task<IReadOnlyList<Avalonia.Platform.Storage.IStorageFile>> PickFilesToSendAsync(
+        Avalonia.Platform.Storage.FilePickerOpenOptions options)
+    {
+        SuppressNextDeactivate();
+        try
+        {
+            return await StorageProvider.OpenFilePickerAsync(options);
+        }
+        finally
+        {
+            if (ViewModel?.IsPinned != true)
+                Hide();
+        }
+    }
+
     public async void ShowAtTray()
     {
         var saved = await _layoutStore.LoadRawAsync();

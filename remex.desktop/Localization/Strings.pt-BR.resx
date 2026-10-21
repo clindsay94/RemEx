@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Configurações salvas</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Conexão</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Encaixar na grade</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Tamanho da grade</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Sensores fixados</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Selecione sensores para exibir na tela inicial</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Idioma</value>
@@ -750,7 +741,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>A forma mais rápida de conectar o celular é escanear um código QR. O PC gera um código de pareamento com tudo o que o aplicativo móvel precisa.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Abra Configurações → Conexão no PC
+    <value>1. Abra Configurações → Conexão e pareamento no PC
 2. Clique em "Emparelhar um telefone" para mostrar o código QR
 3. Abra o aplicativo móvel RemEx
 4. Na tela Conexão, toque em "Adicionar um PC" e depois em "Escanear código QR"
@@ -777,10 +768,10 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Você está pronto!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Use a barra lateral para alternar entre Início, Sensores, Comandos, Rotinas, Aplicativos, Processos, Arquivos, Logs e Diagnósticos, Configurações e Sobre. Personalizar fica no fim da barra lateral.</value>
+    <value>Use a barra lateral para alternar entre Início, Área de trabalho remota, Arquivos, Comandos, Aplicativos, Processos, Sensores, Rotinas, Configurações, Logs e Diagnósticos e Sobre. Personalizar fica no fim da barra lateral.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Configurações reúne o pareamento, as pastas compartilhadas, os dispositivos confiáveis, os alertas de sensores e os backups. Idioma, tema e sensores fixados ficam em Personalizar.</value>
+    <value>Configurações reúne o pareamento, os dispositivos pareados, o idioma, as pastas compartilhadas, os alertas de sensores e os backups. Pressione Ctrl+, para abrir. Cores, fontes e o restante da aparência ficam em Personalizar, e os sensores são fixados na página Sensores.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Você pode assistir novamente a este tutorial a qualquer momento em Configurações.</value>
@@ -1221,7 +1212,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Glossário: Aplicativos</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Abra aplicativos e scripts selecionados no PC. Configure as entradas uma vez no PC e depois inicie-as remotamente pelo RemEx.</value>
+    <value>Abra pelo celular aplicativos e scripts escolhidos neste PC. Adicione cada um na página Aplicativos com Adicionar um programa, onde você informa o caminho e o nome.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glossário: Processos</value>
@@ -1245,7 +1236,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Glossário: Área de trabalho remota</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Transmita a tela do PC com qualidade, escala e FPS ajustáveis para equilibrar nitidez e largura de banda.</value>
+    <value>Veja e controle a tela do PC pelo celular. Qualidade, escala e FPS ficam na página Área de trabalho remota, para trocar nitidez por uma imagem mais fluida em uma rede lenta.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glossário: Configurações rápidas</value>
@@ -1257,7 +1248,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Glossário: Personalizar</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Ajuste temas, estratégia de paleta, fontes, formatos de cartão e opacidade conforme o seu jeito de monitorar e controlar o equipamento.</value>
+    <value>Mude cores, modo claro ou escuro, fontes, formato dos cartões e opacidade em Personalizar, no fim da barra lateral. Pressione Ctrl+Shift+, para abrir de qualquer lugar.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Rotinas</value>
@@ -2605,7 +2596,7 @@ Isso é esperado em desktops que iniciam o RemEx diretamente pelo autostart do X
     <value>Trocar telas</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personalizar</value>
+    <value>Configurações</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Pesquisar telas e ações…</value>
@@ -4524,7 +4515,7 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
     <value>Aparência</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Cores, modo claro ou escuro, fontes e a tela de abertura ficam em Personalizar. Atalho: Ctrl+,</value>
+    <value>Cores, modo claro ou escuro, fontes e a tela de abertura ficam em Personalizar. Atalho: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Substituir suas configurações?</value>
@@ -4564,5 +4555,47 @@ Para impedir que as rotinas comecem sozinhas, clique em Pausar tudo na página R
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Limpar pesquisa</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Conexão e pareamento</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Arquivos e compartilhamento</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} agora está pareado com este PC.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Grade</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Encaixe os cartões em uma grade e escolha o tamanho dela</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Escolha os arquivos para enviar ao seu celular</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Não foi possível enviar ao seu celular</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>O RemEx não consegue alcançar seu celular agora. Abra o RemEx no celular, confira se aparece Conectado e tente de novo.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Seu celular não está compartilhando uma pasta em que o RemEx possa salvar. No celular, compartilhe uma pasta com o PC e permita salvar nela; depois tente de novo.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Enviando ao seu celular</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Enviando para {0}. Você pode acompanhar na página Arquivos.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Enviado ao seu celular</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Tudo chegou em {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>{0} de {1} arquivos chegaram em {2}. Abra a página Arquivos para ver o que deu errado.</value>
   </data>
 </root>

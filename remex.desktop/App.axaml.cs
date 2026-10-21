@@ -508,6 +508,8 @@ public partial class App : Application
             // returns false when the owner has no visible window, so a destructive action declines
             // rather than proceeding unconfirmed if that ever stops being true.
             vm.OnConfirmationRequested = ConfirmationDialogHost.For(_flyout);
+            vm.PickFilesToSendAsync = _flyout.PickFilesToSendAsync;
+            vm.RaiseMainWindow = BringMainWindowToFront;
 
             TrackFlyoutTelemetryDemand(_flyout, vm);
         }

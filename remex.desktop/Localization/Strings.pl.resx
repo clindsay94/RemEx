@@ -173,9 +173,6 @@
   <data name="Settings_SavedStatus" xml:space="preserve">
     <value>Ustawienia zapisane</value>
   </data>
-  <data name="Settings_Connection" xml:space="preserve">
-    <value>Połączenie</value>
-  </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Przyciągaj do siatki</value>
   </data>
@@ -184,12 +181,6 @@
   </data>
   <data name="Settings_GridSize" xml:space="preserve">
     <value>Rozmiar siatki</value>
-  </data>
-  <data name="Settings_PinnedSensors" xml:space="preserve">
-    <value>Przypięte czujniki</value>
-  </data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
-    <value>Wybierz czujniki do wyświetlenia na ekranie głównym</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Język</value>
@@ -710,10 +701,10 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Gotowe!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Używaj paska bocznego, aby przechodzić między stronami Główna, Czujniki, Polecenia, Rutyny, Aplikacje, Procesy, Pliki, Dzienniki i diagnostyka, Ustawienia i O programie. Personalizuj znajdziesz na dole paska bocznego.</value>
+    <value>Używaj paska bocznego, aby przechodzić między stronami Główna, Pulpit zdalny, Pliki, Polecenia, Aplikacje, Procesy, Czujniki, Rutyny, Ustawienia, Dzienniki i diagnostyka oraz O programie. Personalizuj znajdziesz na dole paska bocznego.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>W Ustawieniach znajdziesz parowanie, foldery udostępnione, zaufane urządzenia, alerty czujników i kopie zapasowe. Język, motyw i przypięte czujniki są w Personalizuj.</value>
+    <value>W Ustawieniach znajdziesz parowanie, sparowane urządzenia, język, foldery udostępnione, alerty czujników i kopie zapasowe. Naciśnij Ctrl+, aby je otworzyć. Kolory, czcionki i resztę wyglądu zmienisz w Personalizuj, a czujniki przypniesz na stronie Czujniki.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>Ten samouczek możesz odtworzyć ponownie w dowolnym momencie z Ustawień.</value>
@@ -2279,7 +2270,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Najszybszym sposobem na połączenie telefonu jest zeskanowanie kodu QR. PC generuje kod parowania zawierający wszystko, czego potrzebuje Twoja aplikacja mobilna.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Otwórz Ustawienia → Połączenie na PC
+    <value>1. Otwórz Ustawienia → Połączenie i parowanie na PC
 2. Kliknij "Sparuj telefon", aby wyświetlić kod QR
 3. Otwórz aplikację RemEx
 4. Na ekranie Połączenie dotknij "Dodaj komputer", a potem "Skanuj kod QR"
@@ -2379,7 +2370,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Słownik: Aplikacje</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Uruchamiaj wyselekcjonowane aplikacje i skrypty na komputerze. Skonfiguruj wpisy raz na komputerze, a następnie uruchamiaj je zdalnie z RemEx.</value>
+    <value>Uruchamiaj z telefonu wybrane aplikacje i skrypty na tym komputerze. Dodaj każdą z nich na stronie Aplikacje przyciskiem Dodaj program, gdzie podajesz jej ścieżkę i nazwę.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Słownik: Procesy</value>
@@ -2403,7 +2394,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Słownik: Pulpit zdalny</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Strumieniuj ekran komputera ze zmienną jakością, skalą i FPS, aby wyważyć klarowność względem przepustowości.</value>
+    <value>Oglądaj i steruj ekranem komputera z telefonu. Jakość, skala i FPS są na stronie Pulpit zdalny, więc w wolnej sieci możesz wybrać płynniejszy obraz zamiast ostrości.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Słownik: Szybkie ustawienia</value>
@@ -2415,7 +2406,7 @@ Jest to normalne na pulpitach, które uruchamiają RemEx bezpośrednio z autosta
     <value>Słownik: Personalizuj</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i krycie, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
+    <value>Zmieniaj kolory, tryb jasny lub ciemny, czcionki, kształt kart i krycie w Personalizuj, na dole paska bocznego. Naciśnij Ctrl+Shift+, aby otworzyć je z dowolnego miejsca.</value>
   </data>
   <data name="Tutorial_P16_Routines_Title" xml:space="preserve">
     <value>Rutyny</value>
@@ -2606,7 +2597,7 @@ Na stronie Rutyny możesz je zobaczyć, wyłączyć i sprawdzić ich historię.<
     <value>Przełącz ekrany</value>
   </data>
   <data name="Home_ScSettings" xml:space="preserve">
-    <value>Personalizuj</value>
+    <value>Ustawienia</value>
   </data>
   <data name="Home_SearchPrompt" xml:space="preserve">
     <value>Szukaj ekranów i akcji…</value>
@@ -4525,7 +4516,7 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
     <value>Wygląd</value>
   </data>
   <data name="Settings_AppearanceDesc" xml:space="preserve">
-    <value>Kolory, tryb jasny lub ciemny, czcionki i ekran startowy znajdziesz w Personalizacji. Skrót: Ctrl+,</value>
+    <value>Kolory, tryb jasny lub ciemny, czcionki i ekran startowy znajdziesz w Personalizacji. Skrót: Ctrl+Shift+,</value>
   </data>
   <data name="Confirm_ImportSettings_Title" xml:space="preserve">
     <value>Zastąpić Twoje ustawienia?</value>
@@ -4565,5 +4556,47 @@ Aby rutyny nie startowały same, kliknij Wstrzymaj wszystko na stronie Rutyny. N
   </data>
   <data name="A11y_ClearSearch" xml:space="preserve">
     <value>Wyczyść wyszukiwanie</value>
+  </data>
+  <data name="Settings_ConnectionPairing" xml:space="preserve">
+    <value>Połączenie i parowanie</value>
+  </data>
+  <data name="Settings_FilesSharing" xml:space="preserve">
+    <value>Pliki i udostępnianie</value>
+  </data>
+  <data name="Settings_PairingSucceeded" xml:space="preserve">
+    <value>{0} jest teraz sparowany z tym komputerem.</value>
+  </data>
+  <data name="Canvas_Grid" xml:space="preserve">
+    <value>Siatka</value>
+  </data>
+  <data name="Canvas_GridTooltip" xml:space="preserve">
+    <value>Przyciągaj karty do siatki i wybierz jej rozmiar</value>
+  </data>
+  <data name="Tray_Send_PickerTitle" xml:space="preserve">
+    <value>Wybierz pliki do wysłania na telefon</value>
+  </data>
+  <data name="Tray_Send_ProblemTitle" xml:space="preserve">
+    <value>Nie udało się wysłać na telefon</value>
+  </data>
+  <data name="Tray_Send_NotReachable" xml:space="preserve">
+    <value>RemEx nie może teraz połączyć się z telefonem. Otwórz RemEx na telefonie, sprawdź, czy widać Połączono, i spróbuj ponownie.</value>
+  </data>
+  <data name="Tray_Send_NoFolder" xml:space="preserve">
+    <value>Telefon nie udostępnia folderu, do którego RemEx może zapisywać. Na telefonie udostępnij folder komputerowi i zezwól na zapisywanie w nim, a potem spróbuj ponownie.</value>
+  </data>
+  <data name="Tray_Send_StartedTitle" xml:space="preserve">
+    <value>Wysyłanie na telefon</value>
+  </data>
+  <data name="Tray_Send_Started" xml:space="preserve">
+    <value>Wysyłanie do: {0}. Postęp możesz śledzić na stronie Pliki.</value>
+  </data>
+  <data name="Tray_Send_DoneTitle" xml:space="preserve">
+    <value>Wysłano na telefon</value>
+  </data>
+  <data name="Tray_Send_Done" xml:space="preserve">
+    <value>Wszystko dotarło na: {0}.</value>
+  </data>
+  <data name="Tray_Send_Partial" xml:space="preserve">
+    <value>Dotarło plików: {0} z {1} na: {2}. Otwórz stronę Pliki, aby zobaczyć, co poszło nie tak.</value>
   </data>
 </root>

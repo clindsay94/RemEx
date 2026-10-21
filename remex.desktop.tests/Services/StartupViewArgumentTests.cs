@@ -65,16 +65,16 @@ public class StartupViewArgumentTests
     }
 
     /// <summary>
-    /// Ctrl+D1..D7 / Ctrl+OemComma order (MainWindow.axaml:34-53), plus About and Personalize, which
-    /// have no keybinding of their own. RemoteDesktop is deliberately absent — it stays a manual
-    /// sweep cell.
+    /// Every drawer destination in drawer order, plus Personalize (the side sheet). RemoteDesktop
+    /// and Routines joined in RemEx-172ba.
     /// </summary>
     [Fact]
-    public void Navigators_CoversExactlyTheTenScriptableViews()
+    public void Navigators_CoversEveryDrawerDestinationPlusPersonalize()
     {
         var expected = new[]
         {
-            "Home", "Sensors", "Commands", "Launcher", "Processes", "Files", "Logs", "Settings", "About", "Personalize",
+            "Home", "RemoteDesktop", "Files", "Commands", "Launcher", "Processes", "Sensors", "Routines",
+            "Settings", "Logs", "About", "Personalize",
         };
 
         StartupViewArgument.Navigators.Keys.Should().BeEquivalentTo(expected);
@@ -85,12 +85,7 @@ public class StartupViewArgumentTests
     {
         StartupViewArgument.Navigators.Should().ContainKey("home");
         StartupViewArgument.Navigators.Should().ContainKey("HOME");
-    }
-
-    [Fact]
-    public void Navigators_DoesNotIncludeRemoteDesktop()
-    {
-        StartupViewArgument.Navigators.Should().NotContainKey("RemoteDesktop");
+        StartupViewArgument.Navigators.Should().ContainKey("remotedesktop");
     }
 
     [Fact]
@@ -106,18 +101,20 @@ public class StartupViewArgumentTests
     }
 
     /// <summary>
-    /// Ctrl+D1..D7 / Ctrl+OemComma order (MainWindow.axaml:34-53), the same navigation calls
+    /// Drawer order, the same navigation calls
     /// <c>ShellViewModel</c>'s own <c>[RelayCommand]</c> methods bind to. Each pair is checked two
     /// ways: the exact source text (a name silently re-pointed at the wrong lambda) and reflection
     /// (a method renamed elsewhere without updating this table).
     /// </summary>
     [Theory]
     [InlineData("Home", "NavigateToHome")]
-    [InlineData("Sensors", "NavigateToCanvas")]
+    [InlineData("RemoteDesktop", "NavigateToRemoteDesktop")]
+    [InlineData("Files", "NavigateToFileTransfer")]
     [InlineData("Commands", "NavigateToRemote")]
     [InlineData("Launcher", "NavigateToAppLauncher")]
     [InlineData("Processes", "NavigateToTaskManager")]
-    [InlineData("Files", "NavigateToFileTransfer")]
+    [InlineData("Sensors", "NavigateToCanvas")]
+    [InlineData("Routines", "NavigateToRoutines")]
     [InlineData("Logs", "NavigateToDiagnosticLogs")]
     [InlineData("Settings", "NavigateToSettings")]
     [InlineData("About", "NavigateToAbout")]

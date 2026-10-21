@@ -32,20 +32,20 @@
     </Window.Resources>
 
     <Window.KeyBindings>
-        <!-- Direct navigation shortcuts, in SIDEBAR ORDER (3.0 comb, ctrl-digit-order): Home,
-             Sensors, Commands, Routines, Apps, Processes, Files, Logs & Diagnostics, Settings. Routines was
-             missing, so every shortcut after Commands was one off from the item it sits beside. -->
+        <!-- Direct navigation shortcuts, in SIDEBAR ORDER (RemEx-172ba): Home, Remote desktop,
+             Files, Commands, Apps, Processes, Sensors, Routines, Settings. Logs and About have none. -->
         <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToHomeCommand}" />
-        <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCanvasCommand}" />
-        <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToRemoteCommand}" />
-        <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToRoutinesCommand}" />
+        <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToRemoteDesktopCommand}" />
+        <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToFileTransferCommand}" />
+        <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToRemoteCommand}" />
         <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToAppLauncherCommand}" />
         <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToTaskManagerCommand}" />
-        <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToFileTransferCommand}" />
-        <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToDiagnosticLogsCommand}" />
+        <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToCanvasCommand}" />
+        <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToRoutinesCommand}" />
         <KeyBinding Gesture="Ctrl+D9" Command="{Binding NavigateToSettingsCommand}" />
-        <!-- Settings (Ctrl+,) -->
-        <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding ToggleSettingsPanelCommand}" />
+        <!-- Ctrl+, is Settings, the convention every desktop app follows; Personalize moved to Ctrl+Shift+, (RemEx-172ba). -->
+        <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding NavigateToSettingsCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+OemComma" Command="{Binding ToggleSettingsPanelCommand}" />
         <!-- Dismiss overlays -->
         <KeyBinding Gesture="Escape" Command="{Binding DismissOverlaysCommand}" />
         <!-- Refresh / sync sensors -->

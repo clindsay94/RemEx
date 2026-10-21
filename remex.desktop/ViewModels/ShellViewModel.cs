@@ -52,13 +52,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         new TutorialPage(7, "File Transfer",    "Share folders between phone and PC.",     PlatformFlags.All),
         // Glossary Pages
         new TutorialPage(8, "Glossary: Command Palette", "Press Ctrl+K to search for commands, screens, and quick actions instantly. Use it to quickly disconnect, lock your PC, or jump to Settings.", PlatformFlags.All),
-        new TutorialPage(9, "Glossary: App Launcher", "Launch predefined apps and scripts directly on the host machine. You can configure custom paths and arguments in the Settings menu.", PlatformFlags.All),
+        new TutorialPage(9, "Glossary: App Launcher", "Start chosen apps and scripts on this PC from your phone. Add each one on the Apps page with Add a program, where you set its path and name.", PlatformFlags.All),
         new TutorialPage(10, "Glossary: Task Manager", "View and terminate running processes on your host PC remotely. Includes CPU and Memory usage statistics to identify resource hogs.", PlatformFlags.All),
         new TutorialPage(11, "Glossary: Sensor Canvas", "A draggable workspace to monitor your PC's telemetry in real-time. Pin sensors (CPU, RAM, Temps), resize cards, and arrange them to build your ideal dashboard.", PlatformFlags.All),
         new TutorialPage(12, "Glossary: File Transfer", "Securely browse, upload, and download files between your client and host PC. Host machines control access by defining 'Shared Folders' in their settings.", PlatformFlags.All),
-        new TutorialPage(13, "Glossary: Remote Desktop", "Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network.", PlatformFlags.All),
+        new TutorialPage(13, "Glossary: Remote Desktop", "See and control your PC's screen from your phone. Quality, scale and FPS are on the Remote desktop page.", PlatformFlags.All),
         new TutorialPage(14, "Glossary: Quick Settings", "On Android, add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app.", PlatformFlags.Android),
-        new TutorialPage(15, "Glossary: Customization", "Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu.", PlatformFlags.All),
+        new TutorialPage(15, "Glossary: Customization", "Change colours, light or dark mode, fonts and card shapes in Personalize, at the bottom of the sidebar (Ctrl+Shift+,).", PlatformFlags.All),
         new TutorialPage(TutorialPageIds.Routines, "Routines", "Routines run on this PC even when your phone is away.", PlatformFlags.Windows | PlatformFlags.Linux),
         new TutorialPage(TutorialPageIds.Finish, "Finish", "You're all set — let's go!",             PlatformFlags.All),
     };
@@ -238,6 +238,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// </summary>
     internal FileTransferQueue TransferQueueForTests => _transferQueue;
 
+    /// <summary>
+    /// The session's one transfer queue. The tray flyout's Send tile enqueues its phone uploads here
+    /// so they show on the Files page and its badge.
+    /// </summary>
+    public FileTransferQueue TransferQueue => _transferQueue;
+
     /// <summary>Number of transfers currently in flight (queued or actively transferring).</summary>
     [ObservableProperty]
     private int _activeTransferCount;
@@ -416,12 +422,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>
     /// The nav indices (the drawer items' <c>Tag</c>s) in the order the drawer in
     /// <c>ShellView.axaml</c> shows them, top to bottom. This is what "further down the sidebar"
-    /// means for <see cref="TransitionDirection"/>: the Tags are ids, not positions, and About (6)
-    /// and Settings (9) sit out of numeric order, so reading the direction off the Tag slid those
-    /// pages the wrong way (RemEx-pp0rt.2). A new drawer item is one entry here, at its visual
-    /// position; <c>ShellViewModelNavDirectionTests</c> fails if this and the XAML disagree.
+    /// means for <see cref="TransitionDirection"/>: the Tags are ids, not positions, so reading the
+    /// direction off the Tag slid pages the wrong way (RemEx-pp0rt.2). A new drawer item is one entry
+    /// here, at its visual position; <c>ShellViewModelNavDirectionTests</c> fails if this and the XAML
+    /// disagree. Task-grouped since RemEx-172ba: Home, Remote desktop, Files, Commands, Apps,
+    /// Processes | Sensors, Routines | Settings, Logs, About.
     /// </summary>
-    private static readonly int[] _drawerNavOrder = [0, 1, 2, 10, 3, 4, 7, 8, 9, 6];
+    private static readonly int[] _drawerNavOrder = [0, 5, 7, 2, 3, 4, 1, 10, 9, 8, 6];
 
     /// <inheritdoc cref="_drawerNavOrder"/>
     internal static IReadOnlyList<int> DrawerNavOrder => _drawerNavOrder;
@@ -429,9 +436,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Direction of the shared-axis transition for a move from <paramref name="fromNavIndex"/> to
     /// <paramref name="toNavIndex"/>: 1 when the target sits at or below the current page in the
-    /// drawer, -1 when above. A destination that has no drawer item (Remote Desktop, reached from
-    /// Home, the palette or the tray) ranks below the whole drawer, so entering it drills forward
-    /// and leaving it comes back.
+    /// drawer, -1 when above. An index with no drawer item ranks below the whole drawer, so
+    /// entering it drills forward and leaving it comes back.
     /// </summary>
     internal static int TransitionDirectionFor(int fromNavIndex, int toNavIndex) =>
         DrawerPosition(toNavIndex) >= DrawerPosition(fromNavIndex) ? 1 : -1;
@@ -751,14 +757,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
-    private int _lastSensorCardCount = -1;
     private HomeViewModel? _homeViewModel;
     private CanvasDashboardViewModel? _canvasViewModel;
     private SettingsViewModel? _settingsViewModel;
     private RemoteViewModel? _remoteViewModel;
     private AppLauncherViewModel? _appLauncherViewModel;
     private CustomizationViewModel? _customizationViewModel;
-    private LayoutSettingsViewModel? _layoutSettingsViewModel;
     private readonly HomePinsBridge? _homePinsBridge;
     private readonly PhoneSensorAlertsBridge? _phoneSensorAlertsBridge;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
@@ -1950,8 +1954,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         IsDrawerOpen = !IsDrawerOpen;
     }
 
-    // ═══════════════ Legacy navigation kept for backward compat ═══════════════
+    // ═══════════════ Settings page and Personalize sheet ═══════════════
 
+    /// <summary>The Settings page (drawer, Ctrl+9 and Ctrl+,). Closes the Personalize sheet if it is open.</summary>
     [RelayCommand]
     public void NavigateToSettings()
     {
@@ -1979,9 +1984,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Opens the live Personalization popup. Kept for the command palette / Home shortcut that
-    /// previously navigated to the full-screen Customization page (now retired — its content
-    /// lives in the Personalize side sheet so changes preview live against the current screen).
+    /// Opens the Personalize side sheet (Home's Quick launch, Settings' "Look and feel", --view
+    /// Personalize). Unlike <see cref="ToggleSettingsPanel"/> it never closes an open sheet.
     /// </summary>
     [RelayCommand]
     public void NavigateToCustomization()
@@ -2008,39 +2012,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 _alertTracker,
                 _canvasViewModel!);
             _ = _settingsViewModel.InitializeAsync();
-            _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
-            return;
-        }
-
-        // Only rebuild the sensor list when the canvas sensor card count changes, avoiding 50+
-        // CollectionChanged events on every Settings panel open. Pinned sensors moved to
-        // LayoutSettingsViewModel (RemEx-4kv0g.4.2) - this VM no longer has one of its own, so the
-        // hook retargets there; null when the Personalize sheet has never been opened (the legacy
-        // full Settings page reaches EnsureSettingsVm alone, never EnsureCustomizationVm), in which
-        // case there is nothing to refresh yet and the fresh LayoutSettingsViewModel's own
-        // InitializeAsync will read current cards when it is eventually constructed.
-        var currentCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
-        if (currentCount != _lastSensorCardCount)
-        {
-            _lastSensorCardCount = currentCount;
-            _layoutSettingsViewModel?.RefreshSensors();
         }
     }
 
     private void EnsureCustomizationVm()
     {
-        // Lazily constructed here, not at boot (RemEx-4kv0g.4.2) - the canvas already self-loads
-        // IsSnapToGridEnabled/GridSize from its own profile load at construction
-        // (CanvasDashboardViewModel.FinishInitialize), independent of any Settings/Layout VM, so
-        // nothing at startup depends on this VM existing yet. Matches SettingsViewModel's own lazy
-        // construction above.
-        if (_layoutSettingsViewModel is null)
-        {
-            _layoutSettingsViewModel = new LayoutSettingsViewModel(
-                _layoutService, _canvasViewModel, _services.GetService<HomeViewModel>());
-            _ = _layoutSettingsViewModel.InitializeAsync();
-        }
-
         // home/launcherStorage feed the Flyout section's Cards/Apps checklists (Flyout D2 .2,
         // RemEx-4kv0g.18.6) - both are registered AddSingleton in App.axaml.cs, the same DI surface
         // TrayFlyoutViewModel's own constructor injection already resolves them through. GetService,
@@ -2055,8 +2031,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
                 this, _layoutService, _themeService,
                 _services.GetService<HomeViewModel>(),
                 _services.GetService<ILauncherStorageService>(),
-                _services.GetRequiredService<ILogger<CustomizationViewModel>>(),
-                _layoutSettingsViewModel);
+                _services.GetRequiredService<ILogger<CustomizationViewModel>>());
 
             // P1-30: the sheet's own binding target (CustomizationVmForSheetBinding, non-building)
             // only reflects a freshly-built VM once this notification fires - raised exactly here,
@@ -2107,16 +2082,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// construction through the binding itself.
     /// </summary>
     public CustomizationViewModel? CustomizationVmForSheetBinding => _customizationViewModel;
-
-    /// <summary>
-    /// The Layout VM (snap-to-grid, grid size, pinned sensors; RemEx-4kv0g.4.2), if the Personalize
-    /// sheet has been opened at least once this session. Unlike <see cref="CustomizationVm"/> and
-    /// <see cref="SettingsVm"/> this does NOT lazily construct one — <c>SettingsViewModel</c>'s
-    /// savefile-import path reads this only to refresh an already-open sheet; a sheet that was never
-    /// opened has nothing on screen to go stale, and its eventual construction reads the current
-    /// profile on its own.
-    /// </summary>
-    public LayoutSettingsViewModel? LayoutSettingsVm => _layoutSettingsViewModel;
 }
 
 /// <summary>A single entry in the shell's sensor-alert notification feed.</summary>

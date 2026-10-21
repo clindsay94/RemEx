@@ -72,10 +72,15 @@ public sealed class PairedDeviceActivityStore
 
         _activity.AddOrUpdate(
             clientId,
-            _ => new PairedDeviceActivity(nowUtc, nowUtc),
+            _ => new PairedDeviceActivity(nowUtc, nowUtc, LastPairedUtc: nowUtc),
             // FIRST-PAIRED IS FILLED IF MISSING, never overwritten: a device whose only row came
             // from a reconnect has a null there, and this is the one moment we genuinely know it.
-            (_, existing) => existing with { FirstPairedUtc = existing.FirstPairedUtc ?? nowUtc, LastSeenUtc = nowUtc });
+            (_, existing) => existing with
+            {
+                FirstPairedUtc = existing.FirstPairedUtc ?? nowUtc,
+                LastSeenUtc = nowUtc,
+                LastPairedUtc = nowUtc,
+            });
 
         PersistToDisk();
     }
@@ -242,5 +247,13 @@ public sealed class PairedDeviceActivityStore
 /// so if <see cref="PairedDeviceActivityStore.RecordSeen"/> minted a first-paired date, then on the
 /// day this ships every phone a user owns would report "first paired: today", and the "unknown"
 /// rendering the row contract was designed around would never fire once. A null says the true thing.
+/// <para>
+/// <c>LastPairedUtc</c> is written by <see cref="PairedDeviceActivityStore.RecordPaired"/> only, never by
+/// a reconnect, so Settings can tell "this phone just paired" from "this phone just came back"
+/// (RemEx-172ba). Optional and trailing so files written before it load with a null.
+/// </para>
 /// </remarks>
-public sealed record PairedDeviceActivity(DateTimeOffset? FirstPairedUtc, DateTimeOffset LastSeenUtc);
+public sealed record PairedDeviceActivity(
+    DateTimeOffset? FirstPairedUtc,
+    DateTimeOffset LastSeenUtc,
+    DateTimeOffset? LastPairedUtc = null);

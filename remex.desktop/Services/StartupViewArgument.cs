@@ -11,10 +11,10 @@ namespace Remex.Desktop.Services;
 /// <remarks>
 /// <para>
 /// THIS EXISTS SO THE SWEEP NEVER SENDS A KEYSTROKE. The original design drove navigation with
-/// <c>Ctrl+D1..D7</c> / <c>Ctrl+OemComma</c> via <c>SendKeys</c>, which is banned in this repo
+/// <c>Ctrl+D1..D9</c> / <c>Ctrl+OemComma</c> via <c>SendKeys</c>, which is banned in this repo
 /// (memory: eyes-pass-no-os-keystroke-injection) — nav list items expose no
 /// <c>InvokePattern</c> for UI Automation to click instead. A launch argument reaches the same
-/// nine destinations without injecting OS input: the sweep stops the host, starts it again with
+/// destinations without injecting OS input: the sweep stops the host, starts it again with
 /// <c>--view X</c>, screenshots, and stops it — one process per cell x view.
 /// </para>
 /// <para>
@@ -22,28 +22,28 @@ namespace Remex.Desktop.Services;
 /// e.g. "Sensors" is <see cref="ShellViewModel.NavigateToCanvas"/> (the sensor dashboard) and
 /// "Commands" is <see cref="ShellViewModel.NavigateToRemote"/> (remote control), matched to what a
 /// screenshot's filename should say rather than what the view model happens to call itself.
-/// <c>RemoteDesktop</c> has no entry: it shows nothing meaningful without a connected phone, so it
-/// stays a manual verification cell (see docs/UI-PALETTE-SWEEP.md).
+/// <c>RemoteDesktop</c> opens the page but shows no stream without a connected phone.
 /// </para>
 /// </remarks>
 public static class StartupViewArgument
 {
     /// <summary>
-    /// Every name <c>--view</c> accepts, in <c>Ctrl+D1..D7</c> / <c>Ctrl+OemComma</c> / (no
-    /// binding) order, mapped to the <see cref="ShellViewModel"/> navigation call that opens it.
-    /// Personalize opens the settings side sheet.
+    /// Every name <c>--view</c> accepts, in drawer order, mapped to the <see cref="ShellViewModel"/>
+    /// navigation call that opens it. Personalize opens the side sheet.
     /// </summary>
     public static readonly IReadOnlyDictionary<string, Action<ShellViewModel>> Navigators =
         new Dictionary<string, Action<ShellViewModel>>(StringComparer.OrdinalIgnoreCase)
         {
             ["Home"] = vm => vm.NavigateToHome(),
-            ["Sensors"] = vm => vm.NavigateToCanvas(),
+            ["RemoteDesktop"] = vm => vm.NavigateToRemoteDesktop(),
+            ["Files"] = vm => vm.NavigateToFileTransfer(),
             ["Commands"] = vm => vm.NavigateToRemote(),
             ["Launcher"] = vm => vm.NavigateToAppLauncher(),
             ["Processes"] = vm => vm.NavigateToTaskManager(),
-            ["Files"] = vm => vm.NavigateToFileTransfer(),
-            ["Logs"] = vm => vm.NavigateToDiagnosticLogs(),
+            ["Sensors"] = vm => vm.NavigateToCanvas(),
+            ["Routines"] = vm => vm.NavigateToRoutines(),
             ["Settings"] = vm => vm.NavigateToSettings(),
+            ["Logs"] = vm => vm.NavigateToDiagnosticLogs(),
             ["About"] = vm => vm.NavigateToAbout(),
             ["Personalize"] = vm => vm.NavigateToCustomization(),
         };

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -38,6 +39,7 @@ public sealed class HomeQuickLaunchTests
     }
 
     [Theory]
+    [InlineData("NavigateToRemoteDesktopCommand", "RemoteDesktop")]
     [InlineData("NavigateToCanvasCommand", "ChartLineVariant")]
     [InlineData("NavigateToRemoteCommand", "RemoteTv")]
     [InlineData("NavigateToRoutinesCommand", "Routes")]
@@ -61,16 +63,64 @@ public sealed class HomeQuickLaunchTests
     }
 
     [Fact]
-    public void TheQuickLaunchGridHasTenTiles()
+    public void TheQuickLaunchGridHasElevenTiles()
     {
-        var xaml = HomeXaml();
-        var grid = xaml[xaml.IndexOf("<UniformGrid Columns=\"2\">", StringComparison.Ordinal)..];
-        grid = grid[..grid.IndexOf("</UniformGrid>", StringComparison.Ordinal)];
-        Regex.Matches(grid, "<Button ").Count.Should().Be(10);
+        Regex.Matches(QuickLaunchGrid(), "<Button ").Count.Should().Be(11);
+    }
+
+    /// <summary>
+    /// The tiles follow the drawer (RemEx-172ba) minus Home itself, then Personalize, which sits
+    /// below the drawer list.
+    /// </summary>
+    [Fact]
+    public void TheQuickLaunchTilesFollowTheDrawerOrder()
+    {
+        var commands = Regex.Matches(QuickLaunchGrid(), @"<Button [^>]*Command=""\{Binding (\w+)\}""")
+            .Select(m => m.Groups[1].Value)
+            .ToList();
+
+        commands.Should().Equal(
+            "NavigateToRemoteDesktopCommand", "NavigateToFileTransferCommand", "NavigateToRemoteCommand",
+            "NavigateToAppLauncherCommand", "NavigateToTaskManagerCommand", "NavigateToCanvasCommand",
+            "NavigateToRoutinesCommand", "NavigateToSettingsCommand", "NavigateToDiagnosticLogsCommand",
+            "NavigateToAboutCommand", "NavigateToCustomizationCommand");
     }
 
     [Fact]
-    public async Task NavigateToRoutinesCommandLandsOnTheRoutinesPage()
+    public void TheCtrlCommaHintNamesSettings()
+    {
+        // Ctrl+, opens Settings since RemEx-172ba; Home and About label that hint with Home_ScSettings.
+        HomeXaml().Should().MatchRegex(@"Text=""Ctrl \+ ,""[\s\S]{0,400}Home_ScSettings");
+        var previous = LocalizationService.Instance.CultureTag;
+        LocalizationService.Instance.SetCulture("en");
+        try
+        {
+            LocalizationService.Instance["Home_ScSettings"].Should().Be(LocalizationService.Instance["Nav_Settings"]);
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(previous);
+        }
+    }
+
+    [Fact]
+    public Task NavigateToRemoteDesktopCommandLandsOnTheRemoteDesktopPage() =>
+        WithHome((shell, home) =>
+        {
+            home.NavigateToRemoteDesktopCommand.Execute(null);
+            shell.ActiveNavIndex.Should().Be(5);
+            shell.CurrentView.Should().BeOfType<RemoteDesktopViewModel>();
+        });
+
+    [Fact]
+    public Task NavigateToRoutinesCommandLandsOnTheRoutinesPage() =>
+        WithHome((shell, home) =>
+        {
+            home.NavigateToRoutinesCommand.Execute(null);
+            shell.ActiveNavIndex.Should().Be(10);
+        });
+
+    private static async Task WithHome(Action<ShellViewModel, HomeViewModel> act)
     {
         var dir = Directory.CreateTempSubdirectory("remex-homeql-").FullName;
         var theme = new ThemeService { PostToUiThread = action => action() };
@@ -88,17 +138,20 @@ public sealed class HomeQuickLaunchTests
         shell.DiagnosticsLogDispatch = run => run();
         try
         {
-            var home = new HomeViewModel(connection, shell);
-
-            home.NavigateToRoutinesCommand.Execute(null);
-
-            shell.ActiveNavIndex.Should().Be(10);
+            act(shell, new HomeViewModel(connection, shell));
         }
         finally
         {
             shell.Dispose();
             try { Directory.Delete(dir, recursive: true); } catch { /* best-effort cleanup */ }
         }
+    }
+
+    private static string QuickLaunchGrid()
+    {
+        var xaml = HomeXaml();
+        var grid = xaml[xaml.IndexOf("<UniformGrid Columns=\"2\">", StringComparison.Ordinal)..];
+        return grid[..grid.IndexOf("</UniformGrid>", StringComparison.Ordinal)];
     }
 
     private static string HomeXaml() =>

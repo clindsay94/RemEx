@@ -13,10 +13,9 @@ namespace Remex.Desktop.Tests.Converters;
 /// <remarks>
 /// THE MAPPING IS OUT OF NUMERIC ORDER ON PURPOSE, and that is exactly why every index needs its
 /// own case here (Opus review of 6522b12, MEDIUM 1). The drawer's own <c>ListBoxItem</c> Tags run
-/// 0,1,2,3,4,7,8,9,6 - Files/Logs/Settings/About sit out of numeric sequence in the list - so a
-/// mapping that only checked two or three indices could have <c>6</c> and <c>9</c> swapped
-/// (About/Settings) and stay green. Nine cases, one per real destination, is what actually rules
-/// that class of bug out rather than merely asserting the easy ones.
+/// 0,5,7,2,3,4,1,10,9,8,6 (RemEx-172ba) - nowhere near numeric sequence - so a mapping that only
+/// checked two or three indices could have <c>6</c> and <c>9</c> swapped (About/Settings) and stay
+/// green. One case per real destination is what actually rules that class of bug out.
 /// </remarks>
 public class NavIndexToTitleConverterTests : IDisposable
 {
@@ -75,11 +74,8 @@ public class NavIndexToTitleConverterTests : IDisposable
     [Fact]
     public void Index5_RemoteDesktop_HasARealTitle_NotAnEmptyFallback()
     {
-        // NavigateToRemoteDesktop (ShellViewModel) never sets IsShellChromeHidden - only
-        // RemoteDesktopViewModel.ToggleFullScreen/NavigateBack do - so windowed remote desktop
-        // shows this app bar with a real page to name. Nav_RemoteDesktop is a genuine new
-        // user-facing string (all 9 locales), not a reuse of an existing drawer key, because no
-        // existing key fit (Opus review of 6522b12, MEDIUM 2).
+        // Windowed remote desktop shows this app bar with a real page to name, and the drawer
+        // entry (RemEx-172ba) localizes with the same Nav_RemoteDesktop key.
         Convert(5).Should().Be(LocalizationService.Instance["Nav_RemoteDesktop"]);
     }
 

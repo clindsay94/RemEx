@@ -37,7 +37,8 @@ public sealed class CommandPaletteClickRenderTests
         window.MouseUp(point, MouseButton.Left);
         Dispatcher.UIThread.RunJobs();
 
-        shell.ViewModel.ActiveNavIndex.Should().Be(1, "the second entry is Sensors, and the click must run it");
+        shell.ViewModel.ActiveNavIndex.Should().Be(5,
+            "the second entry is Remote desktop since the palette follows the RemEx-172ba sidebar order, and the click must run it");
         closed.Should().BeGreaterThan(0, "running an entry closes the palette");
     }
 }

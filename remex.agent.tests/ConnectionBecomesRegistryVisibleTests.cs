@@ -100,9 +100,21 @@ public sealed class ConnectionBecomesRegistryVisibleTests
         using var ws = await ConnectAsync(factory);
         await PairAsync(ws, factory.Services.GetRequiredService<PairingService>(), clientId);
         await WaitUntilVisibleAsync(registry);
+        // WaitUntilVisible cannot order this one: loopback is listed from the moment it connects, while
+        // the handler settles the identity AFTER its pairing_complete reply. Reading straight away raced
+        // that and lost under a loaded full-suite run (RemEx-172ba). The handler takes one message at a
+        // time, so a pong means it has finished with pairing_complete.
+        await RoundTripAsync(ws);
 
         Assert.Single(registry.Snapshot());
         Assert.False(registry.IsConnected(clientId));
+    }
+
+    private static async Task RoundTripAsync(WebSocket ws)
+    {
+        await MessageSerializer.SendAsync(
+            ws, new RemexMessage { Type = MessageTypes.Ping, Timestamp = DateTime.UtcNow.Ticks }, CancellationToken.None);
+        Assert.NotNull(await ReceiveOfTypeAsync(ws, MessageTypes.Pong));
     }
 
     /// <summary>

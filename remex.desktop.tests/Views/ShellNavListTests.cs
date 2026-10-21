@@ -61,10 +61,11 @@ public class ShellNavListTests
         NavList().Descendants(XName.Get("ListBoxItem", Avalonia))
             .Where(e => (e.Attribute("Classes")?.Value ?? string.Empty).Split(' ').Contains("nav-item"));
 
-    /// <summary>The one divider item — everything in NavList wearing .nav-divider.</summary>
-    private static XElement Divider() =>
+    /// <summary>The divider items — everything in NavList wearing .nav-divider.</summary>
+    private static List<XElement> Dividers() =>
         NavList().Descendants(XName.Get("ListBoxItem", Avalonia))
-            .Single(e => (e.Attribute("Classes")?.Value ?? string.Empty).Split(' ').Contains("nav-divider"));
+            .Where(e => (e.Attribute("Classes")?.Value ?? string.Empty).Split(' ').Contains("nav-divider"))
+            .ToList();
 
     /// <summary>
     /// The hand-rolled selection state the bead names explicitly: nine
@@ -108,10 +109,25 @@ public class ShellNavListTests
     }
 
     [Fact]
-    public void ExactlyTenRealDestinationsExist()
+    public void ExactlyElevenRealDestinationsExist()
     {
-        RealNavItems().Should().HaveCount(10,
-            "Home, Sensors, Commands, Routines, Launcher, Processes, Files, Logs, Settings, About");
+        RealNavItems().Should().HaveCount(11,
+            "Home, Remote desktop, Files, Commands, Launcher, Processes, Sensors, Routines, Settings, Logs, About");
+    }
+
+    /// <summary>
+    /// The task-grouped drawer (RemEx-172ba): six everyday pages, a divider, Sensors and Routines,
+    /// a divider, then the Settings family. Pinned child by child, dividers included.
+    /// </summary>
+    [Fact]
+    public void TheDrawerIsTaskGroupedWithTwoDividers()
+    {
+        var children = NavList().Elements(XName.Get("ListBoxItem", Avalonia))
+            .Select(e => e.Attribute("Tag")?.Value ?? "divider")
+            .ToList();
+
+        children.Should().Equal(
+            "0", "5", "7", "2", "3", "4", "divider", "1", "10", "divider", "9", "8", "6");
     }
 
     /// <summary>
@@ -123,6 +139,7 @@ public class ShellNavListTests
     /// </summary>
     [Theory]
     [InlineData("Nav_Home", 0)]
+    [InlineData("Nav_RemoteDesktop", 5)]
     [InlineData("Nav_Sensors", 1)]
     [InlineData("Nav_Commands", 2)]
     [InlineData("Nav_Routines", 10)]
@@ -160,10 +177,16 @@ public class ShellNavListTests
     }
 
     [Fact]
-    public void TheDivider_IsNotSelectableFocusableOrHitTestable()
+    public void TheDividers_AreNotSelectableFocusableOrHitTestable()
     {
-        var divider = Divider();
+        var dividers = Dividers();
+        dividers.Should().HaveCount(2, "one after the everyday pages, one before the Settings family");
+        foreach (var divider in dividers)
+            AssertInertDivider(divider);
+    }
 
+    private static void AssertInertDivider(XElement divider)
+    {
         (divider.Attribute("Focusable")?.Value).Should().Be("False",
             "Focusable=\"False\" is what ItemsControl.GetNextControl uses to skip this item during " +
             "arrow-key traversal (confirmed against Avalonia 12.1.1's own source)");

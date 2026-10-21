@@ -12,11 +12,9 @@ namespace Remex.Desktop.Converters;
 /// (<c>Nav_Home</c>, <c>Nav_Sensors</c>, ...) instead of adding new ones — every one of those keys
 /// is already translated in all 9 locales, so they needed no localization work of their own.
 ///
-/// Index 5 (<c>RemoteDesktopViewModel</c>) IS a real new string, <c>Nav_RemoteDesktop</c> (Opus
-/// review of 6522b12, RemEx-a3prn): it has no drawer entry (it is reached from inside the
-/// Commands/Remote flow, not the nav list), but it is NOT always hidden — <c>NavigateToRemoteDesktop</c>
-/// never sets <c>IsShellChromeHidden</c>, only <c>RemoteDesktopViewModel.ToggleFullScreen</c> /
-/// <c>NavigateBack</c> do, so windowed remote desktop shows this app bar with a real page to name.
+/// Index 5 (<c>RemoteDesktopViewModel</c>) uses <c>Nav_RemoteDesktop</c>, the same key as its drawer
+/// entry (second in the drawer since RemEx-172ba). Windowed remote desktop shows this app bar;
+/// only <c>RemoteDesktopViewModel.ToggleFullScreen</c> sets <c>IsShellChromeHidden</c>.
 /// Falling back to empty for anything genuinely unmapped (an out-of-range or non-int value) stays,
 /// so this converter is still honest about the difference between "no page" and "this page has no
 /// name yet".

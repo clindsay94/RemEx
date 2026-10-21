@@ -88,6 +88,7 @@ public sealed class PairedDeviceDirectoryTests
             Assert.Equal("Connor's Pixel", row.DeviceName);
             Assert.Equal(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero), row.FirstPairedUtc);
             Assert.Equal(new DateTimeOffset(2026, 8, 9, 10, 11, 12, TimeSpan.Zero), row.LastSeenUtc);
+            Assert.Equal(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero), row.LastPairedUtc);
         }
         finally { root.Delete(recursive: true); }
     }
@@ -138,7 +139,8 @@ public sealed class PairedDeviceDirectoryTests
     {
         // IsOnline joined the row for the Paired Devices card (RemEx-kirdm) — a bool derived from the
         // session registry, carrying nothing from the secret map. Updating this list is the point: it
-        // forces anyone widening the row to say so here.
+        // forces anyone widening the row to say so here. LastPairedUtc joined it for the Settings
+        // "now paired" line (RemEx-172ba R1): a timestamp from the activity store, not the registry.
         //
         // A SHAPE LOCK, not the compile-time guarantee an earlier version of this comment claimed
         // (review). It is a runtime reflection check over the row's PROPERTIES, so it is blind to
@@ -151,7 +153,7 @@ public sealed class PairedDeviceDirectoryTests
             .ToArray();
 
         Assert.Equal(
-            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "IsOnline", "LastSeenUtc", "NameOverride" },
+            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "IsOnline", "LastPairedUtc", "LastSeenUtc", "NameOverride" },
             properties);
     }
 

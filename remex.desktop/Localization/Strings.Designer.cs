@@ -77,13 +77,10 @@ namespace Remex.Desktop.Localization {
         public static string Settings_Back => ResourceManager.GetString("Settings_Back", resourceCulture)!;
         public static string Settings_SaveChanges => ResourceManager.GetString("Settings_SaveChanges", resourceCulture)!;
         public static string Settings_SavedStatus => ResourceManager.GetString("Settings_SavedStatus", resourceCulture)!;
-        public static string Settings_Connection => ResourceManager.GetString("Settings_Connection", resourceCulture)!;
         public static string Settings_Layout => ResourceManager.GetString("Settings_Layout", resourceCulture)!;
         public static string Settings_SnapToGrid => ResourceManager.GetString("Settings_SnapToGrid", resourceCulture)!;
         public static string Settings_SnapToGridDesc => ResourceManager.GetString("Settings_SnapToGridDesc", resourceCulture)!;
         public static string Settings_GridSize => ResourceManager.GetString("Settings_GridSize", resourceCulture)!;
-        public static string Settings_PinnedSensors => ResourceManager.GetString("Settings_PinnedSensors", resourceCulture)!;
-        public static string Settings_PinnedSensorsDesc => ResourceManager.GetString("Settings_PinnedSensorsDesc", resourceCulture)!;
         public static string Settings_Language => ResourceManager.GetString("Settings_Language", resourceCulture)!;
 
         // Home

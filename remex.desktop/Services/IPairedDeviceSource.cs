@@ -12,6 +12,8 @@ namespace Remex.Desktop.Services;
 /// <param name="FirstPairedUtc">When it first paired, or null when that is not known.</param>
 /// <param name="LastSeenUtc">When it was last connected, or null when that is not known.</param>
 /// <param name="IsOnline">Whether this specific device has a live connection right now.</param>
+/// <param name="LastPairedUtc">When it last completed a pairing, or null when that is not known. A
+/// reconnect never moves it, unlike <paramref name="LastSeenUtc"/>.</param>
 /// <remarks>
 /// NO SECRET, AND NO ROOM FOR ONE. The registry this is composed from stores a reconnect secret per
 /// client and is the only authentication path in production; this record deliberately has nowhere to
@@ -34,7 +36,8 @@ public readonly record struct PairedDeviceRow(
     string? NameOverride,
     DateTimeOffset? FirstPairedUtc,
     DateTimeOffset? LastSeenUtc,
-    bool IsOnline);
+    bool IsOnline,
+    DateTimeOffset? LastPairedUtc = null);
 
 /// <summary>
 /// The devices the embedded host has paired, as the desktop UI can see them.

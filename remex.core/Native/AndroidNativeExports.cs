@@ -597,6 +597,28 @@ public static class AndroidNativeExports
         => Export(env, () => HandleInitialize(JniHelper.ReadJString(env, initJsonUtf8)));
 
     /// <summary>
+    /// Closes the control connection because the person asked to (Home's Disconnect, RemEx-172ba).
+    /// </summary>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/> describing the request, not the close.</returns>
+    /// <remarks>
+    /// Nothing here stops a reconnect: the phone's heartbeat owns that decision and parks itself
+    /// before calling this. The close raises <c>ConnectionStateChanged(false)</c> like any other.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_DisconnectNative")]
+    public static IntPtr Disconnect(IntPtr env, IntPtr thiz)
+        => Export(env, HandleDisconnect);
+
+    private static string HandleDisconnect()
+    {
+        _ = Task.Run(async () =>
+        {
+            try { await RemexNativeClient.Current.DisconnectAsync(); }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DisconnectAsync failed: {ex.Message}"); }
+        });
+        return SerializeOperationSuccess("Disconnect requested.");
+    }
+
+    /// <summary>
     /// Sends a Wake-on-LAN magic packet. Fire-and-forget by nature: a success here means the packet
     /// was sent, never that the PC woke.
     /// </summary>

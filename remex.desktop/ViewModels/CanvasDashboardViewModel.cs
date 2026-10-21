@@ -475,6 +475,41 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     [ObservableProperty]
     private int _gridSize = 50;
 
+    // The Sensors toolbar's Grid flyout writes these two directly (RemEx-172ba, moved off Personalize).
+    // Profile loads assign them too, and those must not turn straight back into a save.
+    private bool _applyingGridFromProfile;
+
+    partial void OnIsSnapToGridEnabledChanged(bool value) =>
+        SaveGridSetting(profile => profile with { IsSnapToGridEnabled = value });
+
+    partial void OnGridSizeChanged(int value) =>
+        SaveGridSetting(profile => profile with { GridSize = value });
+
+    /// <summary>
+    /// Saves one grid field onto <see cref="DashboardLayoutService.CurrentProfile"/>, the same narrow
+    /// save LayoutSettingsViewModel made from Personalize, so the stored values and file do not change.
+    /// Nothing is written before the first load, which would save over the user's file with defaults.
+    /// </summary>
+    private void SaveGridSetting(Func<DashboardProfile, DashboardProfile> mutate)
+    {
+        if (_applyingGridFromProfile || !_isInitialized) return;
+        _layoutService.RequestSave(mutate(_layoutService.CurrentProfile ?? _profile));
+    }
+
+    private void ApplyGridFromProfile(DashboardProfile profile)
+    {
+        _applyingGridFromProfile = true;
+        try
+        {
+            IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
+            GridSize = profile.GridSize;
+        }
+        finally
+        {
+            _applyingGridFromProfile = false;
+        }
+    }
+
     [ObservableProperty]
     private bool _hasStagedCards;
 
@@ -585,8 +620,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
 
         // The per-user dashboard_layout.json is the only layout source (RemEx-sydzo).
         _profile = localProfile;
-        IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
-        GridSize = _profile.GridSize;
+        ApplyGridFromProfile(_profile);
 
         // Restore sensor alerts from profile. _alertStore.Changed is NOT subscribed yet (see
         // below) — ReplaceAll fires Changed unconditionally, and OnAlertStoreChanged saves,
@@ -1750,8 +1784,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable, I
     private void ApplyProfile(DashboardProfile profile)
     {
         _profile = profile;
-        IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
-        GridSize = profile.GridSize;
+        ApplyGridFromProfile(profile);
 
         // Seed the alert store from every profile this canvas ever applies (RemEx-8wpvr.2, HIGH
         // review round 2) - not just FinishInitialize's local-load path. Before this, a host sync

@@ -737,6 +737,12 @@ public partial class ShellView : UserControl
             {
                 ArmNavEntranceOnFirstOpen(drawerVm);
 
+                // The list's scroll offset outlives a close, and the selection autoscroll and focus
+                // bring-into-view only fire on a change, so the drawer could reopen where it was left.
+                // Background priority runs after layout and after the posted focus below.
+                if (drawerVm.IsDrawerOpen)
+                    Dispatcher.UIThread.Post(RevealSelectedNavItem, DispatcherPriority.Background);
+
                 if (_drawerContentRoot != null)
                 {
                     OnOverlayToggled(
@@ -909,6 +915,7 @@ public partial class ShellView : UserControl
             case 2: vm.NavigateToRemoteCommand.Execute(null); break;
             case 3: vm.NavigateToAppLauncherCommand.Execute(null); break;
             case 4: vm.NavigateToTaskManagerCommand.Execute(null); break;
+            case 5: vm.NavigateToRemoteDesktopCommand.Execute(null); break;
             case 6: vm.NavigateToAboutCommand.Execute(null); break;
             case 7: vm.NavigateToFileTransferCommand.Execute(null); break;
             case 8: vm.NavigateToDiagnosticLogsCommand.Execute(null); break;
@@ -952,6 +959,22 @@ public partial class ShellView : UserControl
 
         if (target != null)
             _navList.SelectedItem = target;
+    }
+
+    private void RevealSelectedNavItem()
+    {
+        if (_navList?.SelectedItem is not ListBoxItem item || DataContext is not ShellViewModel { IsDrawerOpen: true })
+            return;
+
+        // The ListBox template's own ScrollViewer; NavList has no other.
+        var scroll = _navList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        if (scroll is null || item.TranslatePoint(default, scroll) is not { } topInViewport)
+            return;
+
+        var isFirst = ReferenceEquals(item, _navList.Items.OfType<ListBoxItem>().FirstOrDefault());
+        var offset = NavListScroll.OffsetToReveal(
+            topInViewport.Y + scroll.Offset.Y, item.Bounds.Height, scroll.Viewport.Height, scroll.Offset.Y, isFirst);
+        scroll.Offset = scroll.Offset.WithY(offset);
     }
 
     /// <summary>
