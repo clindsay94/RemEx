@@ -166,4 +166,15 @@ object HomeLogic {
         val row = rows.firstOrNull { it.address == host }
         return row?.takeIf { it.isNamed }?.displayName ?: hostMachineName.trim().ifEmpty { host }
     }
+
+    /**
+     * What the PC card's Switch PC offers (RemEx-172ba): the other paired PCs, most recent first,
+     * never the one already connected. Trusted rows only, since a quick switch must not start a
+     * pairing; anything else goes through the PCs page.
+     */
+    fun switchPcTargets(knownPcs: List<KnownPcEntry>, connectedHost: String?): List<KnownPcEntry> =
+            knownPcs.filter { it.isTrusted && !it.address.equals(connectedHost?.trim(), ignoreCase = true) }
+
+    /** Switch PC opens the quick sheet when there is another PC to pick, and the PCs page otherwise. */
+    fun switchPcOpensSheet(targets: List<KnownPcEntry>): Boolean = targets.isNotEmpty()
 }

@@ -26,7 +26,9 @@ import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material3.AlertDialog
@@ -120,6 +122,8 @@ data class HomeUiState(
         val quickActions: List<String> = HomeLogic.QUICK_ACTIONS,
         /** Paired PCs the connect card offers, most recently connected first. */
         val knownPcs: List<KnownPcEntry> = emptyList(),
+        /** The other paired PCs the connected card's Switch PC offers ([HomeLogic.switchPcTargets]). */
+        val switchTargets: List<KnownPcEntry> = emptyList(),
         val pins: HomePinsState = HomePinsState(),
         val sensors: List<TelemetrySensor> = emptyList(),
         val recent: List<RecentActivity> = emptyList(),
@@ -203,6 +207,7 @@ fun HomeScreen(
                     uptime = uptime,
                     quickActions = HomeLogic.QUICK_ACTIONS.filter { HomeLogic.isQuickActionOffered(it, powerVerbs) },
                     knownPcs = knownPcRows.filter { it.isTrusted },
+                    switchTargets = HomeLogic.switchPcTargets(knownPcRows, host?.takeIf { isConnected }),
                     pins = pins,
                     sensors = sensors,
                     recent = HomeLogic.recentActivity(history, knownPcRows),
@@ -228,6 +233,7 @@ fun HomeScreen(
                 ConnectionOpenRequests.requestAddPc()
                 onNavigateToConnection()
             },
+            onDisconnect = viewModel::disconnect,
     )
 }
 
@@ -245,10 +251,12 @@ fun HomeScreenContent(
         /** Connection > Add a PC, for a PC that needs pairing again, and for a phone with no PCs yet. */
         onPair: () -> Unit = onNavigateToConnection,
         onDismissError: () -> Unit = {},
+        onDisconnect: () -> Unit = {},
 ) {
     val haptics = rememberRemexHaptics()
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     var showPinSheet by rememberSaveable { mutableStateOf(false) }
+    var showSwitchSheet by rememberSaveable { mutableStateOf(false) }
     val tileShape = CardShapes.shapeFor(CardShapes.ROUNDED_RECTANGLE, state.cornerRadius)
     val scrollState = rememberScrollState()
     // Tapping Home while on Home goes back to the top (3.0 comb, no-reselect).
@@ -274,7 +282,17 @@ fun HomeScreenContent(
                 verticalArrangement = Arrangement.spacedBy(CardShapes.CARD_SPACING_DP.dp)
         ) {
             if (state.isConnected) {
-                PcCard(state = state, shape = tileShape, onQuickAction = onQuickAction, onPair = onPair)
+                PcCard(
+                        state = state,
+                        shape = tileShape,
+                        onQuickAction = onQuickAction,
+                        onPair = onPair,
+                        onSwitchPc = {
+                            if (HomeLogic.switchPcOpensSheet(state.switchTargets)) showSwitchSheet = true
+                            else onNavigateToConnection()
+                        },
+                        onDisconnect = onDisconnect,
+                )
             } else {
                 ConnectCard(
                         state = state,
@@ -318,6 +336,82 @@ fun HomeScreenContent(
                 onSetPinned = onSetPinned,
                 onDismiss = { showPinSheet = false },
         )
+    }
+
+    // Disconnected (or the targets gone) while it was open: there is nothing left to switch from.
+    if (showSwitchSheet && state.isConnected && state.switchTargets.isNotEmpty()) {
+        SwitchPcSheet(
+                targets = state.switchTargets,
+                onPick = { entry ->
+                    showSwitchSheet = false
+                    onConnectTo(entry)
+                },
+                onManage = {
+                    showSwitchSheet = false
+                    onNavigateToConnection()
+                },
+                onDismiss = { showSwitchSheet = false },
+        )
+    }
+}
+
+/** Switch PC's quick list (RemEx-172ba): the other paired PCs, one tap each, plus the PCs page. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwitchPcSheet(
+        targets: List<KnownPcEntry>,
+        onPick: (KnownPcEntry) -> Unit,
+        onManage: () -> Unit,
+        onDismiss: () -> Unit,
+) {
+    val haptics = rememberRemexHaptics()
+    val buttonShapes = rememberRemexButtonShapes()
+    ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
+    ) {
+        Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(stringResource(R.string.home_switch_pc_title), style = MaterialTheme.typography.titleLarge)
+            targets.forEach { pc ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                                pc.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                        )
+                        if (pc.isNamed) {
+                            Text(
+                                    pc.address,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                            onClick = {
+                                haptics.perform(RemexHapticEvent.Press)
+                                onPick(pc)
+                            },
+                            shapes = buttonShapes,
+                    ) { Text(stringResource(R.string.button_connect)) }
+                }
+            }
+            TextButton(
+                    onClick = onManage,
+                    shapes = buttonShapes,
+                    contentPadding = ButtonDefaults.TextButtonContentPadding,
+                    modifier = Modifier.align(Alignment.End)
+            ) { Text(stringResource(R.string.home_manage_pcs)) }
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 
@@ -405,6 +499,8 @@ private fun PcCard(
         shape: androidx.compose.ui.graphics.Shape,
         onQuickAction: (String) -> Unit,
         onPair: () -> Unit,
+        onSwitchPc: () -> Unit,
+        onDisconnect: () -> Unit,
 ) {
     val haptics = rememberRemexHaptics()
     var confirming by rememberSaveable { mutableStateOf<String?>(null) }
@@ -488,6 +584,34 @@ private fun PcCard(
                             Text(stringResource(quickActionLabel(action)))
                         }
                     }
+                }
+            }
+            // Switch PC and Disconnect (RemEx-172ba). Shown when the PC needs pairing too: leaving a
+            // PC that no longer knows this phone is exactly when they are wanted.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                        onClick = {
+                            haptics.perform(RemexHapticEvent.Press)
+                            onSwitchPc()
+                        },
+                        shapes = buttonShapes,
+                        modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.home_switch_pc), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                OutlinedButton(
+                        onClick = {
+                            haptics.perform(RemexHapticEvent.Press)
+                            onDisconnect()
+                        },
+                        shapes = buttonShapes,
+                        modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.LinkOff, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.home_disconnect), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

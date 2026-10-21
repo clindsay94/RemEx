@@ -76,14 +76,10 @@
     <string name="cd_scroll_down">Défiler vers le bas</string>
     <string name="cd_keyboard">Clavier</string>
     <string name="screen_settings_title">Paramètres</string>
-    <string name="settings_tab_connection">Connexion</string>
     <string name="settings_tab_personalization">Personnaliser</string>
     <string name="settings_tab_input">Entrée</string>
     <string name="settings_tab_file_transfer">Fichiers</string>
-    <string name="settings_tab_help">Aide</string>
-    <string name="settings_help_title">Aide</string>
     <string name="settings_replay_tutorial">Revoir le tutoriel</string>
-    <string name="settings_replay_tutorial_body">Revoir le guide de prise en main pour la configuration, l\'appairage QR, la connexion manuelle et les conseils d\'utilisation quotidienne.</string>
     <string name="settings_faq_hint">Des réponses sur l\'appairage, les autorisations, le transfert de fichiers et les performances du bureau à distance.</string>
     <string name="screen_app_launcher_title">Applications</string>
     <string name="app_launcher_no_apps">Aucune application trouvée</string>
@@ -183,7 +179,6 @@
     <string name="dashboard_card_drawer_title">Ajouter des cartes</string>
     <string name="dashboard_card_drawer_hint">Cochez un capteur pour ajouter sa carte. Décochez-le pour la retirer.</string>
     <string name="dashboard_collecting_data">Collecte des données…</string>
-    <string name="screen_connection_title">Connexion</string>
     <string name="screen_connection_subtitle">Choisissez le PC que ce téléphone contrôle</string>
     <string name="connection_your_pcs_title">Vos PC</string>
     <string name="connection_your_pcs_empty">Aucun PC pour l\'instant. Ajoutez-en un pour commencer.</string>
@@ -307,7 +302,6 @@
     <string name="personalization_shape_telemetry">Cartes des capteurs</string>
     <string name="personalization_shape_app_launcher">Applications</string>
     <string name="personalization_shape_remote_commands">Commandes</string>
-    <string name="personalization_shape_remote_mouse">Souris à distance</string>
     <string name="personalization_shape_task_manager">Processus</string>
     <string name="personalization_shape_pc_orb">Indicateur PC</string>
     <string name="personalization_preview">Aperçu</string>
@@ -783,8 +777,6 @@
     <string name="share_to_pc_queued">Envoi vers votre PC. Vous pouvez suivre la progression dans RemEx.</string>
     <string name="share_to_pc_nothing_to_send">Aucun fichier à envoyer.</string>
     <string name="share_to_pc_connecting">Connexion à votre PC…</string>
-    <string name="share_to_pc_not_configured">Aucun PC n\'est encore configuré. Ouvrez RemEx et connectez-vous d\'abord à votre PC, puis réessayez de partager.</string>
-    <string name="share_to_pc_open_app">Ouvrir RemEx</string>
     <string name="file_transfer_notification_open">Ouvrir</string>
     <!-- File sharing: access + consent (2.1, WP9) -->
     <string name="settings_ft_access_title">Accès depuis votre PC</string>
@@ -938,7 +930,6 @@
          the preview promise - what is shown IS what is sent - because that promise is the only
          reason it is safe to offer this at all. -->
     <string name="settings_share_diagnostics">Partager le diagnostic</string>
-    <string name="settings_share_diagnostics_body">Créez un rapport sur cette application et sa connexion à votre PC, que vous pouvez envoyer à la personne qui vous aide. Vous le lisez entièrement avant, et rien ne quitte votre téléphone tant que vous ne l’envoyez pas.</string>
     <string name="screen_share_diagnostics_title">Partager le diagnostic</string>
     <string name="share_diagnostics_explainer">Ce rapport contient la version de l’application, le modèle du téléphone, la version d’Android, ce que votre PC a annoncé en dernier à son sujet et les lignes de journal récentes de cette application. Les clés d’association sont supprimées et les chemins de fichiers sont réduits au seul nom du fichier. Ce que vous voyez ci-dessous est exactement ce qui sera envoyé.</string>
     <string name="share_diagnostics_network_toggle">Inclure les adresses réseau</string>
@@ -1748,7 +1739,6 @@
     <string name="personalization_reset_all_body">Les couleurs, les polices, les formes des cartes, l\'animation de démarrage et l\'arrière-plan reviennent à l\'aspect de RemEx après une nouvelle installation. Votre langue ne change pas.</string>
     <string name="faq_search_hint">Rechercher dans la FAQ</string>
     <string name="faq_no_match">Rien dans la FAQ ne correspond à « %1$s ». Essayez un mot plus court.</string>
-    <string name="settings_open_faq">Ouvrir la FAQ</string>
     <string name="settings_pc_alerts_blocked">Android a désactivé les notifications de RemEx, donc ces alertes ne peuvent pas s\'afficher.</string>
     <string name="settings_battery_ok">RemEx est autorisé à fonctionner en arrière-plan.</string>
     <string name="files_delete_confirm_title">Supprimer définitivement ?</string>
@@ -1785,4 +1775,21 @@
     <string name="about_version_mismatch">Votre téléphone et votre PC n\'ont pas la même version de RemEx. Mettez à jour la plus ancienne pour que toutes les fonctions marchent.</string>
     <string name="about_copy_versions">Copier les détails de version</string>
     <string name="qr_scanner_not_remex">Ce code QR ne vient pas de RemEx. Scannez celui que RemEx affiche sur votre PC.</string>
+    <string name="screen_pcs_title">PC</string>
+    <string name="screen_help_title">Aide et diagnostic</string>
+    <string name="help_pc_logs_body">Lisez les journaux de votre PC et lancez ses propres vérifications.</string>
+    <string name="help_share_diagnostics_body">Créez un rapport pour la personne qui vous aide. Vous le voyez en entier avant tout envoi.</string>
+    <string name="help_tutorial_body">Revoyez la configuration et les bases.</string>
+    <string name="help_about_body">Les versions de ce téléphone et de votre PC, et les nouveautés.</string>
+    <string name="home_switch_pc">Changer de PC</string>
+    <string name="home_disconnect">Déconnecter</string>
+    <string name="home_switch_pc_title">Passer à un autre PC</string>
+    <string name="home_manage_pcs">Gérer les PC</string>
+    <string name="share_to_pc_choose_pc">Envoyer vers quel PC ?</string>
+    <string name="share_to_pc_change_pc">Changer</string>
+    <string name="share_to_pc_recent_folders">Dossiers récents</string>
+    <string name="share_to_pc_recent_folder_label">%1$s : %2$s</string>
+    <string name="share_to_pc_not_paired">Pour envoyer des fichiers, associez d\'abord ce téléphone à un PC. Vous pouvez le faire sur la page PC.</string>
+    <string name="share_to_pc_open_pcs">Ouvrir PC</string>
+    <string name="desktop_stream_settings_pre_stream_hint">Ces réglages servent à chaque démarrage du flux. Le choix de l\'écran et les commandes de fenêtres apparaissent une fois le flux lancé.</string>
 </resources>

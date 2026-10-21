@@ -76,14 +76,10 @@
     <string name="cd_scroll_down">Прокрутити вниз</string>
     <string name="cd_keyboard">Клавіатура</string>
     <string name="screen_settings_title">Налаштування</string>
-    <string name="settings_tab_connection">Підключення</string>
     <string name="settings_tab_personalization">Персоналізувати</string>
     <string name="settings_tab_input">Введення</string>
     <string name="settings_tab_file_transfer">Файли</string>
-    <string name="settings_tab_help">Довідка</string>
-    <string name="settings_help_title">Довідка та інформація</string>
     <string name="settings_replay_tutorial">Переглянути посібник знову</string>
-    <string name="settings_replay_tutorial_body">Перегляньте ще раз посібник із початку роботи: налаштування, сполучення за QR-кодом, підключення вручну та поради щодо щоденного використання.</string>
     <string name="settings_faq_hint">Відповіді про з\'єднання пристроїв, дозволи, передавання файлів і продуктивність віддаленого робочого столу.</string>
     <string name="screen_app_launcher_title">Застосунки</string>
     <string name="app_launcher_no_apps">Додатків не знайдено</string>
@@ -183,7 +179,6 @@
     <string name="dashboard_card_drawer_title">Додати картки</string>
     <string name="dashboard_card_drawer_hint">Позначте датчик, щоб додати його картку. Зніміть позначку, щоб прибрати її.</string>
     <string name="dashboard_collecting_data">Збір даних…</string>
-    <string name="screen_connection_title">Підключення</string>
     <string name="screen_connection_subtitle">Виберіть, яким ПК керує цей телефон</string>
     <string name="connection_your_pcs_title">Ваші ПК</string>
     <string name="connection_your_pcs_empty">Ще немає жодного ПК. Додайте один, щоб почати.</string>
@@ -307,7 +302,6 @@
     <string name="personalization_shape_telemetry">Картки датчиків</string>
     <string name="personalization_shape_app_launcher">Застосунки</string>
     <string name="personalization_shape_remote_commands">Команди</string>
-    <string name="personalization_shape_remote_mouse">Віддалена миша</string>
     <string name="personalization_shape_task_manager">Процеси</string>
     <string name="personalization_shape_pc_orb">Індикатор підключення ПК</string>
     <string name="personalization_preview">Перегляд</string>
@@ -798,8 +792,6 @@
     <string name="share_to_pc_queued">Надсилання на ваш ПК. Ви можете стежити за прогресом у RemEx.</string>
     <string name="share_to_pc_nothing_to_send">Немає файлів для надсилання.</string>
     <string name="share_to_pc_connecting">Підключення до вашого ПК…</string>
-    <string name="share_to_pc_not_configured">Ще не налаштовано жодного ПК. Відкрийте RemEx і спершу підключіться до свого ПК, а потім спробуйте поділитися знову.</string>
-    <string name="share_to_pc_open_app">Відкрити RemEx</string>
     <string name="file_transfer_notification_open">Відкрити</string>
     <!-- File sharing: access + consent (2.1, WP9) -->
     <string name="settings_ft_access_title">Доступ із вашого ПК</string>
@@ -955,7 +947,6 @@
          the preview promise - what is shown IS what is sent - because that promise is the only
          reason it is safe to offer this at all. -->
     <string name="settings_share_diagnostics">Поділитися діагностикою</string>
-    <string name="settings_share_diagnostics_body">Створіть звіт про цей застосунок і його з’єднання з вашим ПК, який ви можете надіслати тому, хто вам допомагає. Спершу ви читаєте його повністю, і ніщо не залишає ваш телефон, доки ви його не надішлете.</string>
     <string name="screen_share_diagnostics_title">Поділитися діагностикою</string>
     <string name="share_diagnostics_explainer">Цей звіт містить версію застосунку, модель телефона, версію Android, те, що ваш ПК останнім повідомив про себе, та останні рядки журналу цього застосунку. Ключі створення пари вилучаються, а шляхи до файлів скорочуються лише до назви файлу. Те, що ви бачите нижче, — саме те, що буде надіслано.</string>
     <string name="share_diagnostics_network_toggle">Включити мережеві адреси</string>
@@ -1773,7 +1764,6 @@
     <string name="personalization_reset_all_body">Кольори, шрифти, форми карток, заставка й тло повернуться до вигляду RemEx після свіжого встановлення. Мова залишиться без змін.</string>
     <string name="faq_search_hint">Пошук у поширених запитаннях</string>
     <string name="faq_no_match">У поширених запитаннях немає збігів із «%1$s». Спробуйте коротше слово.</string>
-    <string name="settings_open_faq">Відкрити поширені запитання</string>
     <string name="settings_pc_alerts_blocked">Android вимкнув сповіщення для RemEx, тому ці сповіщення не можуть відображатися.</string>
     <string name="settings_battery_ok">RemEx дозволено працювати у фоновому режимі.</string>
     <string name="files_delete_confirm_title">Видалити назавжди?</string>
@@ -1812,4 +1802,21 @@
     <string name="about_version_mismatch">На телефоні та ПК різні версії RemEx. Оновіть старішу, щоб працювали всі функції.</string>
     <string name="about_copy_versions">Копіювати відомості про версію</string>
     <string name="qr_scanner_not_remex">Цей QR-код не від RemEx. Скануйте той, що RemEx показує на вашому ПК.</string>
+    <string name="screen_pcs_title">ПК</string>
+    <string name="screen_help_title">Довідка та діагностика</string>
+    <string name="help_pc_logs_body">Перегляньте журнали ПК і запустіть його власні перевірки.</string>
+    <string name="help_share_diagnostics_body">Створіть звіт для того, хто вам допомагає. Ви побачите його повністю, перш ніж щось буде надіслано.</string>
+    <string name="help_tutorial_body">Ще раз пройдіть налаштування та основи.</string>
+    <string name="help_about_body">Версії на цьому телефоні та ПК, а також що нового.</string>
+    <string name="home_switch_pc">Змінити ПК</string>
+    <string name="home_disconnect">Відключитися</string>
+    <string name="home_switch_pc_title">Перейти на інший ПК</string>
+    <string name="home_manage_pcs">Керувати ПК</string>
+    <string name="share_to_pc_choose_pc">На який ПК надіслати?</string>
+    <string name="share_to_pc_change_pc">Змінити</string>
+    <string name="share_to_pc_recent_folders">Нещодавні теки</string>
+    <string name="share_to_pc_recent_folder_label">%1$s: %2$s</string>
+    <string name="share_to_pc_not_paired">Щоб надсилати файли, спершу з\'єднайте цей телефон із ПК. Це можна зробити на сторінці ПК.</string>
+    <string name="share_to_pc_open_pcs">Відкрити ПК</string>
+    <string name="desktop_stream_settings_pre_stream_hint">Вони застосовуються щоразу, коли ви починаєте трансляцію. Вибір екрана та керування вікнами з\'являються, коли трансляція вже працює.</string>
 </resources>

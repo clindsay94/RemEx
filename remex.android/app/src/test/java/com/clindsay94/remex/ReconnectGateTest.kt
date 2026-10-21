@@ -32,6 +32,23 @@ class ReconnectGateTest {
     }
 
     @Test
+    fun `after Disconnect nothing reconnects, whatever else holds (RemEx-172ba)`() {
+        for (network in listOf(true, false)) for (foreground in listOf(true, false))
+            for (screenOn in listOf(true, false)) for (widget in listOf(true, false)) {
+                assertFalse(
+                        "net=$network fg=$foreground screen=$screenOn widget=$widget",
+                        ReconnectGate.allows(network, foreground, screenOn, widget, userDisconnected = true),
+                )
+            }
+    }
+
+    @Test
+    fun `the Disconnect park is the whole story behind a closed gate in the foreground`() {
+        assertTrue(ReconnectGate.allows(true, true, true, false, userDisconnected = false))
+        assertFalse(ReconnectGate.allows(true, true, true, false, userDisconnected = true))
+    }
+
+    @Test
     fun `no network never reconnects, whatever else holds`() {
         for (foreground in listOf(true, false)) for (screenOn in listOf(true, false)) for (widget in listOf(true, false)) {
             assertFalse(

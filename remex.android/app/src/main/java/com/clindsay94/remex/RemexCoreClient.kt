@@ -203,6 +203,28 @@ object RemexCoreClient {
     @JvmName("InitRemexNative")
     private external fun InitRemexNative(initJson: String): String
 
+    /** Closes the control connection (Home's Disconnect, RemEx-172ba). The caller parks the heartbeat first. */
+    @JvmStatic
+    fun Disconnect(): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(DisconnectNative())
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "DisconnectNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "DisconnectNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("DisconnectNative")
+    private external fun DisconnectNative(): String
+
     /**
      * Broadcasts a Wake-on-LAN magic packet and reports whether it left this phone (RemEx-52n0).
      *

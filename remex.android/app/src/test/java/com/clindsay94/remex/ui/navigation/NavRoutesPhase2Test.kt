@@ -20,19 +20,35 @@ class NavRoutesPhase2Test {
     }
 
     @Test
-    fun `More holds Routines first, then Sensors, Files, Connection, PC logs, Settings and Help`() {
+    fun `More and the rail hold Routines, Files, Sensors, PCs, Settings, then Help (RemEx-172ba)`() {
+        // The rail renders moreItems too, so this one list pins both surfaces.
         assertEquals(
                 listOf(
                         Screen.Routines,
-                        Screen.Dashboard,
                         Screen.FileTransfer,
+                        Screen.Dashboard,
                         Screen.Connection,
-                        Screen.PcDiagnostics,
                         Screen.Settings,
-                        Screen.Faq,
+                        Screen.Help,
                 ),
                 moreItems,
         )
+    }
+
+    @Test
+    fun `the Connection destination is labelled PCs and Help is labelled Help and diagnostics`() {
+        assertEquals(R.string.screen_pcs_title, Screen.Connection.titleRes)
+        assertEquals(R.string.screen_help_title, Screen.Help.titleRes)
+        val xml = File("src/main/res/values/strings.xml").readText()
+        assertTrue(xml.contains("""<string name="screen_pcs_title">PCs</string>"""))
+        assertTrue(xml.contains("""<string name="screen_help_title">Help &amp; diagnostics</string>"""))
+    }
+
+    @Test
+    fun `FAQ and PC logs live in Help, not in a navigation surface`() {
+        // Plain Screens now, so they cannot be put in either list by type; this pins the move.
+        val surfaces: List<Any> = navItems + moreItems
+        assertFalse(surfaces.any { it == Screen.Faq || it == Screen.PcDiagnostics })
     }
 
     @Test

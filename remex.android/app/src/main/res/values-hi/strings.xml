@@ -76,14 +76,10 @@
     <string name="cd_scroll_down">नीचे स्क्रॉल करें</string>
     <string name="cd_keyboard">कीबोर्ड</string>
     <string name="screen_settings_title">सेटिंग्स</string>
-    <string name="settings_tab_connection">कनेक्शन</string>
     <string name="settings_tab_personalization">वैयक्तिकृत करें</string>
     <string name="settings_tab_input">इनपुट</string>
     <string name="settings_tab_file_transfer">फ़ाइलें</string>
-    <string name="settings_tab_help">सहायता</string>
-    <string name="settings_help_title">सहायता</string>
     <string name="settings_replay_tutorial">ट्यूटोरियल फिर से देखें</string>
-    <string name="settings_replay_tutorial_body">सेटअप, क्यूआर पेयरिंग, मैनुअल कनेक्शन और दैनिक उपयोग के सुझावों के लिए शुरुआती वॉकथ्रू को फिर से देखें।</string>
     <string name="settings_faq_hint">पेयरिंग, अनुमतियों, फ़ाइल ट्रांसफ़र और रिमोट डेस्कटॉप के प्रदर्शन के बारे में जवाब।</string>
     <string name="screen_app_launcher_title">ऐप्स</string>
     <string name="app_launcher_no_apps">कोई ऐप नहीं मिला</string>
@@ -183,7 +179,6 @@
     <string name="dashboard_card_drawer_title">कार्ड जोड़ें</string>
     <string name="dashboard_card_drawer_hint">कार्ड जोड़ने के लिए सेंसर पर टिक करें। कार्ड हटाने के लिए टिक हटाएँ।</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
-    <string name="screen_connection_title">कनेक्शन</string>
     <string name="screen_connection_subtitle">चुनें कि यह फ़ोन किस पीसी को चलाए</string>
     <string name="connection_your_pcs_title">आपके पीसी</string>
     <string name="connection_your_pcs_empty">अभी कोई पीसी नहीं है। शुरू करने के लिए एक जोड़ें।</string>
@@ -307,7 +302,6 @@
     <string name="personalization_shape_telemetry">सेंसर कार्ड</string>
     <string name="personalization_shape_app_launcher">ऐप्स</string>
     <string name="personalization_shape_remote_commands">कमांड</string>
-    <string name="personalization_shape_remote_mouse">रिमोट माउस</string>
     <string name="personalization_shape_task_manager">प्रक्रियाएँ</string>
     <string name="personalization_shape_pc_orb">पीसी कनेक्शन ऑर्ब</string>
     <string name="personalization_preview">पूर्वावलोकन</string>
@@ -782,8 +776,6 @@
     <string name="share_to_pc_queued">आपके PC पर भेजा जा रहा है। आप RemEx में प्रगति देख सकते हैं।</string>
     <string name="share_to_pc_nothing_to_send">भेजने के लिए कोई फ़ाइल नहीं है।</string>
     <string name="share_to_pc_connecting">आपके PC से कनेक्ट हो रहा है…</string>
-    <string name="share_to_pc_not_configured">अभी तक कोई PC सेट अप नहीं है। पहले RemEx खोलें और अपने PC से कनेक्ट करें, फिर दोबारा साझा करने का प्रयास करें।</string>
-    <string name="share_to_pc_open_app">RemEx खोलें</string>
     <string name="file_transfer_notification_open">खोलें</string>
     <!-- File sharing: access + consent (2.1, WP9) -->
     <string name="settings_ft_access_title">आपके PC से पहुँच</string>
@@ -937,7 +929,6 @@
          the preview promise - what is shown IS what is sent - because that promise is the only
          reason it is safe to offer this at all. -->
     <string name="settings_share_diagnostics">डायग्नोस्टिक्स साझा करें</string>
-    <string name="settings_share_diagnostics_body">इस ऐप और आपके पीसी से इसके कनेक्शन के बारे में एक रिपोर्ट बनाएँ, जिसे आप मदद करने वाले को भेज सकते हैं। आप उसे पहले पूरा पढ़ते हैं, और जब तक आप न भेजें तब तक कुछ भी आपके फ़ोन से बाहर नहीं जाता।</string>
     <string name="screen_share_diagnostics_title">डायग्नोस्टिक्स साझा करें</string>
     <string name="share_diagnostics_explainer">इस रिपोर्ट में ऐप का संस्करण, फ़ोन का मॉडल, Android का संस्करण, आपके पीसी ने अपने बारे में आख़िरी बार जो बताया था, और इस ऐप की हाल की लॉग पंक्तियाँ शामिल हैं। पेयरिंग कुंजियाँ हटा दी जाती हैं और फ़ाइल पथ घटाकर केवल फ़ाइल का नाम कर दिए जाते हैं। नीचे आप जो देख रहे हैं, ठीक वही भेजा जाता है।</string>
     <string name="share_diagnostics_network_toggle">नेटवर्क पते शामिल करें</string>
@@ -1747,7 +1738,6 @@
     <string name="personalization_reset_all_body">रंग, फ़ॉन्ट, कार्ड के आकार, स्प्लैश और बैकग्राउंड वैसे हो जाएँगे जैसे RemEx नई इंस्टॉलेशन पर दिखता है। आपकी भाषा वैसी ही रहेगी।</string>
     <string name="faq_search_hint">अक्सर पूछे जाने वाले प्रश्नों में खोजें</string>
     <string name="faq_no_match">अक्सर पूछे जाने वाले प्रश्नों में “%1$s” से कुछ नहीं मिलता। कोई छोटा शब्द आज़माएँ।</string>
-    <string name="settings_open_faq">अक्सर पूछे जाने वाले प्रश्न खोलें</string>
     <string name="settings_pc_alerts_blocked">Android ने RemEx के लिए सूचनाएँ बंद कर रखी हैं, इसलिए ये अलर्ट नहीं दिख सकते।</string>
     <string name="settings_battery_ok">RemEx को बैकग्राउंड में चलने की अनुमति है।</string>
     <string name="files_delete_confirm_title">हमेशा के लिए हटाएँ?</string>
@@ -1784,4 +1774,21 @@
     <string name="about_version_mismatch">आपके फ़ोन और PC पर RemEx के अलग-अलग संस्करण हैं। सभी सुविधाएँ काम करें, इसके लिए पुराने वाले को अपडेट करें।</string>
     <string name="about_copy_versions">संस्करण विवरण कॉपी करें</string>
     <string name="qr_scanner_not_remex">यह QR कोड RemEx का नहीं है। अपने PC पर RemEx जो कोड दिखाता है, उसे स्कैन करें।</string>
+    <string name="screen_pcs_title">पीसी</string>
+    <string name="screen_help_title">सहायता और जाँच</string>
+    <string name="help_pc_logs_body">अपने पीसी के लॉग पढ़ें और उसकी अपनी जाँचें चलाएँ।</string>
+    <string name="help_share_diagnostics_body">जो आपकी मदद कर रहा है, उसके लिए एक रिपोर्ट बनाएँ। कुछ भी भेजे जाने से पहले आप पूरी रिपोर्ट देखते हैं।</string>
+    <string name="help_tutorial_body">सेटअप और बुनियादी बातें फिर से देखें।</string>
+    <string name="help_about_body">इस फ़ोन और आपके पीसी के संस्करण, और क्या नया है।</string>
+    <string name="home_switch_pc">पीसी बदलें</string>
+    <string name="home_disconnect">डिस्कनेक्ट करें</string>
+    <string name="home_switch_pc_title">दूसरे पीसी पर जाएँ</string>
+    <string name="home_manage_pcs">पीसी प्रबंधित करें</string>
+    <string name="share_to_pc_choose_pc">किस पीसी पर भेजें?</string>
+    <string name="share_to_pc_change_pc">बदलें</string>
+    <string name="share_to_pc_recent_folders">हाल के फ़ोल्डर</string>
+    <string name="share_to_pc_recent_folder_label">%1$s: %2$s</string>
+    <string name="share_to_pc_not_paired">फ़ाइलें भेजने के लिए, पहले इस फ़ोन को किसी पीसी से जोड़ें। आप यह पीसी पेज पर कर सकते हैं।</string>
+    <string name="share_to_pc_open_pcs">पीसी खोलें</string>
+    <string name="desktop_stream_settings_pre_stream_hint">ये हर बार स्ट्रीमिंग शुरू करने पर इस्तेमाल होती हैं। कौन-सी स्क्रीन दिखानी है और विंडो नियंत्रण स्ट्रीम चलने के बाद दिखते हैं।</string>
 </resources>

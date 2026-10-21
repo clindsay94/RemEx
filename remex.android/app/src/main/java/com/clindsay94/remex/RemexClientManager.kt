@@ -424,9 +424,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         val settings = SettingsManager(context)
         settingsManager = settings
 
+        // Before the keepalive and the heartbeat, both of which wait for it: a process Android
+        // restarted must not undo Home's Disconnect (RemEx-172ba).
+        managerScope.launch(Dispatchers.IO) { restoreUserDisconnected(userDisconnectStore(settings)) }
+
         managerScope.launch {
+            disconnectLatch.awaitRestored()
             val host = settingsManager?.hostFlow?.first().orEmpty()
-            if (host.isNotBlank()) {
+            if (host.isNotBlank() && !disconnectLatch.state.value) {
                 runCatching { RemexConnectionService.start(context) }
                         .onFailure { Log.w("RemexManager", "Failed to start keepalive service during initialize", it) }
             }
@@ -521,6 +526,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         // The failure counter resets to 0 whenever the device is connected, and whenever
         // [ReconnectGate] reopens after pausing the loop (perf audit P0-11).
         managerScope.launch(Dispatchers.IO) {
+            disconnectLatch.awaitRestored()
             var consecutiveFailures = 0
             val baseDelayMs = ReconnectGate.BASE_DELAY_MS
 
@@ -563,7 +569,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 // resets the backoff so the attempt happens at once (the app came back, or the
                 // network did), then re-checks everything from the top.
                 if (!reconnectAllowed.first()) {
-                    Log.d("RemexManager", "Heartbeat paused: no network or app backgrounded")
+                    Log.d("RemexManager", "Heartbeat paused: no network, app backgrounded, or disconnected on purpose")
                     reconnectAllowed.first { it }
                     Log.d("RemexManager", "Heartbeat resumed")
                     consecutiveFailures = 0
@@ -724,13 +730,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             Log.w("RemexManager", "Screen-state receiver unavailable; reconnect gate assumes screen on", it)
         }
 
-        return combine(networkAvailable, appForeground, screenInteractive) { network, foreground, screenOn ->
+        return combine(networkAvailable, appForeground, screenInteractive, disconnectLatch.state) { network, foreground, screenOn, disconnected ->
             ReconnectGate.allows(
                     networkAvailable = network,
                     foreground = foreground,
                     screenInteractive = screenOn,
                     // Only consulted when the answer can hinge on it, since it is a binder call.
-                    widgetPlaced = network && !foreground && screenOn && isHardwareWidgetPlaced(appContext),
+                    widgetPlaced = !disconnected && network && !foreground && screenOn && isHardwareWidgetPlaced(appContext),
+                    userDisconnected = disconnected,
             )
         }.distinctUntilChanged()
     }
@@ -875,6 +882,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         if (!keepaliveStoppedForIdle) return
         keepaliveStoppedForIdle = false
         if (settingsManager?.hostFlow?.first().isNullOrBlank()) return
+        if (disconnectLatch.state.value) return
         // In the foreground, so starting a foreground service is allowed.
         withContext(Dispatchers.Main) {
             runCatching { RemexConnectionService.start(appContext) }
@@ -919,10 +927,59 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         }
     }
 
+    /**
+     * A connect the person asked for. It also ends a [disconnect]: from here the heartbeat may
+     * reconnect again. isConnecting is claimed BEFORE the gate reopens, so the heartbeat waking on
+     * that cannot win the slot and swallow a pairing PIN with its own PIN-less attempt.
+     */
     fun toggleConnection(pairingPin: String? = null) {
-        if (_isConnecting.value) return
+        if (_isConnecting.value) {
+            chooseUserDisconnected(false)
+            return
+        }
         _isConnecting.value = true
+        chooseUserDisconnected(false)
         managerScope.launch { connect(pairingPin) }
+    }
+
+    private val disconnectLatch = UserDisconnectLatch()
+
+    /** True after Home's Disconnect until the person connects again (RemEx-172ba), across restarts. */
+    val userDisconnected: StateFlow<Boolean> = disconnectLatch.state
+
+    /** Attaches the store Disconnect is saved in and reads it back. Once per process, from [initialize]. */
+    internal suspend fun restoreUserDisconnected(store: UserDisconnectStore) = disconnectLatch.restore(store)
+
+    /** [userDisconnected] once the saved value has been read. Only after [initialize], or it waits forever. */
+    internal suspend fun awaitUserDisconnected(): Boolean {
+        disconnectLatch.awaitRestored()
+        return disconnectLatch.state.value
+    }
+
+    private fun chooseUserDisconnected(disconnected: Boolean) {
+        disconnectLatch.choose(disconnected)
+        managerScope.launch(Dispatchers.IO) { disconnectLatch.persist() }
+    }
+
+    private fun userDisconnectStore(settings: SettingsManager) =
+            object : UserDisconnectStore {
+                override suspend fun read() = settings.userDisconnectedFlow.first()
+
+                override suspend fun write(disconnected: Boolean) = settings.setUserDisconnected(disconnected)
+            }
+
+    /**
+     * A real disconnect (Home's Disconnect, RemEx-172ba): closes the socket and keeps the heartbeat
+     * parked until the next [toggleConnection]. The gate closes FIRST, so the drop this causes is
+     * never mistaken for one to recover from. The keepalive goes too: there is nothing to keep alive.
+     * Widget taps and routine steps still get their one-shot attempt ([startOneShotConnect]); they
+     * do not reopen the heartbeat.
+     */
+    fun disconnect(context: Context) {
+        chooseUserDisconnected(true)
+        managerScope.launch(Dispatchers.IO) { RemexCoreClient.Disconnect() }
+        runCatching { RemexConnectionService.stop(context.applicationContext) }
+                .onFailure { Log.w("RemexManager", "Failed to stop the keepalive on disconnect", it) }
     }
 
     /**

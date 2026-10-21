@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.data.toThemeSnapshot
 import com.clindsay94.remex.ui.components.FileConsentDialogHost
+import com.clindsay94.remex.ui.screens.ConnectionOpenRequests
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
 import com.clindsay94.remex.alerts.SensorAlertOpenRequests
@@ -77,6 +78,8 @@ class MainActivity : ComponentActivity() {
         RoutineOpenRequests.offer(intent)
         // A PC alert notification's tap (RemEx-pp4cm.12); AppNavigation takes it to Sensors.
         SensorAlertOpenRequests.offer(intent)
+        // The share target's "Open PCs" with nothing paired (RemEx-172ba).
+        ConnectionOpenRequests.offer(intent)
 
         // One-time move of every upgrading user onto Live Handshake (RemEx-8g6n0). The read path applies the
         // same rule already, so this only makes it durable; it does not gate anything.
@@ -151,6 +154,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         RoutineOpenRequests.offer(intent)
         SensorAlertOpenRequests.offer(intent)
+        ConnectionOpenRequests.offer(intent)
     }
 
     /**

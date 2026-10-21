@@ -37,7 +37,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Input
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -48,7 +47,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
@@ -96,33 +94,31 @@ import androidx.compose.material3.ButtonDefaults
 import com.clindsay94.remex.ui.components.RemexHaptics
 import com.clindsay94.remex.ui.components.rememberSliderStepHaptics
 
+/**
+ * The Settings categories, in list order (RemEx-172ba, SettingsCategoryOrderTest). PCs and Help are
+ * their own More destinations now, so neither is a category here.
+ */
 @Parcelize
 enum class SettingsCategory : Parcelable {
-    CONNECTION,
     PERSONALIZATION,
     INPUT,
     FILE_TRANSFER,
-    NOTIFICATIONS,
-    HELP;
+    NOTIFICATIONS;
 
     val titleRes: Int
         get() = when (this) {
-            CONNECTION -> R.string.settings_tab_connection
             PERSONALIZATION -> R.string.settings_tab_personalization
             INPUT -> R.string.settings_tab_input
             FILE_TRANSFER -> R.string.settings_tab_file_transfer
             NOTIFICATIONS -> R.string.settings_tab_notifications
-            HELP -> R.string.settings_tab_help
         }
 
     val icon: ImageVector
         get() = when (this) {
-            CONNECTION -> Icons.Default.Wifi
             PERSONALIZATION -> Icons.Default.Palette
             INPUT -> Icons.AutoMirrored.Filled.Input
             FILE_TRANSFER -> Icons.Default.FolderOpen
             NOTIFICATIONS -> Icons.Default.Notifications
-            HELP -> Icons.AutoMirrored.Filled.Help
         }
 }
 
@@ -131,13 +127,7 @@ enum class SettingsCategory : Parcelable {
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun SettingsScreen(
-    onReplayTutorial: (() -> Unit)? = null,
-    onNavigateToAbout: (() -> Unit)? = null,
-    onNavigateToQrScanner: (() -> Unit)? = null,
-    onNavigateToShareDiagnostics: (() -> Unit)? = null,
-    onNavigateToFaq: (() -> Unit)? = null
-) {
+fun SettingsScreen() {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsCategory>()
     val scope = rememberCoroutineScope()
 
@@ -157,7 +147,7 @@ fun SettingsScreen(
         },
         detailPane = {
             AnimatedPane {
-                val category = navigator.currentDestination?.contentKey ?: SettingsCategory.CONNECTION
+                val category = navigator.currentDestination?.contentKey ?: SettingsCategory.entries.first()
                 // Up on a detail pane goes back to the list when the list is hidden (a phone), and
                 // there is no arrow at all when both panes show (3.0 comb, no-up-arrow). Left to the
                 // route's own Up, it would have closed Settings from inside one of its pages.
@@ -168,14 +158,7 @@ fun SettingsScreen(
                         null
                     }
                 CompositionLocalProvider(LocalRemexUpAction provides paneUp) {
-                    SettingsDetailContent(
-                        category = category,
-                        onReplayTutorial = onReplayTutorial,
-                        onNavigateToAbout = onNavigateToAbout,
-                        onNavigateToQrScanner = onNavigateToQrScanner,
-                        onNavigateToShareDiagnostics = onNavigateToShareDiagnostics,
-                        onNavigateToFaq = onNavigateToFaq
-                    )
+                    SettingsDetailContent(category = category)
                 }
             }
         }
@@ -195,7 +178,7 @@ private fun SettingsScreenPreview() {
 private fun SettingsCategoryListPreview() {
     RemExTheme {
         SettingsCategoryList(
-            selectedCategory = SettingsCategory.CONNECTION,
+            selectedCategory = SettingsCategory.PERSONALIZATION,
             onCategoryClick = {}
         )
     }
@@ -214,18 +197,6 @@ private fun InputTabPreview() {
 private fun FileTransferSettingsTabPreview() {
     RemExTheme {
         FileTransferSettingsTab()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun HelpTabPreview() {
-    RemExTheme {
-        HelpTab(
-            onReplayTutorial = {},
-            onNavigateToAbout = {},
-            onNavigateToShareDiagnostics = {}
-        )
     }
 }
 
@@ -357,29 +328,13 @@ private fun ExpressiveSettingsRow(
 }
 
 @Composable
-private fun SettingsDetailContent(
-    category: SettingsCategory,
-    onReplayTutorial: (() -> Unit)?,
-    onNavigateToAbout: (() -> Unit)?,
-    onNavigateToQrScanner: (() -> Unit)?,
-    onNavigateToShareDiagnostics: (() -> Unit)?,
-    onNavigateToFaq: (() -> Unit)?
-) {
+private fun SettingsDetailContent(category: SettingsCategory) {
     // Each tab provides its own layout/scrolling
     when (category) {
-        SettingsCategory.CONNECTION -> ConnectionScreen(
-            onNavigateToQrScanner = onNavigateToQrScanner ?: {}
-        )
         SettingsCategory.PERSONALIZATION -> PersonalizationScreen(showHeader = true)
         SettingsCategory.INPUT -> InputTab()
         SettingsCategory.FILE_TRANSFER -> FileTransferSettingsTab()
         SettingsCategory.NOTIFICATIONS -> NotificationsTab()
-        SettingsCategory.HELP -> HelpTab(
-            onReplayTutorial = onReplayTutorial,
-            onNavigateToAbout = onNavigateToAbout,
-            onNavigateToShareDiagnostics = onNavigateToShareDiagnostics,
-            onNavigateToFaq = onNavigateToFaq
-        )
     }
 }
 
@@ -1011,108 +966,6 @@ private fun NotificationsTab() {
                         ) { Text(stringResource(R.string.tutorial_battery_action)) }
                     }
                 }
-            }
-        }
-    }
-}
-@Composable
-private fun HelpTab(
-    onReplayTutorial: (() -> Unit)?,
-    onNavigateToAbout: (() -> Unit)?,
-    onNavigateToShareDiagnostics: (() -> Unit)? = null,
-    onNavigateToFaq: (() -> Unit)? = null
-) {
-    val haptics = rememberRemexHaptics()
-
-    val tabScrollState = rememberScrollState()
-    com.clindsay94.remex.ui.navigation.TabReselectEffect(com.clindsay94.remex.ui.navigation.Screen.Settings) { tabScrollState.animateScrollTo(0) }
-    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
-    Scaffold(
-        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
-        topBar = {
-            RemexFlexibleTopBar(
-                title = stringResource(R.string.settings_help_title),
-                scrollBehavior = topBarScrollBehavior,
-            )
-        }
-    ) { innerPadding ->
-        Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp)
-                    .verticalScroll(tabScrollState),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (onReplayTutorial != null) {
-                OutlinedButton(
-                        onClick = {
-                            haptics.perform(RemexHapticEvent.Press)
-                            // The onboarding flag is left alone: backing out of a replay must not re-arm the first-run tour.
-                            onReplayTutorial()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shapes = rememberRemexButtonShapes(),
-                        contentPadding = ButtonDefaults.ContentPadding
-                ) { Text(stringResource(R.string.settings_replay_tutorial)) }
-
-                Text(
-                        text = stringResource(R.string.settings_replay_tutorial_body),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Text(
-                    text = stringResource(R.string.settings_faq_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (onNavigateToFaq != null) {
-                OutlinedButton(
-                        onClick = {
-                            haptics.perform(RemexHapticEvent.Press)
-                            onNavigateToFaq()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shapes = rememberRemexButtonShapes(),
-                        contentPadding = ButtonDefaults.ContentPadding
-                ) { Text(stringResource(R.string.settings_open_faq)) }
-            }
-
-            if (onNavigateToShareDiagnostics != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                        onClick = {
-                            haptics.perform(RemexHapticEvent.Press)
-                            onNavigateToShareDiagnostics()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shapes = rememberRemexButtonShapes(),
-                        contentPadding = ButtonDefaults.ContentPadding
-                ) { Text(stringResource(R.string.settings_share_diagnostics)) }
-
-                Text(
-                        text = stringResource(R.string.settings_share_diagnostics_body),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (onNavigateToAbout != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                        onClick = {
-                            haptics.perform(RemexHapticEvent.Press)
-                            onNavigateToAbout()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shapes = rememberRemexButtonShapes(),
-                        contentPadding = ButtonDefaults.ContentPadding
-                ) { Text(stringResource(R.string.screen_about_title)) }
             }
         }
     }

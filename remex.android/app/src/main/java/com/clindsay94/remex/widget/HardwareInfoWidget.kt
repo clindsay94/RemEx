@@ -33,7 +33,6 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
-import com.clindsay94.remex.service.RemexConnectionService
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -318,11 +317,7 @@ class RefreshTelemetryCallback : ActionCallback {
             }
         } else {
             widgetToast(context, context.getString(R.string.widget_toast_connecting))
-            val appContext = context.applicationContext
-            RemexClientManager.initialize(appContext)
-            WidgetDataCache.startCaching(appContext)
-            runCatching { RemexConnectionService.start(appContext) }
-            RemexClientManager.toggleConnection()
+            startWidgetRefreshConnect(context.applicationContext)
         }
     }
 }

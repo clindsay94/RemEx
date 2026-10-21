@@ -373,7 +373,7 @@ fun ConnectionScreenContent(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {
                         RemexFlexibleTopBar(
-                                title = stringResource(R.string.screen_connection_title),
+                                title = stringResource(R.string.screen_pcs_title),
                                 subtitle = stringResource(R.string.screen_connection_subtitle),
                                 scrollBehavior = scrollBehavior
                         )

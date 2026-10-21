@@ -171,4 +171,33 @@ class HomeLogicTest {
         assertTrue(HomeLogic.connectCardOffersWake(1))
         assertTrue(HomeLogic.connectCardOffersWake(3))
     }
+
+    // ── Switch PC (RemEx-172ba) ──
+
+    private fun pc(address: String, trusted: Boolean = true) = KnownPcEntry(address, 5005, "", 1, null, trusted)
+
+    @Test
+    fun `Switch PC offers the other paired PCs, in order, never the connected one`() {
+        val rows = listOf(pc("10.0.0.1"), pc("10.0.0.2"), pc("100.64.0.9"))
+        assertEquals(
+                listOf("10.0.0.1", "100.64.0.9"),
+                HomeLogic.switchPcTargets(rows, connectedHost = "10.0.0.2").map { it.address },
+        )
+        // Addresses compare like hostnames do.
+        val named = listOf(pc("Tower.local"), pc("10.0.0.2"))
+        assertEquals(listOf("10.0.0.2"), HomeLogic.switchPcTargets(named, " tower.LOCAL ").map { it.address })
+    }
+
+    @Test
+    fun `Switch PC never offers a PC that would need pairing`() {
+        val rows = listOf(pc("10.0.0.1", trusted = false), pc("10.0.0.3"))
+        assertEquals(listOf("10.0.0.3"), HomeLogic.switchPcTargets(rows, "10.0.0.2").map { it.address })
+    }
+
+    @Test
+    fun `Switch PC opens the quick sheet only when there is somewhere else to go`() {
+        assertTrue(HomeLogic.switchPcOpensSheet(listOf(pc("10.0.0.1"))))
+        // Only the connected PC is paired: Switch PC opens the PCs page to add another.
+        assertFalse(HomeLogic.switchPcOpensSheet(HomeLogic.switchPcTargets(listOf(pc("10.0.0.2")), "10.0.0.2")))
+    }
 }

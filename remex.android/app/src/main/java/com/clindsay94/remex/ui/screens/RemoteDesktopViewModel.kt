@@ -1040,14 +1040,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
-                _configState.value =
-                        RemoteDesktopConfigState(
-                                quality = prefs.quality.coerceIn(1, 100),
-                                targetFps = prefs.targetFps.coerceIn(1, DESKTOP_MAX_FPS),
-                                scale = prefs.scale.coerceIn(0.25f, 1.0f),
-                                preset = DesktopPreset.fromId(prefs.preset),
-                                adaptiveScale = prefs.adaptiveScale
-                        )
+                _configState.value = StreamSettingsRules.fromPreferences(prefs)
                 desiredDisplayTarget = prefs.displayTarget
             }
         }
@@ -1424,19 +1417,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             )
 
     fun updateQuality(value: Int) {
-        _configState.update { it.copy(quality = value.coerceIn(1, 100)) }
+        _configState.update { StreamSettingsRules.withQuality(it, value) }
         persistDesktopDefaults()
         configPushDebouncer.onChange()
     }
 
     fun updateTargetFps(value: Int) {
-        _configState.update { it.copy(targetFps = value.coerceIn(1, DESKTOP_MAX_FPS)) }
+        _configState.update { StreamSettingsRules.withTargetFps(it, value) }
         persistDesktopDefaults()
         configPushDebouncer.onChange()
     }
 
     fun updateScale(value: Float) {
-        _configState.update { it.copy(scale = value.coerceIn(0.25f, 1.0f)) }
+        _configState.update { StreamSettingsRules.withScale(it, value) }
         persistDesktopDefaults()
         configPushDebouncer.onChange()
     }
@@ -1449,14 +1442,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * display anyway. (RemEx-4k4 fps, RemEx-vj31 named presets)
      */
     fun applyDesktopPreset(preset: DesktopPreset, quality: Int, fps: Int, scale: Float) {
-        _configState.update {
-            it.copy(
-                quality = quality.coerceIn(1, 100),
-                targetFps = fps.coerceIn(1, DESKTOP_MAX_FPS),
-                scale = scale.coerceIn(0.25f, 1.0f),
-                preset = preset
-            )
-        }
+        _configState.update { StreamSettingsRules.withPreset(it, preset, quality, fps, scale) }
         persistDesktopDefaults()
         // Through the debouncer too: a tap is normally sent at once (leading edge), and routing it
         // here supersedes any trailing slider send still pending, so the host rebuilds once, not twice.
@@ -1468,7 +1454,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * them as a named bundle so the raw sliders in the settings sheet become editable. (RemEx-vj31)
      */
     fun selectCustomPreset() {
-        _configState.update { it.copy(preset = DesktopPreset.CUSTOM) }
+        _configState.update { StreamSettingsRules.asCustom(it) }
         persistDesktopDefaults()
     }
 

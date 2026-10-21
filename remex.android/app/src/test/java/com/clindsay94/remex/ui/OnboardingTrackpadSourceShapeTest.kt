@@ -30,16 +30,20 @@ class OnboardingTrackpadSourceShapeTest {
 
     @Test
     fun `replaying the tutorial never re-arms the first-run flag`() {
+        // Replay moved from Settings to Help & diagnostics (RemEx-172ba).
+        assertFalse(source("ui/screens/HelpScreen.kt").contains("resetOnboarding"))
         assertFalse(source("ui/screens/SettingsScreen.kt").contains("resetOnboarding"))
         assertFalse(source("data/SettingsManager.kt").contains("resetOnboarding"))
     }
 
     @Test
-    fun `finishing the tutorial pops back to Home before navigating`() {
+    fun `finishing a replay goes back where it was opened, and a first run still navigates Home`() {
         val nav = source("ui/navigation/AppNavigation.kt")
         val tutorial = nav.substring(nav.indexOf("TutorialScreen("))
         val block = tutorial.substring(0, tutorial.indexOf("composable<PrimaryNav>"))
-        assertTrue(block.contains("navController.popBackStack(PrimaryNav, inclusive = false)"))
+        // Replay returns to Help, not to Home (RemEx-172ba); the decision is tutorialExit.
+        assertTrue(block.contains("tutorialExit(navController.previousBackStackEntry != null)"))
+        assertTrue(block.contains("TutorialExit.BackToLauncher -> navController.popBackStack()"))
         assertTrue("first run has no Home underneath, so it must still navigate", block.contains("navController.navigate(PrimaryNav)"))
     }
 

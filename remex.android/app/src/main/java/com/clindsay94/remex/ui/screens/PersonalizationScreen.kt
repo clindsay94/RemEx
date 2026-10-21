@@ -103,7 +103,7 @@ fun PersonalizationScreen(
         categoryShapePresets = categoryShapePresets,
         onCategoryShapeChange = viewModel::setCategoryShapePreset,
         onBackgroundChange = viewModel::setBackground,
-        onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
+        onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
                 themePalette = palette,
@@ -121,7 +121,6 @@ fun PersonalizationScreen(
                 taskManagerCardShapePreset = taskManagerCardShapePreset,
                 remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
                 remoteControlCardShapePreset = remoteControlCardShapePreset,
-                remoteMouseCardShapePreset = remoteMouseCardShapePreset,
                 splashStyle = splashStyle
             )
         }
@@ -185,7 +184,6 @@ fun PersonalizationScreenContent(
         taskManagerCardShapePreset: Float,
         remoteDesktopCardShapePreset: Float,
         remoteControlCardShapePreset: Float,
-        remoteMouseCardShapePreset: Float,
         splashStyle: String
     ) -> Unit
 ) {
@@ -216,9 +214,6 @@ fun PersonalizationScreenContent(
     }
     var remoteControlCardShapePreset by remember {
         mutableFloatStateOf(settings.remoteControlCardShapePreset)
-    }
-    var remoteMouseCardShapePreset by remember {
-        mutableFloatStateOf(settings.remoteMouseCardShapePreset)
     }
     var taskManagerCardShapePreset by remember {
         mutableFloatStateOf(settings.taskManagerCardShapePreset)
@@ -251,7 +246,6 @@ fun PersonalizationScreenContent(
             appLauncherCardShapePreset,
             remoteDesktopCardShapePreset,
             remoteControlCardShapePreset,
-            remoteMouseCardShapePreset,
             taskManagerCardShapePreset,
             splashStyle
     ) {
@@ -272,7 +266,6 @@ fun PersonalizationScreenContent(
                 taskManagerCardShapePreset,
                 remoteDesktopCardShapePreset,
                 remoteControlCardShapePreset,
-                remoteMouseCardShapePreset,
                 splashStyle
         )
     }
@@ -1092,11 +1085,6 @@ fun PersonalizationScreenContent(
                                             { v: Float ->
                                                 remoteControlCardShapePreset = v
                                             },
-                                    stringResource(R.string.personalization_shape_remote_mouse) to
-                                            remoteMouseCardShapePreset to
-                                            { v: Float ->
-                                                remoteMouseCardShapePreset = v
-                                            },
                                     stringResource(R.string.personalization_shape_task_manager) to
                                             taskManagerCardShapePreset to
                                             { v: Float ->
@@ -1272,7 +1260,6 @@ fun PersonalizationScreenContent(
                                 taskManagerCardShapePreset = fresh.taskManagerCardShapePreset
                                 remoteDesktopCardShapePreset = fresh.remoteDesktopCardShapePreset
                                 remoteControlCardShapePreset = fresh.remoteControlCardShapePreset
-                                remoteMouseCardShapePreset = fresh.remoteMouseCardShapePreset
                                 splashStyle = fresh.splashStyle
                                 dynamicColor = ThemeDefaults.DYNAMIC_COLOR
                                 onDynamicColorChange(ThemeDefaults.DYNAMIC_COLOR)
@@ -1364,11 +1351,10 @@ private fun PersonalizationScreenPreview() {
                 taskManagerCardShapePreset = 0f,
                 remoteDesktopCardShapePreset = 0f,
                 remoteControlCardShapePreset = 0f,
-                remoteMouseCardShapePreset = 0f,
                 splashStyle = SplashStyles.Default
             ),
              showHeader = true,
-             onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
+             onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
          )
      }
  }

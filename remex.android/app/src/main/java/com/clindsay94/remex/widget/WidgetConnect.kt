@@ -3,6 +3,7 @@ package com.clindsay94.remex.widget
 import android.content.Context
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.service.RemexConnectionService
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -43,6 +44,45 @@ internal object WidgetConnectWait {
  * An already-open connection is used as before, without waiting. A PC that was never paired is not
  * paired here; the attempt ends at once and the caller's "not connected" toast stands.
  */
+/** What the hardware widget's refresh tap touches, so a test can drive it without Android. */
+internal interface WidgetRefreshPorts {
+    /** Initializes the client too, so the saved Disconnect is restored before [userDisconnected] reads it. */
+    suspend fun startOneShotConnect(appContext: Context): Boolean
+
+    fun startCaching(appContext: Context)
+
+    suspend fun userDisconnected(): Boolean
+
+    fun startKeepalive(appContext: Context)
+}
+
+internal object LiveWidgetRefreshPorts : WidgetRefreshPorts {
+    override suspend fun startOneShotConnect(appContext: Context) = RemexClientManager.startOneShotConnect(appContext)
+
+    override fun startCaching(appContext: Context) = WidgetDataCache.startCaching(appContext)
+
+    override suspend fun userDisconnected() = RemexClientManager.awaitUserDisconnected()
+
+    override fun startKeepalive(appContext: Context) {
+        runCatching { RemexConnectionService.start(appContext) }
+    }
+}
+
+/**
+ * The hardware widget's refresh tap with nothing connected: ONE attempt, like every other widget tap.
+ * It used to call toggleConnection(), the person's own Connect, which ended a Disconnect for good
+ * (RemEx-172ba). The keepalive stays off while disconnected: there is nothing to keep alive.
+ */
+internal suspend fun startWidgetRefreshConnect(
+    appContext: Context,
+    ports: WidgetRefreshPorts = LiveWidgetRefreshPorts,
+): Boolean {
+    val started = ports.startOneShotConnect(appContext)
+    ports.startCaching(appContext)
+    if (!ports.userDisconnected()) ports.startKeepalive(appContext)
+    return started
+}
+
 internal suspend fun ensureWidgetConnection(context: Context): Boolean {
     val manager = RemexClientManager
     // Only an AUTHENTICATED session may short-circuit: a socket that is open but whose proof is not

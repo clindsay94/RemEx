@@ -63,8 +63,10 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                     0f
             )
 
-    val remoteMouseCardShapePreset =
-            settingsManager.remoteMouseCardShapePresetFlow.stateIn(
+    // The trackpad is a mode of the Desktop tab, so it takes the Desktop shape; its own Personalize
+    // row and stored key are gone (RemEx-172ba).
+    val trackpadCardShapePreset =
+            settingsManager.remoteDesktopCardShapePresetFlow.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
                     0f

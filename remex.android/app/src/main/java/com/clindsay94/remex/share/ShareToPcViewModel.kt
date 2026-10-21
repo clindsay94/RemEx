@@ -10,15 +10,24 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.KnownHosts
+import com.clindsay94.remex.data.KnownPcEntry
+import com.clindsay94.remex.data.RecentConnections
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.service.FileTransferEngine
 import com.clindsay94.remex.service.FileTransferJobService
+import com.clindsay94.remex.service.RemexConnectionService
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -31,8 +40,11 @@ data class ShareRoot(val rootId: String, val displayName: String, val isWritable
 /** A destination-picker folder row (directories only; the ".." row uses [FileManagerLogic.PARENT_ENTRY]). */
 data class ShareDirEntry(val name: String, val isParent: Boolean)
 
-/** Coarse UI state for the share screen. */
-enum class SharePhase { CONNECTING, NEEDS_SETUP, READY, SENDING, SENT, EMPTY }
+/**
+ * Coarse UI state for the share screen ([SharePhaseRules]). CHOOSE_PC: paired, but there is no live
+ * target yet, so the screen offers the paired PCs to connect to.
+ */
+enum class SharePhase { CONNECTING, NEEDS_SETUP, CHOOSE_PC, READY, SENDING, SENT, EMPTY }
 
 /**
  * Drives the "Send to PC" screen (plan WP8): resolves the shared files, mirrors the peer's shared
@@ -73,8 +85,35 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
     private val _statusText = MutableStateFlow("")
     val statusText = _statusText.asStateFlow()
 
-    private var hostConfigured = false
+    // The paired-host map is a suspend read of its own DataStore, snapshotted once: nothing on this
+    // screen can pair or unpair, so it cannot change underneath it.
+    private val _pairedByAddress = MutableStateFlow<Map<String, String>?>(null)
+
+    /** The PCs this phone is paired with, most recently connected first. The only ones it offers. */
+    val pairedPcs: StateFlow<List<KnownPcEntry>> =
+        combine(_pairedByAddress, settings.knownHostRecordsFlow, settings.recentConnectionsFlow) { paired, records, recent ->
+            if (paired == null) emptyList()
+            else RecentConnections.rows(recent, KnownHosts.build(paired, records)).filter { it.isTrusted }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** The saved PC: the one the connection (and so this screen) is aimed at. */
+    private val _targetHost = MutableStateFlow("")
+    val targetHost = _targetHost.asStateFlow()
+
+    val isConnecting: StateFlow<Boolean> = RemexClientManager.isConnecting
+
+    private val connectError = ShareConnectError()
+    val connectErrorMessage: StateFlow<String?> = connectError.message
+    val connectErrorOpensAppSettings: StateFlow<Boolean> = connectError.opensAppSettings
+
+    private val _recentFolders = MutableStateFlow<List<ShareRecentFolder>>(emptyList())
+    private val _visibleRecentFolders = MutableStateFlow<List<ShareRecentFolder>>(emptyList())
+
+    /** Where this phone last sent things on the current PC, for one-tap reuse. */
+    val recentFolders = _visibleRecentFolders.asStateFlow()
+
     private var rootsLoaded = false
+    private var rootsLoadedFor: String? = null
     private var filesInitialised = false
     private var filesResolved = false
     private var pendingBrowseRequestId: String? = null
@@ -89,6 +128,8 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
         // init here is safe whether the process is cold or already warm.
         FileTransferEngine.start(application)
 
+        viewModelScope.launch { _pairedByAddress.value = PinnedHostStore.listPaired(application) }
+
         // Mirror the peer's shared folders / folder listings from the control plane.
         viewModelScope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> onControlMessage(json) }
@@ -96,22 +137,87 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
         // Track the configured PC + live connection so the screen can show "connecting" vs "ready".
         viewModelScope.launch {
             settings.connectionPreferencesFlow.collect { prefs ->
-                hostConfigured = prefs.host.isNotBlank()
+                _targetHost.value = prefs.host
                 _hostLabel.value =
                     if (prefs.host.isBlank()) "" else "${prefs.host}:${prefs.port}"
                 recomputePhase()
             }
         }
         viewModelScope.launch {
-            // isAuthenticated, not isConnected (RemEx-0vpw5): file_roots_request is pairing-gated
-            // host-side, and the socket is open before the host has acked the reconnect proof, so a
-            // request sent on the open is rejected and the roots never load until something else
-            // re-triggers it. The ack is the edge on which the host will actually answer.
-            RemexClientManager.isAuthenticated.collect { authenticated ->
-                if (authenticated && hostConfigured && !rootsLoaded) loadRoots()
+            // The authenticated CONNECTION, not isConnected (RemEx-0vpw5): file_roots_request is
+            // pairing-gated host-side, and the socket is open before the host has acked the reconnect
+            // proof. Epoch-stamped, so a switch to another PC reloads that PC's folders.
+            RemexClientManager.authenticatedConnection.collect { connection ->
+                if (connection != null) {
+                    if (connection.host != rootsLoadedFor) {
+                        resetDestination()
+                        rootsLoadedFor = connection.host
+                    }
+                    // Also after a reconnect to the same PC whose first answer never came.
+                    if (!rootsLoaded) loadRoots()
+                }
                 recomputePhase()
             }
         }
+        connectError.track(viewModelScope, RemexClientManager.connectionError, RemexClientManager.isConnected)
+        viewModelScope.launch { RemexClientManager.isConnecting.collect { recomputePhase() } }
+        viewModelScope.launch { RemexClientManager.isConnected.collect { recomputePhase() } }
+        viewModelScope.launch { pairedPcs.collect { recomputePhase() } }
+        viewModelScope.launch {
+            settings.shareRecentFoldersFlow.collect {
+                _recentFolders.value = it
+                refreshVisibleRecentFolders()
+            }
+        }
+    }
+
+    /**
+     * Points the connection at another paired PC and connects (RemEx-172ba): the same save-and-connect
+     * as Home's known-PC list, so the tiles, widgets and transfers follow the person's choice. Never
+     * pairs: only trusted rows are offered, and their blank PIN keeps the pin. The screen runs it
+     * through ConnectPermissionGate first, like every other Connect.
+     */
+    fun connectTo(entry: KnownPcEntry) {
+        if (!entry.isTrusted) return
+        connectError.attempting()
+        viewModelScope.launch {
+            settings.saveConnectionHost(entry.address, entry.port)
+            RemexClientManager.toggleConnection()
+            runCatching { RemexConnectionService.start(getApplication()) }
+                .onFailure { Log.w(TAG, "Keepalive could not be started", it) }
+        }
+    }
+
+    /** The local-network permission was refused for a Connect from this screen. */
+    fun reportLocalNetworkRefused(permanently: Boolean) {
+        connectError.localNetworkRefused(
+            getApplication<Application>().getString(R.string.error_local_network_permission_denied),
+            permanently,
+        )
+    }
+
+    /** Picks a remembered folder: its shared root, then straight into the folder. */
+    fun selectRecent(folder: ShareRecentFolder) {
+        if (_roots.value.none { it.rootId == folder.rootId }) return
+        _selectedRootId.value = folder.rootId
+        browse(folder.path)
+    }
+
+    private fun resetDestination() {
+        rootsLoaded = false
+        _roots.value = emptyList()
+        _selectedRootId.value = null
+        _path.value = "/"
+        _folders.value = emptyList()
+        pendingBrowseRequestId = null
+        refreshVisibleRecentFolders()
+    }
+
+    private fun refreshVisibleRecentFolders() {
+        val host = rootsLoadedFor
+        _visibleRecentFolders.value =
+            if (host == null) emptyList()
+            else ShareRecentFolders.forPc(_recentFolders.value, host, _roots.value.map { it.rootId }.toSet())
     }
 
     /** Called once by the activity with the URIs extracted from the share intent. */
@@ -230,6 +336,10 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
             }
             if (queued > 0) {
                 FileTransferJobService.schedule(getApplication<Application>())
+                rootsLoadedFor?.let { host ->
+                    val rootName = _roots.value.firstOrNull { it.rootId == rootId }?.displayName.orEmpty()
+                    settings.recordShareRecentFolder(ShareRecentFolder(host, rootId, rootName, _path.value))
+                }
                 _phase.value = SharePhase.SENT
             } else {
                 // Nothing was sendable — don't show a false "sent" confirmation; keep the user on the list.
@@ -265,7 +375,9 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
                 ShareRoot(rootId = it.rootId, displayName = it.displayName, isWritable = it.isWritable)
             }
         _roots.value = list
-        // Auto-select the first writable root (or the first root) so a destination is ready to go.
+        refreshVisibleRecentFolders()
+        // The PC's default destination: the first writable root (or the first root) at its top
+        // level, so Send works with no choice made. A recent folder is one tap away above it.
         if (_selectedRootId.value == null) {
             (list.firstOrNull { it.isWritable } ?: list.firstOrNull())?.let { selectRoot(it.rootId) }
         }
@@ -295,13 +407,20 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
     private fun recomputePhase() {
         // Terminal / in-flight phases are owned by confirmSend(); don't fight them.
         if (_phase.value == SharePhase.SENDING || _phase.value == SharePhase.SENT) return
+        val paired = pairedPcs.value
+        val host = _targetHost.value
         _phase.value =
-            when {
-                filesResolved && _files.value.isEmpty() -> SharePhase.EMPTY
-                !hostConfigured -> SharePhase.NEEDS_SETUP
-                rootsLoaded -> SharePhase.READY
-                else -> SharePhase.CONNECTING
-            }
+            SharePhaseRules.phase(
+                filesResolved = filesResolved,
+                fileCount = _files.value.size,
+                pairedPcsLoaded = _pairedByAddress.value != null,
+                hasPairedPc = paired.isNotEmpty(),
+                // A saved PC this phone is no longer paired with is no target: connecting would ask
+                // for a PIN, and this screen has no way to show one.
+                targetChosen = host.isNotBlank() && paired.any { it.address.equals(host, ignoreCase = true) },
+                rootsLoaded = rootsLoaded && rootsLoadedFor.equals(host, ignoreCase = true),
+                connectedOrConnecting = RemexClientManager.isConnecting.value || RemexClientManager.isConnected.value,
+            )
     }
 
     private fun stage(source: Uri, safeName: String): File? =

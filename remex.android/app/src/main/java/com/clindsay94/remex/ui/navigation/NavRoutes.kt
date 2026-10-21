@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Launch
-import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.FolderOpen
@@ -28,7 +27,7 @@ import kotlinx.serialization.Serializable
  * comparisons; nothing persisted them, so nothing needed a compatibility path.)
  *
  * A plain [Screen] carries no label or icon, because most destinations need neither: Splash,
- * Tutorial, QrScanner, ShareDiagnostics, RemoteDesktop, Personalization and About are reached
+ * Tutorial, QrScanner, ShareDiagnostics, RemoteDesktop, About, Faq and PcDiagnostics are reached
  * programmatically and never appear in a navigation surface. That is not the same as being untitled — they render their own
  * headings — they just have no navigation item to feed (RemEx-5reo).
  *
@@ -43,7 +42,7 @@ sealed class Screen {
     @Serializable data object QrScanner : Screen()
 
     /**
-     * Reached only from Settings → Help, never from a navigation surface (RemEx-0iww).
+     * Reached only from Help & diagnostics, never from a navigation surface (RemEx-0iww).
      *
      * Sharing a diagnostics report is something a user does when they are already being walked
      * through a problem; putting it in the More list would offer it to everyone else, permanently,
@@ -61,11 +60,19 @@ sealed class Screen {
     @Serializable data object RemoteDesktop : Screen()
 
     /**
-     * Reached from Settings → Help → About, so it no longer has a More entry (RemEx-wqo7a.2).
-     * Personalization went the same way and has no route of its own any more: Settings shows it
-     * as its Personalization category.
+     * Reached from Help & diagnostics → About, so it has no More entry (RemEx-wqo7a.2, RemEx-172ba).
+     * Personalization has no route of its own either: Settings shows it as its Personalize category.
      */
     @Serializable data object About : Screen()
+
+    /**
+     * The PC's logs and its own checks, read-only, with Logs | Diagnostics tabs (RemEx-pp4cm.13).
+     * Opened from Help & diagnostics, so it is a plain destination with no navigation item.
+     */
+    @Serializable data object PcDiagnostics : Screen()
+
+    /** Opened from Help & diagnostics. */
+    @Serializable data object Faq : Screen()
 
     // ── Destinations that appear in a navigation surface ──────────────────────
 
@@ -109,9 +116,10 @@ sealed class Screen {
         override val icon = Icons.Default.Dashboard
     }
 
+    /** The PCs page (pairing, known PCs, the address form). Labelled "PCs" in every surface (RemEx-172ba). */
     @Serializable
     data object Connection : NavDestination() {
-        override val titleRes = R.string.screen_connection_title
+        override val titleRes = R.string.screen_pcs_title
         override val icon = WifiGlyph
     }
 
@@ -122,21 +130,15 @@ sealed class Screen {
     }
 
     /**
-     * The PC's logs and its own checks, read-only, with Logs | Diagnostics tabs (RemEx-pp4cm.13). In
-     * [moreItems], after Connection: it is what you open when the PC is misbehaving, so it sits next to
-     * the connection page and ahead of Settings and Help.
+     * Help & diagnostics (RemEx-172ba): FAQ, the PC's logs, Share diagnostics, Replay tutorial and
+     * About, in that order ([HelpEntry]). Last in [moreItems]; Settings no longer has a Help category.
      */
     @Serializable
-    data object PcDiagnostics : NavDestination() {
-        override val titleRes = R.string.screen_pc_diagnostics_title
-        override val icon = Icons.AutoMirrored.Filled.Notes
-    }
-
-    @Serializable
-    data object Faq : NavDestination() {
-        override val titleRes = R.string.screen_faq_title
+    data object Help : NavDestination() {
+        override val titleRes = R.string.screen_help_title
         override val icon = Icons.AutoMirrored.Filled.HelpOutline
     }
+
 
     @Serializable
     data object FileTransfer : NavDestination() {
@@ -201,7 +203,7 @@ sealed class NavDestination : Screen() {
 sealed class PrimaryDestination : NavDestination()
 
 /**
- * Primary navigation destinations — shown in NavigationBar / NavigationRail / NavigationDrawer.
+ * Primary navigation destinations — shown in the NavigationBar on a phone and the NavigationRail wider up.
  *
  * ORDER IS LOAD-BEARING: `AppNavigation` derives pager indices from the position in this list, so
  * reordering silently changes which tab a swipe lands on.
@@ -216,21 +218,20 @@ val navItems: List<PrimaryDestination> =
 
 /**
  * Overflow destinations — shown in the "More" bottom sheet on compact (NavigationBar) layout, or
- * appended below a divider in NavigationRail / NavigationDrawer on larger layouts.
+ * below a divider in the NavigationRail on larger layouts. The order is the same in both
+ * (RemEx-172ba, NavRoutesPhase2Test).
  */
 val moreItems =
         listOf<NavDestination>(
                 // First on purpose (routines spec 1.2, R-UX-01; NavRoutesRoutinesPlacementTest).
                 Screen.Routines,
+                Screen.FileTransfer,
                 // The full Sensors canvas, also one tap from Home's Open Sensors card.
                 Screen.Dashboard,
-                Screen.FileTransfer,
                 Screen.Connection,
-                Screen.PcDiagnostics,
                 Screen.Settings,
-                Screen.Faq,
-                // Personalization and About are not here: Settings already links to both
-                // (its Personalization category and Help → About).
+                // FAQ, PC logs, Share diagnostics, Replay tutorial and About all live in here.
+                Screen.Help,
         )
 
 /**

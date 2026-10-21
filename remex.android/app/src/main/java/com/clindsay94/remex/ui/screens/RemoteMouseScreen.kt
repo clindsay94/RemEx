@@ -67,7 +67,7 @@ fun RemoteMouseScreen(
         onNavigateToConnection: () -> Unit = {},
         viewModel: RemoteControlViewModel = viewModel()
 ) {
-    val shapePreset by viewModel.remoteMouseCardShapePreset.collectAsStateWithLifecycle()
+    val shapePreset by viewModel.trackpadCardShapePreset.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()

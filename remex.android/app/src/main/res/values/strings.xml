@@ -152,14 +152,10 @@
 
     
     <string name="screen_settings_title">Settings</string>
-    <string name="settings_tab_connection">Connection</string>
     <string name="settings_tab_personalization">Personalize</string>
     <string name="settings_tab_input">Input</string>
     <string name="settings_tab_file_transfer">Files</string>
-    <string name="settings_tab_help">Help</string>
-    <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">Replay tutorial</string>
-    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough for setup, QR pairing, manual connection, and daily-use tips.</string>
     <string name="settings_faq_hint">Answers about pairing, permissions, file transfer and remote desktop performance.</string>
 
     
@@ -315,7 +311,6 @@
     <string name="cd_view_dual_metric">Dual metric overlay, %1$s</string>
 
     
-    <string name="screen_connection_title">Connection</string>
     <string name="screen_connection_subtitle">Choose which PC this phone controls</string>
     <string name="connection_your_pcs_title">Your PCs</string>
     <string name="connection_your_pcs_empty">No PCs yet. Add one to get started.</string>
@@ -486,7 +481,6 @@
     <string name="personalization_shape_telemetry">Sensor cards</string>
     <string name="personalization_shape_app_launcher">Apps</string>
     <string name="personalization_shape_remote_commands">Commands</string>
-    <string name="personalization_shape_remote_mouse">Remote mouse</string>
     <string name="personalization_shape_task_manager">Processes</string>
     <string name="personalization_shape_remote_desktop">Desktop</string>
     <string name="personalization_shape_pc_orb">PC connection orb</string>
@@ -963,8 +957,6 @@
     <string name="share_to_pc_nothing_to_send">There are no files to send.</string>
     <string name="share_to_pc_skipped_unreadable">Skipped %1$d file(s) that couldn\'t be read — they may be empty or no longer available.</string>
     <string name="share_to_pc_connecting">Connecting to your PC…</string>
-    <string name="share_to_pc_not_configured">No PC is set up yet. Open RemEx and connect to your PC first, then try sharing again.</string>
-    <string name="share_to_pc_open_app">Open RemEx</string>
     <string name="file_transfer_notification_open">Open</string>
     <string name="faq_q14">My phone says it is paired but will not connect. Could it be a PC permission problem?</string>
     <string name="faq_a14">Possibly. Your PC keeps a security certificate that your phone uses to recognize it, stored somewhere nothing else can read — that is what stops another program from pretending to be your PC. If RemEx on the PC cannot read that file it still opens but cannot accept connections, so your phone cannot reach it even though it still shows as paired.\n\nOn a Windows PC: RemEx needs administrator rights to read it. Close RemEx, right-click it and choose \"Run as administrator\", then try connecting again. RemEx normally starts with administrator rights on its own when you sign in, so this should be rare.\n\nOn a Linux PC: RemEx does not need root — never start it with sudo. This almost always means an old remex-host install left the certificate owned by root. Run the RemEx installer on the PC again; it repairs this for you, and your paired phones keep working.</string>
@@ -1037,7 +1029,6 @@
          the preview promise - what is shown IS what is sent - because that promise is the only
          reason it is safe to offer this at all. -->
     <string name="settings_share_diagnostics">Share diagnostics</string>
-    <string name="settings_share_diagnostics_body">Build a report about this app and its connection to your PC that you can send to whoever is helping you. You read all of it first, and nothing leaves your phone until you send it.</string>
     <string name="screen_share_diagnostics_title">Share diagnostics</string>
     <string name="share_diagnostics_explainer">This report contains your app version, phone model, Android version, what your PC last said about itself, and recent log lines from this app. Pairing keys are removed and file paths are shortened to just the file name. What you see below is exactly what gets sent.</string>
     <string name="share_diagnostics_network_toggle">Include network addresses</string>
@@ -1847,7 +1838,6 @@
     <string name="personalization_reset_all_body">Colors, fonts, card shapes, splash and background go back to how RemEx looks on a fresh install. Your language stays as it is.</string>
     <string name="faq_search_hint">Search the FAQ</string>
     <string name="faq_no_match">Nothing in the FAQ matches “%1$s”. Try a shorter word.</string>
-    <string name="settings_open_faq">Open FAQ</string>
     <string name="settings_pc_alerts_blocked">Android has notifications turned off for RemEx, so these alerts can\'t show.</string>
     <string name="settings_battery_ok">RemEx is allowed to run in the background.</string>
     <string name="files_delete_confirm_title">Delete permanently?</string>
@@ -1884,4 +1874,21 @@
     <string name="about_version_mismatch">Your phone and PC are on different versions of RemEx. Update the older one so every feature works.</string>
     <string name="about_copy_versions">Copy version details</string>
     <string name="qr_scanner_not_remex">That QR code isn\'t from RemEx. Scan the one RemEx shows on your PC.</string>
+    <string name="screen_pcs_title">PCs</string>
+    <string name="screen_help_title">Help &amp; diagnostics</string>
+    <string name="help_pc_logs_body">Read your PC\'s logs and run its own checks.</string>
+    <string name="help_share_diagnostics_body">Make a report for whoever is helping you. You see all of it before anything is sent.</string>
+    <string name="help_tutorial_body">Walk through setup and the basics again.</string>
+    <string name="help_about_body">The versions on this phone and your PC, and what\'s new.</string>
+    <string name="home_switch_pc">Switch PC</string>
+    <string name="home_disconnect">Disconnect</string>
+    <string name="home_switch_pc_title">Switch to another PC</string>
+    <string name="home_manage_pcs">Manage PCs</string>
+    <string name="share_to_pc_choose_pc">Send to which PC?</string>
+    <string name="share_to_pc_change_pc">Change</string>
+    <string name="share_to_pc_recent_folders">Recent folders</string>
+    <string name="share_to_pc_recent_folder_label">%1$s: %2$s</string>
+    <string name="share_to_pc_not_paired">To send files, pair this phone with a PC first. You can do that on the PCs page.</string>
+    <string name="share_to_pc_open_pcs">Open PCs</string>
+    <string name="desktop_stream_settings_pre_stream_hint">These are used every time you start streaming. Choosing which screen to show and the window controls appear once the stream is running.</string>
 </resources>

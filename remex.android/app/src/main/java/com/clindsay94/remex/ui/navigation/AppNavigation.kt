@@ -108,6 +108,7 @@ import com.clindsay94.remex.ui.PairingRouteArgs
 import com.clindsay94.remex.ui.PairingRouteResult
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.FileTransferScreen
+import com.clindsay94.remex.ui.screens.ConnectionOpenRequests
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.ConnectionStatusChip
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
@@ -115,6 +116,8 @@ import com.clindsay94.remex.ui.screens.ControlTabScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.DesktopTabScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
+import com.clindsay94.remex.ui.screens.HelpEntry
+import com.clindsay94.remex.ui.screens.HelpScreen
 import com.clindsay94.remex.ui.screens.PcDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.HomeScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
@@ -157,13 +160,21 @@ private data object PrimaryNav
 // Destinations that suppress the navigation chrome (full-screen / flow screens). Class references
 // rather than instances because the check runs against the back stack's NavDestination via
 // hasRoute, which matches on the route class.
-private val noNavChrome =
+internal val noNavChrome: Set<kotlin.reflect.KClass<out Any>> =
         setOf(
                 Screen.Splash::class,
                 Screen.Tutorial::class,
                 Screen.RemoteDesktop::class,
                 Screen.QrScanner::class,
+                // The PIN screen is a modal flow like the QR scanner: a tab tap mid-PIN abandoned it.
+                PairingRoute::class,
         )
+
+/** What finishing the tutorial does (RemEx-172ba): a replay goes back where it was opened from. */
+internal enum class TutorialExit { BackToLauncher, FirstRunHome }
+
+internal fun tutorialExit(hasScreenUnderneath: Boolean): TutorialExit =
+        if (hasScreenUnderneath) TutorialExit.BackToLauncher else TutorialExit.FirstRunHome
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -345,7 +356,7 @@ private fun AppNavigationContent(
 
         // ─── Adaptive layout ─────────────────────────────────────────────────────
         val adaptiveInfo = currentWindowAdaptiveInfoV2()
-        // M3: NavigationBar on compact, NavigationRail on medium, NavigationDrawer on expanded
+        // NavigationBar on compact; every wider layout gets the rail (there is no drawer).
         val suiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
         // The compact Routines editor hides the NavigationBar so its floating toolbar owns the
         // bottom edge (routines spec 2.1). It is a pane inside Screen.Routines, not a route, so
@@ -529,7 +540,7 @@ private fun AppNavigationContent(
 
         /**
          * A More destination (3.0 comb, no-reselect): already on it, back to its top; something pushed
-         * on top of it (About or Share diagnostics over Settings), back down to it; otherwise go there.
+         * on top of it (FAQ, About or Share diagnostics over Help), back down to it; otherwise go there.
          * launchSingleTop alone did nothing in the first two cases.
          */
         fun reselectOrNavigateTo(screen: NavDestination) {
@@ -594,6 +605,17 @@ private fun AppNavigationContent(
                 if (isOn(Screen.Splash) || isOn(Screen.Tutorial)) return@LaunchedEffect
                 SensorAlertOpenRequests.consume()
                 if (!isOn(Screen.Dashboard)) navigateTo(Screen.Dashboard)
+        }
+
+        // "Open PCs" from the share target with nothing paired (RemEx-172ba). Same guard as above.
+        val pendingPcsOpen by ConnectionOpenRequests.openPcs.collectAsStateWithLifecycle()
+        LaunchedEffect(pendingPcsOpen, currentDestination) {
+                if (!pendingPcsOpen || currentDestination == null) return@LaunchedEffect
+                if (isOn(Screen.Splash) || isOn(Screen.Tutorial)) return@LaunchedEffect
+                if (!ConnectionOpenRequests.consumeOpenPcs()) return@LaunchedEffect
+                // Nothing is paired when the share target sends someone here, so Add a PC is next.
+                ConnectionOpenRequests.requestAddPc()
+                if (!isOn(Screen.Connection)) navigateTo(Screen.Connection)
         }
 
         // The app background (RemEx-pp4cm.17): one layer behind the whole shell, not one per screen.
@@ -1180,13 +1202,16 @@ private fun RemexNavHost(
                 ) {
                         TutorialScreen(
                                 onFinished = {
-                                        onSelectPrimaryPage(0)
-                                        // A replay from Settings returns to the Home already underneath;
-                                        // first run has none, so it navigates instead.
-                                        if (!navController.popBackStack(PrimaryNav, inclusive = false)) {
-                                                navController.navigate(PrimaryNav) {
-                                                        popUpTo(Screen.Tutorial) { inclusive = true }
-                                                        launchSingleTop = true
+                                        // A replay returns to the screen it was opened from (Help);
+                                        // first run has nothing underneath, so it lands on Home.
+                                        when (tutorialExit(navController.previousBackStackEntry != null)) {
+                                                TutorialExit.BackToLauncher -> navController.popBackStack()
+                                                TutorialExit.FirstRunHome -> {
+                                                        onSelectPrimaryPage(0)
+                                                        navController.navigate(PrimaryNav) {
+                                                                popUpTo(Screen.Tutorial) { inclusive = true }
+                                                                launchSingleTop = true
+                                                        }
                                                 }
                                         }
                                 },
@@ -1318,48 +1343,38 @@ private fun RemexNavHost(
                 }
 
                 composable<Screen.Settings> {
+                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) { SettingsScreen() }
+                }
+
+                composable<Screen.Help> {
                         CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
-                        SettingsScreen(
-                                onReplayTutorial = {
-                                        navController.navigate(Screen.Tutorial) {
-                                                launchSingleTop = true
-                                        }
-                                },
-                                onNavigateToAbout = {
-                                        navController.navigate(Screen.About) {
-                                                launchSingleTop = true
-                                        }
-                                },
-                                onNavigateToQrScanner = {
-                                        navController.navigate(Screen.QrScanner) {
-                                                launchSingleTop = true
-                                        }
-                                },
-                                onNavigateToShareDiagnostics = {
-                                        navController.navigate(Screen.ShareDiagnostics) {
-                                                launchSingleTop = true
-                                        }
-                                },
-                                onNavigateToFaq = {
-                                        navController.navigate(Screen.Faq) {
-                                                launchSingleTop = true
-                                        }
-                                },
-                        )
+                                HelpScreen(
+                                        onOpen = { entry ->
+                                                val target =
+                                                        when (entry) {
+                                                                HelpEntry.FAQ -> Screen.Faq
+                                                                HelpEntry.PC_LOGS -> Screen.PcDiagnostics
+                                                                HelpEntry.SHARE_DIAGNOSTICS -> Screen.ShareDiagnostics
+                                                                HelpEntry.REPLAY_TUTORIAL -> Screen.Tutorial
+                                                                HelpEntry.ABOUT -> Screen.About
+                                                        }
+                                                navController.navigate(target) { launchSingleTop = true }
+                                        },
+                                )
                         }
                 }
 
+                // Help's pages below are always pushed from Help, so always an Up arrow, rail or not.
                 composable<Screen.Faq> {
-                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) { FaqScreen() }
+                        CompositionLocalProvider(LocalRemexUpAction provides popUp) { FaqScreen() }
                 }
 
                 composable<Screen.PcDiagnostics> {
-                        CompositionLocalProvider(LocalRemexUpAction provides moreUp) {
+                        CompositionLocalProvider(LocalRemexUpAction provides popUp) {
                                 PcDiagnosticsScreen(onNavigateToConnection = { onNavigateToConnection() })
                         }
                 }
 
-                // Always pushed from Settings, so always an Up arrow, rail or not.
                 composable<Screen.ShareDiagnostics> {
                         CompositionLocalProvider(LocalRemexUpAction provides popUp) { ShareDiagnosticsScreen() }
                 }

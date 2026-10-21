@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,32 +11,46 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwipeVertical
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,6 +87,7 @@ fun DesktopTabScreen(
 ) {
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
     val needsPairing by RemexClientManager.needsPairing.collectAsStateWithLifecycle()
+    var showStreamSettings by rememberSaveable { mutableStateOf(false) }
     DesktopTabScreenContent(
             mode = mode,
             isConnected = isConnected,
@@ -83,8 +99,81 @@ fun DesktopTabScreen(
                 ConnectionOpenRequests.requestAddPc()
                 onNavigateToConnection()
             },
+            onOpenStreamSettings = { showStreamSettings = true },
             trackpadContent = { RemoteMouseScreen(onNavigateToConnection = onNavigateToConnection) },
     )
+    if (showStreamSettings) {
+        PreStreamSettingsSheet(onDismiss = { showStreamSettings = false })
+    }
+}
+
+/**
+ * The stream settings sheet before a stream starts (RemEx-172ba): the same Stream and Input &
+ * Controls sections the stream's own sheet shows ([StreamSettingsSections]). Picking a display and the
+ * window controls need a running stream, so they stay in the stream's sheet only.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PreStreamSettingsSheet(
+        onDismiss: () -> Unit,
+        viewModel: PreStreamSettingsViewModel = viewModel(),
+) {
+    val config by viewModel.config.collectAsStateWithLifecycle()
+    val prefs by viewModel.preferences.collectAsStateWithLifecycle()
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(
+                modifier =
+                        Modifier.fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                                .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                        stringResource(R.string.remote_desktop_config_title),
+                        style = MaterialTheme.typography.titleLargeEmphasized,
+                        modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close_settings))
+                }
+            }
+            Text(
+                    stringResource(R.string.desktop_stream_settings_pre_stream_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            StreamSettingsSections(
+                    config = config,
+                    directTouch = prefs.directTouch,
+                    pointerSpeed = prefs.pointerSpeed,
+                    cursorScale = prefs.cursorScale,
+                    vScrollSensitivity = prefs.verticalScrollSensitivity,
+                    hScrollSensitivity = prefs.horizontalScrollSensitivity,
+                    isLandscape = isLandscape,
+                    onApplyPreset = viewModel::applyPreset,
+                    onSelectCustomPreset = viewModel::selectCustomPreset,
+                    onUpdateQuality = viewModel::updateQuality,
+                    onUpdateTargetFps = viewModel::updateTargetFps,
+                    onUpdateScale = viewModel::updateScale,
+                    onUpdateAdaptiveScale = viewModel::updateAdaptiveScale,
+                    onUpdateDirectTouch = viewModel::updateDirectTouch,
+                    onUpdatePointerSpeed = viewModel::updatePointerSpeed,
+                    onUpdateCursorScale = viewModel::updateCursorScale,
+                    onUpdateScrollSensitivity = viewModel::updateScrollSensitivity,
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,6 +193,7 @@ fun DesktopTabScreenContent(
          */
         needsPairing: Boolean = false,
         onPair: () -> Unit = onNavigateToConnection,
+        onOpenStreamSettings: () -> Unit = {},
 ) {
     Scaffold(
             topBar = {
@@ -139,6 +229,7 @@ fun DesktopTabScreenContent(
                                 isConnected = isConnected,
                                 onStartStream = onStartStream,
                                 onNavigateToConnection = onNavigateToConnection,
+                                onOpenStreamSettings = onOpenStreamSettings,
                         )
                 DesktopMode.Trackpad -> trackpadContent()
             }
@@ -151,6 +242,7 @@ private fun DesktopStreamPane(
         isConnected: Boolean,
         onStartStream: () -> Unit,
         onNavigateToConnection: () -> Unit,
+        onOpenStreamSettings: () -> Unit,
 ) {
     val haptics = rememberRemexHaptics()
     val scrollState = rememberScrollState()
@@ -210,6 +302,20 @@ private fun DesktopStreamPane(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.button_start_streaming))
+            }
+            // Saved settings, so they can be set up with no PC connected too.
+            OutlinedButton(
+                    onClick = {
+                        haptics.perform(RemexHapticEvent.Press)
+                        onOpenStreamSettings()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shapes = rememberRemexButtonShapes(),
+                    contentPadding = ButtonDefaults.ContentPadding
+            ) {
+                Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.remote_desktop_config_title))
             }
             TouchControlsCard()
         }

@@ -30,7 +30,7 @@ object SettingsExport {
         "card_corner_radius", "card_opacity",
         "app_launcher_card_shape_preset_v2", "pc_card_shape_preset_v2",
         "remote_control_card_shape_preset_v2", "remote_desktop_card_shape_preset_v2",
-        "remote_mouse_card_shape_preset_v2", "task_manager_card_shape_preset_v2",
+        "task_manager_card_shape_preset_v2",
         "telemetry_card_shape_preset_v2",
 
         // Layout.

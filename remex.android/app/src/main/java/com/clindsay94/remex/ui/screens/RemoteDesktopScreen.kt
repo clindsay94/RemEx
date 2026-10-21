@@ -3355,401 +3355,26 @@ fun RemoteDesktopScreenContent(
                                                         }
                                                 }
 
-                                                // ── Stream section ──
-                                                SettingsSectionHeader(
-                                                        stringResource(
-                                                                R.string
-                                                                        .remote_desktop_section_stream
-                                                        )
-                                                )
-                                                // Named quality presets bundle {quality, targetFps,
-                                                // scale} together (persist + push once). Capture SCALE
-                                                // is the real FPS lever — host encode time scales with
-                                                // pixel count. Custom has no fixed bundle: it reveals
-                                                // the raw sliders below instead. (RemEx-vj31)
-                                                Row(
-                                                        modifier =
-                                                                Modifier.fillMaxWidth()
-                                                                        .horizontalScroll(
-                                                                                rememberScrollState()
-                                                                        )
-                                                                        .padding(bottom = 4.dp),
-                                                        horizontalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        DESKTOP_PRESET_BUNDLES.forEach { bundle ->
-                                                                FilterChip(
-                                                                        selected =
-                                                                                config.preset ==
-                                                                                        bundle.preset,
-                                                                        onClick = {
-                                                                                onApplyPreset(
-                                                                                        bundle.preset,
-                                                                                        bundle.quality,
-                                                                                        bundle.targetFps,
-                                                                                        bundle.scale
-                                                                                )
-                                                                        },
-                                                                        label = {
-                                                                                Text(
-                                                                                        desktopPresetLabel(
-                                                                                                bundle.preset
-                                                                                        )
-                                                                                )
-                                                                        }
-                                                                )
-                                                        }
-                                                        FilterChip(
-                                                                selected =
-                                                                        config.preset ==
-                                                                                DesktopPreset.CUSTOM,
-                                                                onClick = onSelectCustomPreset,
-                                                                label = {
-                                                                        Text(
-                                                                                desktopPresetLabel(
-                                                                                        DesktopPreset
-                                                                                                .CUSTOM
-                                                                                )
-                                                                        )
-                                                                }
-                                                        )
-                                                }
-                                                // Persistent heads-up on Unlimited: it targets the
-                                                // technical ceiling (full resolution, uncapped fps),
-                                                // which this capture pipeline can't always sustain —
-                                                // the same overflow the one-time snackbar explains.
-                                                PlainAnimatedVisibility(
-                                                        visible =
-                                                                config.preset ==
-                                                                        DesktopPreset.UNLIMITED
-                                                ) {
-                                                        Row(
-                                                                verticalAlignment =
-                                                                        Alignment.CenterVertically,
-                                                                horizontalArrangement =
-                                                                        Arrangement.spacedBy(6.dp)
-                                                        ) {
-                                                                Icon(
-                                                                        Icons.Default.Info,
-                                                                        contentDescription = null,
-                                                                        modifier =
-                                                                                Modifier.size(16.dp),
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_preset_unlimited_info
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodySmall,
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                )
-                                                        }
-                                                }
-                                                PlainAnimatedVisibility(
-                                                        visible =
-                                                                config.preset ==
-                                                                        DesktopPreset.CUSTOM
-                                                ) {
-                                                        Column(
-                                                                verticalArrangement =
-                                                                        Arrangement.spacedBy(16.dp)
-                                                        ) {
-                                                                SettingsPair(
-                                                                        isLandscape = isLandscape,
-                                                                        first = { m ->
-                                                                                SettingSlider(
-                                                                                        label =
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .remote_desktop_quality_label,
-                                                                                                        config.quality
-                                                                                                ),
-                                                                                        value =
-                                                                                                config.quality
-                                                                                                        .toFloat(),
-                                                                                        onValueChange = {
-                                                                                                onUpdateQuality(
-                                                                                                        it.toInt()
-                                                                                                )
-                                                                                        },
-                                                                                        valueRange =
-                                                                                                1f..100f,
-                                                                                        modifier = m
-                                                                                )
-                                                                        },
-                                                                        second = { m ->
-                                                                                SettingSlider(
-                                                                                        label =
-                                                                                                if (config.targetFps >
-                                                                                                                DESKTOP_FPS_PACED_MAX
-                                                                                                )
-                                                                                                        stringResource(
-                                                                                                                R.string
-                                                                                                                        .remote_desktop_fps_unlimited_label
-                                                                                                        )
-                                                                                                else
-                                                                                                        stringResource(
-                                                                                                                R.string
-                                                                                                                        .remote_desktop_fps_label,
-                                                                                                                config.targetFps
-                                                                                                        ),
-                                                                                        value =
-                                                                                                config.targetFps
-                                                                                                        .toFloat(),
-                                                                                        onValueChange = {
-                                                                                                onUpdateTargetFps(
-                                                                                                        it.toInt()
-                                                                                                )
-                                                                                        },
-                                                                                        valueRange =
-                                                                                                1f..DESKTOP_MAX_FPS
-                                                                                                        .toFloat(),
-                                                                                        modifier = m
-                                                                                )
-                                                                        }
-                                                                )
-                                                                SettingSlider(
-                                                                        label =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .remote_desktop_scale_label,
-                                                                                        (config.scale *
-                                                                                                        100)
-                                                                                                .toInt()
-                                                                                ),
-                                                                        value = config.scale,
-                                                                        onValueChange = {
-                                                                                onUpdateScale(it)
-                                                                        },
-                                                                        valueRange = 0.25f..1.0f,
-                                                                        modifier =
-                                                                                Modifier.fillMaxWidth()
-                                                                )
-                                                        }
-                                                }
-
-                                                // Adaptive scale (live-check D3): opt-in, default
-                                                // off. Own full-width row, like Direct Touch below.
-                                                Row(
-                                                        modifier = Modifier.fillMaxWidth()
-                                                                .toggleable(
-                                                                        value = config.adaptiveScale,
-                                                                        role = Role.Switch,
-                                                                        onValueChange = { onUpdateAdaptiveScale(it) }
-                                                                ),
-                                                        horizontalArrangement =
-                                                                Arrangement.SpaceBetween,
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
-                                                ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_adaptive_scale_label
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodyLargeEmphasized
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_adaptive_scale_desc
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodySmall,
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                )
-                                                        }
-                                                        Spacer(Modifier.width(16.dp))
-                                                        Switch(
-                                                                checked = config.adaptiveScale,
-                                                                onCheckedChange = null
-                                                        )
-                                                }
-
-                                                HorizontalDivider()
-
-                                                // ── Input & Controls section ──
-                                                SettingsSectionHeader(
-                                                        stringResource(
-                                                                R.string
-                                                                        .remote_desktop_section_input
-                                                        )
-                                                )
-
-                                                // Direct Touch toggle (full width — own row so it
-                                                // never collides with a slider beside it)
-                                                Row(
-                                                        modifier = Modifier.fillMaxWidth()
-                                                                .toggleable(
-                                                                        value = uiState.directTouch,
-                                                                        role = Role.Switch,
-                                                                        onValueChange = { onUpdateDirectTouch(it) }
-                                                                ),
-                                                        horizontalArrangement =
-                                                                Arrangement.SpaceBetween,
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
-                                                ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_direct_touch_label
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodyLargeEmphasized
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_direct_touch_desc
-                                                                        ),
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .bodySmall,
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                )
-                                                        }
-                                                        Spacer(Modifier.width(16.dp))
-                                                        Switch(
-                                                                checked = uiState.directTouch,
-                                                                onCheckedChange = null
-                                                        )
-                                                }
-
-                                                SettingsPair(
+                                                // The settings that apply before a stream starts too, shared with the Desktop tab's
+                                                // sheet (RemEx-172ba). Display and window controls stay here: they need a live stream.
+                                                StreamSettingsSections(
+                                                        config = config,
+                                                        directTouch = uiState.directTouch,
+                                                        pointerSpeed = uiState.pointerSpeed,
+                                                        cursorScale = uiState.cursorScale,
+                                                        vScrollSensitivity = uiState.vScrollSensitivity,
+                                                        hScrollSensitivity = uiState.hScrollSensitivity,
                                                         isLandscape = isLandscape,
-                                                        first = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                String.format(
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .remote_desktop_pointer_speed_label
-                                                                                        ),
-                                                                                        uiState.pointerSpeed
-                                                                                ),
-                                                                        value =
-                                                                                uiState.pointerSpeed,
-                                                                        onValueChange = {
-                                                                                onUpdatePointerSpeed(
-                                                                                        it
-                                                                                )
-                                                                        },
-                                                                        valueRange = 0.25f..3.0f,
-                                                                        steps = 10,
-                                                                        modifier = m
-                                                                )
-                                                        },
-                                                        second = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                String.format(
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .remote_desktop_cursor_size_label
-                                                                                        ),
-                                                                                        uiState.cursorScale
-                                                                                ),
-                                                                        value =
-                                                                                uiState.cursorScale,
-                                                                        onValueChange = {
-                                                                                onUpdateCursorScale(
-                                                                                        it
-                                                                                )
-                                                                        },
-                                                                        valueRange = 0.5f..2.5f,
-                                                                        steps = 7,
-                                                                        modifier = m
-                                                                )
-                                                        }
-                                                )
-
-                                                SettingsPair(
-                                                        isLandscape = isLandscape,
-                                                        first = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                String.format(
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .remote_desktop_v_scroll_short
-                                                                                        ),
-                                                                                        uiState.vScrollSensitivity
-                                                                                ),
-                                                                        value =
-                                                                                uiState.vScrollSensitivity,
-                                                                        onValueChange = {
-                                                                                onUpdateScrollSensitivity(
-                                                                                        it,
-                                                                                        uiState.hScrollSensitivity
-                                                                                )
-                                                                        },
-                                                                        valueRange = 0.1f..5.0f,
-                                                                        steps = 20,
-                                                                        modifier = m
-                                                                )
-                                                        },
-                                                        second = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                String.format(
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .remote_desktop_h_scroll_short
-                                                                                        ),
-                                                                                        uiState.hScrollSensitivity
-                                                                                ),
-                                                                        value =
-                                                                                uiState.hScrollSensitivity,
-                                                                        onValueChange = {
-                                                                                onUpdateScrollSensitivity(
-                                                                                        uiState.vScrollSensitivity,
-                                                                                        it
-                                                                                )
-                                                                        },
-                                                                        valueRange = 0.1f..5.0f,
-                                                                        steps = 20,
-                                                                        modifier = m
-                                                                )
-                                                        }
-                                                )
-
-                                                Text(
-                                                        text =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .remote_desktop_controls_hint_v2
-                                                                ),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color =
-                                                                MaterialTheme.colorScheme
-                                                                        .onSurfaceVariant
+                                                        onApplyPreset = onApplyPreset,
+                                                        onSelectCustomPreset = onSelectCustomPreset,
+                                                        onUpdateQuality = onUpdateQuality,
+                                                        onUpdateTargetFps = onUpdateTargetFps,
+                                                        onUpdateScale = onUpdateScale,
+                                                        onUpdateAdaptiveScale = onUpdateAdaptiveScale,
+                                                        onUpdateDirectTouch = onUpdateDirectTouch,
+                                                        onUpdatePointerSpeed = onUpdatePointerSpeed,
+                                                        onUpdateCursorScale = onUpdateCursorScale,
+                                                        onUpdateScrollSensitivity = onUpdateScrollSensitivity,
                                                 )
 
                                                 // THIS SECTION IS EASY TO BELIEVE IS MISSING, and one
@@ -4524,4 +4149,429 @@ private fun ExtraKeysGrid(onSendKeyPress: (Int) -> Unit, view: android.view.View
                         )
                 }
         }
+}
+
+/**
+ * The Stream and Input & Controls sections of the stream settings sheet (RemEx-172ba). One copy,
+ * used mid-stream by [RemoteDesktopScreenContent] and before a stream by the Desktop tab, so the two
+ * can never offer different controls. Presets still go through one atomic apply
+ * (docs/REGRESSION-GUARDS.md, "Preset changes are atomic").
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun StreamSettingsSections(
+        config: RemoteDesktopConfigState,
+        directTouch: Boolean,
+        pointerSpeed: Float,
+        cursorScale: Float,
+        vScrollSensitivity: Float,
+        hScrollSensitivity: Float,
+        isLandscape: Boolean,
+        onApplyPreset: (DesktopPreset, Int, Int, Float) -> Unit,
+        onSelectCustomPreset: () -> Unit,
+        onUpdateQuality: (Int) -> Unit,
+        onUpdateTargetFps: (Int) -> Unit,
+        onUpdateScale: (Float) -> Unit,
+        onUpdateAdaptiveScale: (Boolean) -> Unit,
+        onUpdateDirectTouch: (Boolean) -> Unit,
+        onUpdatePointerSpeed: (Float) -> Unit,
+        onUpdateCursorScale: (Float) -> Unit,
+        onUpdateScrollSensitivity: (Float, Float) -> Unit,
+) {
+        // ── Stream section ──
+        SettingsSectionHeader(
+                stringResource(
+                        R.string
+                                .remote_desktop_section_stream
+                )
+        )
+        // Named quality presets bundle {quality, targetFps,
+        // scale} together (persist + push once). Capture SCALE
+        // is the real FPS lever — host encode time scales with
+        // pixel count. Custom has no fixed bundle: it reveals
+        // the raw sliders below instead. (RemEx-vj31)
+        Row(
+                modifier =
+                        Modifier.fillMaxWidth()
+                                .horizontalScroll(
+                                        rememberScrollState()
+                                )
+                                .padding(bottom = 4.dp),
+                horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
+        ) {
+                DESKTOP_PRESET_BUNDLES.forEach { bundle ->
+                        FilterChip(
+                                selected =
+                                        config.preset ==
+                                                bundle.preset,
+                                onClick = {
+                                        onApplyPreset(
+                                                bundle.preset,
+                                                bundle.quality,
+                                                bundle.targetFps,
+                                                bundle.scale
+                                        )
+                                },
+                                label = {
+                                        Text(
+                                                desktopPresetLabel(
+                                                        bundle.preset
+                                                )
+                                        )
+                                }
+                        )
+                }
+                FilterChip(
+                        selected =
+                                config.preset ==
+                                        DesktopPreset.CUSTOM,
+                        onClick = onSelectCustomPreset,
+                        label = {
+                                Text(
+                                        desktopPresetLabel(
+                                                DesktopPreset
+                                                        .CUSTOM
+                                        )
+                                )
+                        }
+                )
+        }
+        // Persistent heads-up on Unlimited: it targets the
+        // technical ceiling (full resolution, uncapped fps),
+        // which this capture pipeline can't always sustain —
+        // the same overflow the one-time snackbar explains.
+        PlainAnimatedVisibility(
+                visible =
+                        config.preset ==
+                                DesktopPreset.UNLIMITED
+        ) {
+                Row(
+                        verticalAlignment =
+                                Alignment.CenterVertically,
+                        horizontalArrangement =
+                                Arrangement.spacedBy(6.dp)
+                ) {
+                        Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                modifier =
+                                        Modifier.size(16.dp),
+                                tint =
+                                        MaterialTheme
+                                                .colorScheme
+                                                .onSurfaceVariant
+                        )
+                        Text(
+                                stringResource(
+                                        R.string
+                                                .remote_desktop_preset_unlimited_info
+                                ),
+                                style =
+                                        MaterialTheme
+                                                .typography
+                                                .bodySmall,
+                                color =
+                                        MaterialTheme
+                                                .colorScheme
+                                                .onSurfaceVariant
+                        )
+                }
+        }
+        PlainAnimatedVisibility(
+                visible =
+                        config.preset ==
+                                DesktopPreset.CUSTOM
+        ) {
+                Column(
+                        verticalArrangement =
+                                Arrangement.spacedBy(16.dp)
+                ) {
+                        SettingsPair(
+                                isLandscape = isLandscape,
+                                first = { m ->
+                                        SettingSlider(
+                                                label =
+                                                        stringResource(
+                                                                R.string
+                                                                        .remote_desktop_quality_label,
+                                                                config.quality
+                                                        ),
+                                                value =
+                                                        config.quality
+                                                                .toFloat(),
+                                                onValueChange = {
+                                                        onUpdateQuality(
+                                                                it.toInt()
+                                                        )
+                                                },
+                                                valueRange =
+                                                        1f..100f,
+                                                modifier = m
+                                        )
+                                },
+                                second = { m ->
+                                        SettingSlider(
+                                                label =
+                                                        if (config.targetFps >
+                                                                        DESKTOP_FPS_PACED_MAX
+                                                        )
+                                                                stringResource(
+                                                                        R.string
+                                                                                .remote_desktop_fps_unlimited_label
+                                                                )
+                                                        else
+                                                                stringResource(
+                                                                        R.string
+                                                                                .remote_desktop_fps_label,
+                                                                        config.targetFps
+                                                                ),
+                                                value =
+                                                        config.targetFps
+                                                                .toFloat(),
+                                                onValueChange = {
+                                                        onUpdateTargetFps(
+                                                                it.toInt()
+                                                        )
+                                                },
+                                                valueRange =
+                                                        1f..DESKTOP_MAX_FPS
+                                                                .toFloat(),
+                                                modifier = m
+                                        )
+                                }
+                        )
+                        SettingSlider(
+                                label =
+                                        stringResource(
+                                                R.string
+                                                        .remote_desktop_scale_label,
+                                                (config.scale *
+                                                                100)
+                                                        .toInt()
+                                        ),
+                                value = config.scale,
+                                onValueChange = {
+                                        onUpdateScale(it)
+                                },
+                                valueRange = 0.25f..1.0f,
+                                modifier =
+                                        Modifier.fillMaxWidth()
+                        )
+                }
+        }
+
+        // Adaptive scale (live-check D3): opt-in, default
+        // off. Own full-width row, like Direct Touch below.
+        Row(
+                modifier = Modifier.fillMaxWidth()
+                        .toggleable(
+                                value = config.adaptiveScale,
+                                role = Role.Switch,
+                                onValueChange = { onUpdateAdaptiveScale(it) }
+                        ),
+                horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                verticalAlignment =
+                        Alignment.CenterVertically
+        ) {
+                Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                                stringResource(
+                                        R.string
+                                                .remote_desktop_adaptive_scale_label
+                                ),
+                                style =
+                                        MaterialTheme
+                                                .typography
+                                                .bodyLargeEmphasized
+                        )
+                        Text(
+                                stringResource(
+                                        R.string
+                                                .remote_desktop_adaptive_scale_desc
+                                ),
+                                style =
+                                        MaterialTheme
+                                                .typography
+                                                .bodySmall,
+                                color =
+                                        MaterialTheme
+                                                .colorScheme
+                                                .onSurfaceVariant
+                        )
+                }
+                Spacer(Modifier.width(16.dp))
+                Switch(
+                        checked = config.adaptiveScale,
+                        onCheckedChange = null
+                )
+        }
+
+        HorizontalDivider()
+
+        // ── Input & Controls section ──
+        SettingsSectionHeader(
+                stringResource(
+                        R.string
+                                .remote_desktop_section_input
+                )
+        )
+
+        // Direct Touch toggle (full width — own row so it
+        // never collides with a slider beside it)
+        Row(
+                modifier = Modifier.fillMaxWidth()
+                        .toggleable(
+                                value = directTouch,
+                                role = Role.Switch,
+                                onValueChange = { onUpdateDirectTouch(it) }
+                        ),
+                horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                verticalAlignment =
+                        Alignment.CenterVertically
+        ) {
+                Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                                stringResource(
+                                        R.string
+                                                .remote_desktop_direct_touch_label
+                                ),
+                                style =
+                                        MaterialTheme
+                                                .typography
+                                                .bodyLargeEmphasized
+                        )
+                        Text(
+                                stringResource(
+                                        R.string
+                                                .remote_desktop_direct_touch_desc
+                                ),
+                                style =
+                                        MaterialTheme
+                                                .typography
+                                                .bodySmall,
+                                color =
+                                        MaterialTheme
+                                                .colorScheme
+                                                .onSurfaceVariant
+                        )
+                }
+                Spacer(Modifier.width(16.dp))
+                Switch(
+                        checked = directTouch,
+                        onCheckedChange = null
+                )
+        }
+
+        SettingsPair(
+                isLandscape = isLandscape,
+                first = { m ->
+                        SettingSlider(
+                                label =
+                                        String.format(
+                                                stringResource(
+                                                        R.string
+                                                                .remote_desktop_pointer_speed_label
+                                                ),
+                                                pointerSpeed
+                                        ),
+                                value =
+                                        pointerSpeed,
+                                onValueChange = {
+                                        onUpdatePointerSpeed(
+                                                it
+                                        )
+                                },
+                                valueRange = 0.25f..3.0f,
+                                steps = 10,
+                                modifier = m
+                        )
+                },
+                second = { m ->
+                        SettingSlider(
+                                label =
+                                        String.format(
+                                                stringResource(
+                                                        R.string
+                                                                .remote_desktop_cursor_size_label
+                                                ),
+                                                cursorScale
+                                        ),
+                                value =
+                                        cursorScale,
+                                onValueChange = {
+                                        onUpdateCursorScale(
+                                                it
+                                        )
+                                },
+                                valueRange = 0.5f..2.5f,
+                                steps = 7,
+                                modifier = m
+                        )
+                }
+        )
+
+        SettingsPair(
+                isLandscape = isLandscape,
+                first = { m ->
+                        SettingSlider(
+                                label =
+                                        String.format(
+                                                stringResource(
+                                                        R.string
+                                                                .remote_desktop_v_scroll_short
+                                                ),
+                                                vScrollSensitivity
+                                        ),
+                                value =
+                                        vScrollSensitivity,
+                                onValueChange = {
+                                        onUpdateScrollSensitivity(
+                                                it,
+                                                hScrollSensitivity
+                                        )
+                                },
+                                valueRange = 0.1f..5.0f,
+                                steps = 20,
+                                modifier = m
+                        )
+                },
+                second = { m ->
+                        SettingSlider(
+                                label =
+                                        String.format(
+                                                stringResource(
+                                                        R.string
+                                                                .remote_desktop_h_scroll_short
+                                                ),
+                                                hScrollSensitivity
+                                        ),
+                                value =
+                                        hScrollSensitivity,
+                                onValueChange = {
+                                        onUpdateScrollSensitivity(
+                                                vScrollSensitivity,
+                                                it
+                                        )
+                                },
+                                valueRange = 0.1f..5.0f,
+                                steps = 20,
+                                modifier = m
+                        )
+                }
+        )
+
+        Text(
+                text =
+                        stringResource(
+                                R.string
+                                        .remote_desktop_controls_hint_v2
+                        ),
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                        MaterialTheme.colorScheme
+                                .onSurfaceVariant
+        )
 }

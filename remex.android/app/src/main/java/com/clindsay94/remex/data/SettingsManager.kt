@@ -178,8 +178,6 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("remote_desktop_card_shape_preset_v2")
                 val REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY =
                         floatPreferencesKey("remote_control_card_shape_preset_v2")
-                val REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY =
-                        floatPreferencesKey("remote_mouse_card_shape_preset_v2")
                 // One-time non-destructive migration off the universal clover default (decision #5).
                 val SHAPE_DEFAULTS_MIGRATED_V2_KEY = booleanPreferencesKey("shape_defaults_migrated_v2")
                 // A SEPARATE key, deliberately not a reuse of V2. V2 has already run on every
@@ -280,7 +278,6 @@ class SettingsManager(val context: Context) {
                                                 preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                         remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                         remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
-                                        remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                         splashStyle = SplashStyles.effective(
                                                 preferences[SPLASH_STYLE_KEY],
                                                 preferences[SPLASH_STYLE_MIGRATED_V3_KEY] == true,
@@ -337,7 +334,6 @@ class SettingsManager(val context: Context) {
                 val taskManagerCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteDesktopCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val remoteControlCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
-                val remoteMouseCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val splashStyle: String = SplashStyles.Default,
                 /** What the Random splash played last launch; read in the same snapshot as [splashStyle]. */
                 val lastRandomSplash: String? = null,
@@ -364,11 +360,6 @@ class SettingsManager(val context: Context) {
         val remoteControlCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
                         preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
-                }
-
-        val remoteMouseCardShapePresetFlow: Flow<Float> =
-                context.dataStore.data.map { preferences ->
-                        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val mouseFabXFlow: Flow<Float> =
@@ -804,7 +795,6 @@ class SettingsManager(val context: Context) {
                                         TASK_MANAGER_CARD_SHAPE_PRESET_KEY,
                                         REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY,
                                         REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY,
-                                        REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY,
                                 )
                                 .forEach { key ->
                                         val stored = p[key]
@@ -840,7 +830,6 @@ class SettingsManager(val context: Context) {
                 taskManagerCardShapePreset: Float,
                 remoteDesktopCardShapePreset: Float,
                 remoteControlCardShapePreset: Float,
-                remoteMouseCardShapePreset: Float,
                 splashStyle: String
         ) {
                 context.dataStore.edit { preferences ->
@@ -862,7 +851,6 @@ class SettingsManager(val context: Context) {
                                 remoteDesktopCardShapePreset
                         preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] =
                                 remoteControlCardShapePreset
-                        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
                         preferences[SPLASH_STYLE_KEY] = splashStyle
                         preferences[SPLASH_STYLE_MIGRATED_V3_KEY] = true
                 }
@@ -954,6 +942,17 @@ class SettingsManager(val context: Context) {
 
         suspend fun setPcMayChangeFiles(enabled: Boolean) {
                 context.dataStore.edit { prefs -> prefs[pcMayChangeFilesKey] = enabled }
+        }
+
+        // Home's Disconnect, kept across process death (RemEx-172ba). Not exported: it is this phone's
+        // connection state, not a preference to carry to another phone.
+        private val userDisconnectedKey = booleanPreferencesKey("user_disconnected")
+
+        val userDisconnectedFlow: Flow<Boolean> =
+                context.dataStore.data.map { prefs -> prefs[userDisconnectedKey] ?: false }
+
+        suspend fun setUserDisconnected(disconnected: Boolean) {
+                context.dataStore.edit { prefs -> prefs[userDisconnectedKey] = disconnected }
         }
 
         // Files: "Show hidden items" (RemEx-wqo7a.6). Off by default, like Windows Explorer; only
@@ -1213,6 +1212,26 @@ class SettingsManager(val context: Context) {
         // and the parsing live in RecentConnections, where they can be tested without DataStore.
 
         private val recentConnectionsKey = stringPreferencesKey(RecentConnections.KeyName)
+
+        // The share target's recent destination folders (RemEx-172ba); rules in ShareRecentFolders.
+        private val shareRecentFoldersKey = stringPreferencesKey("share_recent_folders_v1")
+
+        val shareRecentFoldersFlow: Flow<List<com.clindsay94.remex.share.ShareRecentFolder>> =
+                context.dataStore.data.map { prefs ->
+                        com.clindsay94.remex.share.ShareRecentFolders.parse(prefs[shareRecentFoldersKey])
+                }
+
+        /** Read-modify-write inside the transaction, like [recordRecentConnection]. */
+        suspend fun recordShareRecentFolder(folder: com.clindsay94.remex.share.ShareRecentFolder) {
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                com.clindsay94.remex.share.ShareRecentFolders.record(
+                                        com.clindsay94.remex.share.ShareRecentFolders.parse(prefs[shareRecentFoldersKey]),
+                                        folder
+                                )
+                        prefs[shareRecentFoldersKey] = com.clindsay94.remex.share.ShareRecentFolders.encode(updated)
+                }
+        }
 
         val recentConnectionsFlow: Flow<List<RecentConnection>> =
                 context.dataStore.data.map { prefs ->

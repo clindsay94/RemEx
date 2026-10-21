@@ -124,7 +124,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun toggleConnection() = RemexClientManager.toggleConnection()
+    /** The PC card's Disconnect: a real one, with no auto-reconnect until the person connects again. */
+    fun disconnect() = RemexClientManager.disconnect(getApplication())
 
     fun setHomePin(sensorName: String, pinned: Boolean) = RemexClientManager.setHomePin(sensorName, pinned)
 

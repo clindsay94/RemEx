@@ -17,6 +17,9 @@ package com.clindsay94.remex
  * exception [TelemetryBackgroundGate] makes), so leaving it disconnected freezes it. It only matters
  * while the screen is on, which is the one place screen state enters the decision.
  *
+ * **DISCONNECTED ON PURPOSE, NO ATTEMPT.** Home's Disconnect closes the socket itself; this only keeps
+ * the heartbeat from undoing it until the person connects again.
+ *
  * The gate only ever PAUSES attempts; it never tears down a live connection, and the caller resumes
  * the moment it reopens. Plain Kotlin with no Android dependency so the table is unit-testable.
  */
@@ -35,13 +38,16 @@ internal object ReconnectGate {
      * @param foreground whether any of the app's UI is started ([RemexClientManager.appForeground]).
      * @param screenInteractive whether the screen is on (PowerManager.isInteractive / SCREEN_ON/OFF).
      * @param widgetPlaced whether a hardware widget is on the home screen and needs the live stream.
+     * @param userDisconnected the person tapped Disconnect and has not connected since (RemEx-172ba).
+     *   Nothing reconnects behind their back, whatever else is true; a manual connect clears it.
      */
     fun allows(
             networkAvailable: Boolean,
             foreground: Boolean,
             screenInteractive: Boolean,
             widgetPlaced: Boolean,
-    ): Boolean = networkAvailable && (foreground || (screenInteractive && widgetPlaced))
+            userDisconnected: Boolean = false,
+    ): Boolean = !userDisconnected && networkAvailable && (foreground || (screenInteractive && widgetPlaced))
 
     /**
      * The heartbeat's backoff after [consecutiveFailures] failed attempts:
