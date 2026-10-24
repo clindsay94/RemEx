@@ -104,6 +104,12 @@ It also reorganises where things live on both apps, so each page is grouped by w
   pop-up's own Open transfers command (the tray menu's **Open transfers** item is unchanged), and
   `LayoutSettingsViewModel`, which only served the old Personalize › Layout controls.
 
+### Changed (RemEx-tzlnu)
+
+- Android: the release AAB now includes `libRemexCore.so.dbg`, so native crashes in Play's Android vitals show
+  function names and lines. `remex.core` builds the Android library unstripped and AGP strips it for the APK, so
+  the installed app is the same size.
+
 ### Internal (RemEx-172ba)
 
 - `ShellViewModel.TransferQueue` exposes the session's one transfer queue; the tray Send tile uses it.

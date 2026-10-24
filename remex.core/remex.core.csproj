@@ -30,6 +30,9 @@
     <AssemblyName>libRemexCore</AssemblyName>
     <AndroidNativeAotGenerateJniOnLoad>false</AndroidNativeAotGenerateJniOnLoad>
     <NativeLibLinkerArgs>-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384</NativeLibLinkerArgs>
+    <!-- Ship the unstripped .so to Gradle: AGP strips it for the APK and, with debugSymbolLevel FULL,
+         puts its symbols in the AAB so Play's Android vitals can symbolicate native crashes (RemEx-tzlnu). -->
+    <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">

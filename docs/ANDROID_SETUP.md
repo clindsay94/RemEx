@@ -334,6 +334,8 @@ The app ships no analytics or crash-reporting SDK, so the Play data safety form 
 
 - The release AAB carries the R8 mapping and full native debug symbols (`ndk { debugSymbolLevel = "FULL" }`),
   so Play symbolicates both Kotlin and `libRemexCore.so` stack traces. Nothing needs uploading separately.
+  This only works because `remex.core.csproj` sets `StripSymbols=false` for Android: AGP strips the library
+  for the APK and extracts `libRemexCore.so.dbg` into the bundle. A pre-stripped .so leaves Play with nothing.
 - Only Play installs from users who share usage and diagnostics with Google are reported. GitHub APK installs
   are not.
 - `app/build.gradle.kts` fails the build if the google-services, Crashlytics or Perf plugin is applied, or if
