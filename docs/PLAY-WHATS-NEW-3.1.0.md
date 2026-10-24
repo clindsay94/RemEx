@@ -3,73 +3,91 @@
 Paste each block into the matching language on the Play Console release page. Each one is 500 characters or fewer. The tags are Play's locale codes.
 
 <en-US>
-• A new Files screen: your phone and your PC in one folder tree
-• Tap a file to preview it: photos with zoom, and text, code and logs in color, with Live to follow a log
-• SHA-256 fingerprints: Verified transfers, copy, compare and check a file against the copy on your PC
-• Send to PC and Save to phone, into any folder you pick
-• Add phone folders to browse them; your PC only sees them if you share them
+• Pages moved: More now lists Routines, Files, Sensors, PCs, Settings, and Help & diagnostics. Connection is now PCs
+• Home's PC card has Switch PC and Disconnect
+• Pick stream quality, frame rate and touch on the Desktop tab before you start
+• New Files screen: phone and PC in one folder tree, previews, and SHA-256 checks
+• Send to PC from the share sheet lets you choose the PC and folder
+• Tips on first visit and lots of small fixes
+• No analytics or crash reporting SDKs anymore
 </en-US>
 
 <es-ES>
-• Nueva pantalla Archivos: el teléfono y el PC en un mismo árbol de carpetas
-• Toca un archivo para verlo: fotos con zoom, y texto, código y registros en color, con En vivo para seguir un registro
-• Huellas SHA-256: transferencias verificadas; copia, compara y comprueba un archivo con la copia del PC
-• Enviar al PC y Guardar en el teléfono, en la carpeta que elijas
-• Añade carpetas del teléfono para verlas; el PC solo las ve si las compartes
+• Páginas reorganizadas: Más incluye Rutinas, Archivos, Sensores, PC, Ajustes y Ayuda y diagnóstico. Conexión ahora es PC
+• La tarjeta del PC en Inicio tiene Cambiar de PC y Desconectar
+• Elige calidad, fotogramas y táctil en Escritorio antes de empezar
+• Nueva pantalla Archivos: teléfono y PC en un árbol, vistas previas y SHA-256
+• Enviar al PC desde Compartir te deja elegir PC y carpeta
+• Consejos en la primera visita y muchos arreglos
+• Sin SDK de analítica ni de informes de fallos
 </es-ES>
 
 <fr-FR>
-• Nouvel écran Fichiers : le téléphone et le PC dans une même arborescence
-• Touchez un fichier pour l'afficher : photos avec zoom, texte, code et journaux en couleur, avec En direct pour suivre un journal
-• Empreintes SHA-256 : transferts vérifiés, copie, comparaison et contrôle d'un fichier avec la copie du PC
-• Envoyer au PC et Enregistrer sur le téléphone, dans le dossier de votre choix
-• Ajoutez des dossiers du téléphone ; le PC ne les voit que si vous les partagez
+• Pages réorganisées : Plus contient Routines, Fichiers, Capteurs, PC, Paramètres et Aide et diagnostic. Connexion s'appelle PC
+• La carte du PC sur l'accueil propose Changer de PC et Déconnecter
+• Qualité, images/s et tactile se règlent dans Bureau avant de lancer
+• Nouvel écran Fichiers : téléphone et PC réunis, aperçus et SHA-256
+• Envoyer au PC depuis Partager : choix du PC et du dossier
+• Astuces au premier passage et nombreux correctifs
+• Plus aucun SDK d'analyse ni de rapport de plantage
 </fr-FR>
 
 <hi-IN>
-• नई फ़ाइलें स्क्रीन: फ़ोन और पीसी एक ही फ़ोल्डर ट्री में
-• फ़ाइल पर टैप करके देखें: ज़ूम वाली फ़ोटो, रंगों में टेक्स्ट, कोड और लॉग, और लॉग देखने के लिए लाइव
-• SHA-256 फ़िंगरप्रिंट: सत्यापित ट्रांसफ़र; कॉपी करें, तुलना करें और पीसी वाली कॉपी से जाँचें
-• पीसी पर भेजें और फ़ोन पर सहेजें, अपने चुने फ़ोल्डर में
-• फ़ोन के फ़ोल्डर जोड़ें; पीसी उन्हें तभी देखता है जब आप साझा करें
+• पेज बदले: अधिक में अब रूटीन, फ़ाइलें, सेंसर, पीसी, सेटिंग्स और सहायता और जाँच हैं। कनेक्शन अब पीसी है
+• होम के पीसी कार्ड पर पीसी बदलें और डिस्कनेक्ट करें बटन
+• स्ट्रीम शुरू करने से पहले डेस्कटॉप टैब पर क्वालिटी, फ़्रेम रेट और टच चुनें
+• नई फ़ाइलें स्क्रीन: फ़ोन और पीसी एक फ़ोल्डर ट्री में, प्रीव्यू और SHA-256 जाँच
+• शेयर शीट से पीसी पर भेजें में पीसी और फ़ोल्डर चुनें
+• पहली बार आने पर टिप्स और कई छोटे सुधार
+• अब कोई एनालिटिक्स या क्रैश रिपोर्टिंग SDK नहीं
 </hi-IN>
 
 <id>
-• Layar File baru: ponsel dan PC dalam satu pohon folder
-• Ketuk file untuk pratinjau: foto dengan zoom, serta teks, kode, dan log berwarna, dengan Langsung untuk mengikuti log
-• Sidik jari SHA-256: transfer terverifikasi; salin, bandingkan, dan periksa file dengan salinan di PC
-• Kirim ke PC dan Simpan ke ponsel, ke folder pilihan Anda
-• Tambahkan folder ponsel; PC hanya melihatnya jika Anda membagikannya
+• Halaman dipindah: Lainnya kini berisi Rutinitas, File, Sensor, PC, Pengaturan, serta Bantuan & diagnostik. Koneksi kini bernama PC
+• Kartu PC di Beranda punya Ganti PC dan Putuskan
+• Pilih kualitas, frame rate, dan sentuh di tab Desktop sebelum mulai
+• Layar File baru: ponsel dan PC dalam satu pohon folder, pratinjau, dan cek SHA-256
+• Kirim ke PC dari menu bagikan bisa memilih PC dan folder
+• Tips saat pertama dibuka dan banyak perbaikan kecil
+• Tidak ada lagi SDK analitik atau laporan error
 </id>
 
 <pl-PL>
-• Nowy ekran Pliki: telefon i komputer w jednym drzewie folderów
-• Dotknij pliku, aby go zobaczyć: zdjęcia z powiększeniem, tekst, kod i logi w kolorze, a Na żywo śledzi log
-• Odciski SHA-256: zweryfikowane przesyłanie; kopiuj, porównuj i sprawdzaj plik z kopią na komputerze
-• Wyślij na komputer i Zapisz na telefonie, w wybranym folderze
-• Dodaj foldery z telefonu; komputer widzi je tylko po udostępnieniu
+• Nowy układ: Więcej ma Rutyny, Pliki, Czujniki, Komputery, Ustawienia oraz Pomoc i diagnostyka. Połączenie to teraz Komputery
+• Karta komputera na ekranie głównym ma Zmień komputer i Rozłącz
+• Jakość, klatki i dotyk ustawisz na karcie Pulpit przed startem
+• Nowy ekran Pliki: telefon i komputer razem, podglądy i SHA-256
+• Wyślij na komputer z menu udostępniania: wybór komputera i folderu
+• Wskazówki przy pierwszej wizycie i wiele poprawek
+• Bez SDK analityki i raportów o awariach
 </pl-PL>
 
 <pt-BR>
-• Nova tela Arquivos: o celular e o PC em uma única árvore de pastas
-• Toque em um arquivo para visualizar: fotos com zoom, e texto, código e logs em cores, com Ao vivo para acompanhar um log
-• Impressões digitais SHA-256: transferências verificadas; copie, compare e confira um arquivo com a cópia no PC
-• Enviar ao PC e Salvar no celular, na pasta que você escolher
-• Adicione pastas do celular; o PC só as vê se você compartilhar
+• Páginas mudaram: Mais agora tem Rotinas, Arquivos, Sensores, PCs, Configurações e Ajuda e diagnóstico. Conexão agora é PCs
+• O cartão do PC no Início tem Trocar de PC e Desconectar
+• Escolha qualidade, quadros e toque na aba Área de trabalho antes de começar
+• Nova tela Arquivos: celular e PC em uma árvore, prévias e SHA-256
+• Enviar ao PC pelo compartilhar deixa escolher o PC e a pasta
+• Dicas na primeira visita e muitas correções
+• Sem SDK de análise ou de relatórios de falhas
 </pt-BR>
 
 <tr-TR>
-• Yeni Dosyalar ekranı: telefon ve bilgisayar tek bir klasör ağacında
-• Önizlemek için dosyaya dokunun: yakınlaştırılabilir fotoğraflar, renkli metin, kod ve günlükler; günlüğü izlemek için Canlı
-• SHA-256 parmak izleri: doğrulanmış aktarımlar; dosyayı kopyalayın, karşılaştırın, bilgisayardaki kopyayla denetleyin
-• Bilgisayara gönder ve Telefona kaydet, seçtiğiniz klasöre
-• Telefon klasörleri ekleyin; bilgisayar onları yalnızca paylaşırsanız görür
+• Sayfalar taşındı: Diğer'de Rutinler, Dosyalar, Sensörler, Bilgisayarlar, Ayarlar ve Yardım ve tanılama var. Bağlantı artık Bilgisayarlar
+• Ana sayfa kartında Bilgisayar değiştir ve Bağlantıyı kes
+• Yayından önce Masaüstü sekmesinde kalite, kare hızı ve dokunmayı seçin
+• Yeni Dosyalar ekranı: telefon ve bilgisayar bir arada, önizleme ve SHA-256
+• Paylaş menüsünden gönderirken bilgisayarı ve klasörü seçin
+• İlk ziyarette ipuçları ve birçok düzeltme
+• Artık analiz veya çökme raporu SDK'sı yok
 </tr-TR>
 
 <uk>
-• Новий екран «Файли»: телефон і ПК в одному дереві папок
-• Торкніться файлу для перегляду: фото з масштабуванням, текст, код і журнали в кольорі, а «Наживо» стежить за журналом
-• Відбитки SHA-256: перевірені передавання; копіюйте, порівнюйте й перевіряйте файл із копією на ПК
-• Надіслати на ПК і Зберегти на телефоні, у вибрану папку
-• Додавайте папки телефона; ПК бачить їх, лише якщо ви поділитеся
+• Новий порядок: у «Більше» є Рутини, Файли, Датчики, ПК, Налаштування, Довідка та діагностика. «З'єднання» тепер «ПК»
+• Картка ПК на головній має «Змінити ПК» і «Відключитися»
+• Якість, кадри й дотик обирайте на вкладці «Робочий стіл» до запуску
+• Новий екран «Файли»: телефон і ПК разом, перегляд і SHA-256
+• «Надіслати на ПК» з меню «Поділитися»: вибір ПК і папки
+• Підказки під час першого відвідування й багато виправлень
+• Більше жодних SDK аналітики чи звітів про збої
 </uk>

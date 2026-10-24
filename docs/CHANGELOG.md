@@ -88,6 +88,11 @@ It also reorganises where things live on both apps, so each page is grouped by w
 
 - Android: the "Remote mouse" card shape in Personalize › Geometry and its saved setting. The trackpad uses the
   Desktop shape.
+- Android: Firebase (Analytics and Crashlytics) and the google-services/Crashlytics Gradle plugins. Crash reports
+  now come from Play's Android vitals. ML Kit's diagnostics upload is switched off in the manifest, so the app
+  sends nothing to Google and the Play "No data collected" listing is accurate. The build fails if any of it
+  comes back (`NoTelemetrySdkTest` plus a dependency ban in `app/build.gradle.kts`). `androidx.documentfile`,
+  which only arrived through Firebase, is now declared directly. (RemEx-6cci2)
 - PC: unused strings `Settings_Connection`, `Settings_PinnedSensors` and `Settings_PinnedSensorsDesc`, the tray
   pop-up's own Open transfers command (the tray menu's **Open transfers** item is unchanged), and
   `LayoutSettingsViewModel`, which only served the old Personalize › Layout controls.

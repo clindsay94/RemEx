@@ -327,17 +327,22 @@ RemEx stores its **pinned host SPKI hashes** and **per-host reconnect secrets** 
 
 ---
 
-## Firebase & Crashlytics
+## Crash reports: Android vitals, no Firebase
 
-For production builds, Firebase Crashlytics is used for crash reporting and NDK symbol analysis.
+The app ships no analytics or crash-reporting SDK, so the Play data safety form can say "No data collected"
+(RemEx-6cci2). Crashes and ANRs show up in Play Console under **Android vitals › Crashes and ANRs**.
 
-### Prerequisites
-1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
-2. Add an Android app with package name `com.clindsay94.remex`.
-3. Download `google-services.json` and place it in `remex.android/app/`.
+- The release AAB carries the R8 mapping and full native debug symbols (`ndk { debugSymbolLevel = "FULL" }`),
+  so Play symbolicates both Kotlin and `libRemexCore.so` stack traces. Nothing needs uploading separately.
+- Only Play installs from users who share usage and diagnostics with Google are reported. GitHub APK installs
+  are not.
+- `app/build.gradle.kts` fails the build if the google-services, Crashlytics or Perf plugin is applied, or if
+  Firebase Analytics/Crashlytics/Perf/Sessions, `play-services-measurement*` or `play-services-ads-identifier`
+  reaches any classpath, including transitively. `NoTelemetrySdkTest` keeps that ban in place.
+- ML Kit's bundled barcode scanner uploads usage diagnostics through datatransport. The manifest removes
+  `TransportBackendDiscovery`, so those events have nowhere to go and scanning runs fully on-device.
 
-### NDK Symbol Upload
-The build system is configured to automatically upload unstripped native symbols (`libRemexCore.so`) to Firebase. This enables full C# stack traces for native crashes.
+Adding any of these back means changing the Play data safety form first. That's Connor's call, not a fix.
 
 ---
 

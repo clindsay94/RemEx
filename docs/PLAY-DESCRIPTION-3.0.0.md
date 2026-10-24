@@ -50,7 +50,7 @@ PRIVATE BY DESIGN
 • No account and no cloud service. Your phone talks straight to your PC
 • Pairing uses a QR code or PIN, and every connection is encrypted and pinned to your PC
 • Your PC decides what each phone can see and do, and you can remove a phone at any time
-• Crash reports and basic app usage stats go to Google Firebase so I can find and fix bugs
+• No analytics and no tracking. The app doesn't send anything to me or to anyone else
 
 Available in English, Español, Français, हिन्दी, Bahasa Indonesia, Polski, Português (Brasil), Türkçe and Українська.
 

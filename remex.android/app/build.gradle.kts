@@ -12,8 +12,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     id("kotlin-parcelize")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
 }
 val repoRootDir: File = rootProject.projectDir.parentFile
 val remexAndroidApplicationId = "com.clindsay94.remex"
@@ -190,8 +188,7 @@ android {
         // the composables the tests call, and ui-test-manifest (the ComponentActivity the Compose
         // rule launches) must never ship in release. The ".instrumented" suffix installs it beside
         // the real app, so connectedInstrumentedAndroidTest can't replace or uninstall it (and its
-        // pairings) on a daily-driver phone. Firebase is off for this build (see the
-        // processInstrumentedGoogleServices block below).
+        // pairings) on a daily-driver phone.
         create("instrumented") {
             initWith(getByName("release"))
             isMinifyEnabled = false
@@ -280,6 +277,16 @@ android {
                         .withPropertyName("mcuVectorsPcCopy")
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
+
+                // NoTelemetrySdkTest reads these as text, which are not test inputs on their own.
+                it.inputs
+                        .files(
+                                File(repoRoot, "remex.android/build.gradle.kts"),
+                                File(repoRoot, "remex.android/app/build.gradle.kts"),
+                                File(repoRoot, "remex.android/app/src/main/AndroidManifest.xml")
+                        )
+                        .withPropertyName("telemetryBanBuildFiles")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
 
                 // Live Handshake splash (RemEx-8g6n0): LiveHandshakeDirectorTest reads the shared
                 // director vectors and LiveHandshakeShaderParityTest compares the PC shader byte for
@@ -1064,20 +1071,32 @@ tasks.matching { it.name == "mergeInstrumentedNativeLibs" || it.name == "mergeIn
     dependsOn(syncRemexCoreReleaseSo)
 }
 
-// google-services.json has no client for com.clindsay94.remex.instrumented, so this task would
-// fail the build. Skipping it leaves the test build without google_app_id: FirebaseApp never
-// initialises, so instrumented runs send no analytics or crash reports to the real project.
-tasks.matching { it.name == "processInstrumentedGoogleServices" }.configureEach {
-    enabled = false
+// Connor's decision (RemEx-6cci2): no analytics or crash-reporting SDK, so the Play data safety
+// form's "No data collected" stays true. Crashes come from Play's Android vitals instead. Firebase
+// has been re-added more than once, so any build that pulls it in, even transitively, fails here.
+val bannedTelemetryPlugins = listOf("com.google.gms.google-services", "com.google.firebase.crashlytics", "com.google.firebase.firebase-perf")
+bannedTelemetryPlugins.forEach { id ->
+    pluginManager.withPlugin(id) {
+        throw GradleException("Plugin $id is banned: RemEx ships no analytics or crash SDK (RemEx-6cci2). See docs/ANDROID_SETUP.md.")
+    }
+}
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        val group = requested.group
+        val name = requested.name
+        val banned =
+            (group == "com.google.firebase" &&
+                listOf("firebase-analytics", "firebase-crashlytics", "firebase-perf", "firebase-sessions").any(name::startsWith)) ||
+                (group == "com.google.android.gms" &&
+                    listOf("play-services-measurement", "play-services-ads-identifier").any(name::startsWith))
+        if (banned) {
+            throw GradleException("$group:$name is banned: RemEx ships no analytics or crash SDK (RemEx-6cci2). See docs/ANDROID_SETUP.md.")
+        }
+    }
 }
 
 dependencies {
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-crashlytics-ndk")
-    implementation("com.google.firebase:firebase-crashlytics")
-
+    implementation(libs.androidx.documentfile)
     implementation(libs.material)
     implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.graphics.path)
@@ -1136,9 +1155,4 @@ dependencies {
     // Declares the ComponentActivity that createAndroidComposeRule launches. It has to be in the
     // app under test, and only the instrumented build may carry it (RemEx-3dvre).
     "instrumentedImplementation"(libs.androidx.compose.ui.test.manifest)
-}
-
-android.buildTypes.getByName("release").configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
-    nativeSymbolUploadEnabled = true
-    unstrippedNativeLibsDir = layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib").get().asFile.path
 }

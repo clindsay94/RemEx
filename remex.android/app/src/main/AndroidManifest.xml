@@ -39,12 +39,8 @@
     <uses-permission android:name="android.permission.USE_LOOPBACK_INTERFACE" />
 
     <!--
-        RemEx has no ads and no ad-attribution, so it opts out of the advertising ID entirely.
-        Firebase Analytics (bundled with Crashlytics) otherwise auto-merges these two permissions
-        and collects the ad ID by default. Removing them here — plus disabling collection via the
-        google_analytics_adid_collection_enabled meta-data in <application> below — makes the Play
-        Console "this app does NOT use an advertising ID" declaration truthful and permanent.
-        Analytics and Crashlytics continue to work without it.
+        RemEx has no ads, so the Play Console says it does not use an advertising ID. These removals
+        keep that true if a future Google library tries to merge the ad-ID permissions back in.
     -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
@@ -75,8 +71,12 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="35">
 
-        <!-- Opt out of Firebase Analytics advertising-ID collection (see the AD_ID removal above). -->
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <!-- ML Kit's bundled barcode scanner uploads usage and diagnostics to Google through
+             datatransport. With no registered backend those events are dropped and scanning still
+             runs on-device, so the Play "No data collected" listing stays true (RemEx-6cci2). -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="remove" />
 
         <service
             android:name=".tile.RemexLockTileService"

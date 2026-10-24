@@ -69,6 +69,10 @@ back, because that only happens when a tool regenerates them:
    Each guard there exists because breaking it once failed silently: a black screen, a dead stream, or
    a bricked pairing, with no log pointing back to the cause. The file is maintained by hand and
    anchored to `file:line`. Never regenerate it, and never copy its guards out.
+8. **No Firebase, analytics, or crash-reporting SDK in the Android app** (Connor, RemEx-6cci2). The Play
+   data safety form says "No data collected", and crashes come from Play's Android vitals. Firebase has
+   been removed several times and kept coming back. Don't add it, don't suggest it, and don't delete
+   the build ban or `NoTelemetrySdkTest` to make a build pass. See `docs/ANDROID_SETUP.md`.
 
 ## Workflow
 - **Beads.** Every change gets a bead: `bd create`, then `bd update <id> --claim`, then `bd close <id>`
