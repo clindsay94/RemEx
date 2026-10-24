@@ -6,7 +6,8 @@ namespace Remex.Core.Tests;
 
 /// <summary>
 /// Pins the bounded send (perf audit P0-12): a write that cannot complete aborts the socket and says
-/// so, while the caller's own cancellation stays a cancellation.
+/// so, while the caller's own cancellation stays a cancellation. A close the peer never answers
+/// aborts too (RemEx-3vllo).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -70,12 +71,25 @@ public sealed class SocketLivenessTests : IDisposable
         Assert.IsAssignableFrom<OperationCanceledException>(ex);
     }
 
+    [Fact]
+    public async Task ACloseThePeerNeverAnswersAbortsInsteadOfHanging()
+    {
+        // The Close frame goes out, and nothing ever comes back (RemEx-3vllo).
+        await using var stream = new StallingStream(acceptWrites: true);
+        using var socket = WebSocket.CreateFromStream(stream, isServer: false, subProtocol: null, Timeout.InfiniteTimeSpan);
+
+        await SocketLiveness.CloseOrAbortAsync(socket).WaitAsync(TestBudget);
+
+        Assert.Equal(WebSocketState.Aborted, socket.State);
+    }
+
     /// <summary>
     /// A transport whose writes never complete on their own — a peer that has stopped acknowledging.
     /// Like a real socket stream, a stalled write is released by cancellation or by disposal (which is
-    /// what <see cref="WebSocket.Abort"/> does to it), and fails when released.
+    /// what <see cref="WebSocket.Abort"/> does to it), and fails when released. With
+    /// <c>acceptWrites</c> the writes go through and only the reads park: a peer that never replies.
     /// </summary>
-    private sealed class StallingStream : Stream
+    private sealed class StallingStream(bool acceptWrites = false) : Stream
     {
         private readonly TaskCompletionSource _disposed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -87,6 +101,7 @@ public sealed class SocketLivenessTests : IDisposable
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (acceptWrites) return;
             await _disposed.Task.WaitAsync(cancellationToken);
             throw new ObjectDisposedException(nameof(StallingStream));
         }

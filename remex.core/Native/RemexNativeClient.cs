@@ -299,10 +299,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
             await drained();
         if (socket != null)
         {
-            if (socket.State == WebSocketState.Open)
-            {
-                try { await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone; the disconnect happens either way */ }
-            }
+            await SocketLiveness.CloseOrAbortAsync(socket);
             socket.Dispose();
         }
 

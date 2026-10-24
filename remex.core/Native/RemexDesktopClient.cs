@@ -734,10 +734,7 @@ public sealed class RemexDesktopClient : IDisposable
 
         if (_webSocket != null)
         {
-            if (_webSocket.State == WebSocketState.Open)
-            {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone */ }
-            }
+            await SocketLiveness.CloseOrAbortAsync(_webSocket);
             _webSocket.Dispose();
             _webSocket = null;
         }

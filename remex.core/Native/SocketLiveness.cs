@@ -64,6 +64,39 @@ internal static class SocketLiveness
 
     internal static TimeSpan SendTimeout => SendTimeoutOverrideForTests ?? DefaultSendTimeout;
 
+    /// <summary>
+    /// How long a disconnect waits for the host to answer its Close frame. The host replies within
+    /// milliseconds on a LAN; past this the link is treated as dead and the socket is aborted.
+    /// </summary>
+    internal static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Sends a polite Close if <paramref name="socket"/> is still open and waits at most
+    /// <see cref="CloseTimeout"/> for the reply, aborting it otherwise. Never throws.
+    /// </summary>
+    /// <remarks>
+    /// <c>CloseAsync</c> waits for the peer's Close frame, and an unbounded wait hung every disconnect,
+    /// and so every <c>ConnectAsync</c>, on a peer that never read it: a frozen host or a half-open
+    /// link, for up to the keep-alive window (RemEx-3vllo). The socket is still Open here whenever its
+    /// receive loop exits on the cancelled token without a <c>ReceiveAsync</c> pending to abort it.
+    /// </remarks>
+    internal static async Task CloseOrAbortAsync(WebSocket socket)
+    {
+        if (socket.State != WebSocketState.Open)
+            return;
+
+        using var deadline = new CancellationTokenSource(CloseTimeout);
+        try
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", deadline.Token);
+        }
+        catch
+        {
+            // A polite close on a socket that may already be gone; the disconnect happens either way.
+            socket.Abort();
+        }
+    }
+
     /// <summary>Configures Ping/Pong keep-alive with a timeout. Call before <c>ConnectAsync</c>.</summary>
     internal static void ApplyKeepAlive(ClientWebSocketOptions options)
     {

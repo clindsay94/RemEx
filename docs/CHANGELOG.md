@@ -84,6 +84,13 @@ It also reorganises where things live on both apps, so each page is grouped by w
   finished with `pairing_complete`.
 - Phone core: a Disconnect still in progress when a new connect starts no longer closes that new connection.
 
+### Fixed (RemEx-3vllo)
+
+- Phone core: disconnecting, and so reconnecting or switching PC, no longer hangs when the PC never answers the
+  goodbye. Both phone sockets now wait at most 2 seconds for the PC's reply to a close, then drop the connection.
+  The wait used to have no limit, and it stalled whenever the receive loop had already stopped without a read
+  in flight, for up to the keep-alive window against a frozen PC or a half-open link.
+
 ### Removed (RemEx-172ba)
 
 - Android: the "Remote mouse" card shape in Personalize › Geometry and its saved setting. The trackpad uses the
