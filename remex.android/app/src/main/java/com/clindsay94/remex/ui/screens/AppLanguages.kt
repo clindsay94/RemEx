@@ -11,9 +11,9 @@ import java.util.Locale
  */
 internal object AppLanguages {
 
-    // The names the reviewed languages have always shown. Machine-translated ones use the
-    // platform's own name for the language, in that language.
-    private val reviewedNames =
+    // The picker names the first nine languages have always shown (a name, not a translation:
+    // Gemini now writes all of them but English). Later languages use the platform's own name.
+    private val curatedNames =
             linkedMapOf(
                     "en" to "English",
                     "es" to "Español",
@@ -36,7 +36,7 @@ internal object AppLanguages {
     }
 
     fun nativeName(tag: String): String {
-        reviewedNames[tag]?.let { return it }
+        curatedNames[tag]?.let { return it }
         val locale = Locale.forLanguageTag(tag)
         val name = locale.getDisplayName(locale)
         if (name.isBlank() || name.equals(tag, ignoreCase = true)) return tag
@@ -63,7 +63,7 @@ internal object AppLanguages {
 
     fun supportedTags(context: Context): List<String> {
         val locales = LocaleConfig.fromContextIgnoringOverride(context).supportedLocales
-        if (locales == null || locales.isEmpty) return reviewedNames.keys.toList()
+        if (locales == null || locales.isEmpty) return curatedNames.keys.toList()
         return (0 until locales.size()).map { locales.get(it).toLanguageTag() }
     }
 }

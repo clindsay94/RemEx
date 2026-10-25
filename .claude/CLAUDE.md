@@ -171,7 +171,10 @@ dotnet test Remex.sln
   - Autostart is `scripts/autostart-remex.ps1`: task `RemEx`, `RunLevel=Highest`, `InteractiveToken` (RemEx-aep).
 - **Localization.** Every user-facing string in `remex.agent` goes through `Localization/`.
   - There are 9 languages (en, es, fr, hi, id, pl, pt-BR, tr, uk) with live switching, and 9 locale
-    files on each platform.
+    files on the PC. On Android only English is hand-written; every other `values-*` folder (48) is Play's
+    machine translation. Add a string to `values/strings.xml`, then run
+    `uv run python scripts/import_play_translations.py --fill-english` so release lint passes until the next
+    Play import.
   - Never put `string.Format` or string interpolation in UI-bound properties. Logs and exception
     messages can stay in English.
   - **Bulk-edit `.resx`/`.xml` files with a Python script and explicit UTF-8, never PowerShell string

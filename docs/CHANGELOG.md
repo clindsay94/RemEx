@@ -20,10 +20,22 @@ It also reorganises where things live on both apps, so each page is grouped by w
 
 **Phone**
 - `scripts/import_play_translations.py` copies Google Play's machine translations of the app strings into the
-  phone app, so the GitHub APK can carry the extra languages Play installs get. It only adds languages we don't
-  ship yet and never touches the 9 reviewed ones. It escapes the text for Android, skips any translation whose
-  format arguments don't match English, keeps values already imported unless you pass `--update`, and has a
-  `--dry-run`.
+  phone app, so the GitHub APK can carry the languages Play installs get. It never touches English. It escapes the
+  text for Android, skips any translation whose format arguments don't match English, keeps values already imported
+  unless you pass `--update`, and has a `--dry-run`.
+- `import_play_translations.py --fill-english` needs no Play export. A new English string used to fail the release
+  lint (`MissingTranslation`) for every other language until someone uploaded a bundle to Play and re-imported. This
+  copies the English text into each language for every key it lacks (a plural gets that language's own quantities),
+  drops keys English no longer has, and never touches English. A later normal import replaces each English copy with
+  Play's translation without `--update`. `verify.ps1` prints the command when lint reports `MissingTranslation`. It
+  is never run for you.
+- Google Play now translates every phone language but English. Spanish, French, Hindi, Indonesian, Polish,
+  Brazilian Portuguese, Turkish and Ukrainian were hand-translated and are imported from Play like the rest (Play's
+  `pt` column becomes `values-pt-rBR`). Their hand-written plurals moved into the plurals supplement. Play's text
+  matched the old text except for 8 to 10 strings in each language other than Brazilian Portuguese (the keyboard key
+  names, which now stay English like every other language's); Brazilian Portuguese changed in 862 strings. The
+  importer keeps an existing translation over Play's when Play flattened its paragraph breaks. The PC's
+  translations are unchanged.
 - The phone app now comes in 40 more languages, machine-translated by Google Play and not reviewed: Arabic,
   Bangla, Bulgarian, Catalan, Chinese (Simplified), Croatian, Czech, Danish, Dutch, Estonian, Finnish, German,
   Greek, Gujarati, Hebrew, Hungarian, Icelandic, Italian, Japanese, Kannada, Korean, Latvian, Lithuanian,
@@ -43,9 +55,11 @@ It also reorganises where things live on both apps, so each page is grouped by w
   drift apart.
 - Page titles pick a font that covers each new language's script: Victor Mono for Russian, Bulgarian, Greek and
   Vietnamese, the system font for Indic, Arabic, Hebrew, Persian, Urdu, Thai, Chinese, Japanese and Korean.
-- `scripts/check-localization.ps1` treats any extra Android language as machine-translated: it still fails on
-  broken placeholders and orphaned, mistyped or empty keys, but counts missing keys instead of reporting them
-  and leaves those languages out of the staleness and untranslated checks. `verify.ps1` runs the importer's tests.
+- `scripts/check-localization.ps1` treats every Android language but English as machine-translated: it still fails
+  on broken placeholders and orphaned, mistyped or empty keys, but counts missing keys instead of reporting them
+  and leaves those languages out of the staleness and untranslated checks (so an English copy from
+  `--fill-english` is not flagged). The 241 baseline entries for the eight former Android languages were removed.
+  `verify.ps1` runs the importer's tests. `KeycapAccessibleNameTests` now requires the 12 keys in every language.
 
 ### Changed: where things live now (RemEx-172ba)
 

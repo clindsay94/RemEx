@@ -59,7 +59,7 @@ class AppLanguagesTest {
     }
 
     @Test
-    fun `the reviewed languages keep the names they have always shown`() {
+    fun `the first nine languages keep the picker names they have always shown`() {
         val expected = listOf(
                 "en" to "English",
                 "es" to "Español",
@@ -75,7 +75,7 @@ class AppLanguagesTest {
     }
 
     @Test
-    fun `machine-translated languages show their own name for themselves`() {
+    fun `the other languages show their own name for themselves`() {
         mapOf("de" to "Deutsch", "ja" to "日本語", "ar" to "العربية", "he" to "עברית", "nb" to "Norsk bokmål")
                 .forEach { (tag, name) -> assertEquals(tag, name, AppLanguages.nativeName(tag)) }
         listOf("bn", "bg", "ca", "zh-CN", "hr", "cs", "da", "nl", "et", "fi", "el", "gu", "hu", "is", "it",

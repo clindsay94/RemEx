@@ -18,10 +18,18 @@ Play's grid has no plurals, so --supplement adds a second file in the same shape
 source ("remex-translation-supplement"): scripts/translations/plurals-supplement.json holds the
 <plurals> for every machine locale. A key the supplement has wins over the export's.
 
-The 9 reviewed languages (values, -es, -fr, -hi, -in, -pl, -pt-rBR, -tr, -uk) are never touched,
-whatever the export holds. Existing machine-translated values are kept unless --update is given.
+English (values) is the only hand-written language and is never touched. Every other folder,
+including the former reviewed ones (es, fr, hi, id, pl, pt, tr, uk), is Play's. Existing values
+are kept unless --update is given.
 Keys in KEEP_ENGLISH are always written as a copy of English, replacing any translation a file has.
 
+Release lint's MissingTranslation is fatal, so a new English string breaks the build for every
+machine locale until Play has translated it. --fill-english needs no export: it writes the English
+text into each machine locale for every key the locale lacks (a plural gets the locale's CLDR
+quantities, each holding English's "other"). A later import replaces an entry that is still
+byte-identical to English with Play's translation, no --update needed.
+
+    uv run python scripts/import_play_translations.py --fill-english [--dry-run]
     uv run python scripts/import_play_translations.py play-translations.json --dry-run
     uv run python scripts/import_play_translations.py play-translations.json \
         --supplement scripts/translations/plurals-supplement.json [--update]
@@ -55,11 +63,14 @@ KEEP_ENGLISH = frozenset({
 })
 KEEP_ENGLISH_PREFIXES = ("font_",)
 
-# Hand-reviewed translations. "" is the English default folder.
-REVIEWED_QUALIFIERS = frozenset({"", "es", "fr", "hi", "in", "pl", "pt-rBR", "tr", "uk"})
+# Only English is hand-written; every other Android language is Play's Gemini output (Connor,
+# 2026-10-25). "" is the English default folder.
+REVIEWED_QUALIFIERS = frozenset({""})
 
-# Play codes for languages we already ship reviewed. Play's "pt" is not pt-BR, which we ship.
-SKIPPED_PLAY_CODES = frozenset({"en", "es", "fr", "hi", "id", "pl", "tr", "uk", "pt"})
+SKIPPED_PLAY_CODES = frozenset({"en"})
+
+# Play has no pt-BR column, only "pt"; the app ships Brazilian Portuguese (Connor's call).
+PLAY_CODE_TO_QUALIFIER = {"pt": "pt-rBR"}
 
 # ResourcesImpl.adjustLanguageTag rewrites he/id/yi to iw/in/ji before resource lookup, so a
 # values-he folder never matches a device. Norwegian devices report Bokmal as nb, which is also
@@ -69,6 +80,22 @@ PLAY_LANGUAGE_TO_ANDROID = {"he": "iw", "id": "in", "yi": "ji", "no": "nb"}
 ANDROID_LANGUAGE_TO_TAG = {"iw": "he", "in": "id", "ji": "yi"}
 
 PLURAL_QUANTITIES = ("zero", "one", "two", "few", "many", "other")
+
+# The plural quantities each language gets as a placeholder. They are CLDR's, except id, which keeps
+# the "one" its hand-written plurals always had; lint accepts both. A test checks every set the
+# supplement uses stays inside its language's. Keyed by the first subtag of the tag.
+PLURAL_CATEGORIES = {
+    "ar": ("zero", "one", "two", "few", "many", "other"),
+    **dict.fromkeys(("bg", "bn", "da", "de", "el", "et", "fa", "fi", "gu", "hu", "is", "kn", "ml", "mr",
+                     "hi", "id", "nb", "nl", "pa", "sv", "sw", "ta", "te", "tr", "ur", "zu"), ("one", "other")),
+    **dict.fromkeys(("ca", "es", "fr", "it", "pt"), ("one", "many", "other")),
+    **dict.fromkeys(("cs", "lt", "pl", "ru", "sk", "uk"), ("one", "few", "many", "other")),
+    "he": ("one", "two", "other"),
+    **dict.fromkeys(("hr", "ro"), ("one", "few", "other")),
+    **dict.fromkeys(("ja", "ko", "th", "vi", "zh"), ("other",)),
+    "lv": ("zero", "one", "other"),
+    "sl": ("one", "two", "few", "other"),
+}
 
 LOCALE_DIR_RE = re.compile(r"^values-(?:(?P<lang>[a-z]{2,3})(?:-r(?P<region>[A-Z]{2}))?|b\+(?P<bcp>[A-Za-z0-9+]+))$")
 
@@ -99,6 +126,8 @@ class ExportError(Exception):
 
 def play_code_to_qualifier(code):
     """Map a Play locale code (ar, zh-CN, es-419, zh-Hant-TW) to an Android values- qualifier."""
+    if code.strip().lower() in PLAY_CODE_TO_QUALIFIER:
+        return PLAY_CODE_TO_QUALIFIER[code.strip().lower()]
     parts = [p for p in re.split(r"[-_]", code.strip()) if p]
     if not parts or not re.fullmatch(r"[A-Za-z]{2,3}", parts[0]):
         raise ValueError(f"'{code}' is not a locale code")
@@ -293,6 +322,53 @@ def read_existing(path):
     return found
 
 
+PLURAL_ITEM_RE = re.compile(r'<item\s+quantity="(?P<q>\w+)"\s*>(?P<body>.*?)</item>', re.DOTALL)
+
+
+def plural_categories(qualifier):
+    lang = qualifier_to_tag(qualifier).split("-")[0]
+    if lang not in PLURAL_CATEGORIES:
+        raise ExportError(f"values-{qualifier}: no plural quantities known for '{lang}'; "
+                          "add it to PLURAL_CATEGORIES.")
+    return PLURAL_CATEGORIES[lang]
+
+
+def english_other(name, english_raw):
+    m = next((m for m in PLURAL_ITEM_RE.finditer(english_raw[name][1]) if m.group("q") == "other"), None)
+    if m is None:
+        raise ExportError(f"English plural '{name}' has no 'other' item.")
+    return m.group("body")
+
+
+def placeholder_entry(name, kind, qualifier, english_raw):
+    """English's own element, as a stand-in until Play translates it. A plural keeps English's "other"
+    text under each quantity the locale needs, so MissingQuantity stays quiet."""
+    if kind != "plurals":
+        return english_raw[name][1]
+    other = english_other(name, english_raw)
+    lines = [f'    <plurals name="{name}">']
+    lines.extend(f'        <item quantity="{q}">{other}</item>' for q in plural_categories(qualifier))
+    lines.append("    </plurals>")
+    return "\n".join(lines)
+
+
+def is_placeholder(name, kind, old, english_raw):
+    """True if a locale's element is still English's text, byte for byte."""
+    if name not in english_raw:
+        return False
+    if kind != "plurals":
+        return old == english_raw[name][1]
+    other = english_other(name, english_raw)
+    return all(m.group("body") == other for m in PLURAL_ITEM_RE.finditer(old))
+
+
+def lost_line_breaks(kind, english, new_value, old):
+    """Play's grid collapses a string's paragraph breaks into spaces. --update must not flatten a
+    translation that still has them."""
+    # `english` and `old` are still Android-escaped here, so a break is the two characters \n.
+    return kind == "string" and "\\n" in english and "\n" not in new_value and "\\n" in old
+
+
 def render_file(elements):
     body = "\n".join(elements)
     return f'<?xml version="1.0" encoding="utf-8"?>\n{MACHINE_NOTE}\n<resources>\n{body}\n</resources>\n'
@@ -403,7 +479,7 @@ def import_locale(code, translations, english, res_dir, update, dry_run, log, su
     existing = read_existing(path)
     summary = {"code": code, "qualifier": qualifier, "added": 0, "changed": 0, "kept": 0,
                "differs": 0, "skipped": {}, "missing": 0, "dropped": 0, "unknown": 0,
-               "english": 0, "repaired": 0, "supplemented": 0, "wrote": False, "has_file": False}
+               "english": 0, "repaired": 0, "supplemented": 0, "filled": 0, "linebreaks": 0, "wrote": False, "has_file": False}
 
     merged = {}
     for name, value in translations.items():
@@ -458,6 +534,13 @@ def import_locale(code, translations, english, res_dir, update, dry_run, log, su
         elif old == rendered:
             elements.append(old)
             summary["kept"] += 1
+        elif is_placeholder(name, kind, old, english_raw):
+            elements.append(rendered)
+            summary["filled"] += 1
+        elif update and lost_line_breaks(kind, source, value, old):
+            elements.append(old)
+            summary["kept"] += 1
+            summary["linebreaks"] += 1
         elif update:
             elements.append(rendered)
             summary["changed"] += 1
@@ -494,6 +577,10 @@ def format_summary(s):
         extras.append(f"ignored {s['unknown']} key(s) English does not have or marks untranslatable")
     if s["english"]:
         extras.append(f"wrote {s['english']} key(s) as English on purpose (KEEP_ENGLISH)")
+    if s["filled"]:
+        extras.append(f"replaced {s['filled']} English placeholder(s) with Play's translation")
+    if s["linebreaks"]:
+        extras.append(f"kept {s['linebreaks']} value(s) whose line breaks Play's version lost")
     if s["repaired"]:
         extras.append(f"repaired {s['repaired']} value(s) with %00xx letters")
     if s["supplemented"]:
@@ -501,6 +588,62 @@ def format_summary(s):
     if extras:
         line += "\n      " + "; ".join(extras)
     return line
+
+
+def fill_locale(qualifier, english, english_raw, res_dir, dry_run):
+    """Give one machine locale an English placeholder for every key it lacks. Returns its summary."""
+    path = res_dir / f"values-{qualifier}" / "strings.xml"
+    existing = read_existing(path)
+    summary = {"qualifier": qualifier, "added": 0, "strings": 0, "plurals": 0, "arrays": 0,
+               "dropped": 0, "wrote": False}
+    elements = []
+    for name, (kind, _) in english.items():
+        if name in existing and existing[name][0] == kind:
+            elements.append(existing[name][1])
+            continue
+        if name in existing:
+            summary["dropped"] += 1  # English changed the key's type; the old element would not compile
+        elements.append(placeholder_entry(name, kind, qualifier, english_raw))
+        summary["added"] += 1
+        summary[{"string": "strings", "plurals": "plurals"}.get(kind, "arrays")] += 1
+    # Release lint fails ExtraTranslation too, so a key English has dropped goes, as in a normal import.
+    summary["dropped"] += sum(1 for name in existing if name not in english)
+    content = render_file(elements)
+    if content != (path.read_text(encoding="utf-8") if path.is_file() else None):
+        summary["wrote"] = True
+        if not dry_run:
+            write_text(path, content)
+    return summary
+
+
+def fill_english(res_dir, dry_run=False, out=print):
+    """Write English placeholders into every machine locale for each key it lacks. No export needed."""
+    english_path = res_dir / "values" / "strings.xml"
+    if not english_path.is_file():
+        raise ExportError(f"English strings not found at {english_path}.")
+    english = read_english(english_path)
+    english_raw = read_existing(english_path)
+    qualifiers = [q for q in locale_qualifiers(res_dir) if q not in REVIEWED_QUALIFIERS]
+    out(f"Filling {len(qualifiers)} machine-translated locale(s) with English for missing keys"
+        + (" (dry run, nothing is written)" if dry_run else ""))
+    summaries = [fill_locale(q, english, english_raw, res_dir, dry_run) for q in qualifiers]
+    for s in summaries:
+        line = f"  values-{s['qualifier']}: added {s['added']}"
+        if s["added"]:
+            line += f" ({s['strings']} string(s), {s['plurals']} plural(s), {s['arrays']} array(s))"
+        if s["dropped"]:
+            line += f", dropped {s['dropped']} key(s) English no longer has"
+        out(line)
+    total = sum(s["added"] for s in summaries)
+    out("")
+    if dry_run:
+        out(f"Dry run finished: {total} placeholder(s) would be added.")
+    elif total:
+        out(f"Done: added {total} English placeholder(s). Play's translation replaces each one on the next "
+            "normal import. Next: ./gradlew :app:lintRelease (cd remex.android).")
+    else:
+        out("Nothing to add: every machine locale already has every key.")
+    return summaries
 
 
 def read_locales_file(path, source, what):
@@ -589,7 +732,10 @@ def run(export_path, res_dir, update=False, dry_run=False, out=print, supplement
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Add Play Console's machine translations to the Android app.")
-    parser.add_argument("export", help="play-translations.json from the in-browser exporter")
+    parser.add_argument("export", nargs="?", help="play-translations.json from the in-browser exporter")
+    parser.add_argument("--fill-english", action="store_true",
+                        help="no export: copy English into each machine locale for every key it lacks, "
+                             "so release lint passes until Play translates them")
     parser.add_argument("--res", type=Path, default=DEFAULT_RES, help="Android res folder (default: the app's)")
     parser.add_argument("--update", action="store_true",
                         help="overwrite values already imported (never touches the 9 reviewed languages)")
@@ -598,10 +744,18 @@ def main(argv=None):
                              f"(alone: {DEFAULT_SUPPLEMENT.relative_to(REPO_ROOT).as_posix()})")
     parser.add_argument("--dry-run", action="store_true", help="print the summary and write nothing")
     args = parser.parse_args(argv)
+    if args.fill_english:
+        if args.export or args.update or args.supplement:
+            parser.error("--fill-english takes no export file, --update or --supplement")
+    elif not args.export:
+        parser.error("give the play-translations.json to import, or --fill-english")
     # The Windows console is cp1252 by default; locale names and paths may not be.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
-        run(args.export, args.res, update=args.update, dry_run=args.dry_run, supplement_path=args.supplement)
+        if args.fill_english:
+            fill_english(args.res, dry_run=args.dry_run)
+        else:
+            run(args.export, args.res, update=args.update, dry_run=args.dry_run, supplement_path=args.supplement)
     except ExportError as e:
         print(f"Import stopped: {e}", file=sys.stderr)
         return 1

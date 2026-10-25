@@ -4,15 +4,16 @@
     Checks that RemEx's translations are complete, current, and actually exist.
 
 .DESCRIPTION
-    RemEx ships in 9 languages on two platforms, and a translation can go wrong in three
+    RemEx's PC app ships in 9 reviewed languages (the phone in 49, see below), and a translation can go wrong in three
     different ways. This script checks all three, on both platforms, in one pass.
 
-    The phone can also carry Play's machine translations (RemEx-fwhqw): any Android values-*
-    folder outside the 9 reviewed ones, as written by scripts/import_play_translations.py. Those
+    On the phone, only English is hand-written. Every other Android values-* folder is Play's
+    machine translation (RemEx-fwhqw), as written by scripts/import_play_translations.py. Those
     get the structural half only - orphaned, mistyped or empty keys (axis 1) and placeholders
     (axis 4), which break the app whoever wrote the text. Keys they lack fall back to English and
     are only counted, and the staleness and untranslated axes skip them: nobody reviews machine
-    text line by line, so those warnings would only bury the reviewed languages' ones.
+    text line by line, and an English placeholder from --fill-english is byte-identical to
+    English on purpose until Play translates it. The PC's 8 translated .resx files stay reviewed.
 
     AXIS 1 - PARITY ("is the key missing from one language?")
         Every key in the English file must exist in all 8 translated files, and no translated
@@ -257,7 +258,9 @@ $Platforms = @{
         Dir         = 'remex.android/app/src/main/res'
         BaseFile    = 'remex.android/app/src/main/res/values/strings.xml'
         LocaleFile  = 'remex.android/app/src/main/res/values-{0}/strings.xml'
-        Locales     = @('es', 'fr', 'hi', 'in', 'pl', 'pt-rBR', 'tr', 'uk')
+        # None hand-reviewed: every Android language but English is Play's Gemini output (Connor,
+        # 2026-10-25), found by Get-MachineLocales and checked on axes 1 and 4 only.
+        Locales     = @()
         SourceGlobs = @('remex.android/app/src/main')
         SourceExts  = @('*.kt', '*.java', '*.xml')
     }
@@ -511,7 +514,7 @@ function Get-MachineLocales {
     #>
     param(
         [Parameter(Mandatory = $true)][string]$ResDir,
-        [Parameter(Mandatory = $true)][string[]]$Reviewed
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Reviewed
     )
     if (-not (Test-Path -LiteralPath $ResDir)) { return @() }
     $found = [System.Collections.Generic.List[string]]::new()

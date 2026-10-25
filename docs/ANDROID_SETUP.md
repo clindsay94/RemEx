@@ -350,9 +350,24 @@ Adding any of these back means changing the Play data safety form first. That's 
 
 ## Extra languages from Play's machine translations
 
-The phone app ships 9 reviewed languages (en, es, fr, hi, id, pl, pt-BR, tr, uk). Play Console can machine-translate
-the app strings into about 40 more with Gemini, but those only reach Play installs. To give the GitHub APK the same
-languages (RemEx-fwhqw):
+On the phone only English (`values/strings.xml`) is hand-written. Every other language, all 48 of them, is Play
+Console's Gemini translation, imported into `res/values-*` (RemEx-fwhqw). That includes es, fr, hi, id, pl, pt-BR, tr
+and uk, which were hand-translated until 2026-10-25 and are Play's now. (The PC's `.resx` files are separate: those 9
+languages stay reviewed.) Play's `pt` column becomes `values-pt-rBR`, since Play has no pt-BR column.
+
+**Adding a string.** Add it to `values/strings.xml` and run:
+```powershell
+uv run python scripts/import_play_translations.py --fill-english
+```
+Release lint's `MissingTranslation` is fatal, so until Play has translated the new string the release build fails
+for every language. `--fill-english` needs no Play export: for each language it copies the English text in for every
+key that language lacks (a plural gets the language's own plural quantities, each holding English's "other" text, so
+`MissingQuantity` stays quiet). It also drops keys English no longer has, and it never touches English. Run it again
+and it adds nothing. `verify.ps1` suggests this command when lint reports `MissingTranslation`; it never runs it for
+you. The next normal import below replaces each English copy with Play's translation, no `--update` needed.
+
+**Getting Play's translations.** Play only translates what a draft release holds, and they only reach Play installs.
+To give the GitHub APK the same languages:
 
 1. Upload the release AAB to a **draft** release in Play Console and turn on automatic translation of app strings.
    Wait until Play shows the translations as ready.
@@ -366,28 +381,32 @@ languages (RemEx-fwhqw):
    uv run python scripts/import_play_translations.py play-translations.json --supplement
    ```
    It prints, for each language, how many strings it added, changed, skipped (format arguments that don't match
-   English) and how many are missing (those show in English). Add `--update` to overwrite strings imported
-   earlier. The 9 reviewed languages are never touched, even with `--update`.
+   English) and how many are missing (those show in English). Add `--update` to overwrite translations imported
+   earlier; an English copy from `--fill-english` is replaced without it. English is never touched. Play's grid
+   flattens paragraph breaks into spaces, so `--update` keeps an existing translation that still has its line
+   breaks (the summary says how many).
 4. Run the Android unit tests and the release lint gate
    (`cd remex.android; ./gradlew :app:testReleaseUnitTest :app:lintRelease`), then `scripts/verify.ps1`.
 
 **Plurals.** Play's grid has no plurals, and release lint fails on a `<plurals>` a language is missing
-(`MissingTranslation`). `scripts/translations/plurals-supplement.json` holds them for every machine-translated
-language, keyed by Play locale code, with the quantities each language uses (Arabic has all six, Russian
+(`MissingTranslation`). `scripts/translations/plurals-supplement.json` holds them for every language but English,
+keyed by Play locale code, with the quantities each language uses (Arabic has all six, Russian
 one/few/many/other, Japanese only other, and so on; lint's `MissingQuantity` and `UnusedQuantity` check them). It
 has its own `source` (`remex-translation-supplement`), wins over the export for any key both have, and stops the
 import before anything is written if an entry doesn't fit English (wrong format arguments, an unknown quantity,
-a key English lacks). They were written by Claude and nobody who speaks those languages has reviewed them. When
-English gains or changes a plural, add it to the supplement for every language and re-run with `--update`;
-`test_the_checked_in_supplement_covers_every_english_plural` fails until you do.
+a key English lacks). The ones for es, fr, hi, id, pl, pt, tr and uk are the hand-written plurals those apps
+shipped before Play took them over; Claude wrote the rest and nobody who speaks those languages has reviewed them.
+When English gains or changes a plural, `--fill-english` keeps the build green with English text; add the real
+plural to the supplement for every language and re-run with `--update` when you want it translated.
+`test_the_checked_in_supplement_covers_every_english_plural` fails until the supplement has it.
 
 What the importer writes and why:
 - One `res/values-<qualifier>/strings.xml` per new language, marked as machine-translated, holding only keys that
   exist in English and aren't `translatable="false"`. Re-running it changes nothing unless the export changed.
 - Play codes map to the folders Android actually resolves: `he` → `values-iw`, `id` → `values-in` (Android
   rewrites both to the legacy codes before it looks up resources, so `values-he` would never be used),
-  `no` → `values-nb` (devices report Norwegian Bokmål as `nb`), `zh-CN` → `values-zh-rCN`. Play's `pt` is skipped
-  because we ship pt-BR.
+  `no` → `values-nb` (devices report Norwegian Bokmål as `nb`), `zh-CN` → `values-zh-rCN`, `pt` →
+  `values-pt-rBR`. Only Play's `en` is skipped.
 - `res/xml/locales_config.xml` is regenerated from the folders, with modern tags (`he`, `id`). That file drives
   the system's per-app language setting and the in-app picker. `build.gradle.kts` builds `localeFilters` from the
   same folders, so nothing else needs editing.
@@ -404,8 +423,9 @@ What the importer writes and why:
   read as a format argument and be rejected, so the importer puts the letter back.
 
 Hand-fixing a machine translation is fine: without `--update`, a re-import keeps your edit. To drop a bad one,
-delete the line and the key falls back to English. `KeycapAccessibleNameTests` checks every language, machine or
-reviewed, so a keyboard key name added by hand still has to start with its legend.
+delete the line and run `--fill-english` (lint fails a language that lacks a key); the key shows English until Play's
+version is imported. `KeycapAccessibleNameTests` checks every language, so a keyboard key name added by hand still
+has to start with its legend.
 
 ---
 

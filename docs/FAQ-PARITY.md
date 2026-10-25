@@ -42,7 +42,7 @@ older wording.
 
 ## Rules
 
-1. **Adding an entry means adding it to BOTH platforms**, in all 9 locale files each, and to this table. The PC enumerates Faq_Q1..N in AboutViewModel; Android lists FaqItem entries explicitly in FaqScreen.kt. Both counts must be raised.
+1. **Adding an entry means adding it to BOTH platforms**, in all 9 locale files on the PC and in English on Android (run `import_play_translations.py --fill-english`; Play translates the rest), and to this table. The PC enumerates Faq_Q1..N in AboutViewModel; Android lists FaqItem entries explicitly in FaqScreen.kt. Both counts must be raised.
 2. **Answers are ported, not re-authored.** Writing the same answer twice from scratch is how the port-fallback and DXGI inaccuracies came to exist on only one side. Start from the existing platform's text and change only what is genuinely platform-specific.
 3. **Navigation IS platform-specific.** Android's 'Open the More tab and tap Personalization' is wrong on the PC, which uses the Personalize panel; the PC's Settings paths are wrong on Android. Port the substance, rewrite the route.
 4. The numbering will keep diverging as entries are added. That is tolerable as long as this table is updated; renumbering either platform to match the other would break every existing translation.

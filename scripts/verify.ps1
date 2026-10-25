@@ -459,6 +459,17 @@ function Get-LintViolationLines {
         Select-Object -First $Limit)
 }
 
+# The one lint failure a developer causes by adding a string: every non-English language is Play's
+# machine translation (RemEx-fwhqw), so the build breaks until Play has translated it. Returns the
+# fix, or $null for any other violation.
+function Get-LintFixHint {
+    param([string[]]$ViolationLines)
+    if (@(@($ViolationLines) | Where-Object { $_ -match '\[MissingTranslation\]' }).Count -gt 0) {
+        return "A new English string has no translation in Android's other languages yet. Play translates them, so until the next import copy English in: uv run python scripts/import_play_translations.py --fill-english"
+    }
+    return $null
+}
+
 <#
 .SYNOPSIS
     Checks Get-TrxFailedTests, Get-JUnitFailedTests and Get-LintViolationLines against known input.
@@ -604,6 +615,11 @@ Actual:   False</Message></ErrorInfo></Output>
 
     $lintNone = @(Get-LintViolationLines -Output @('> Task :app:lintRelease', 'BUILD SUCCESSFUL in 11s'))
     Assert-Check ($lintNone.Count -eq 0) 'clean lint output yields no violation lines'
+
+    $missingTranslation = @('Z:\RemEx\remex.android\app\src\main\res\values\strings.xml:2: Error: "x" is not translated in "Arabic" (ar) [MissingTranslation]')
+    Assert-Check ((Get-LintFixHint -ViolationLines $missingTranslation) -like '*--fill-english*') 'a MissingTranslation violation points at --fill-english'
+    Assert-Check ($null -eq (Get-LintFixHint -ViolationLines $lintFound)) 'another violation gets no fill-english hint'
+    Assert-Check ($null -eq (Get-LintFixHint -ViolationLines @())) 'no violations get no hint'
 
     return $script:parserCheckFailures
 }
@@ -1023,6 +1039,8 @@ if ($Scope -in @('android', 'all')) {
                 $problems.Add("lint: $line")
                 Write-Say "    $line" 'Red'
             }
+            $lintHint = Get-LintFixHint -ViolationLines $lintLines
+            if ($lintHint) { Write-Say "  What to do: $lintHint" 'Yellow' }
             if ($lintLines.Count -eq 0) {
                 # Lint said it found errors but printed none this parser recognised - the same "the
                 # gate went blind" case the test parsers guard against, and worth saying rather than

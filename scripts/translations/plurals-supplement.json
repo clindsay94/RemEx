@@ -1,6 +1,6 @@
 {
   "source": "remex-translation-supplement",
-  "note": "The <plurals> Play's machine-translation grid cannot give (it has no plurals), one set per machine-translated locale, keyed by Play locale code. Written by Claude for RemEx-fwhqw and not reviewed by a native speaker. Quantities follow CLDR for each language; format arguments match English byte for byte. Applied by scripts/import_play_translations.py --supplement.",
+  "note": "The <plurals> Play's machine-translation grid cannot give (it has no plurals), one set per locale, keyed by Play locale code. The sets for es, fr, hi, id, pl, pt, tr and uk are the hand-written ones the app shipped before Play took those languages over (2026-10-25); the rest were written by Claude for RemEx-fwhqw and not reviewed by a native speaker. Quantities follow CLDR for each language; format arguments match English byte for byte. Applied by scripts/import_play_translations.py --supplement.",
   "locales": {
     "ar": {
       "splash_live_pinging": {
@@ -564,6 +564,65 @@
         "other": "Αυτό θα διαγράψει οριστικά %d στοιχεία από τον υπολογιστή σας. Δεν μετακινούνται στον κάδο ανακύκλωσης και αυτή η ενέργεια δεν μπορεί να αναιρεθεί."
       }
     },
+    "es": {
+      "splash_live_pinging": {
+        "one": "Haciendo ping a %1$d PC",
+        "other": "Haciendo ping a %1$d PC"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d copiado",
+        "other": "%1$d copiados"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d movido",
+        "other": "%1$d movidos"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d con error",
+        "other": "%1$d con errores"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d omitido",
+        "other": "%1$d omitidos"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "queda %1$d segundo",
+        "other": "quedan %1$d segundos"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "queda %1$d minuto",
+        "other": "quedan %1$d minutos"
+      },
+      "file_transfer_eta_hours": {
+        "one": "queda %1$d hora",
+        "other": "quedan %1$d horas"
+      },
+      "file_transfer_selected_count": {
+        "one": "%d seleccionado",
+        "many": "%d seleccionados",
+        "other": "%d seleccionados"
+      },
+      "routines_chain_description": {
+        "one": "Empieza con %1$s. %2$d paso.",
+        "other": "Empieza con %1$s. %2$d pasos."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Empieza con %2$s. %3$d paso. %4$s.",
+        "other": "%1$s. Empieza con %2$s. %3$d pasos. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Corrige %1$d cosa antes de guardar.",
+        "other": "Corrige %1$d cosas antes de guardar."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d paso solo funciona en rutinas que se ejecutan en tu teléfono. Se quitará.",
+        "other": "%1$d pasos solo funcionan en rutinas que se ejecutan en tu teléfono. Se quitarán."
+      },
+      "files_delete_confirm_many": {
+        "one": "Esto eliminará %d elemento de tu PC de forma permanente. No se mueve a la papelera de reciclaje y no se puede deshacer.",
+        "other": "Esto eliminará %d elementos de tu PC de forma permanente. No se mueven a la papelera de reciclaje y no se puede deshacer."
+      }
+    },
     "et": {
       "splash_live_pinging": {
         "one": "%1$d arvuti pingimine",
@@ -738,6 +797,65 @@
         "other": "Tämä poistaa %d kohdetta pysyvästi tietokoneeltasi. Niitä ei siirretä roskakoriin, eikä tätä voi kumota."
       }
     },
+    "fr": {
+      "splash_live_pinging": {
+        "one": "Ping de %1$d PC",
+        "other": "Ping de %1$d PC"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d copié",
+        "other": "%1$d copiés"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d déplacé",
+        "other": "%1$d déplacés"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d échec",
+        "other": "%1$d échecs"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d ignoré",
+        "other": "%1$d ignorés"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "%1$d seconde restante",
+        "other": "%1$d secondes restantes"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "%1$d minute restante",
+        "other": "%1$d minutes restantes"
+      },
+      "file_transfer_eta_hours": {
+        "one": "%1$d heure restante",
+        "other": "%1$d heures restantes"
+      },
+      "file_transfer_selected_count": {
+        "one": "%d sélectionné",
+        "many": "%d sélectionnés",
+        "other": "%d sélectionnés"
+      },
+      "routines_chain_description": {
+        "one": "Commence par %1$s. %2$d étape.",
+        "other": "Commence par %1$s. %2$d étapes."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Commence par %2$s. %3$d étape. %4$s.",
+        "other": "%1$s. Commence par %2$s. %3$d étapes. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Corrigez %1$d point avant d'enregistrer.",
+        "other": "Corrigez %1$d points avant d'enregistrer."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d étape ne fonctionne que dans les routines exécutées sur votre téléphone. Elle sera retirée.",
+        "other": "%1$d étapes ne fonctionnent que dans les routines exécutées sur votre téléphone. Elles seront retirées."
+      },
+      "files_delete_confirm_many": {
+        "one": "Cela supprimera définitivement %d élément de votre PC. Il n'est pas placé dans la corbeille, et cette action est irréversible.",
+        "other": "Cela supprimera définitivement %d éléments de votre PC. Ils ne sont pas placés dans la corbeille, et cette action est irréversible."
+      }
+    },
     "gu": {
       "splash_live_pinging": {
         "one": "%1$d PC ને પિંગ કરી રહ્યાં છીએ",
@@ -868,6 +986,64 @@
         "other": "פעולה זו תמחק לצמיתות %d פריטים מהמחשב שלך. הם לא יועברו לסל המיחזור, ולא ניתן לבטל פעולה זו."
       }
     },
+    "hi": {
+      "splash_live_pinging": {
+        "one": "%1$d PC को पिंग किया जा रहा है",
+        "other": "%1$d PC को पिंग किया जा रहा है"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d कॉपी किया",
+        "other": "%1$d कॉपी किए"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d ले जाया गया",
+        "other": "%1$d ले जाए गए"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d विफल",
+        "other": "%1$d विफल"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d छोड़ा गया",
+        "other": "%1$d छोड़े गए"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "%1$d सेकंड बाकी",
+        "other": "%1$d सेकंड बाकी"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "%1$d मिनट बाकी",
+        "other": "%1$d मिनट बाकी"
+      },
+      "file_transfer_eta_hours": {
+        "one": "%1$d घंटा बाकी",
+        "other": "%1$d घंटे बाकी"
+      },
+      "file_transfer_selected_count": {
+        "one": "%d चयनित",
+        "other": "%d चयनित"
+      },
+      "routines_chain_description": {
+        "one": "%1$s से शुरू होता है। %2$d चरण।",
+        "other": "%1$s से शुरू होता है। %2$d चरण।"
+      },
+      "routines_card_description": {
+        "one": "%1$s. %2$s से शुरू होता है। %3$d चरण। %4$s।",
+        "other": "%1$s. %2$s से शुरू होता है। %3$d चरण। %4$s।"
+      },
+      "routines_fix_count": {
+        "one": "सेव करने से पहले %1$d चीज़ ठीक करें।",
+        "other": "सेव करने से पहले %1$d चीज़ें ठीक करें।"
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d चरण सिर्फ़ फ़ोन पर चलने वाले रूटीन में काम करता है। इसे हटा दिया जाएगा।",
+        "other": "%1$d चरण सिर्फ़ फ़ोन पर चलने वाले रूटीन में काम करते हैं। इन्हें हटा दिया जाएगा।"
+      },
+      "files_delete_confirm_many": {
+        "one": "यह %d आइटम को आपके पीसी से हमेशा के लिए हटा देगा। यह रीसायकल बिन में नहीं जाता, और इसे वापस नहीं किया जा सकता।",
+        "other": "यह %d आइटम को आपके पीसी से हमेशा के लिए हटा देगा। वे रीसायकल बिन में नहीं जाते, और इसे वापस नहीं किया जा सकता।"
+      }
+    },
     "hr": {
       "splash_live_pinging": {
         "one": "Pinganje %1$d računala",
@@ -996,6 +1172,54 @@
       "files_delete_confirm_many": {
         "one": "Ez véglegesen törli %d elemet a számítógépről. Nem kerül a Lomtárba, és ez a művelet nem vonható vissza.",
         "other": "Ez véglegesen törli %d elemet a számítógépről. Nem kerülnek a Lomtárba, és ez a művelet nem vonható vissza."
+      }
+    },
+    "id": {
+      "splash_live_pinging": {
+        "other": "Melakukan ping ke %1$d PC"
+      },
+      "file_conflict_copied_count": {
+        "other": "%1$d disalin"
+      },
+      "file_conflict_moved_count": {
+        "other": "%1$d dipindahkan"
+      },
+      "file_conflict_failed_count": {
+        "other": "%1$d gagal"
+      },
+      "file_conflict_skipped_count": {
+        "other": "%1$d dilewati"
+      },
+      "file_transfer_eta_seconds": {
+        "other": "%1$d detik lagi"
+      },
+      "file_transfer_eta_minutes": {
+        "other": "%1$d menit lagi"
+      },
+      "file_transfer_eta_hours": {
+        "other": "%1$d jam lagi"
+      },
+      "file_transfer_selected_count": {
+        "other": "%d dipilih"
+      },
+      "routines_chain_description": {
+        "one": "Dimulai dengan %1$s. %2$d langkah.",
+        "other": "Dimulai dengan %1$s. %2$d langkah."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Dimulai dengan %2$s. %3$d langkah. %4$s.",
+        "other": "%1$s. Dimulai dengan %2$s. %3$d langkah. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Perbaiki %1$d hal sebelum menyimpan.",
+        "other": "Perbaiki %1$d hal sebelum menyimpan."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d langkah hanya berfungsi di rutinitas yang berjalan di ponsel Anda. Langkah itu akan dihapus.",
+        "other": "%1$d langkah hanya berfungsi di rutinitas yang berjalan di ponsel Anda. Langkah-langkah itu akan dihapus."
+      },
+      "files_delete_confirm_many": {
+        "other": "Ini akan menghapus %d item dari PC Anda secara permanen. Item ini tidak dipindahkan ke tempat sampah, dan tindakan ini tidak dapat dibatalkan."
       }
     },
     "is": {
@@ -1722,6 +1946,151 @@
         "other": "ਇਹ ਤੁਹਾਡੇ PC ਤੋਂ %d ਆਈਟਮਾਂ ਨੂੰ ਸਥਾਈ ਤੌਰ 'ਤੇ ਮਿਟਾ ਦੇਵੇਗਾ। ਇਹ ਰੀਸਾਈਕਲ ਬਿਨ ਵਿੱਚ ਨਹੀਂ ਜਾਂਦੀਆਂ, ਅਤੇ ਇਹਨਾਂ ਨੂੰ ਵਾਪਸ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਦਾ।"
       }
     },
+    "pl": {
+      "splash_live_pinging": {
+        "one": "Pinguję %1$d komputer",
+        "few": "Pinguję %1$d komputery",
+        "many": "Pinguję %1$d komputerów",
+        "other": "Pinguję %1$d komputera"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d skopiowany",
+        "few": "%1$d skopiowane",
+        "many": "%1$d skopiowanych",
+        "other": "%1$d skopiowanych"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d przeniesiony",
+        "few": "%1$d przeniesione",
+        "many": "%1$d przeniesionych",
+        "other": "%1$d przeniesionych"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d nieudany",
+        "few": "%1$d nieudane",
+        "many": "%1$d nieudanych",
+        "other": "%1$d nieudanych"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d pominięty",
+        "few": "%1$d pominięte",
+        "many": "%1$d pominiętych",
+        "other": "%1$d pominiętych"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "pozostała %1$d sekunda",
+        "few": "pozostały %1$d sekundy",
+        "many": "pozostało %1$d sekund",
+        "other": "pozostało %1$d sekundy"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "pozostała %1$d minuta",
+        "few": "pozostały %1$d minuty",
+        "many": "pozostało %1$d minut",
+        "other": "pozostało %1$d minuty"
+      },
+      "file_transfer_eta_hours": {
+        "one": "pozostała %1$d godzina",
+        "few": "pozostały %1$d godziny",
+        "many": "pozostało %1$d godzin",
+        "other": "pozostało %1$d godziny"
+      },
+      "file_transfer_selected_count": {
+        "one": "Zaznaczono: %d",
+        "few": "Zaznaczono: %d",
+        "many": "Zaznaczono: %d",
+        "other": "Zaznaczono: %d"
+      },
+      "routines_chain_description": {
+        "one": "Zaczyna się od: %1$s. %2$d krok.",
+        "few": "Zaczyna się od: %1$s. %2$d kroki.",
+        "many": "Zaczyna się od: %1$s. %2$d kroków.",
+        "other": "Zaczyna się od: %1$s. %2$d kroku."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Zaczyna się od: %2$s. %3$d krok. %4$s.",
+        "few": "%1$s. Zaczyna się od: %2$s. %3$d kroki. %4$s.",
+        "many": "%1$s. Zaczyna się od: %2$s. %3$d kroków. %4$s.",
+        "other": "%1$s. Zaczyna się od: %2$s. %3$d kroku. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Przed zapisaniem popraw %1$d rzecz.",
+        "few": "Przed zapisaniem popraw %1$d rzeczy.",
+        "many": "Przed zapisaniem popraw %1$d rzeczy.",
+        "other": "Przed zapisaniem popraw %1$d rzeczy."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d krok działa tylko w rutynach uruchamianych na telefonie. Zostanie usunięty.",
+        "few": "%1$d kroki działają tylko w rutynach uruchamianych na telefonie. Zostaną usunięte.",
+        "many": "%1$d kroków działa tylko w rutynach uruchamianych na telefonie. Zostaną usunięte.",
+        "other": "%1$d kroku działa tylko w rutynach uruchamianych na telefonie. Zostaną usunięte."
+      },
+      "files_delete_confirm_many": {
+        "one": "To na stałe usunie %d element z Twojego komputera. Nie trafi do kosza i nie będzie można tego cofnąć.",
+        "few": "To na stałe usunie %d elementy z Twojego komputera. Nie trafią do kosza i nie będzie można tego cofnąć.",
+        "many": "To na stałe usunie %d elementów z Twojego komputera. Nie trafią do kosza i nie będzie można tego cofnąć.",
+        "other": "To na stałe usunie %d elementu z Twojego komputera. Nie trafią do kosza i nie będzie można tego cofnąć."
+      }
+    },
+    "pt": {
+      "splash_live_pinging": {
+        "one": "Pingando %1$d PC",
+        "other": "Pingando %1$d PCs"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d copiado",
+        "other": "%1$d copiados"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d movido",
+        "other": "%1$d movidos"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d com falha",
+        "other": "%1$d com falha"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d ignorado",
+        "other": "%1$d ignorados"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "resta %1$d segundo",
+        "other": "restam %1$d segundos"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "resta %1$d minuto",
+        "other": "restam %1$d minutos"
+      },
+      "file_transfer_eta_hours": {
+        "one": "resta %1$d hora",
+        "other": "restam %1$d horas"
+      },
+      "file_transfer_selected_count": {
+        "one": "%d selecionado",
+        "many": "%d selecionados",
+        "other": "%d selecionados"
+      },
+      "routines_chain_description": {
+        "one": "Começa com %1$s. %2$d etapa.",
+        "other": "Começa com %1$s. %2$d etapas."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Começa com %2$s. %3$d etapa. %4$s.",
+        "other": "%1$s. Começa com %2$s. %3$d etapas. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Corrija %1$d item antes de salvar.",
+        "other": "Corrija %1$d itens antes de salvar."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d etapa só funciona em rotinas que rodam no seu celular. Ela será removida.",
+        "other": "%1$d etapas só funcionam em rotinas que rodam no seu celular. Elas serão removidas."
+      },
+      "files_delete_confirm_many": {
+        "one": "Isso excluirá %d item do seu PC permanentemente. Ele não vai para a lixeira, e isso não pode ser desfeito.",
+        "other": "Isso excluirá %d itens do seu PC permanentemente. Eles não vão para a lixeira, e isso não pode ser desfeito."
+      }
+    },
     "ro": {
       "splash_live_pinging": {
         "one": "Se trimite ping la %1$d PC",
@@ -2326,6 +2695,150 @@
       },
       "files_delete_confirm_many": {
         "other": "การดำเนินการนี้จะลบ %d รายการออกจากพีซีของคุณอย่างถาวร รายการจะไม่ถูกย้ายไปที่ถังรีไซเคิล และไม่สามารถยกเลิกการดำเนินการนี้ได้"
+      }
+    },
+    "tr": {
+      "splash_live_pinging": {
+        "one": "%1$d bilgisayara ping atılıyor",
+        "other": "%1$d bilgisayara ping atılıyor"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d kopyalandı",
+        "other": "%1$d kopyalandı"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d taşındı",
+        "other": "%1$d taşındı"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d başarısız",
+        "other": "%1$d başarısız"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d atlandı",
+        "other": "%1$d atlandı"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "%1$d saniye kaldı",
+        "other": "%1$d saniye kaldı"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "%1$d dakika kaldı",
+        "other": "%1$d dakika kaldı"
+      },
+      "file_transfer_eta_hours": {
+        "one": "%1$d saat kaldı",
+        "other": "%1$d saat kaldı"
+      },
+      "file_transfer_selected_count": {
+        "one": "%d öğe seçildi",
+        "other": "%d öğe seçildi"
+      },
+      "routines_chain_description": {
+        "one": "%1$s ile başlar. %2$d adım.",
+        "other": "%1$s ile başlar. %2$d adım."
+      },
+      "routines_card_description": {
+        "one": "%1$s. %2$s ile başlar. %3$d adım. %4$s.",
+        "other": "%1$s. %2$s ile başlar. %3$d adım. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Kaydetmeden önce %1$d şeyi düzeltin.",
+        "other": "Kaydetmeden önce %1$d şeyi düzeltin."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d adım yalnızca telefonunuzda çalışan rutinlerde çalışır. Kaldırılacak.",
+        "other": "%1$d adım yalnızca telefonunuzda çalışan rutinlerde çalışır. Kaldırılacaklar."
+      },
+      "files_delete_confirm_many": {
+        "one": "Bu işlem %d öğeyi bilgisayarınızdan kalıcı olarak siler. Geri dönüşüm kutusuna taşınmaz ve geri alınamaz.",
+        "other": "Bu işlem %d öğeyi bilgisayarınızdan kalıcı olarak siler. Geri dönüşüm kutusuna taşınmazlar ve geri alınamaz."
+      }
+    },
+    "uk": {
+      "splash_live_pinging": {
+        "one": "Пінгування %1$d ПК",
+        "few": "Пінгування %1$d ПК",
+        "many": "Пінгування %1$d ПК",
+        "other": "Пінгування %1$d ПК"
+      },
+      "file_conflict_copied_count": {
+        "one": "%1$d скопійовано",
+        "few": "%1$d скопійовано",
+        "many": "%1$d скопійовано",
+        "other": "%1$d скопійовано"
+      },
+      "file_conflict_moved_count": {
+        "one": "%1$d переміщено",
+        "few": "%1$d переміщено",
+        "many": "%1$d переміщено",
+        "other": "%1$d переміщено"
+      },
+      "file_conflict_failed_count": {
+        "one": "%1$d не вдалося",
+        "few": "%1$d не вдалося",
+        "many": "%1$d не вдалося",
+        "other": "%1$d не вдалося"
+      },
+      "file_conflict_skipped_count": {
+        "one": "%1$d пропущено",
+        "few": "%1$d пропущено",
+        "many": "%1$d пропущено",
+        "other": "%1$d пропущено"
+      },
+      "file_transfer_eta_seconds": {
+        "one": "залишилася %1$d секунда",
+        "few": "залишилося %1$d секунди",
+        "many": "залишилося %1$d секунд",
+        "other": "залишилося %1$d секунди"
+      },
+      "file_transfer_eta_minutes": {
+        "one": "залишилася %1$d хвилина",
+        "few": "залишилося %1$d хвилини",
+        "many": "залишилося %1$d хвилин",
+        "other": "залишилося %1$d хвилини"
+      },
+      "file_transfer_eta_hours": {
+        "one": "залишилася %1$d година",
+        "few": "залишилося %1$d години",
+        "many": "залишилося %1$d годин",
+        "other": "залишилося %1$d години"
+      },
+      "file_transfer_selected_count": {
+        "one": "Вибрано: %d",
+        "few": "Вибрано: %d",
+        "many": "Вибрано: %d",
+        "other": "Вибрано: %d"
+      },
+      "routines_chain_description": {
+        "one": "Починається з: %1$s. %2$d крок.",
+        "few": "Починається з: %1$s. %2$d кроки.",
+        "many": "Починається з: %1$s. %2$d кроків.",
+        "other": "Починається з: %1$s. %2$d кроку."
+      },
+      "routines_card_description": {
+        "one": "%1$s. Починається з: %2$s. %3$d крок. %4$s.",
+        "few": "%1$s. Починається з: %2$s. %3$d кроки. %4$s.",
+        "many": "%1$s. Починається з: %2$s. %3$d кроків. %4$s.",
+        "other": "%1$s. Починається з: %2$s. %3$d кроку. %4$s."
+      },
+      "routines_fix_count": {
+        "one": "Перед збереженням виправте %1$d річ.",
+        "few": "Перед збереженням виправте %1$d речі.",
+        "many": "Перед збереженням виправте %1$d речей.",
+        "other": "Перед збереженням виправте %1$d речі."
+      },
+      "routines_trigger_change_body": {
+        "one": "%1$d крок працює лише в рутинах, що виконуються на телефоні. Його буде прибрано.",
+        "few": "%1$d кроки працюють лише в рутинах, що виконуються на телефоні. Їх буде прибрано.",
+        "many": "%1$d кроків працюють лише в рутинах, що виконуються на телефоні. Їх буде прибрано.",
+        "other": "%1$d кроку працюють лише в рутинах, що виконуються на телефоні. Їх буде прибрано."
+      },
+      "files_delete_confirm_many": {
+        "one": "Це назавжди видалить %d елемент з вашого ПК. Його не буде переміщено до кошика, і цю дію не можна скасувати.",
+        "few": "Це назавжди видалить %d елементи з вашого ПК. Їх не буде переміщено до кошика, і цю дію не можна скасувати.",
+        "many": "Це назавжди видалить %d елементів з вашого ПК. Їх не буде переміщено до кошика, і цю дію не можна скасувати.",
+        "other": "Це назавжди видалить %d елемента з вашого ПК. Їх не буде переміщено до кошика, і цю дію не можна скасувати."
       }
     },
     "ur": {

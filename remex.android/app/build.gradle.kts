@@ -378,16 +378,13 @@ android {
                 // KeycapAccessibleNameTests reads every locale file, and a translation-only edit
                 // changes no R id, so without these the guard sits up-to-date through exactly the
                 // change it exists to check (the RemEx-odkk trap, again).
+                // Every values*/strings.xml, since all 49 languages are held to that rule now (Play's
+                // machine translations are most of them).
+                it.inputs
+                        .files(fileTree(File(projectDir, "src/main/res")) { include("values*/strings.xml") })
+                        .withPropertyName("screenNameSubstitution:localeStrings")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
                 listOf(
-                                "src/main/res/values/strings.xml",
-                                "src/main/res/values-es/strings.xml",
-                                "src/main/res/values-fr/strings.xml",
-                                "src/main/res/values-hi/strings.xml",
-                                "src/main/res/values-in/strings.xml",
-                                "src/main/res/values-pl/strings.xml",
-                                "src/main/res/values-pt-rBR/strings.xml",
-                                "src/main/res/values-tr/strings.xml",
-                                "src/main/res/values-uk/strings.xml",
                                 "src/main/java/com/clindsay94/remex/ui/screens/TutorialScreen.kt",
                                 "src/main/java/com/clindsay94/remex/ui/screens/FaqScreen.kt",
                         )

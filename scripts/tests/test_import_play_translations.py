@@ -5,6 +5,8 @@ Run: uv run python scripts/tests/test_import_play_translations.py
 verify.ps1 runs it next to the edit guard's tests.
 """
 
+import contextlib
+import io
 import json
 import re
 import shutil
@@ -102,6 +104,7 @@ class ImporterTests(unittest.TestCase):
             "fa": "fa", "pa": "pa", "ro": "ro", "ru": "ru", "sk": "sk", "sl": "sl", "sw": "sw",
             "sv": "sv", "ta": "ta", "te": "te", "th": "th", "ur": "ur", "vi": "vi", "zu": "zu",
             "id": "in", "pt-BR": "pt-rBR", "es-419": "b+es+419", "zh-Hant-TW": "b+zh+Hant+TW",
+            "pt": "pt-rBR",
         }
         for code, qualifier in expected.items():
             self.assertEqual(qualifier, imp.play_code_to_qualifier(code), code)
@@ -178,15 +181,20 @@ class ImporterTests(unittest.TestCase):
         # untouched + count_and_name (skipped) fall back; progress is untranslatable and not counted.
         self.assertEqual(2, summaries["ar"]["missing"])
 
-    def test_reviewed_locales_are_never_touched(self):
-        before = (self.res / "values-es" / "strings.xml").read_bytes()
+    def test_only_english_is_never_touched(self):
         english = (self.res / "values" / "strings.xml").read_bytes()
         summaries = self.run_import(update=True)
-        self.assertEqual(before, (self.res / "values-es" / "strings.xml").read_bytes())
         self.assertEqual(english, (self.res / "values" / "strings.xml").read_bytes())
-        for code in ("es", "pt", "pt-BR", "id", "en"):
-            self.assertNotIn(code, summaries)
-        for folder in ("values-pt", "values-pt-rBR", "values-in", "values-id", "values-en"):
+        self.assertNotIn("en", summaries)
+        self.assertFalse((self.res / "values-en").exists())
+
+    def test_the_former_reviewed_languages_are_imported_from_play(self):
+        self.run_import(update=True)
+        self.assertEqual("CAMBIADO", strings_of(self.res / "values-es" / "strings.xml")["app_name"])
+        # Play has no pt-BR column; its "pt" is the Brazilian folder, and id is Android's "in".
+        self.assertEqual("MUDADO", strings_of(self.res / "values-pt-rBR" / "strings.xml")["app_name"])
+        self.assertEqual("DIUBAH", strings_of(self.res / "values-in" / "strings.xml")["app_name"])
+        for folder in ("values-pt", "values-id"):
             self.assertFalse((self.res / folder).exists(), folder)
 
     def test_rerunning_is_idempotent(self):
@@ -237,7 +245,7 @@ class ImporterTests(unittest.TestCase):
         self.run_import()
         root = ET.parse(self.res / "xml" / "locales_config.xml").getroot()
         tags = [el.get("{http://schemas.android.com/apk/res/android}name") for el in root]
-        self.assertEqual(["en", "ar", "de", "es", "he", "nb", "zh-CN"], tags)
+        self.assertEqual(["en", "ar", "de", "es", "he", "id", "nb", "pt-BR", "zh-CN"], tags)
 
     def test_written_files_are_valid_xml_with_unique_keys(self):
         self.run_import()
@@ -276,7 +284,6 @@ class ImporterTests(unittest.TestCase):
             "ar": {"app_name": "ريمكس", "cd_key_home": "الرئيسية", "cd_key_enter": "إدخال", "font_lato": "لاتو"},
             "es": {"cd_key_home": "Inicio"},
         }})
-        es_before = (self.res / "values-es" / "strings.xml").read_bytes()
 
         # Without --update: an earlier import's translation of a KEEP_ENGLISH key is still replaced.
         summaries = self.run_import(export=export)
@@ -290,7 +297,8 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(2, summaries["ar"]["english"])
         # The 6 other fixture keys this export lacks; the two written as English are not counted.
         self.assertEqual(6, summaries["ar"]["missing"])
-        self.assertEqual(es_before, (self.res / "values-es" / "strings.xml").read_bytes())
+        self.assertEqual("Home", strings_of(self.res / "values-es" / "strings.xml")["cd_key_home"],
+                         "Spanish is Play's too now, so the keycap rule applies to it")
 
     def test_a_locale_with_only_keep_english_keys_gets_no_file(self):
         self.add_english(['<string name="cd_key_home">Home</string>'])
@@ -382,6 +390,151 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(machine, shipped, "every machine locale needs its plurals, and only those")
         for code, entries in data["locales"].items():
             self.assertEqual(plurals, set(entries), code)
+
+    # -- --fill-english ----------------------------------------------------------------------
+
+    def write_locale(self, qualifier, lines):
+        path = self.res / f"values-{qualifier}" / "strings.xml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(imp.render_file(lines), encoding="utf-8")
+        return path
+
+    def fill(self, **kwargs):
+        self.log = []
+        return {s["qualifier"]: s for s in imp.fill_english(self.res, out=self.log.append, **kwargs)}
+
+    def test_fill_adds_the_strings_plurals_and_arrays_a_locale_lacks(self):
+        ar = self.write_locale("ar", ['    <string name="app_name">ريمكس</string>'])
+        fi = self.write_locale("fi", ['    <string name="app_name">Remeksi</string>'])
+        summaries = self.fill()
+
+        english = strings_of(self.res / "values" / "strings.xml")
+        for path, quantities in ((ar, ["zero", "one", "two", "few", "many", "other"]), (fi, ["one", "other"])):
+            got = strings_of(path)
+            self.assertEqual(english["greeting"], got["greeting"])
+            self.assertEqual(english["plain"], got["plain"])
+            self.assertEqual(english["days"], got["days"])
+            self.assertEqual({q: english["files"]["other"] for q in quantities}, got["files"],
+                             "a plural gets the locale's quantities, each holding English's 'other'")
+            self.assertNotIn("progress", got, "translatable=\"false\" keys are not filled")
+            self.assertEqual(["app_name", "greeting", "count_and_name", "plain", "files", "days", "untouched"],
+                             [el.get("name") for el in ET.parse(path).getroot()], "English order")
+        self.assertEqual("ريمكس", strings_of(ar)["app_name"], "a translation already there is kept")
+        self.assertIn('    <string name="plain">It\\\'s ready</string>', fi.read_text(encoding="utf-8"),
+                      "the copy is the English element byte for byte")
+        self.assertEqual((6, 4, 1, 1), tuple(summaries["ar"][k] for k in ("added", "strings", "plurals", "arrays")))
+        self.assertTrue(any("values-ar: added 6" in line for line in self.log), "a per-locale count is printed")
+        self.assertIn("files", strings_of(self.res / "values-es" / "strings.xml"),
+                      "es is Play's now, so it is filled too")
+
+    def test_fill_never_touches_english_or_a_protected_locale(self):
+        english = (self.res / "values" / "strings.xml").read_bytes()
+        es = (self.res / "values-es" / "strings.xml").read_bytes()
+        self.write_locale("fi", ['    <string name="app_name">Remeksi</string>'])
+        protected = imp.REVIEWED_QUALIFIERS
+        imp.REVIEWED_QUALIFIERS = frozenset({"", "es"})
+        try:
+            summaries = self.fill()
+        finally:
+            imp.REVIEWED_QUALIFIERS = protected
+        self.assertEqual(["fi"], list(summaries))
+        self.assertEqual(english, (self.res / "values" / "strings.xml").read_bytes())
+        self.assertEqual(es, (self.res / "values-es" / "strings.xml").read_bytes())
+
+    def test_fill_is_idempotent_and_dry_run_writes_nothing(self):
+        self.write_locale("ar", ['    <string name="app_name">ريمكس</string>'])
+        before = self.snapshot()
+        summaries = self.fill(dry_run=True)
+        self.assertEqual(before, self.snapshot())
+        self.assertTrue(summaries["ar"]["wrote"])
+
+        self.fill()
+        first = self.snapshot()
+        self.assertNotEqual(before, first)
+        summaries = self.fill()
+        self.assertEqual(first, self.snapshot())
+        self.assertTrue(all(s["added"] == 0 and not s["wrote"] for s in summaries.values()))
+        self.assertTrue(any("Nothing to add" in line for line in self.log))
+
+    def test_fill_drops_keys_english_lost_and_replaces_a_changed_type(self):
+        path = self.write_locale("fi", ['    <string name="app_name">Remeksi</string>',
+                                        '    <string name="files">Tiedostot</string>',
+                                        '    <string name="old_key">Vanha</string>'])
+        summaries = self.fill()
+        got = strings_of(path)
+        self.assertNotIn("old_key", got, "release lint fails an extra key")
+        self.assertEqual({"one", "other"}, set(got["files"]), "a string where English has a plural is replaced")
+        self.assertEqual(2, summaries["fi"]["dropped"])
+
+    def test_fill_needs_to_know_the_locales_plural_quantities(self):
+        self.write_locale("xx", ['    <string name="app_name">x</string>'])
+        with self.assertRaises(imp.ExportError):
+            self.fill()
+        (self.res / "values-xx" / "strings.xml").unlink()
+        self.write_locale("ja", ['    <string name="app_name">x</string>'])
+        self.write_locale("lv", ['    <string name="app_name">x</string>'])
+        self.fill()
+        self.assertEqual({"other"}, set(strings_of(self.res / "values-ja" / "strings.xml")["files"]))
+        self.assertEqual({"zero", "one", "other"}, set(strings_of(self.res / "values-lv" / "strings.xml")["files"]))
+
+    def test_the_plural_quantities_cover_every_shipped_locale_and_the_supplement(self):
+        locales = [q for q in imp.locale_qualifiers(imp.DEFAULT_RES) if q not in imp.REVIEWED_QUALIFIERS]
+        self.assertTrue(locales, "found no locale folders - the scan is broken")
+        for qualifier in locales:
+            self.assertIn("other", imp.plural_categories(qualifier), qualifier)
+        data = json.loads(imp.DEFAULT_SUPPLEMENT.read_text(encoding="utf-8"))
+        for code, entries in data["locales"].items():
+            categories = set(imp.plural_categories(imp.play_code_to_qualifier(code)))
+            for name, quantities in entries.items():
+                self.assertTrue(set(quantities) <= categories, f"{code} {name}")
+
+    def test_a_later_import_replaces_placeholders_but_not_real_translations(self):
+        self.add_english(['<string name="font_lato">Lato</string>'])
+        self.write_locale("de", ['    <string name="greeting">Servus, %1$s!</string>'])
+        self.fill()
+        export = self.write_json("export.json", {"source": imp.EXPORT_SOURCE, "locales": {"de": {
+            "greeting": "Hallo, %1$s!", "plain": "Fertig", "font_lato": "Lato-DE",
+            "files": {"one": "Eine Datei", "other": "%1$d Dateien"}, "days": ["Montag", "Dienstag um %1$s"]}}})
+
+        summaries = self.run_import(export=export)
+        path = self.res / "values-de" / "strings.xml"
+        de = strings_of(path)
+        self.assertEqual("Servus, %1$s!", de["greeting"], "a real translation needs --update")
+        self.assertEqual("Fertig", de["plain"])
+        self.assertEqual({"one": "Eine Datei", "other": "%1$d Dateien"}, de["files"])
+        self.assertEqual(["Montag", "Dienstag um %1$s"], de["days"])
+        self.assertEqual("Not in the export", de["untouched"], "no translation yet: the placeholder stays")
+        self.assertEqual("Lato", de["font_lato"], "KEEP_ENGLISH keys stay English")
+        self.assertEqual((3, 1), (summaries["de"]["filled"], summaries["de"]["differs"]))
+
+        first = self.snapshot()
+        self.run_import(export=export)
+        self.assertEqual(first, self.snapshot())
+        self.run_import(export=export, update=True)
+        self.assertEqual("Hallo, %1$s!", strings_of(path)["greeting"])
+
+    def test_update_keeps_a_translation_whose_line_breaks_play_lost(self):
+        self.add_english(['<string name="faq">One\\n\\nTwo</string>', '<string name="faq2">Three\\nFour</string>'])
+        path = self.write_locale("de", ['    <string name="faq">Eins\\n\\nZwei</string>',
+                                        '    <string name="faq2">Drei\\nVier</string>'])
+        export = self.write_json("export.json", {"source": imp.EXPORT_SOURCE, "locales": {
+            "de": {"faq": "Eins Zwei", "faq2": "Drei\nVier!"}, "fi": {"faq": "Yksi Kaksi"}}})
+        summaries = self.run_import(export=export, update=True)
+        got = strings_of(path)
+        self.assertEqual("Eins\n\nZwei", got["faq"], "Play flattened the paragraphs; the file's version stays")
+        self.assertEqual("Drei\nVier!", got["faq2"], "a value that keeps its break is a normal update")
+        self.assertEqual((1, 1), (summaries["de"]["linebreaks"], summaries["de"]["changed"]))
+        self.assertEqual("Yksi Kaksi", strings_of(self.res / "values-fi" / "strings.xml")["faq"],
+                         "nothing to protect in a new locale")
+
+    def test_the_command_line_fills_and_refuses_a_confused_call(self):
+        self.write_locale("fi", ['    <string name="app_name">Remeksi</string>'])
+        self.assertEqual(0, imp.main(["--fill-english", "--res", str(self.res)]))
+        self.assertIn("greeting", strings_of(self.res / "values-fi" / "strings.xml"))
+        for argv in ([], ["--fill-english", "export.json"], ["--fill-english", "--update"],
+                     ["--fill-english", "--supplement"]):
+            with self.subTest(argv=argv), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                imp.main(argv)
 
     # -- Play's mangled letters --------------------------------------------------------------
 
