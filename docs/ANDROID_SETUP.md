@@ -348,6 +348,43 @@ Adding any of these back means changing the Play data safety form first. That's 
 
 ---
 
+## Extra languages from Play's machine translations
+
+The phone app ships 9 reviewed languages (en, es, fr, hi, id, pl, pt-BR, tr, uk). Play Console can machine-translate
+the app strings into about 40 more with Gemini, but those only reach Play installs. To give the GitHub APK the same
+languages (RemEx-fwhqw):
+
+1. Upload the release AAB to a **draft** release in Play Console and turn on automatic translation of app strings.
+   Wait until Play shows the translations as ready.
+2. On the translations page, run the in-browser exporter. It downloads `play-translations.json`.
+3. Preview the import, then run it:
+   ```powershell
+   uv run python scripts/import_play_translations.py play-translations.json --dry-run
+   uv run python scripts/import_play_translations.py play-translations.json
+   ```
+   It prints, for each language, how many strings it added, changed, skipped (format arguments that don't match
+   English) and how many are missing (those show in English). Add `--update` to overwrite strings imported
+   earlier. The 9 reviewed languages are never touched, even with `--update`.
+4. Run the Android unit tests (`cd remex.android; ./gradlew :app:testReleaseUnitTest`), then `scripts/verify.ps1`.
+
+What the importer writes and why:
+- One `res/values-<qualifier>/strings.xml` per new language, marked as machine-translated, holding only keys that
+  exist in English and aren't `translatable="false"`. Re-running it changes nothing unless the export changed.
+- Play codes map to the folders Android actually resolves: `he` → `values-iw`, `id` → `values-in` (Android
+  rewrites both to the legacy codes before it looks up resources, so `values-he` would never be used),
+  `no` → `values-nb` (devices report Norwegian Bokmål as `nb`), `zh-CN` → `values-zh-rCN`. Play's `pt` is skipped
+  because we ship pt-BR.
+- `res/xml/locales_config.xml` is regenerated from the folders, with modern tags (`he`, `id`). That file drives
+  the system's per-app language setting and the in-app picker. `build.gradle.kts` builds `localeFilters` from the
+  same folders, so nothing else needs editing.
+
+Hand-fixing a machine translation is fine: without `--update`, a re-import keeps your edit. To drop a bad one,
+delete the line and the key falls back to English. `KeycapAccessibleNameTests` holds machine translations to the
+same rule as reviewed ones for the keyboard keys, so a key name Play localised (for example `Strg` for Ctrl) fails
+the tests until it's deleted.
+
+---
+
 ## Additional Resources
 
 - [Android Command Line Tools](https://developer.android.com/studio/command-line)

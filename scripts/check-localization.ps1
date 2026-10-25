@@ -7,6 +7,13 @@
     RemEx ships in 9 languages on two platforms, and a translation can go wrong in three
     different ways. This script checks all three, on both platforms, in one pass.
 
+    The phone can also carry Play's machine translations (RemEx-fwhqw): any Android values-*
+    folder outside the 9 reviewed ones, as written by scripts/import_play_translations.py. Those
+    get the structural half only - orphaned, mistyped or empty keys (axis 1) and placeholders
+    (axis 4), which break the app whoever wrote the text. Keys they lack fall back to English and
+    are only counted, and the staleness and untranslated axes skip them: nobody reviews machine
+    text line by line, so those warnings would only bury the reviewed languages' ones.
+
     AXIS 1 - PARITY ("is the key missing from one language?")
         Every key in the English file must exist in all 8 translated files, and no translated
         file may define a key English does not have. This is what catches a key accidentally
@@ -431,17 +438,22 @@ function Test-Parity {
     param(
         [Parameter(Mandatory = $true)][hashtable]$Config,
         [Parameter(Mandatory = $true)][hashtable]$BaseEntries,
-        [Parameter(Mandatory = $true)][hashtable]$LocaleEntries
+        [Parameter(Mandatory = $true)][hashtable]$LocaleEntries,
+        # Machine-translated locales: a missing key shows in English, which is the expected state
+        # until the next Play export, so it is counted rather than reported.
+        [switch]$AllowMissing
     )
 
     $translatableKeys = @($BaseEntries.Keys | Where-Object { $BaseEntries[$_].Translatable })
     $untranslatableKeys = @($BaseEntries.Keys | Where-Object { -not $BaseEntries[$_].Translatable })
+    $missingTotal = 0
 
     foreach ($locale in $Config.Locales) {
         if (-not $LocaleEntries.ContainsKey($locale)) { continue }
         $entries = $LocaleEntries[$locale]
 
         $missing = @($translatableKeys | Where-Object { -not $entries.ContainsKey($_) } | Sort-Object)
+        if ($AllowMissing) { $missingTotal += $missing.Count; $missing = @() }
         foreach ($key in $missing) {
             Add-Finding -Severity Error -Category 'Parity: missing translation' -Platform $Config.Name `
                 -Id "$($Config.Kind)/parity-missing/$locale/$key" `
@@ -485,6 +497,33 @@ function Test-Parity {
             }
         }
     }
+
+    if ($AllowMissing -and $missingTotal -gt 0) {
+        Write-Step "The machine-translated locales lack $missingTotal translation(s) in total; those keys show in English."
+    }
+}
+
+function Get-MachineLocales {
+    <#
+        Android values-<locale> folders with a strings.xml that are not among the reviewed locales:
+        the Play machine translations scripts/import_play_translations.py writes (RemEx-fwhqw).
+        Discovered rather than listed, so importing a language needs no edit here.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$ResDir,
+        [Parameter(Mandatory = $true)][string[]]$Reviewed
+    )
+    if (-not (Test-Path -LiteralPath $ResDir)) { return @() }
+    $found = [System.Collections.Generic.List[string]]::new()
+    foreach ($dir in Get-ChildItem -LiteralPath $ResDir -Directory) {
+        # Case-sensitive: values-night or values-v31 are not locales, and neither is values-AR.
+        $m = [regex]::Match($dir.Name, '^values-([a-z]{2,3}(?:-r[A-Z]{2})?|b\+[A-Za-z0-9+]+)$')
+        if (-not $m.Success) { continue }
+        $qualifier = $m.Groups[1].Value
+        if ($Reviewed -ccontains $qualifier) { continue }
+        if (Test-Path -LiteralPath (Join-Path $dir.FullName 'strings.xml')) { $found.Add($qualifier) }
+    }
+    return @($found | Sort-Object)
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -752,6 +791,39 @@ function Invoke-SelfTest {
     Test-IdenticalToEnglish -Config $config -BaseEntries $base `
         -LocaleEntries @{ xx = @{ Btn = @{ Value = 'Eşleştir'; Translatable = $true } } }
     Assert-Check ($script:Findings.Count -eq 0) 'a translated value must produce no finding'
+
+    # (b2) Play machine translations (RemEx-fwhqw). Discovery that finds too much buries axes 2 and 5
+    #     in warnings nobody will act on; discovery that finds too little lets a broken placeholder
+    #     in 40 languages through axis 4. And a missing key there is counted, while an orphan is not.
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) "remex-l10n-selftest-$PID"
+    try {
+        foreach ($d in @('values', 'values-es', 'values-ar', 'values-zh-rCN', 'values-night', 'values-v31')) {
+            [void](New-Item -ItemType Directory -Force -Path (Join-Path $tmp $d))
+            if ($d -ne 'values-v31') { Set-Content -LiteralPath (Join-Path $tmp $d 'strings.xml') -Value '<resources/>' }
+        }
+        $machine = @(Get-MachineLocales -ResDir $tmp -Reviewed @('es'))
+        Assert-Check (($machine -join ',') -ceq 'ar,zh-rCN') `
+            "machine-translated locale discovery must find exactly 'ar,zh-rCN', found '$($machine -join ',')'"
+    }
+    finally {
+        Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    $machineConfig = @{ Name = 'SelfTest'; Kind = 'android'; Locales = @('ar') }
+    $machineBase = @{
+        Btn  = @{ Value = 'Pair'; Translatable = $true; Kind = 'string' }
+        Gone = @{ Value = 'Gone'; Translatable = $true; Kind = 'string' }
+    }
+    $machineLocale = @{ ar = @{
+            Btn   = @{ Value = 'إقران'; Translatable = $true; Kind = 'string' }
+            Stray = @{ Value = 'x'; Translatable = $true; Kind = 'string' }
+        } }
+    $script:Findings = [System.Collections.Generic.List[object]]::new()
+    Test-Parity -Config $machineConfig -BaseEntries $machineBase -LocaleEntries $machineLocale -AllowMissing 6>$null
+    Assert-Check (@($script:Findings | Where-Object { $_.Id -like '*parity-missing*' }).Count -eq 0) `
+        'a key a machine-translated locale lacks must be counted, not reported'
+    Assert-Check (@($script:Findings | Where-Object { $_.Id -eq 'android/parity-orphan/ar/Stray' }).Count -eq 1) `
+        'an orphaned key in a machine-translated locale must still be reported'
 
     # (c) The contract with verify.ps1, expressed the way verify.ps1 reads it. This is the assertion
     #     that catches a renamed marker - and the one that would have caught the wrong premise this
@@ -1290,9 +1362,28 @@ foreach ($platformKey in $selected) {
     }
     Write-Step "Loaded $($localeEntries.Count) of $($config.Locales.Count) translation files."
 
+    # Play machine translations (Android only): structure and placeholders, nothing else. See the
+    # header for why they stay out of the staleness and untranslated axes.
+    $machineConfig = $null
+    $machineEntries = @{}
+    if ($config.Kind -eq 'android') {
+        $machine = @(Get-MachineLocales -ResDir (Join-Path $RepoRoot $config.Dir) -Reviewed $config.Locales)
+        if ($machine.Count -gt 0) {
+            $machineConfig = $config.Clone()
+            $machineConfig.Locales = $machine
+            foreach ($locale in $machine) {
+                $machineEntries[$locale] = Get-LocalizationEntries -Path (Join-Path $RepoRoot ($config.LocaleFile -f $locale)) -Kind $config.Kind
+            }
+            Write-Step "Also loaded $($machine.Count) machine-translated file(s) from Play ($($machine -join ', ')), checked on axes 1 and 4 only."
+        }
+    }
+
     if ($Axis -in @('all', 'parity')) {
         Write-Step 'Axis 1: key parity across all 9 files...'
         Test-Parity -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
+        if ($machineConfig) {
+            Test-Parity -Config $machineConfig -BaseEntries $baseEntries -LocaleEntries $machineEntries -AllowMissing
+        }
     }
 
     if ($Axis -in @('all', 'staleness')) {
@@ -1311,6 +1402,9 @@ foreach ($platformKey in $selected) {
     if ($Axis -in @('all', 'placeholder')) {
         Write-Step 'Axis 4: placeholders match English...'
         Test-PlaceholderParity -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
+        if ($machineConfig) {
+            Test-PlaceholderParity -Config $machineConfig -BaseEntries $baseEntries -LocaleEntries $machineEntries
+        }
     }
 
     if ($Axis -in @('all', 'untranslated')) {

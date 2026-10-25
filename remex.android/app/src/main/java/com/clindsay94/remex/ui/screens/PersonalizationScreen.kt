@@ -318,31 +318,28 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
 
+                    val languageOptions = remember {
+                        AppLanguages.options(AppLanguages.supportedTags(view.context))
+                    }
+
                     val currentLangTag = run {
                         val localeManager = view.context.getSystemService(LocaleManager::class.java)
                         val appLocales = localeManager?.applicationLocales
                         if (appLocales == null || appLocales.isEmpty) {
                             "system"
                         } else {
-                            val tag = appLocales.get(0).toLanguageTag()
-                            if (tag == "in" || tag == "id") "id" else tag
+                            AppLanguages.resolve(
+                                    appLocales.get(0).toLanguageTag(),
+                                    languageOptions.map { it.first }
+                            ) ?: "system"
                         }
                     }
 
                     val supportedLanguages =
                             listOf(
                                     "system" to
-                                            stringResource(R.string.personalization_system_default),
-                                    "en" to "English",
-                                    "es" to "Español",
-                                    "fr" to "Français",
-                                    "hi" to "हिन्दी",
-                                    "id" to "Bahasa Indonesia",
-                                    "pl" to "Polski",
-                                    "pt-BR" to "Português (BR)",
-                                    "tr" to "Türkçe",
-                                    "uk" to "Українська"
-                            )
+                                            stringResource(R.string.personalization_system_default)
+                            ) + languageOptions
 
                     // The language note used to be a permanent banner above the picker. It is now
                     // said once, at the moment it applies: picking a DIFFERENT language asks to

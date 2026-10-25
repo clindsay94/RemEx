@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="greeting">Hello, %1$s!</string>
+    <string name="count_and_name">%1$d files on %2$s</string>
+    <string name="plain">It\'s ready</string>
+    <string name="progress" translatable="false">%1$d%%</string>
+    <plurals name="files">
+        <item quantity="one">One file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <string-array name="days">
+        <item>Monday</item>
+        <item>Tuesday at %1$s</item>
+    </string-array>
+    <string name="untouched">Not in the export</string>
+</resources>

@@ -16,6 +16,24 @@ features and fixes, plus first-visit tips for the screens people tend to miss. (
 
 It also reorganises where things live on both apps, so each page is grouped by what you are doing. (RemEx-172ba)
 
+### Added (RemEx-fwhqw)
+
+**Phone**
+- `scripts/import_play_translations.py` copies Google Play's machine translations of the app strings into the
+  phone app, so the GitHub APK can carry the extra languages Play installs get. It only adds languages we don't
+  ship yet and never touches the 9 reviewed ones. It escapes the text for Android, skips any translation whose
+  format arguments don't match English, keeps values already imported unless you pass `--update`, and has a
+  `--dry-run`. No languages have been imported yet.
+- The language picker now lists whatever `res/xml/locales_config.xml` lists, each language in its own name, and
+  the build keeps every `values-*` language folder rather than a hand-written list. A new language ships and
+  shows up in the picker with no code change. `AppLanguagesTest` fails if the folders and `locales_config.xml`
+  drift apart.
+- Page titles pick a font that covers each new language's script: Victor Mono for Russian, Bulgarian, Greek and
+  Vietnamese, the system font for Indic, Arabic, Hebrew, Persian, Urdu, Thai, Chinese, Japanese and Korean.
+- `scripts/check-localization.ps1` treats any extra Android language as machine-translated: it still fails on
+  broken placeholders and orphaned, mistyped or empty keys, but counts missing keys instead of reporting them
+  and leaves those languages out of the staleness and untranslated checks. `verify.ps1` runs the importer's tests.
+
 ### Changed: where things live now (RemEx-172ba)
 
 **PC**

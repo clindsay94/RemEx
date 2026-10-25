@@ -1089,6 +1089,27 @@ else {
     Write-Say "  Skipped - .claude/scripts/test_guard_edit.py is not present."
 }
 
+# The importer writes resource files in bulk, so a regression in its escaping or its reviewed-locale
+# protection would land in 40 languages at once and only show up on a device (RemEx-fwhqw).
+Write-Stage "Checking the Play translation importer"
+$importerTests = Join-Path $PSScriptRoot 'tests' 'test_import_play_translations.py'
+if (Test-Path -LiteralPath $importerTests) {
+    $importerOut = python3 $importerTests 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('Play translation importer tests failed')
+        Write-Problem "The Play translation importer is not behaving correctly." `
+            "Run: uv run python scripts/tests/test_import_play_translations.py"
+        $importerOut | Select-String -Pattern '^(FAIL|ERROR):' |
+            ForEach-Object { Write-Say "    $_" 'Red' }
+    }
+    else {
+        Write-Say "  The Play translation importer passes its own tests."
+    }
+}
+else {
+    Write-Say "  Skipped - scripts/tests/test_import_play_translations.py is not present."
+}
+
 # --- Lane placement --------------------------------------------------------
 # The dispatcher's whole safety argument is that concurrent lanes touch disjoint files, and the
 # rule enforcing it is pure - no board, no git, no network - so it is checkable here for

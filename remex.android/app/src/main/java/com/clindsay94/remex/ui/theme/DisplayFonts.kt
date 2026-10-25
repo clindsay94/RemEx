@@ -20,10 +20,10 @@ enum class DisplayFont {
     /** Bungee Shade titles with Orbitron subtitles, the shared default. Both are Latin only. */
     LATIN_DISPLAY,
 
-    /** Victor Mono Bold, bundled on both apps, which covers Cyrillic. */
+    /** Victor Mono Bold, bundled on both apps, which covers Cyrillic, Greek and Vietnamese. */
     VICTOR_MONO,
 
-    /** The platform's default sans, which covers Devanagari. */
+    /** The platform's default sans, which covers every other script (Indic, Arabic, Hebrew, Thai, CJK). */
     SYSTEM,
 }
 
@@ -31,14 +31,18 @@ enum class DisplayFont {
  * Picks the title font for a UI language, once per language rather than glyph by glyph, so one word
  * never mixes two fonts. Bungee Shade and Orbitron are Latin-only: Ukrainian gets Victor Mono, Hindi
  * the system sans.
- * The PC applies the same rule in `PageDisplayFontRule.ForLanguage`.
+ * The PC applies the same rule, for the 9 languages it ships, in `PageDisplayFontRule.ForLanguage`.
+ * The rest are the phone's machine-translated languages (RemEx-fwhqw); coverage was checked against
+ * the bundled font files' cmaps.
  *
  * @param languageTag a BCP 47 tag such as `uk`, `uk-UA` or `pt-BR`; null or blank means English.
  */
 fun displayFontForLanguage(languageTag: String?): DisplayFont =
     when (languageTag.orEmpty().substringBefore('-').substringBefore('_').lowercase(Locale.ROOT)) {
-        "uk" -> DisplayFont.VICTOR_MONO
-        "hi" -> DisplayFont.SYSTEM
+        // Orbitron has none of Vietnamese's stacked diacritics, so nearly every word would mix fonts.
+        "uk", "ru", "bg", "el", "vi" -> DisplayFont.VICTOR_MONO
+        "hi", "mr", "bn", "gu", "pa", "kn", "ml", "ta", "te",
+        "ar", "fa", "ur", "he", "iw", "th", "zh", "ja", "ko" -> DisplayFont.SYSTEM
         else -> DisplayFont.LATIN_DISPLAY
     }
 

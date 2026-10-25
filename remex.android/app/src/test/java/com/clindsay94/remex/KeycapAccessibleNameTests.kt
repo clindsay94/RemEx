@@ -56,9 +56,16 @@ class KeycapAccessibleNameTests {
                     ?.groupValues
                     ?.get(1)
 
+    // The hand-reviewed files, which must carry every key. Any other values-* folder is a Play
+    // machine translation (RemEx-fwhqw): a key it lacks falls back to English, which passes, but a
+    // name it does carry is held to the same rule.
+    private val reviewed = setOf("values", "values-es", "values-fr", "values-hi", "values-in", "values-pl",
+            "values-pt-rBR", "values-tr", "values-uk")
+
     @Test
     fun `every keycap name starts with the legend drawn on the cap`() {
-        assertEquals("Expected all nine locale files.", 9, localeFiles.size)
+        assertEquals("Expected all nine reviewed locale files.", reviewed,
+                localeFiles.map { it.parentFile.name }.filter { it in reviewed }.toSet())
 
         val offenders = mutableListOf<String>()
         var checked = 0
@@ -70,10 +77,10 @@ class KeycapAccessibleNameTests {
             for ((key, legend) in legends) {
                 val name = value(source, key)
                 if (name == null) {
-                    offenders.add("$locale/$key is missing")
+                    if (locale in reviewed) offenders.add("$locale/$key is missing")
                     continue
                 }
-                checked++
+                if (locale in reviewed) checked++
 
                 // Either the bare legend, or the legend followed by a parenthetical gloss. A bare
                 // legend is legitimate and deliberate: es carries "Esc" with no gloss because
@@ -85,7 +92,7 @@ class KeycapAccessibleNameTests {
             }
         }
 
-        assertEquals("Expected 12 keys x 9 locales.", 108, checked)
+        assertEquals("Expected 12 keys x 9 reviewed locales.", 108, checked)
         assertEquals(
                 "A speech-input user says the legend printed on the cap, so the accessible name must " +
                         "start with it (WCAG 2.5.3). Offenders: $offenders",

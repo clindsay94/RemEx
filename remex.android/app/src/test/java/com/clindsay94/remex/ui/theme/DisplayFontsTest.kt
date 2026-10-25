@@ -31,6 +31,30 @@ class DisplayFontsTest {
         }
     }
 
+    // The machine-translated phone languages (RemEx-fwhqw), by the script each one is written in.
+    @Test
+    fun latinScriptMachineTranslatedLanguagesUseTheLatinDisplayFonts() {
+        listOf("ca", "hr", "cs", "da", "nl", "et", "fi", "de", "hu", "is", "it", "lv", "lt", "nb", "no",
+                "ro", "sk", "sl", "sw", "sv", "zu").forEach { tag ->
+            assertEquals(tag, DisplayFont.LATIN_DISPLAY, displayFontForLanguage(tag))
+        }
+    }
+
+    @Test
+    fun cyrillicGreekAndVietnameseUseVictorMono() {
+        listOf("ru", "bg", "el", "vi", "vi-VN").forEach { tag ->
+            assertEquals(tag, DisplayFont.VICTOR_MONO, displayFontForLanguage(tag))
+        }
+    }
+
+    @Test
+    fun scriptsNoBundledFontCoversUseTheSystemSans() {
+        listOf("ar", "fa", "ur", "he", "iw", "he-IL", "bn", "gu", "kn", "ml", "mr", "pa", "ta", "te",
+                "th", "zh-CN", "zh_CN", "ja", "ko").forEach { tag ->
+            assertEquals(tag, DisplayFont.SYSTEM, displayFontForLanguage(tag))
+        }
+    }
+
     @Test
     fun missingLanguageFallsBackToTheLatinDisplayFonts() {
         assertEquals(DisplayFont.LATIN_DISPLAY, displayFontForLanguage(null))

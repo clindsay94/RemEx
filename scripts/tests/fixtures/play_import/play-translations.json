@@ -1,0 +1,39 @@
+{
+  "source": "play-console-app-translations",
+  "exportedAt": "2026-10-24T18:00:00Z",
+  "locales": {
+    "ar": {
+      "app_name": "ريمكس",
+      "greeting": "مرحبا، %1$s!",
+      "count_and_name": "%1$s ملفات",
+      "plain": "إنه جاهز",
+      "progress": "%1$d٪",
+      "not_a_key": "لا شيء",
+      "files": {
+        "zero": "لا ملفات",
+        "one": "ملف واحد",
+        "two": "ملفان",
+        "few": "%1$d ملفات",
+        "many": "%1$d ملفًا",
+        "other": "%1$d ملف"
+      },
+      "days": ["الاثنين", "الثلاثاء في %1$s"]
+    },
+    "de": {
+      "app_name": "RemEx",
+      "greeting": "Hallo, %1$s!",
+      "count_and_name": "%1$d Dateien auf %2$s",
+      "plain": "@Es ist \"fertig\" & <bereit>'s\nZeile 2\tTab \\ Ende",
+      "files": {"one": "Eine Datei", "other": "%1$d Dateien mit %2$s"},
+      "days": ["Montag"]
+    },
+    "he": {"app_name": "רמקס", "plain": "?מוכן"},
+    "no": {"app_name": "RemEx", "plain": "  Det er klart  nå "},
+    "zh-CN": {"app_name": "RemEx", "greeting": "你好，%1$s！"},
+    "es": {"app_name": "CAMBIADO", "greeting": "CAMBIADO %1$s"},
+    "pt": {"app_name": "MUDADO"},
+    "pt-BR": {"app_name": "MUDADO"},
+    "id": {"app_name": "DIUBAH"},
+    "en": {"app_name": "CHANGED"}
+  }
+}

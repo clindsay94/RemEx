@@ -219,12 +219,21 @@ android {
         }
     }
     // Keep only the locales the app itself ships (perf audit P3-30). Without this, resources.arsc
-    // carries every library translation (~87 locales) for 9 app locales. Keep this list in sync
-    // with the res/values-* folders and res/xml/locales_config.xml. Indonesian is "in" on disk
-    // (legacy code) but "id" in locales_config, so both are listed. "pt" keeps library strings
-    // that only ship values-pt, which a pt-BR device falls back to.
+    // carries every library translation (~87 locales). The list is every res/values-<locale> folder
+    // with a strings.xml, so a language added by scripts/import_play_translations.py (RemEx-fwhqw)
+    // ships without editing this; AppLanguagesTest keeps res/xml/locales_config.xml in step.
+    // Hebrew and Indonesian are "iw"/"in" on disk (legacy codes) but "he"/"id" in locales_config,
+    // so both forms are listed. "pt" keeps library strings that only ship values-pt, which a pt-BR
+    // device falls back to. listFiles() is a tracked configuration-cache input, so a new folder
+    // invalidates the cache (kotlin.io.walk would not be).
     androidResources {
-        localeFilters += listOf("en", "es", "fr", "hi", "in", "id", "pl", "pt", "pt-rBR", "tr", "uk")
+        val localeDir = Regex("""values-([a-z]{2,3}(?:-r[A-Z]{2})?|b\+[A-Za-z0-9+]+)""")
+        val shipped = file("src/main/res").listFiles().orEmpty()
+            .filter { it.isDirectory && File(it, "strings.xml").isFile }
+            .mapNotNull { localeDir.matchEntire(it.name)?.groupValues?.get(1) }
+        val modernAliases = mapOf("in" to "id", "iw" to "he")
+        localeFilters += (listOf("en", "pt") + shipped + shipped.mapNotNull { modernAliases[it] })
+            .distinct().sorted()
     }
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
