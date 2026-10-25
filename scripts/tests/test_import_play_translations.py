@@ -5,6 +5,8 @@ Run: uv run python scripts/tests/test_import_play_translations.py
 verify.ps1 runs it next to the edit guard's tests.
 """
 
+import json
+import re
 import shutil
 import sys
 import tempfile
@@ -250,6 +252,149 @@ class ImporterTests(unittest.TestCase):
         bogus.write_text('{"locales": {}}', encoding="utf-8")
         with self.assertRaises(imp.ExportError):
             self.run_import(export=bogus)
+
+    # -- keys that stay English --------------------------------------------------------------
+
+    def add_english(self, lines):
+        english = self.res / "values" / "strings.xml"
+        english.write_text(english.read_text(encoding="utf-8").replace(
+            "</resources>", "".join(f"    {line}\n" for line in lines) + "</resources>"), encoding="utf-8")
+
+    def write_json(self, name, data):
+        path = self.tmp / name
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return path
+
+    def test_keep_english_keys_are_written_as_english_over_any_translation(self):
+        self.add_english(['<string name="cd_key_home">Home</string>',
+                          '<string name="cd_key_enter">Enter</string>',
+                          '<string name="font_lato">Lato</string>'])
+        ar_file = self.res / "values-ar" / "strings.xml"
+        ar_file.parent.mkdir()
+        ar_file.write_text(imp.render_file(['    <string name="cd_key_home">الرئيسية</string>']), encoding="utf-8")
+        export = self.write_json("export.json", {"source": imp.EXPORT_SOURCE, "locales": {
+            "ar": {"app_name": "ريمكس", "cd_key_home": "الرئيسية", "cd_key_enter": "إدخال", "font_lato": "لاتو"},
+            "es": {"cd_key_home": "Inicio"},
+        }})
+        es_before = (self.res / "values-es" / "strings.xml").read_bytes()
+
+        # Without --update: an earlier import's translation of a KEEP_ENGLISH key is still replaced.
+        summaries = self.run_import(export=export)
+
+        ar = strings_of(ar_file)
+        self.assertEqual("Home", ar["cd_key_home"], "a keycap with a Latin legend must read as English")
+        self.assertEqual("Lato", ar["font_lato"], "a font label is the family's own name")
+        self.assertEqual("إدخال", ar["cd_key_enter"], "a glyph-only key draws no legend, so it is translated")
+        self.assertIn('    <string name="cd_key_home">Home</string>', ar_file.read_text(encoding="utf-8"),
+                      "the copy is the English element byte for byte")
+        self.assertEqual(2, summaries["ar"]["english"])
+        # The 6 other fixture keys this export lacks; the two written as English are not counted.
+        self.assertEqual(6, summaries["ar"]["missing"])
+        self.assertEqual(es_before, (self.res / "values-es" / "strings.xml").read_bytes())
+
+    def test_a_locale_with_only_keep_english_keys_gets_no_file(self):
+        self.add_english(['<string name="cd_key_home">Home</string>'])
+        export = self.write_json("export.json", {"source": imp.EXPORT_SOURCE, "locales": {"fi": {"cd_key_home": "Koti"}}})
+        summaries = self.run_import(export=export)
+        self.assertFalse((self.res / "values-fi").exists())
+        self.assertFalse(summaries["fi"]["has_file"])
+
+    def test_keep_english_matches_the_legend_keys_the_keycap_test_checks(self):
+        kotlin = (imp.REPO_ROOT / "remex.android" / "app" / "src" / "test" / "java" / "com" / "clindsay94"
+                  / "remex" / "KeycapAccessibleNameTests.kt").read_text(encoding="utf-8")
+        legends = set(re.findall(r'"(cd_key_\w+)" to "', kotlin))
+        self.assertTrue(legends, "found no legend keys - the scan is broken")
+        self.assertEqual(legends, {k for k in imp.KEEP_ENGLISH if k.startswith("cd_key_")})
+        self.assertTrue(imp.keeps_english("font_space_grotesk"))
+        self.assertFalse(imp.keeps_english("cd_key_enter"))
+
+    # -- supplement --------------------------------------------------------------------------
+
+    AR_FILES = {"zero": "%1$d ملف (ملحق)", "one": "%1$d ملف (ملحق)", "two": "%1$d ملفان", "few": "%1$d ملفات",
+                "many": "%1$d ملفًا", "other": "%1$d ملف (ملحق)"}
+
+    def supplement(self, locales, source=imp.SUPPLEMENT_SOURCE):
+        return self.write_json("supplement.json", {"source": source, "locales": locales})
+
+    def test_supplement_plurals_are_merged_over_the_export_and_written(self):
+        supplement = self.supplement({
+            "ar": {"files": self.AR_FILES},
+            "de": {"files": {"one": "%1$d Datei", "other": "%1$d Dateien"}},
+            "ja": {"files": {"other": "%1$d 個のファイル"}},
+        })
+        summaries = self.run_import(supplement_path=supplement)
+
+        self.assertEqual(self.AR_FILES, strings_of(self.res / "values-ar" / "strings.xml")["files"],
+                         "the supplement wins over the export's plural")
+        de = strings_of(self.res / "values-de" / "strings.xml")
+        self.assertEqual({"one": "%1$d Datei", "other": "%1$d Dateien"}, de["files"])
+        self.assertEqual("Hallo, %1$s!", de["greeting"], "the export's strings still come through")
+        self.assertEqual({"other": "%1$d 個のファイル"}, strings_of(self.res / "values-ja" / "strings.xml")["files"])
+        self.assertEqual(1, summaries["de"]["supplemented"])
+        self.assertNotIn("files", summaries["de"]["skipped"])
+
+        text = (self.res / "values-ar" / "strings.xml").read_text(encoding="utf-8")
+        quantities = re.findall(r'quantity="(\w+)"', text)
+        self.assertEqual(list(imp.PLURAL_QUANTITIES), quantities, "items are written in CLDR order")
+
+    def test_the_supplement_flag_alone_uses_the_checked_in_file(self):
+        captured = {}
+        original = imp.run
+        imp.run = lambda *a, **k: captured.update(k)
+        try:
+            self.assertEqual(0, imp.main(["export.json", "--supplement"]))
+            self.assertEqual(imp.DEFAULT_SUPPLEMENT, captured["supplement_path"])
+            self.assertEqual(0, imp.main(["export.json"]))
+            self.assertIsNone(captured["supplement_path"])
+        finally:
+            imp.run = original
+
+    def test_a_supplement_needs_its_own_source(self):
+        faked = self.supplement({"de": {"files": {"one": "%1$d Datei", "other": "%1$d Dateien"}}},
+                                source=imp.EXPORT_SOURCE)
+        with self.assertRaises(imp.ExportError):
+            self.run_import(supplement_path=faked)
+
+    def test_a_bad_supplement_entry_stops_the_import_before_anything_is_written(self):
+        before = self.snapshot()
+        for bad in ({"de": {"files": {"one": "%1$d Datei", "other": "%1$s Dateien"}}},
+                    {"de": {"files": {"one": "%1$d Datei"}}},
+                    {"de": {"files": {"one": "%1$d Datei", "lots": "%1$d", "other": "%1$d Dateien"}}},
+                    {"de": {"no_such_key": "x"}},
+                    {"de": {"cd_key_home": "Pos1"}}):
+            with self.subTest(bad=bad):
+                if "cd_key_home" in bad["de"]:
+                    self.add_english(['<string name="cd_key_home">Home</string>'])
+                    before = self.snapshot()
+                with self.assertRaises(imp.ExportError):
+                    self.run_import(supplement_path=self.supplement(bad))
+                self.assertEqual(before, self.snapshot())
+
+    def test_the_checked_in_supplement_covers_every_english_plural(self):
+        english = imp.read_english(imp.DEFAULT_RES / "values" / "strings.xml")
+        plurals = {name for name, (kind, _) in english.items() if kind == "plurals"}
+        self.assertTrue(plurals, "found no English plurals - the scan is broken")
+        data = json.loads(imp.DEFAULT_SUPPLEMENT.read_text(encoding="utf-8"))
+        self.assertEqual(imp.SUPPLEMENT_SOURCE, data["source"])
+        imp.check_supplement(data["locales"], english, imp.DEFAULT_SUPPLEMENT)
+        shipped = {imp.play_code_to_qualifier(c) for c in data["locales"]}
+        machine = set(imp.locale_qualifiers(imp.DEFAULT_RES)) - imp.REVIEWED_QUALIFIERS
+        self.assertEqual(machine, shipped, "every machine locale needs its plurals, and only those")
+        for code, entries in data["locales"].items():
+            self.assertEqual(plurals, set(entries), code)
+
+    # -- Play's mangled letters --------------------------------------------------------------
+
+    def test_latin1_letters_play_mangled_into_percent_codes_are_repaired(self):
+        export = self.write_json("export.json", {"source": imp.EXPORT_SOURCE, "locales": {
+            "ca": {"greeting": "Hola, %1$s! Informaci%00f3", "plain": "Est%00e0 llest"},
+        }})
+        summaries = self.run_import(export=export)
+        ca = strings_of(self.res / "values-ca" / "strings.xml")
+        self.assertEqual("Hola, %1$s! Informació", ca["greeting"])
+        self.assertEqual("Està llest", ca["plain"])
+        self.assertEqual(2, summaries["ca"]["repaired"])
+        self.assertEqual({}, summaries["ca"]["skipped"])
 
 
 if __name__ == "__main__":

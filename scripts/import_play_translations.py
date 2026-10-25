@@ -14,11 +14,17 @@ Input is the JSON the in-browser exporter downloads:
 A string value is a <string>, an object is a <plurals> (quantity -> text) and a list is a
 <string-array>. Texts are raw display text; this script escapes them for Android.
 
+Play's grid has no plurals, so --supplement adds a second file in the same shape with its own
+source ("remex-translation-supplement"): scripts/translations/plurals-supplement.json holds the
+<plurals> for every machine locale. A key the supplement has wins over the export's.
+
 The 9 reviewed languages (values, -es, -fr, -hi, -in, -pl, -pt-rBR, -tr, -uk) are never touched,
 whatever the export holds. Existing machine-translated values are kept unless --update is given.
+Keys in KEEP_ENGLISH are always written as a copy of English, replacing any translation a file has.
 
     uv run python scripts/import_play_translations.py play-translations.json --dry-run
-    uv run python scripts/import_play_translations.py play-translations.json [--update]
+    uv run python scripts/import_play_translations.py play-translations.json \
+        --supplement scripts/translations/plurals-supplement.json [--update]
 """
 
 import argparse
@@ -32,6 +38,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RES = REPO_ROOT / "remex.android" / "app" / "src" / "main" / "res"
 
 EXPORT_SOURCE = "play-console-app-translations"
+SUPPLEMENT_SOURCE = "remex-translation-supplement"
+DEFAULT_SUPPLEMENT = REPO_ROOT / "scripts" / "translations" / "plurals-supplement.json"
+
+# Keys a machine locale carries only as a copy of the English element, whatever Play sent and
+# whatever the file held. (A copy rather than a gap, because release lint's MissingTranslation is
+# fatal.) Each one is held to a rule the reviewed locales meet by hand and Play cannot:
+# - the 12 keycaps that draw a Latin legend: their name must start with that legend (WCAG 2.5.3,
+#   KeycapAccessibleNameTests). The glyph-only keys (enter, arrows...) have no legend to match, so
+#   a translated name is right for them and they are not listed.
+# - font_*: a font picker label is the family's own name in every language (AppFontsTest). Play
+#   transliterates them ("Lato" -> "ലോട്ടോ").
+KEEP_ENGLISH = frozenset({
+    "cd_key_ctrl", "cd_key_alt", "cd_key_shift", "cd_key_altgr", "cd_key_escape", "cd_key_tab",
+    "cd_key_delete", "cd_key_home", "cd_key_end", "cd_key_pageup", "cd_key_pagedown", "cd_key_insert",
+})
+KEEP_ENGLISH_PREFIXES = ("font_",)
 
 # Hand-reviewed translations. "" is the English default folder.
 REVIEWED_QUALIFIERS = frozenset({"", "es", "fr", "hi", "in", "pl", "pt-rBR", "tr", "uk"})
@@ -56,6 +78,10 @@ FORMAT_ARG_RE = re.compile(r"%%|%(?:(\d+)\$)?[-#+0,(]*\d*(?:\.\d+)?([a-zA-Z])")
 
 # C0 controls other than tab and newline cannot be written to XML 1.0 at all.
 CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+# Play's grid sometimes hands a Latin-1 letter back as "%00" + its hex code (Catalan "%00f3" for
+# "ó", 2026-10). Left alone it reads as a "%00f" format argument and the string is rejected.
+MANGLED_LATIN1_RE = re.compile(r"%00([0-9a-fA-F]{2})")
 
 MACHINE_NOTE = (
     "<!-- Machine-translated by Google Play (Gemini) and not reviewed. Written by\n"
@@ -136,6 +162,31 @@ def format_args(text):
             index = str(implicit)
         found.add(f"{index}:{m.group(2)}")
     return found
+
+
+def keeps_english(name):
+    return name in KEEP_ENGLISH or name.startswith(KEEP_ENGLISH_PREFIXES)
+
+
+def repair_mangled(value, english):
+    """A Play value with its "%00xx" letters put back, unless English itself has "%00"."""
+    if isinstance(english, dict):
+        english_text = "".join(english.values())
+    elif isinstance(english, list):
+        english_text = "".join(english)
+    else:
+        english_text = english or ""
+    if "%00" in english_text:
+        return value
+
+    def fix(text):
+        return MANGLED_LATIN1_RE.sub(lambda m: chr(int(m.group(1), 16)), text) if isinstance(text, str) else text
+
+    if isinstance(value, dict):
+        return {q: fix(t) for q, t in value.items()}
+    if isinstance(value, list):
+        return [fix(t) for t in value]
+    return fix(value)
 
 
 def escape_android(text):
@@ -326,8 +377,14 @@ def check_value(kind, english, value):
 # Import
 # ---------------------------------------------------------------------------------------------
 
-def import_locale(code, translations, english, res_dir, update, dry_run, log):
-    """Merge one Play locale into its values- folder. Returns its summary dict, or None if skipped."""
+def import_locale(code, translations, english, res_dir, update, dry_run, log, supplement=None, english_raw=None):
+    """Merge one Play locale, plus its supplement entries, into its values- folder.
+
+    english_raw is read_existing() of the English file, the source of the KEEP_ENGLISH copies.
+    Returns its summary dict, or None if skipped.
+    """
+    if english_raw is None:
+        english_raw = read_existing(res_dir / "values" / "strings.xml")
     try:
         qualifier = play_code_to_qualifier(code)
     except ValueError as e:
@@ -336,7 +393,9 @@ def import_locale(code, translations, english, res_dir, update, dry_run, log):
     if code.lower() in SKIPPED_PLAY_CODES or qualifier in REVIEWED_QUALIFIERS:
         log(f"  {code}: skipped - values-{qualifier} holds reviewed translations and is never touched")
         return None
-    if not isinstance(translations, dict):
+    if translations is None:
+        translations = {}
+    if not isinstance(translations, dict) or not isinstance(supplement or {}, dict):
         log(f"  {code}: skipped - its entry is not an object of key -> translation")
         return None
 
@@ -344,12 +403,32 @@ def import_locale(code, translations, english, res_dir, update, dry_run, log):
     existing = read_existing(path)
     summary = {"code": code, "qualifier": qualifier, "added": 0, "changed": 0, "kept": 0,
                "differs": 0, "skipped": {}, "missing": 0, "dropped": 0, "unknown": 0,
-               "wrote": False, "has_file": False}
+               "english": 0, "repaired": 0, "supplemented": 0, "wrote": False, "has_file": False}
+
+    merged = {}
+    for name, value in translations.items():
+        if name in english:
+            fixed = repair_mangled(value, english[name][1])
+            if fixed != value:
+                summary["repaired"] += 1
+            value = fixed
+        merged[name] = value
+    for name, value in (supplement or {}).items():
+        merged[name] = value
+        if name in english:
+            summary["supplemented"] += 1
+    translations = merged
 
     summary["unknown"] = sum(1 for key in translations if key not in english)
 
     elements = []
     for name, (kind, source) in english.items():
+        if keeps_english(name):
+            # A copy of the English element, not a gap: release lint fails a locale that lacks a key.
+            if name in english_raw:
+                elements.append(english_raw[name][1])
+                summary["english"] += 1
+            continue
         value = translations.get(name)
         rendered = None
         if value is not None:
@@ -389,7 +468,7 @@ def import_locale(code, translations, english, res_dir, update, dry_run, log):
 
     summary["dropped"] += sum(1 for name in existing if name not in english)
 
-    if not elements:
+    if len(elements) == summary["english"]:
         return summary
     summary["has_file"] = True
     content = render_file(elements)
@@ -413,32 +492,72 @@ def format_summary(s):
         extras.append(f"dropped {s['dropped']} key(s) English no longer has")
     if s["unknown"]:
         extras.append(f"ignored {s['unknown']} key(s) English does not have or marks untranslatable")
+    if s["english"]:
+        extras.append(f"wrote {s['english']} key(s) as English on purpose (KEEP_ENGLISH)")
+    if s["repaired"]:
+        extras.append(f"repaired {s['repaired']} value(s) with %00xx letters")
+    if s["supplemented"]:
+        extras.append(f"{s['supplemented']} from the supplement")
     if extras:
         line += "\n      " + "; ".join(extras)
     return line
 
 
-def run(export_path, res_dir, update=False, dry_run=False, out=print):
+def read_locales_file(path, source, what):
     try:
-        data = json.loads(Path(export_path).read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
-        raise ExportError(f"Could not read {export_path}: {e}")
-    if not isinstance(data, dict) or data.get("source") != EXPORT_SOURCE:
-        raise ExportError(f"{export_path} is not a Play translations export (expected source '{EXPORT_SOURCE}').")
+        raise ExportError(f"Could not read {path}: {e}")
+    if not isinstance(data, dict) or data.get("source") != source:
+        raise ExportError(f"{path} is not a {what} (expected source '{source}').")
     locales = data.get("locales")
     if not isinstance(locales, dict):
-        raise ExportError(f"{export_path} has no 'locales' object.")
+        raise ExportError(f"{path} has no 'locales' object.")
+    return locales
+
+
+def check_supplement(locales, english, path):
+    """The supplement is ours and reviewed, so a bad entry stops the import before anything is written."""
+    for code, entries in locales.items():
+        try:
+            play_code_to_qualifier(code)
+        except ValueError as e:
+            raise ExportError(f"{path}: {e}")
+        if not isinstance(entries, dict):
+            raise ExportError(f"{path}: '{code}' is not an object of key -> translation.")
+        for name, value in entries.items():
+            if name not in english:
+                raise ExportError(f"{path}: {code} {name} is not an English key (or is untranslatable).")
+            if keeps_english(name):
+                raise ExportError(f"{path}: {code} {name} is in KEEP_ENGLISH and must stay English.")
+            kind, source = english[name]
+            problem = check_value(kind, source, value)
+            if problem:
+                raise ExportError(f"{path}: {code} {name} cannot be written ({problem}).")
+
+
+def run(export_path, res_dir, update=False, dry_run=False, out=print, supplement_path=None):
+    locales = read_locales_file(export_path, EXPORT_SOURCE, "Play translations export")
 
     english_path = res_dir / "values" / "strings.xml"
     if not english_path.is_file():
         raise ExportError(f"English strings not found at {english_path}.")
     english = read_english(english_path)
+    english_raw = read_existing(english_path)
 
+    supplement = {}
+    if supplement_path is not None:
+        supplement = read_locales_file(supplement_path, SUPPLEMENT_SOURCE, "translation supplement")
+        check_supplement(supplement, english, supplement_path)
+
+    codes = sorted(set(locales) | set(supplement))
     out(f"Importing {len(locales)} Play locale(s) from {export_path}"
+        + (f", with {len(supplement)} from {supplement_path}" if supplement_path is not None else "")
         + (" (dry run, nothing is written)" if dry_run else ""))
     summaries = []
-    for code in sorted(locales):
-        s = import_locale(code, locales[code], english, res_dir, update, dry_run, out)
+    for code in codes:
+        s = import_locale(code, locales.get(code), english, res_dir, update, dry_run, out,
+                          supplement=supplement.get(code), english_raw=english_raw)
         if s is not None:
             summaries.append(s)
 
@@ -474,12 +593,15 @@ def main(argv=None):
     parser.add_argument("--res", type=Path, default=DEFAULT_RES, help="Android res folder (default: the app's)")
     parser.add_argument("--update", action="store_true",
                         help="overwrite values already imported (never touches the 9 reviewed languages)")
+    parser.add_argument("--supplement", type=Path, nargs="?", const=DEFAULT_SUPPLEMENT, default=None,
+                        help="translations Play cannot give, merged over the export "
+                             f"(alone: {DEFAULT_SUPPLEMENT.relative_to(REPO_ROOT).as_posix()})")
     parser.add_argument("--dry-run", action="store_true", help="print the summary and write nothing")
     args = parser.parse_args(argv)
     # The Windows console is cp1252 by default; locale names and paths may not be.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
-        run(args.export, args.res, update=args.update, dry_run=args.dry_run)
+        run(args.export, args.res, update=args.update, dry_run=args.dry_run, supplement_path=args.supplement)
     except ExportError as e:
         print(f"Import stopped: {e}", file=sys.stderr)
         return 1

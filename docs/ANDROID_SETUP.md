@@ -356,16 +356,30 @@ languages (RemEx-fwhqw):
 
 1. Upload the release AAB to a **draft** release in Play Console and turn on automatic translation of app strings.
    Wait until Play shows the translations as ready.
-2. On the translations page, run the in-browser exporter. It downloads `play-translations.json`.
-3. Preview the import, then run it:
+2. On the translations page, set **Show rows** to 500 and paste `scripts/play-translations-exporter.js` into the
+   DevTools console. It pages through the grid (about 7 minutes for 1,800 rows) and downloads
+   `play-translations.json`.
+3. Preview the import, then run it. `--supplement` on its own merges in
+   `scripts/translations/plurals-supplement.json` (see below):
    ```powershell
-   uv run python scripts/import_play_translations.py play-translations.json --dry-run
-   uv run python scripts/import_play_translations.py play-translations.json
+   uv run python scripts/import_play_translations.py play-translations.json --supplement --dry-run
+   uv run python scripts/import_play_translations.py play-translations.json --supplement
    ```
    It prints, for each language, how many strings it added, changed, skipped (format arguments that don't match
    English) and how many are missing (those show in English). Add `--update` to overwrite strings imported
    earlier. The 9 reviewed languages are never touched, even with `--update`.
-4. Run the Android unit tests (`cd remex.android; ./gradlew :app:testReleaseUnitTest`), then `scripts/verify.ps1`.
+4. Run the Android unit tests and the release lint gate
+   (`cd remex.android; ./gradlew :app:testReleaseUnitTest :app:lintRelease`), then `scripts/verify.ps1`.
+
+**Plurals.** Play's grid has no plurals, and release lint fails on a `<plurals>` a language is missing
+(`MissingTranslation`). `scripts/translations/plurals-supplement.json` holds them for every machine-translated
+language, keyed by Play locale code, with the quantities each language uses (Arabic has all six, Russian
+one/few/many/other, Japanese only other, and so on; lint's `MissingQuantity` and `UnusedQuantity` check them). It
+has its own `source` (`remex-translation-supplement`), wins over the export for any key both have, and stops the
+import before anything is written if an entry doesn't fit English (wrong format arguments, an unknown quantity,
+a key English lacks). They were written by Claude and nobody who speaks those languages has reviewed them. When
+English gains or changes a plural, add it to the supplement for every language and re-run with `--update`;
+`test_the_checked_in_supplement_covers_every_english_plural` fails until you do.
 
 What the importer writes and why:
 - One `res/values-<qualifier>/strings.xml` per new language, marked as machine-translated, holding only keys that
@@ -377,11 +391,21 @@ What the importer writes and why:
 - `res/xml/locales_config.xml` is regenerated from the folders, with modern tags (`he`, `id`). That file drives
   the system's per-app language setting and the in-app picker. `build.gradle.kts` builds `localeFilters` from the
   same folders, so nothing else needs editing.
+- Some keys always stay English in machine-translated languages (`KEEP_ENGLISH` in the importer). The importer
+  writes them as an exact copy of the English entry, replacing any translation the file has, even without
+  `--update`. It copies rather than leaves them out because release lint fails a language that is missing a key.
+  They are the 12 on-screen keys that
+  draw a Latin legend (`cd_key_ctrl`, `cd_key_home`, `cd_key_pageup`, …): their spoken name must start with that
+  legend (WCAG 2.5.3, `KeycapAccessibleNameTests`), and Play translates them (`Home` → `الرئيسية`). The glyph-only
+  keys (Enter, Backspace, the arrows, Windows) draw no text, so their translated names stay. The font labels
+  (`font_*`) also stay English, because a font's name is the same in every language (`AppFontsTest`) and Play
+  transliterates them.
+- Play sometimes returns an accented letter as `%00` plus its hex code (Catalan `informaci%00f3`). That would
+  read as a format argument and be rejected, so the importer puts the letter back.
 
 Hand-fixing a machine translation is fine: without `--update`, a re-import keeps your edit. To drop a bad one,
-delete the line and the key falls back to English. `KeycapAccessibleNameTests` holds machine translations to the
-same rule as reviewed ones for the keyboard keys, so a key name Play localised (for example `Strg` for Ctrl) fails
-the tests until it's deleted.
+delete the line and the key falls back to English. `KeycapAccessibleNameTests` checks every language, machine or
+reviewed, so a keyboard key name added by hand still has to start with its legend.
 
 ---
 

@@ -23,7 +23,20 @@ It also reorganises where things live on both apps, so each page is grouped by w
   phone app, so the GitHub APK can carry the extra languages Play installs get. It only adds languages we don't
   ship yet and never touches the 9 reviewed ones. It escapes the text for Android, skips any translation whose
   format arguments don't match English, keeps values already imported unless you pass `--update`, and has a
-  `--dry-run`. No languages have been imported yet.
+  `--dry-run`.
+- The phone app now comes in 40 more languages, machine-translated by Google Play and not reviewed: Arabic,
+  Bangla, Bulgarian, Catalan, Chinese (Simplified), Croatian, Czech, Danish, Dutch, Estonian, Finnish, German,
+  Greek, Gujarati, Hebrew, Hungarian, Icelandic, Italian, Japanese, Kannada, Korean, Latvian, Lithuanian,
+  Malayalam, Marathi, Norwegian, Persian, Punjabi, Romanian, Russian, Slovak, Slovenian, Swahili, Swedish, Tamil,
+  Telugu, Thai, Urdu, Vietnamese and Zulu.
+- Play's grid has no plurals, so `scripts/translations/plurals-supplement.json` supplies all 14 for those
+  languages, with each language's own plural forms. Claude wrote them and they haven't been reviewed by native
+  speakers. The importer merges them in with `--supplement` and refuses one that doesn't fit English.
+- In those languages the 12 keyboard keys that print a Latin legend (Ctrl, Home, PgUp, …) and the font names stay
+  English, so a speech-input user can still say what is printed on the key. The importer writes them as a copy
+  of the English text and replaces any translation that turns up.
+- The importer repairs accented letters Play returned as `%00` codes (12 Catalan strings), instead of rejecting
+  them.
 - The language picker now lists whatever `res/xml/locales_config.xml` lists, each language in its own name, and
   the build keeps every `values-*` language folder rather than a hand-written list. A new language ships and
   shows up in the picker with no code change. `AppLanguagesTest` fails if the folders and `locales_config.xml`
