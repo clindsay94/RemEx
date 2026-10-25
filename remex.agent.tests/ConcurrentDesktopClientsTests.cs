@@ -114,6 +114,7 @@ public sealed class ConcurrentDesktopClientsTests
         new RemexHostFactory().WithServices(services =>
         {
             services.AddSingleton(capture);
+            services.AddSingleton<Remex.Agent.Services.IHostCapabilitiesProvider, DesktopReadyHostCapabilitiesProvider>();
             services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
             {
                 opts.BackgroundServiceExceptionBehavior =

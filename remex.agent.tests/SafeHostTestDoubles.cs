@@ -1,7 +1,30 @@
+using Remex.Core.Models;
 using Remex.Core.Services.Command;
+using Remex.Agent.Services;
+using Remex.Agent.Services.RemoteDesktop.Linux;
+using Remex.Agent.Services.RemoteDesktop.Windows;
 using Remex.Agent.Services.Session;
 
 namespace Remex.Agent.Tests;
+
+/// <summary>
+/// An <see cref="IHostCapabilitiesProvider"/> that always reports a ready desktop. The real provider
+/// reads the developer's live input desktop, so a /ws/desktop stream test run while the PC is locked
+/// (or a UAC prompt is up) got "Winlogon secure desktop" and a closed socket instead of frames
+/// (RemEx-jxza0).
+/// </summary>
+public sealed class DesktopReadyHostCapabilitiesProvider : IHostCapabilitiesProvider
+{
+    public HostCapabilities GetCurrent() => new()
+    {
+        Platform = "test",
+        SupportsRemoteDesktop = true,
+    };
+
+    public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport() => null;
+
+    public WindowsRemoteDesktopDiagnosticReport? GetWindowsRemoteDesktopDiagnosticReport() => null;
+}
 
 /// <summary>
 /// No-op <see cref="IInteractiveSessionGuard"/> for integration tests. The real
